@@ -26,6 +26,8 @@
             --yt-red: #FF0000;
             --yt-black: #282828;
             --yt-white: #FFFFFF;
+            /* 인스타그램 그라데이션 */
+            --insta-grad: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; cursor: none; }
@@ -177,7 +179,7 @@
         }
         .card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px rgba(3, 16, 161, 0.1); }
         
-        /* [UPDATED] 16:9 비율 이미지 */
+        /* 16:9 비율 이미지 */
         .card-img {
             width: 100%; aspect-ratio: 16/9; 
             background-color: #eee; border-radius: 10px; margin-bottom: 25px;
@@ -276,30 +278,22 @@
         }
         .calendar-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
 
-        /* --- 6. [UPDATED] 유튜브 (드래그 슬라이드 & 브랜드 컬러) --- */
-        .youtube-section { 
-            overflow: hidden; padding: 100px 0; 
-            background: var(--yt-red); /* 배경 빨간색 */
-            color: var(--yt-white); 
-        }
-        .youtube-section .section-title { color: var(--yt-white); } /* 흰색 타이틀 */
-        .youtube-section .section-title span { color: var(--yt-black); } /* 검은색 포인트 */
-        .youtube-section .section-title span::after { background-color: rgba(255, 255, 255, 0.2); }
-
-        .yt-track { gap: 15px; padding: 0 5%; }
-        
+        /* --- 6. 유튜브 --- */
+        .youtube-section { overflow: hidden; padding: 100px 0; background: #111; color: #fff; }
+        .youtube-section .section-title { color: #fff; } 
+        .youtube-section .section-title span::after { background-color: rgba(4, 110, 242, 0.6); }
+        .rolling-container { width: 100%; overflow: hidden; display: flex; align-items: center; }
+        .rolling-track { display: flex; width: max-content; animation: scrollRightToLeft 600s linear infinite; }
         .yt-card {
-            width: 320px; flex-shrink: 0; 
-            border-radius: 12px; overflow: hidden;
-            background: var(--yt-white); border: none;
-            transition: transform 0.3s; 
-            /* 드래그 시 클릭 방지용 */
-            pointer-events: auto; 
-            text-decoration: none;
+            width: 320px; flex-shrink: 0; margin-right: 12px;
+            border-radius: 16px; overflow: hidden;
+            background: #222; border: 1px solid #333;
+            transition: 0.3s; cursor: pointer;
         }
-        .yt-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .yt-card:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .yt-title { padding: 15px; font-size: 1rem; font-weight: 700; color: #eee; line-height: 1.4; }
         .yt-thumb {
-            width: 100%; height: 180px; background: #000;
+            width: 100%; height: 180px; background: #333;
             background-size: cover; background-position: center; position: relative;
         }
         .yt-thumb::after {
@@ -307,16 +301,6 @@
             transform: translate(-50%, -50%); color: white; font-size: 2.5rem; opacity: 0.9;
             text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
-        .yt-info { padding: 15px; }
-        .yt-title { 
-            font-size: 1rem; font-weight: 700; color: var(--yt-black); 
-            line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            margin-bottom: 8px;
-        }
-        .yt-views {
-            font-size: 0.85rem; color: #606060; font-weight: 500;
-        }
-
         @keyframes scrollRightToLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
         /* --- 7. 강사 소개 --- */
@@ -360,7 +344,50 @@
         .instructor-role { color: var(--primary); font-weight: 700; font-size: 1rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
         .instructor-desc { color: #555; font-size: 1rem; line-height: 1.6; word-break: keep-all; }
 
-        /* --- 8. Q&A 게시판 --- */
+        /* --- [NEW] 8. 인스타그램 섹션 --- */
+        #instagram { background-color: var(--white); border-bottom: 1px solid #eee; }
+        /* 인스타 그라데이션 텍스트 */
+        .insta-title span { 
+            background: var(--insta-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .insta-grid {
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); /* 데스크탑 4열 */
+            gap: 15px; max-width: 1000px; margin: 0 auto;
+        }
+        .insta-item {
+            position: relative; overflow: hidden; border-radius: 12px;
+            aspect-ratio: 1/1; /* 정사각형 */
+            cursor: pointer;
+        }
+        .insta-img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.3s;
+        }
+        .insta-item:hover .insta-img { transform: scale(1.1); }
+        
+        .insta-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); opacity: 0;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.3s;
+        }
+        .insta-item:hover .insta-overlay { opacity: 1; }
+        .insta-icon { color: white; font-size: 2rem; font-weight: bold; }
+
+        .insta-btn-area { text-align: center; margin-top: 40px; }
+        .btn-insta {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 30px; border-radius: 50px;
+            background: var(--insta-grad); color: white;
+            font-weight: 700; font-size: 1rem;
+            box-shadow: 0 10px 20px rgba(220, 39, 67, 0.3);
+            transition: 0.3s;
+        }
+        .btn-insta:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(220, 39, 67, 0.4); }
+
+
+        /* --- 9. Q&A 게시판 --- */
         #qna { background-color: #fff; }
         .qna-container {
             max-width: 800px; margin: 0 auto;
@@ -395,6 +422,8 @@
         footer strong { color: var(--white); font-weight: bold; font-size: 1.1rem; }
         .footer-links a { color: #fff; text-decoration: underline; margin: 0 5px; opacity: 0.8; }
         .footer-links a:hover { opacity: 1; }
+        .admin-link { display: inline-block; margin-top: 20px; font-size: 0.8rem; color: rgba(255,255,255,0.3); text-decoration: none; }
+        .admin-link:hover { color: rgba(255,255,255,0.8); }
 
         @media (max-width: 768px) {
             .hero h1 { font-size: 1.8rem; line-height: 1.3; margin-bottom: 15px; }
@@ -424,7 +453,7 @@
             
             .yt-card { width: 220px; } 
             .yt-thumb { height: 125px; }
-            .yt-title { font-size: 0.9rem; }
+            .yt-title { padding: 10px; font-size: 0.8rem; }
             .yt-views { font-size: 0.75rem; }
 
             .instructors-grid { gap: 40px; }
@@ -432,6 +461,10 @@
             .instructor-name { font-size: 1.3rem; }
             .instructor-role { font-size: 0.8rem; margin-bottom: 10px; }
             .instructor-desc { font-size: 0.9rem; padding: 0 10px; word-break: keep-all; }
+            
+            /* 인스타 모바일 */
+            .insta-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
             .qna-container { padding: 30px 20px; }
             .qna-desc { font-size: 0.8rem; margin-bottom: 25px; }
             .qna-input, .qna-textarea { padding: 12px; font-size: 0.9rem; }
@@ -465,6 +498,7 @@
             <a href="#schedule">일정</a>
             <a href="#youtube">콘텐츠</a>
             <a href="#about">강사소개</a>
+            <a href="#instagram">갤러리</a> <!-- 추가됨 -->
             <a href="#qna">문의하기</a>
         </nav>
     </header>
@@ -475,16 +509,11 @@
         <a href="#diagnosis" class="btn-main">과정 알아보기 ↓</a>
     </section>
 
-    <!-- [UPDATED] 교육과정 섹션 (드래그 & 무한 스크롤 슬라이드) -->
     <section id="courses" class="section">
         <h2 class="section-title">교육 과정 <span>안내</span></h2>
-        <!-- 드래그 가능한 컨테이너 -->
         <div class="slider-container" id="coursesContainer">
-            <!-- 무한 스크롤 트랙 (JS로 내용 복제됨) -->
             <div class="slider-track courses-track" id="coursesTrack">
-                <!-- 1. 프리미어 프로 -->
                 <div class="card">
-                    <!-- [UPDATED] 16:9 비율 이미지 -->
                     <img src="https://via.placeholder.com/640x360/0310A1/fff?text=Premiere+Pro" class="card-img" alt="프리미어 프로">
                     <span class="tag prem">실무/취업 과정</span>
                     <h3>Premiere Pro</h3>
@@ -495,8 +524,6 @@
                         <li>어도비 툴 연동 및 색보정</li>
                     </ul>
                 </div>
-
-                <!-- 2. 캡컷 -->
                 <div class="card">
                     <img src="https://via.placeholder.com/640x360/D5A491/fff?text=CapCut" class="card-img" alt="캡컷">
                     <span class="tag cap">크리에이터 과정</span>
@@ -508,8 +535,6 @@
                         <li>AI 자동 기능 활용 효율 극대화</li>
                     </ul>
                 </div>
-
-                <!-- 3. 포트폴리오 심화 -->
                 <div class="card">
                     <img src="https://via.placeholder.com/640x360/91C7FC/fff?text=Portfolio" class="card-img" alt="포트폴리오">
                     <span class="tag basic">심화/멘토링</span>
@@ -521,8 +546,6 @@
                         <li>자소서 및 면접 컨설팅 포함</li>
                     </ul>
                 </div>
-
-                <!-- 4. 유튜브 컨설팅 -->
                 <div class="card">
                     <img src="https://via.placeholder.com/640x360/666/fff?text=Consulting" class="card-img" alt="컨설팅">
                     <span class="tag basic">채널 컨설팅</span>
@@ -560,10 +583,8 @@
         </div>
     </section>
 
-    <!-- [UPDATED] 유튜브 섹션 (드래그 & 무한 스크롤 슬라이드, 스타일 변경) -->
     <section id="youtube" class="youtube-section" data-theme="dark">
         <h2 class="section-title">VCML <span>Youtube</span></h2>
-        <!-- 드래그 가능한 컨테이너 -->
         <div class="slider-container" id="ytContainer">
             <div class="slider-track yt-track" id="ytTrack"></div>
         </div>
@@ -612,6 +633,19 @@
         </div>
     </section>
 
+    <!-- [NEW] 인스타그램 섹션 -->
+    <section id="instagram" class="section">
+        <h2 class="section-title insta-title">VCML <span>Instagram</span></h2>
+        <div class="insta-grid" id="instaGrid">
+            <!-- 자바스크립트로 이미지 채움 -->
+        </div>
+        <div class="insta-btn-area">
+            <a href="https://instagram.com/official_vcml" target="_blank" class="btn-insta">
+                <span style="font-size:1.2rem;">📷</span> Follow @official_vcml
+            </a>
+        </div>
+    </section>
+
     <section id="qna" class="section">
         <h2 class="section-title">Q&A <span>게시판</span></h2>
         <div class="qna-container">
@@ -647,11 +681,12 @@
             <p>Email: <a href="mailto:dong8creative@gmail.com">dong8creative@gmail.com</a></p>
             <p>Instagram: <a href="https://instagram.com/official_vcml" target="_blank">@official_vcml</a></p>
         </div>
+        <a href="./admin.html" class="admin-link">관리자 접속</a>
     </footer>
 
     <script>
         // ▼▼▼ 본인의 구글 앱스 스크립트 URL로 교체 ▼▼▼
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZQ5bFusa_kbV1KNVnqj4zgkGYf9lHAW7CRkW1krolkks9KZkR3VFJ8pS4R2mtrjt3Pg/exec"; 
+        const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_URL_HERE/exec"; 
 
         // 1. 커서 로직
         const cursor = document.querySelector('.cursor-arrow');
@@ -659,7 +694,7 @@
             cursor.style.left = e.clientX + 'px';
             cursor.style.top = e.clientY + 'px';
         });
-        document.querySelectorAll('a, button, .instructor-name, input, textarea').forEach(item => {
+        document.querySelectorAll('a, button, .instructor-name, input, textarea, .insta-item').forEach(item => {
             item.addEventListener('mouseenter', () => document.body.classList.add('hovered'));
             item.addEventListener('mouseleave', () => document.body.classList.remove('hovered'));
         });
@@ -735,16 +770,14 @@
         });
         storeContainer.innerHTML = storeHtml;
 
-        // 5. [UPDATED] 공통 슬라이더 로직 (무한 스크롤 + 드래그)
+        // 5. 공통 슬라이더 로직
         function initInfiniteSlider(containerId, trackId) {
             const container = document.getElementById(containerId);
             const track = document.getElementById(trackId);
             
-            // 콘텐츠 복제 (무한 스크롤 효과를 위해 2번 복제)
             const items = track.innerHTML;
             track.innerHTML = items + items + items; 
 
-            // 드래그 기능 구현
             let isDown = false;
             let startX;
             let scrollLeft;
@@ -754,19 +787,16 @@
                 container.style.cursor = 'grabbing';
                 startX = e.pageX - container.offsetLeft;
                 scrollLeft = container.scrollLeft;
-                // 드래그 시작 시 애니메이션 일시 정지
                 track.style.animationPlayState = 'paused';
             });
             container.addEventListener('mouseleave', () => {
                 isDown = false;
                 container.style.cursor = 'grab';
-                 // 마우스가 떠나면 애니메이션 재개
                 track.style.animationPlayState = 'running';
             });
             container.addEventListener('mouseup', () => {
                 isDown = false;
                 container.style.cursor = 'grab';
-                // 드래그 종료 시 애니메이션 재개
                 track.style.animationPlayState = 'running';
             });
             container.addEventListener('mousemove', (e) => {
@@ -777,7 +807,6 @@
                 container.scrollLeft = scrollLeft - walk;
             });
 
-            // 터치 이벤트 지원 (모바일)
             container.addEventListener('touchstart', (e) => {
                 isDown = true;
                 startX = e.touches[0].pageX - container.offsetLeft;
@@ -796,10 +825,9 @@
             });
         }
 
-        // 교육과정 슬라이더 초기화
         initInfiniteSlider('coursesContainer', 'coursesTrack');
 
-        // 6. [UPDATED] 유튜브 섹션 데이터 및 초기화
+        // 6. 유튜브 섹션
         const ytData = [
             { title: "프리미어 기초 꿀팁", views: "조회수 1.2만회", img: "https://via.placeholder.com/320x180/333?text=Video+1" },
             { title: "캡컷으로 1분 편집", views: "조회수 8천회", img: "https://via.placeholder.com/320x180/444?text=Video+2" },
@@ -823,10 +851,7 @@
             `;
         });
         ytTrack.innerHTML = ytHtml;
-        
-        // 유튜브 슬라이더 초기화 (데이터 로드 후)
         initInfiniteSlider('ytContainer', 'ytTrack');
-
 
         // 7. 강사 슬라이드쇼
         const slideIntervals = {}; 
@@ -855,7 +880,23 @@
             slides.forEach(slide => slide.classList.remove('visible'));
         }
 
-        // 8. Q&A 제출
+        // 8. [NEW] 인스타그램 그리드 생성
+        const instaGrid = document.getElementById('instaGrid');
+        let instaHtml = '';
+        // 8개의 더미 이미지 (실제로는 인스타 게시물 썸네일 URL을 넣으세요)
+        for(let i=1; i<=8; i++) {
+            instaHtml += `
+                <a href="https://instagram.com/official_vcml" target="_blank" class="insta-item">
+                    <img src="https://via.placeholder.com/300x300/eee?text=Post+${i}" class="insta-img" alt="인스타 게시물">
+                    <div class="insta-overlay">
+                        <div class="insta-icon">↗</div>
+                    </div>
+                </a>
+            `;
+        }
+        instaGrid.innerHTML = instaHtml;
+
+        // 9. Q&A 제출
         function submitQna() {
             const name = document.getElementById('qnaName').value;
             const phone = document.getElementById('qnaPhone').value;
