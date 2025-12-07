@@ -1,397 +1,545 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>영상 편집 교육 과정 맞춤 진단</title>
-<style>
-    :root {
-        --bg-color: #f0f2f5;
-        --text-color: #333;
-        --primary-color: #007bff;
-        --btn-bg: white;
-        --btn-border: #ddd;
-        --transition-speed: 0.5s;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCML | Visual Core Motion Labs</title>
+    <!-- 폰트 로드 (Pretendard) -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        /* --- [디자인 시스템] 컬러 변수 정의 --- */
+        :root {
+            --bg-base: #FBF6F3;
+            --primary: #046EF2;
+            --deep-blue: #0310A1;
+            --soft-blue: #91C7FC;
+            --accent-warm: #D5A491;
+            --text-main: #0310A1;
+            --text-body: #333333;
+            --white: #ffffff;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; cursor: none; /* 시스템 마우스 숨김 */ }
+        
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-body);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        a { text-decoration: none; color: inherit; transition: 0.3s; }
+        ul { list-style: none; }
 
-    /* 동적 테마 클래스 */
-    body.theme-prem-1 { --bg-color: #eaddff; --primary-color: #6200ee; }
-    body.theme-prem-2 { --bg-color: #d0bcff; --primary-color: #5300d6; --text-color: #1c0063; }
-    body.theme-prem-3 { --bg-color: #b69df8; --primary-color: #4500b5; --text-color: #120042; }
-    body.theme-cap-1 { --bg-color: #e0e0e0; --primary-color: #666; --btn-bg: #f9f9f9; }
-    body.theme-cap-2 { --bg-color: #cccccc; --primary-color: #444; --text-color: #222; --btn-bg: #eee; }
-    body.theme-cap-3 { --bg-color: #b3b3b3; --primary-color: #222; --text-color: #000; --btn-bg: #ddd; --btn-border: #999; }
+        /* --- 보색 반전 마우스 커서 --- */
+        .cursor-arrow {
+            width: 24px; height: 24px;
+            position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 9999;
+            mix-blend-mode: difference;
+            transform: translate(0, 0);
+            transition: transform 0.1s;
+        }
+        .cursor-arrow svg {
+            width: 100%; height: 100%;
+            fill: white; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+        }
+        body.hovered .cursor-arrow { transform: scale(1.5); }
 
-    body {
-        font-family: 'Pretendard', sans-serif;
-        background-color: var(--bg-color);
-        color: var(--text-color);
-        display: flex; justify-content: center; align-items: center;
-        min-height: 100vh; margin: 0;
-        transition: background-color var(--transition-speed), color var(--transition-speed);
-        overflow-x: hidden; 
-    }
-    .container { width: 100%; max-width: 500px; background: rgba(255,255,255,0.95); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; position: relative; z-index: 10; transition: background var(--transition-speed); }
-    
-    .q-image { width: 100%; max-width: 800px; height: auto; aspect-ratio: 4/3; object-fit: cover; border-radius: 12px; margin: 20px 0; border: 2px solid #eee; }
-    
-    .slide { display: none; animation: fadeIn 0.5s; }
-    .slide.active { display: block; }
-    h2 { margin-bottom: 20px; font-size: 1.4rem; word-break: keep-all; line-height: 1.4; }
-    
-    .btn-group { display: flex; flex-direction: column; gap: 10px; }
-    button { padding: 15px; border: 1px solid var(--btn-border); background: var(--btn-bg); color: var(--text-color); border-radius: 10px; cursor: pointer; font-size: 1rem; transition: 0.2s; }
-    button:hover { background: var(--primary-color); border-color: var(--primary-color); color: white; font-weight: bold; }
-    button.primary { background: var(--primary-color); color: white; border: none; margin-top: 20px; width: 100%; font-weight: bold; }
-    button.primary:hover { opacity: 0.9; }
-    
-    input, select { width: 90%; padding: 12px; margin-top: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-    .progress-bar { width: 100%; height: 5px; background: #eee; margin-bottom: 20px; border-radius: 5px; }
-    .progress-fill { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s, background var(--transition-speed); }
-    
-    .consent-box { text-align: left; margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; font-size: 0.85rem; color: #555; }
-    .consent-label { display: flex; align-items: center; cursor: pointer; }
-    .consent-label input { width: auto; margin-right: 10px; margin-top: 0; }
+        /* --- 네비게이션 --- */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 5%; position: fixed; width: 100%; top: 0;
+            background: rgba(251, 246, 243, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000; 
+            border-bottom: 1px solid rgba(4, 110, 242, 0.1);
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+        .logo { 
+            font-size: 1.5rem; font-weight: 900; letter-spacing: -0.5px; 
+            color: var(--deep-blue); transition: color 0.3s;
+        }
+        .nav-links { display: flex; gap: 30px; font-size: 0.95rem; font-weight: 600; color: var(--deep-blue); transition: color 0.3s; }
+        .nav-links a:hover { opacity: 0.7; transform: translateY(-2px); display: inline-block; }
 
-    /* 결과 카드 스타일 */
-    .result-card { background-color: rgba(255,255,255,0.9); border: 3px solid var(--primary-color); border-radius: 15px; padding: 25px; margin: 20px 0; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-    .result-program { font-size: 1.6rem; font-weight: 800; color: var(--primary-color); margin-bottom: 10px; }
-    .result-level { font-size: 1.2rem; font-weight: bold; color: var(--text-color); margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 15px; display: inline-block; }
-    .result-desc { font-size: 0.95rem; line-height: 1.5; color: #555; margin-bottom: 10px; }
+        header.dark-mode {
+            background: rgba(3, 16, 161, 0.85); border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        header.dark-mode .logo { color: var(--white); }
+        header.dark-mode .nav-links { color: var(--white); }
 
-    @keyframes fadeIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        /* --- 스레드 문의 버튼 --- */
+        .threads-btn {
+            position: fixed; top: 50%; right: 0; transform: translateY(-50%);
+            background: #000; color: #fff; padding: 15px 20px;
+            border-radius: 30px 0 0 30px; box-shadow: -5px 5px 15px rgba(0,0,0,0.2);
+            z-index: 999; font-weight: 700; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 8px; transition: right 0.3s;
+        }
+        .threads-btn:hover { padding-right: 30px; background: var(--primary); }
+        .threads-icon { width: 20px; height: 20px; fill: white; }
 
-    /* 비디오 배경 스타일 */
-    .video-banner-container { position: fixed; left: 0; width: 100%; height: 150px; overflow: hidden; z-index: 1; pointer-events: none; opacity: 0.05; display: none; }
-    .video-banner-top { top: 20px; }
-    .video-banner-bottom { bottom: 20px; }
-    .video-track { display: flex; width: max-content; animation-iteration-count: infinite; animation-timing-function: linear; animation-duration: 30s; }
-    .video-item { width: 90px; height: 160px; margin: 0 10px; background: #ccc; border-radius: 8px; flex-shrink: 0; }
+        /* --- 공통 섹션 --- */
+        .section { padding: 120px 5%; position: relative; }
+        .section-title { 
+            text-align: center; font-size: 2.5rem; margin-bottom: 60px; 
+            font-weight: 800; color: var(--deep-blue); word-break: keep-all;
+        }
+        .section-title span { color: var(--primary); position: relative; z-index: 1; }
+        .section-title span::after {
+            content: ''; position: absolute; bottom: 5px; left: 0; width: 100%; height: 15px;
+            background-color: rgba(145, 199, 252, 0.4); z-index: -1; transform: skewX(-20deg);
+        }
 
-    .prem-scroll .video-track { animation-name: scroll-rtl; }
-    .prem-scroll .video-item { background: linear-gradient(45deg, #6a11cb, #2575fc); }
-    .cap-scroll .video-track { animation-name: scroll-ltr; }
-    .cap-scroll .video-item { background: linear-gradient(45deg, #333, #999); }
+        /* --- 1. 히어로 섹션 --- */
+        .hero {
+            height: 95vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            padding: 0 20px;
+            background: radial-gradient(circle at 50% 50%, #046EF2 0%, #0310A1 80%);
+            position: relative; overflow: hidden;
+        }
+        .hero h1 {
+            font-size: 4.5rem; line-height: 1.2; margin-bottom: 25px;
+            letter-spacing: -1px; text-transform: uppercase; color: var(--white);
+        }
+        .char-anim { display: inline-block; opacity: 0; transform: translateY(-50px); }
+        @keyframes textCascade {
+            0% { opacity: 0; transform: translateY(-50px); color: var(--accent-warm); }
+            30% { opacity: 1; color: var(--white); }
+            60% { color: var(--accent-warm); }
+            100% { opacity: 1; transform: translateY(0); color: var(--white); }
+        }
+        .hero p { 
+            color: rgba(255,255,255,0.8); font-size: 1.3rem; margin-bottom: 50px; max-width: 650px; 
+            font-weight: 400; word-break: keep-all; opacity: 0;
+            animation: fadeInUp 1s ease-out 2.5s forwards;
+        }
+        .btn-main {
+            padding: 18px 45px; font-size: 1.2rem; font-weight: 800;
+            background-color: var(--white); color: var(--deep-blue);
+            border-radius: 100px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease; border: 2px solid transparent; display: inline-block;
+            opacity: 0; transform: translateY(30px);
+            animation: btnSlideUp 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3s forwards;
+        }
+        .btn-main:hover { transform: translateY(-5px); background-color: var(--accent-warm); color: var(--white); }
+        @keyframes fadeInUp { to { opacity: 1; } }
+        @keyframes btnSlideUp { to { opacity: 1; transform: translateY(0); } }
 
-    @keyframes scroll-rtl { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-    @keyframes scroll-ltr { from { transform: translateX(-50%); } to { transform: translateX(0); } }
-</style>
+        /* --- 2. 커리큘럼 --- */
+        #courses { background-color: #F0F7FF; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 40px; max-width: 1200px; margin: 0 auto; }
+        .card {
+            background: var(--white); padding: 50px 40px; border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(3, 16, 161, 0.05); transition: 0.3s; position: relative; overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: linear-gradient(90deg, var(--primary), var(--soft-blue));
+        }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px rgba(3, 16, 161, 0.1); }
+        .tag { display: inline-block; padding: 6px 14px; border-radius: 50px; font-size: 0.85rem; font-weight: 800; margin-bottom: 20px; }
+        .tag.prem { background: rgba(3, 16, 161, 0.1); color: var(--deep-blue); }
+        .tag.cap { background: rgba(213, 164, 145, 0.2); color: #B07865; }
+        .card h3 { font-size: 1.8rem; margin-bottom: 15px; color: var(--deep-blue); font-weight: 800; }
+        .card p { color: #666; margin-bottom: 20px; font-size: 1rem; }
+        .card ul li { position: relative; padding-left: 18px; margin-bottom: 8px; color: #555; font-size: 0.95rem; }
+        .card ul li::before { content: '•'; color: var(--primary); position: absolute; left: 0; font-weight: bold; }
+
+        /* --- 3. 진단 테스트 --- */
+        #diagnosis { background-color: #fff; }
+        .diagnosis-section {
+            background-color: var(--white); margin: 0 auto; max-width: 1200px;
+            border-radius: 40px; padding: 80px 40px; text-align: center;
+            box-shadow: 0 20px 60px rgba(3, 16, 161, 0.08);
+            border: 1px solid rgba(145, 199, 252, 0.3);
+            background-image: linear-gradient(135deg, #fff 0%, #f0f7ff 100%);
+        }
+        .diagnosis-content h3 { font-size: 2.2rem; color: var(--deep-blue); margin-bottom: 20px; font-weight: 800; }
+        .diagnosis-content p { font-size: 1.2rem; color: #555; margin-bottom: 40px; line-height: 1.6; }
+        .btn-diagnosis {
+            padding: 18px 45px; font-size: 1.2rem; font-weight: 800;
+            background-color: var(--primary); color: var(--white); border-radius: 100px;
+            box-shadow: 0 10px 30px rgba(4, 110, 242, 0.3);
+            transition: all 0.3s ease; border: 2px solid transparent; display: inline-block;
+        }
+        .btn-diagnosis:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(3, 16, 161, 0.3); background-color: var(--deep-blue); }
+
+        /* --- 4. 캘린더 --- */
+        #schedule { background-color: #fff; border-top: 1px solid #eee; }
+        .calendar-container {
+            max-width: 1000px; margin: 0 auto;
+            position: relative; padding-bottom: 75%; 
+            height: 0; overflow: hidden;
+            border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
+        }
+        .calendar-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+
+        /* --- 5. 유튜브 --- */
+        .youtube-section { overflow: hidden; padding: 100px 0; background: #111; color: #fff; }
+        .youtube-section .section-title { color: #fff; } 
+        .youtube-section .section-title span::after { background-color: rgba(4, 110, 242, 0.6); }
+        .rolling-container { width: 100%; overflow: hidden; display: flex; align-items: center; }
+        .rolling-track { display: flex; width: max-content; animation: scrollRightToLeft 600s linear infinite; }
+        .yt-card {
+            width: 320px; flex-shrink: 0; margin-right: 12px;
+            border-radius: 16px; overflow: hidden;
+            background: #222; border: 1px solid #333;
+            transition: 0.3s; cursor: pointer;
+        }
+        .yt-card:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .yt-title { padding: 15px; font-size: 1rem; font-weight: 700; color: #eee; line-height: 1.4; }
+        .yt-thumb {
+            width: 100%; height: 180px; background: #333;
+            background-size: cover; background-position: center; position: relative;
+        }
+        .yt-thumb::after {
+            content: '▶'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); color: white; font-size: 2rem; opacity: 0.8;
+        }
+        @keyframes scrollRightToLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        /* --- 6. [UPDATED] 강사 소개 (호버 인터랙션) --- */
+        #about { background-color: #FAF5F0; }
+        .instructors-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 50px; max-width: 1000px; margin: 0 auto;
+        }
+        .instructor-card { 
+            text-align: center; transition: opacity 0.5s ease;
+        }
+        
+        /* 호버 시 다른 카드는 투명하게 */
+        .instructors-grid.hovering .instructor-card { opacity: 0.2; filter: blur(2px); }
+        .instructors-grid.hovering .instructor-card.active { opacity: 1; filter: none; }
+
+        /* 프로필 박스: 이미지 컨테이너 */
+        .profile-box { 
+            width: 280px; height: 280px; margin: 0 auto 30px; 
+            position: relative; overflow: hidden;
+            border-radius: 30px;
+            box-shadow: 15px 15px 0px var(--accent-warm);
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        /* 이미지 공통 스타일 (절대 위치로 겹치기) */
+        .profile-img {
+            width: 100%; height: 100%; object-fit: cover;
+            position: absolute; top: 0; left: 0;
+            transition: opacity 1s ease-in-out; /* 디졸브 효과 */
+        }
+        
+        /* 기본 이미지 */
+        .profile-img.default { opacity: 1; z-index: 10; }
+        
+        /* 슬라이드쇼 이미지들 (숨김) */
+        .profile-img.slide { opacity: 0; z-index: 5; }
+        
+        /* 활성화된 슬라이드 이미지 */
+        .profile-img.slide.visible { opacity: 1; z-index: 20; }
+
+        .instructor-name { 
+            font-size: 1.8rem; font-weight: 800; color: var(--deep-blue); margin-bottom: 10px; 
+            cursor: pointer; display: inline-block; position: relative;
+        }
+        .instructor-name::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 0%; height: 3px;
+            background: var(--primary); transition: width 0.3s;
+        }
+        .instructor-name:hover::after { width: 100%; }
+
+        .instructor-role { color: var(--primary); font-weight: 700; font-size: 1rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        .instructor-desc { color: #555; font-size: 1rem; line-height: 1.6; word-break: keep-all; }
+
+        /* --- 푸터 --- */
+        footer {
+            background-color: var(--deep-blue); padding: 60px 5%; text-align: center;
+            color: rgba(255,255,255,0.8); font-size: 0.95rem;
+        }
+        footer strong { color: var(--white); font-weight: bold; font-size: 1.1rem; }
+        .footer-links a { color: #fff; text-decoration: underline; margin: 0 5px; opacity: 0.8; }
+        .footer-links a:hover { opacity: 1; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.8rem; }
+            .nav-links { display: none; }
+            .section { padding: 60px 5%; }
+            .calendar-container { padding-bottom: 100%; } 
+        }
+    </style>
 </head>
 <body>
 
-<div class="video-banner-container video-banner-top" id="bannerTop">
-    <div class="video-track" id="trackTop"></div>
-</div>
-<div class="video-banner-container video-banner-bottom" id="bannerBottom">
-    <div class="video-track" id="trackBottom"></div>
-</div>
+    <div class="cursor-arrow">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5.5 3.5L11.5 21.5L14.5 14.5L21.5 11.5L5.5 3.5Z" />
+        </svg>
+    </div>
 
-<div class="container">
-    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <a href="https://www.threads.net/@official_vcml" target="_blank" class="threads-btn">
+        <svg class="threads-icon" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+            <path d="M141.537 88.9883C140.71 88.5919 139.87 88.2104 139.019 87.8451C137.537 60.5382 122.616 44.905 97.5619 44.745C97.4484 44.7443 97.3355 44.7443 97.222 44.7443C82.3586 44.7443 69.0713 53.3583 56.4272 65.5127C39.2378 82.0339 30.3119 98.7649 29.8133 117.852C29.4932 130.135 34.1612 140.009 43.6872 147.199C54.1204 155.075 68.347 158.732 84.8288 157.971C105.626 157.012 121.761 147.754 132.784 130.455L118.012 122.045C110.632 134.956 99.4452 140.915 85.3411 141.566C74.6229 142.061 65.242 139.662 57.4599 133.788C51.6881 129.432 48.2494 123.332 47.3592 115.632C47.0134 112.637 47.2339 109.529 47.886 106.331C54.2796 104.992 61.7335 103.541 69.8392 102.091C73.1867 117.07 84.6229 125.797 99.2015 125.797C112.969 125.797 122.28 116.327 122.28 102.131C122.28 82.2642 107.817 71.8899 91.5645 71.8899C75.2977 71.8899 64.9972 83.0232 64.9972 97.5513C64.9972 106.969 68.6189 114.739 75.3225 119.539L65.3524 133.463C53.8213 125.205 47.9366 112.23 47.9366 97.5513C47.9366 73.1852 65.5712 55.1611 91.5645 55.1611C116.666 55.1611 139.339 71.2964 139.339 102.131C139.339 122.993 127.279 140.963 97.222 140.963C82.3586 140.963 69.0713 132.349 56.4272 120.195" />
+        </svg>
+        스레드로 문의하기
+    </a>
 
-    <form id="quizForm">
-        <div class="slide active" id="intro">
-            <h2>영상편집 교육 과정 진단</h2>
-            <p>귀하에게 딱 맞는 커리큘럼을<br>무료로 설계해 드립니다.</p>
-            <button type="button" class="primary" onclick="nextSlide('q1')">진단 시작하기</button>
-        </div>
+    <header id="mainHeader">
+        <div class="logo">VCML</div>
+        <nav class="nav-links">
+            <a href="#courses">교육과정</a>
+            <a href="#diagnosis">과정진단</a>
+            <a href="#schedule">일정</a>
+            <a href="#youtube">콘텐츠</a>
+            <a href="#about">강사소개</a>
+        </nav>
+    </header>
 
-        <div class="slide" id="q1">
-            <h2>Q1. 현재 사용 중인 PC 사양은?</h2>
-            <img src="https://via.placeholder.com/800x600/ccc/666?text=PC+Specs+Image" class="q-image">
-            <div class="btn-group">
-                <button type="button" onclick="selectAnswer('A', 'q2')">고사양 (게임/그래픽 작업 가능)</button>
-                <button type="button" onclick="selectAnswer('B', 'q2')">일반 사무용 또는 노트북</button>
-            </div>
-        </div>
-        <div class="slide" id="q2">
-            <h2>Q2. 월 지출 가능한 예산은?</h2>
-            <div class="btn-group">
-                <button type="button" onclick="selectAnswer('A', 'q3')">월 6만원 이상 (전문가용)</button>
-                <button type="button" onclick="selectAnswer('B', 'q3')">월 2만원 이하 또는 무료</button>
-            </div>
-        </div>
-        <div class="slide" id="q3">
-            <h2>Q3. 선호하는 작업 방식은?</h2>
-            <img src="https://via.placeholder.com/800x600/b39ddb/fff?text=Work+Style" class="q-image">
-            <div class="btn-group">
-                <button type="button" onclick="selectAnswer('A', 'q4')">디테일한 수동 조작</button>
-                <button type="button" onclick="selectAnswer('B', 'q4')">빠른 템플릿/자동화</button>
-            </div>
-        </div>
-        <div class="slide" id="q4">
-            <h2>Q4. 타 디자인 툴과 연동하나요?</h2>
-            <img src="https://via.placeholder.com/800x600/90caf9/fff?text=Integration" class="q-image">
-            <div class="btn-group">
-                <button type="button" onclick="selectAnswer('A', 'check_program')">네, 연동 필수입니다.</button>
-                <button type="button" onclick="selectAnswer('B', 'check_program')">아니오, 하나면 됩니다.</button>
-            </div>
-        </div>
+    <section class="hero" data-theme="dark">
+        <h1 id="heroTitle">Visual (or viral)<br>Core Motion Labs</h1>
+        <p>영상 편집의 시작과 끝, VCML이 함께합니다.<br>실무부터 수익화까지 검증된 커리큘럼을 만나보세요.</p>
+        <a href="#diagnosis" class="btn-main">과정 알아보기 ↓</a>
+    </section>
 
-        <div class="slide" id="q5_prem">
-            <h2>Q5. (프리미어) 학습 목적은?</h2>
-            <div class="btn-group">
-                <button type="button" onclick="setGoal('전문취업', 'q6_prem')">취업/이직 (전문 편집자)</button>
-                <button type="button" onclick="setGoal('고퀄홍보', 'q6_prem')">내 사업 홍보 (고퀄리티)</button>
+    <section id="courses" class="section">
+        <h2 class="section-title">교육 과정 <span>안내</span></h2>
+        <div class="cards">
+            <div class="card">
+                <span class="tag prem">실무/취업 과정</span>
+                <h3>Premiere Pro</h3>
+                <p>방송, 영화, 기업 홍보영상 등 전문적인 영상 제작을 위한 필수 코스입니다. 실무 워크플로우를 완벽하게 마스터합니다.</p>
+                <ul>
+                    <li>유튜브 롱폼 & 시네마틱 다큐멘터리</li>
+                    <li>기업 실무 & 취업 포트폴리오 제작</li>
+                    <li>어도비 툴 연동 및 색보정 심화</li>
+                </ul>
+            </div>
+            <div class="card">
+                <span class="tag cap">크리에이터 과정</span>
+                <h3>CapCut PC</h3>
+                <p>가장 빠르고 트렌디하게 숏폼을 제작하여 수익을 창출하는 과정입니다. PC버전의 강력한 기능으로 알고리즘을 공략합니다.</p>
+                <ul>
+                    <li>릴스, 쇼츠, 틱톡 바이럴 숏폼 제작</li>
+                    <li>쿠팡파트너스 & 공동구매 수익화 전략</li>
+                    <li>AI 자동 기능 활용 효율 극대화</li>
+                </ul>
             </div>
         </div>
-        <div class="slide" id="q6_prem">
-            <h2>Q6. (프리미어) 제작할 영상 길이는?</h2>
-            <div class="btn-group">
-                <button type="button" onclick="selectAnswer('A', 'q7_common')">긴 호흡의 영상</button>
-                <button type="button" onclick="selectAnswer('A', 'q7_common')">임팩트 있는 숏폼</button>
-            </div>
-        </div>
+    </section>
 
-        <div class="slide" id="q5_cap">
-            <h2>Q5. (캡컷) 학습 목적은?</h2>
-            <div class="btn-group">
-                <button type="button" onclick="setGoal('수익창출', 'q6_cap')">조회수 수익/SNS 키우기</button>
-                <button type="button" onclick="setGoal('세일즈', 'q6_cap')">쿠팡파트너스/공구 판매</button>
+    <section id="diagnosis" class="section">
+        <div class="diagnosis-section">
+            <div class="diagnosis-content">
+                <h3>어떤 강의를 들어야 할지 고민되시나요?</h3>
+                <p>3분 만에 끝나는 무료 진단 테스트를 통해<br>나의 편집 목적과 현재 실력에 딱 맞는 과정을 추천받으세요.</p>
+                <a href="./test.html" class="btn-diagnosis">내 맞춤 커리큘럼 확인하기 →</a>
             </div>
         </div>
-        <div class="slide" id="q6_cap">
-            <h2>Q6. (캡컷) 트렌드 민감도는?</h2>
-            <div class="btn-group">
-                <button type="button" onclick="selectAnswer('B', 'q7_common')">유행/밈 즉시 반영</button>
-                <button type="button" onclick="selectAnswer('B', 'q7_common')">나만의 스타일 고수</button>
-            </div>
-        </div>
+    </section>
 
-        <div class="slide" id="q7_common">
-            <h2>Q7. 영상 편집 경험은?</h2>
-            <div class="btn-group">
-                <button type="button" onclick="selectAnswer('N', 'q8')">완전 처음입니다.</button>
-                <button type="button" onclick="selectAnswer('L', 'q8')">앱으로 조금 해봤습니다.</button>
-                <button type="button" onclick="selectAnswer('P', 'q8')">PC 툴 경험 있습니다.</button>
-            </div>
+    <section id="schedule" class="section">
+        <h2 class="section-title">강의 <span>일정</span></h2>
+        <div class="calendar-container">
+            <iframe src="https://calendar.google.com/calendar/embed?height=600&wkst=1&bgcolor=%23ffffff&ctz=Asia%2FSeoul&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0&src=ko.south_korea%23holiday%40group.v.calendar.google.com&color=%230B8043" style="border-width:0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
         </div>
-        <div class="slide" id="q8">
-            <h2>Q8. '키프레임' 개념을 아시나요?</h2>
-            <div class="btn-group">
-                <button type="button" onclick="setLevel('Basic')">모릅니다.</button>
-                <button type="button" onclick="setLevel('Adv')">이해하고 씁니다.</button>
-            </div>
-        </div>
+    </section>
 
-        <div class="slide" id="result_preview">
-            <h2>진단 결과가 나왔습니다!</h2>
-            <div class="result-card">
-                <div class="result-program" id="preview_program">프로그램명</div>
-                <div class="result-level" id="preview_level">레벨</div>
-                <div class="result-desc">
-                    귀하의 성향과 목표를 분석한 결과,<br>
-                    위 과정이 가장 적합합니다.
+    <section id="youtube" class="youtube-section" data-theme="dark">
+        <h2 class="section-title">VCML <span>Youtube</span></h2>
+        <div class="rolling-container">
+            <div class="rolling-track" id="ytTrack"></div>
+        </div>
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="https://www.youtube.com/@your_channel" target="_blank" style="font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--primary);">채널 보러가기 ↗</a>
+        </div>
+    </section>
+
+    <!-- [UPDATED] 강사 소개 섹션 -->
+    <section id="about" class="section">
+        <h2 class="section-title">강사 <span>소개</span></h2>
+        <div class="instructors-grid" id="instructorsGrid">
+            
+            <!-- 강사 1: 이동헌 -->
+            <div class="instructor-card" id="card-lee1">
+                <div class="profile-box">
+                    <!-- 기본 이미지 -->
+                    <img src="https://via.placeholder.com/400x400/0310A1/fff?text=CEO" alt="이동헌 강사" class="profile-img default">
+                    <!-- 포트폴리오 이미지 5장 (플레이스홀더) -->
+                    <img src="https://via.placeholder.com/400x400/333/fff?text=Portfolio+1" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/444/fff?text=Portfolio+2" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/555/fff?text=Portfolio+3" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/666/fff?text=Portfolio+4" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/777/fff?text=Portfolio+5" class="profile-img slide">
                 </div>
-            </div>
-            <p style="margin-bottom:20px; font-weight:bold;">
-                상세 커리큘럼과 수강 안내를 받으시려면<br>
-                아래 버튼을 눌러주세요.
-            </p>
-            <button type="button" class="primary" onclick="nextSlide('q_info1')">커리큘럼 받기 (다음)</button>
-        </div>
-
-        <div class="slide" id="q_info1">
-            <h2>성함을 입력해주세요.</h2>
-            <input type="text" id="username" placeholder="홍길동">
-            <button type="button" class="primary" onclick="validateAndNext('username', 'q_info2')">다음</button>
-        </div>
-
-        <div class="slide" id="q_info2">
-            <h2>연락처를 입력해주세요.</h2>
-            <input type="tel" id="phone" placeholder="010-0000-0000">
-            <button type="button" class="primary" onclick="validateAndNext('phone', 'q_info3')">다음</button>
-        </div>
-        
-        <div class="slide" id="q_info3">
-            <h2>거주 지역 및 동의</h2>
-            <select id="region_select" style="padding:12px; margin-top:10px; width:95%;">
-                <option value="서울/경기">서울/경기</option>
-                <option value="부산/경남">부산/경남</option>
-                <option value="대구/경북">대구/경북</option>
-                <option value="기타">기타 지역</option>
-            </select>
-
-            <div class="consent-box">
-                <label class="consent-label">
-                    <input type="checkbox" id="consentChk">
-                    <span><b>[필수] 개인정보 수집 및 이용 동의</b><br>
-                    입력하신 정보는 결과 안내 목적으로만 사용됩니다.</span>
-                </label>
+                <!-- Role 변경: Visual Director -> CEO -->
+                <div class="instructor-role">CEO</div>
+                <div class="instructor-name" onmouseenter="startSlideshow('card-lee1')" onmouseleave="stopSlideshow('card-lee1')">이동헌</div>
+                <p class="instructor-desc">
+                    현직 영상 크리에이터 & 전문 교육 강사<br>
+                    "복잡한 기술을 가장 쉽고 현실적인 언어로 전달합니다."<br>
+                    어도비 국제 공인 전문가 (ACP)
+                </p>
             </div>
 
-            <button type="button" class="primary" onclick="checkConsentAndSubmit()">최종 제출하기</button>
+            <!-- 강사 2: 이가람 -->
+            <div class="instructor-card" id="card-lee2">
+                <div class="profile-box">
+                    <!-- 기본 이미지 -->
+                    <img src="https://via.placeholder.com/400x400/D5A491/fff?text=Instructor" alt="이가람 강사" class="profile-img default">
+                    <!-- 포트폴리오 이미지 5장 (플레이스홀더) -->
+                    <img src="https://via.placeholder.com/400x400/888/fff?text=Portfolio+A" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/999/fff?text=Portfolio+B" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/aaa/fff?text=Portfolio+C" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/bbb/fff?text=Portfolio+D" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/ccc/fff?text=Portfolio+E" class="profile-img slide">
+                </div>
+                <!-- Role 변경: Motion Graphic Designer -> Video Production Instructor -->
+                <div class="instructor-role">Video Production Instructor</div>
+                <div class="instructor-name" onmouseenter="startSlideshow('card-lee2')" onmouseleave="stopSlideshow('card-lee2')">이가람</div>
+                <p class="instructor-desc">
+                    모션 그래픽 디자인 & 숏폼 기획 전문가<br>
+                    "시선을 사로잡는 감각적인 비주얼 스토리텔링"<br>
+                    유튜브/SNS 바이럴 영상 다수 제작
+                </p>
+            </div>
+
         </div>
+    </section>
 
-        <div class="slide" id="end">
-            <h2>신청이 완료되었습니다!</h2>
-            <p style="margin-top:20px; font-size:1.1rem;">
-                데이터가 성공적으로 전송되었습니다.<br>
-                담당자가 확인 후 연락드리겠습니다.
-            </p>
+    <footer>
+        <p><strong>VCML (Visual & Viral Core Motion Labs)</strong></p>
+        <p>모든 권리 보유 (Copyright © 2025 All rights reserved.)</p>
+        <div class="footer-links" style="margin-top: 20px;">
+            <p>교육 문의 및 협업 제안</p>
+            <p>Email: <a href="mailto:dong8creative@gmail.com">dong8creative@gmail.com</a></p>
+            <p>Instagram: <a href="https://instagram.com/official_vcml" target="_blank">@official_vcml</a></p>
         </div>
+    </footer>
 
-        <input type="hidden" id="final_program">
-        <input type="hidden" id="final_goal">
-        <input type="hidden" id="final_level">
-    </form>
-</div>
-
-<script>
-    // ▼▼▼ 여기에 구글 앱스 스크립트 URL을 넣으세요 ▼▼▼
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyUTfpNrO5ElEGw808CD7sKWAhzaxi3-C3jFhhF8KZyoqEctiVqyqGaFf1yFlhYkPsxJA/exec"; 
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-
-    let scores = { A: 0, B: 0 }; 
-    let answersLog = []; 
-    let userData = {};
-    let currentStep = 0;
-
-    function nextSlide(id) {
-        document.querySelectorAll('.slide').forEach(el => el.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        updateProgress(id);
-    }
-
-    function updateProgress(id) {
-        currentStep++;
-        let num = parseInt(id.replace(/\D/g, '')) || 0;
-        if(id === 'result_preview') num = 9; // 결과 미리보기는 90% 지점
-        if(id.includes('info')) num = 9 + (currentStep > 9 ? 0.5 : 0);
-        if(id === 'end') num = 11;
-        const totalSteps = 11;
-        document.getElementById('progress').style.width = (num / totalSteps * 100) + '%';
-    }
-
-    function updateThemeColor() {
-        const body = document.body;
-        body.className = body.className.replace(/theme-\S+/g, '');
-        
-        const diff = scores.A - scores.B;
-        let themeClass = '';
-
-        if (diff > 0) { 
-            if (diff <= 2) themeClass = 'theme-prem-1';
-            else if (diff <= 4) themeClass = 'theme-prem-2';
-            else themeClass = 'theme-prem-3';
-        } else if (diff < 0) { 
-            if (diff >= -2) themeClass = 'theme-cap-1';
-            else if (diff >= -4) themeClass = 'theme-cap-2';
-            else themeClass = 'theme-cap-3';
-        }
-        if(themeClass) body.classList.add(themeClass);
-    }
-
-    function selectAnswer(type, nextId) {
-        if(type === 'A') scores.A++;
-        if(type === 'B') scores.B++;
-        answersLog.push(type);
-        updateThemeColor();
-
-        if(nextId === 'check_program') {
-            if(scores.A >= scores.B) {
-                document.getElementById('final_program').value = "프리미어 프로";
-                nextSlide('q5_prem'); 
-            } else {
-                document.getElementById('final_program').value = "캡컷 (PC)";
-                nextSlide('q5_cap'); 
-            }
-        } else {
-            nextSlide(nextId);
-        }
-    }
-
-    function setGoal(val, nextId) {
-        document.getElementById('final_goal').value = val;
-        answersLog.push(val);
-        nextSlide(nextId);
-    }
-
-    function setLevel(type) {
-        // 1. 레벨값 저장
-        let txt = (type === 'Adv') ? '중급(심화)' : '입문(기초)';
-        document.getElementById('final_level').value = txt;
-        answersLog.push(txt);
-
-        // 2. 결과 미리보기 화면 세팅
-        showPreviewScreen();
-        
-        // 3. 미리보기 화면으로 이동
-        nextSlide('result_preview');
-    }
-
-    // ★ 결과 미리보기 및 비디오 세팅 함수 ★
-    function showPreviewScreen() {
-        const program = document.getElementById('final_program').value;
-        const level = document.getElementById('final_level').value;
-
-        // 텍스트 업데이트
-        document.getElementById('preview_program').innerText = program;
-        document.getElementById('preview_level').innerText = level + " 과정";
-
-        // 비디오 배경 활성화
-        const isPrem = program.includes("프리미어");
-        const scrollClass = isPrem ? 'prem-scroll' : 'cap-scroll';
-        
-        document.getElementById('bannerTop').style.display = 'block';
-        document.getElementById('bannerBottom').style.display = 'block';
-        document.getElementById('bannerTop').classList.add(scrollClass);
-        document.getElementById('bannerBottom').classList.add(scrollClass);
-
-        // 비디오 아이템 생성 (무한 루프)
-        let itemsHtml = '';
-        for(let i=0; i<20; i++) { itemsHtml += '<div class="video-item"></div>'; }
-        const fullTrackHtml = itemsHtml + itemsHtml;
-
-        document.getElementById('trackTop').innerHTML = fullTrackHtml;
-        document.getElementById('trackBottom').innerHTML = fullTrackHtml;
-    }
-
-    function validateAndNext(inputId, nextId) {
-        let val = document.getElementById(inputId).value;
-        if(!val) { alert("내용을 입력해주세요."); return; }
-        userData[inputId] = val;
-        nextSlide(nextId);
-    }
-
-    function checkConsentAndSubmit() {
-        const consentChk = document.getElementById('consentChk');
-        if (!consentChk.checked) {
-            alert("개인정보 수집에 동의해주세요.");
-            return;
-        }
-        submitData();
-    }
-
-    function submitData() {
-        let region = document.getElementById('region_select').value;
-        userData['region'] = region;
-
-        // 로딩 표시 대신 바로 완료 화면으로 이동하면서 백그라운드 전송
-        nextSlide('end');
-
-        let program = document.getElementById('final_program').value;
-        let goal = document.getElementById('final_goal').value;
-        let level = document.getElementById('final_level').value;
-
-        let formData = new FormData();
-        formData.append('username', userData.username);
-        formData.append('phone', userData.phone);
-        formData.append('region', userData.region);
-        formData.append('result_program', program);
-        formData.append('result_goal', goal);
-        formData.append('result_level', level);
-        formData.append('all_answers', answersLog.join(', '));
-
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: formData,
-            mode: 'no-cors'
-        }).catch(err => {
-            console.error("전송 오류:", err);
+    <script>
+        // 1. 커서 로직
+        const cursor = document.querySelector('.cursor-arrow');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
         });
-    }
-</script>
+        document.querySelectorAll('a, button, .instructor-name').forEach(item => {
+            item.addEventListener('mouseenter', () => document.body.classList.add('hovered'));
+            item.addEventListener('mouseleave', () => document.body.classList.remove('hovered'));
+        });
+
+        // 2. 헤더 카멜레온
+        const header = document.getElementById('mainHeader');
+        const darkSections = document.querySelectorAll('[data-theme="dark"]');
+        window.addEventListener('scroll', () => {
+            let isDark = false;
+            const scrollPos = window.scrollY + 20; 
+            darkSections.forEach(section => {
+                const top = section.offsetTop;
+                const bottom = top + section.offsetHeight;
+                if (scrollPos >= top && scrollPos < bottom) isDark = true;
+            });
+            if (isDark) header.classList.add('dark-mode');
+            else header.classList.remove('dark-mode');
+        });
+
+        // 3. 텍스트 애니메이션
+        const heroTitle = document.getElementById('heroTitle');
+        const textContent = heroTitle.innerHTML;
+        heroTitle.innerHTML = ''; 
+        const lines = textContent.split('<br>');
+        lines.forEach((line) => {
+            const lineDiv = document.createElement('div');
+            const chars = line.split('');
+            chars.forEach((char) => {
+                const span = document.createElement('span');
+                span.innerText = char;
+                span.className = 'char-anim';
+                span.style.animation = `textCascade 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`;
+                span.style.animationDelay = Math.random() * 1.5 + 's';
+                if (char === ' ') span.style.width = '0.5rem'; 
+                lineDiv.appendChild(span);
+            });
+            heroTitle.appendChild(lineDiv);
+        });
+
+        // 4. 유튜브 롤링
+        const ytData = [
+            { title: "프리미어 기초 꿀팁", img: "https://via.placeholder.com/320x180/333?text=Video+1" },
+            { title: "캡컷으로 1분 편집", img: "https://via.placeholder.com/320x180/444?text=Video+2" },
+            { title: "자막 디자인 A to Z", img: "https://via.placeholder.com/320x180/555?text=Video+3" },
+            { title: "유튜브 수익화 전략", img: "https://via.placeholder.com/320x180/666?text=Video+4" },
+            { title: "색보정 마스터 클래스", img: "https://via.placeholder.com/320x180/777?text=Video+5" },
+            { title: "오디오 믹싱 노하우", img: "https://via.placeholder.com/320x180/888?text=Video+6" },
+            { title: "트렌지션 효과 모음", img: "https://via.placeholder.com/320x180/999?text=Video+7" },
+            { title: "썸네일 제작 가이드", img: "https://via.placeholder.com/320x180/aaa?text=Video+8" },
+            { title: "촬영 장비 추천", img: "https://via.placeholder.com/320x180/bbb?text=Video+9" },
+            { title: "인터뷰 영상 편집법", img: "https://via.placeholder.com/320x180/ccc?text=Video+10" },
+            { title: "브이로그 감성 자막", img: "https://via.placeholder.com/320x180/ddd?text=Video+11" },
+            { title: "키프레임 완전 정복", img: "https://via.placeholder.com/320x180/eee?text=Video+12" },
+        ];
+        function createCard(item) {
+            return `
+                <a href="https://www.youtube.com/@your_channel" target="_blank" class="yt-card">
+                    <div class="yt-thumb" style="background-image: url('${item.img}')"></div>
+                    <div class="yt-title">${item.title}</div>
+                </a>
+            `;
+        }
+        const track = document.getElementById('ytTrack');
+        let html = '';
+        ytData.forEach(item => html += createCard(item)); 
+        ytData.forEach(item => html += createCard(item)); 
+        track.innerHTML = html;
+
+        // 5. [NEW] 강사 슬라이드쇼 인터랙션
+        const slideIntervals = {}; // 각 카드별 인터벌 저장
+
+        function startSlideshow(cardId) {
+            const grid = document.getElementById('instructorsGrid');
+            const card = document.getElementById(cardId);
+            const slides = card.querySelectorAll('.profile-img.slide');
+            
+            // 다른 카드 흐리게
+            grid.classList.add('hovering');
+            card.classList.add('active');
+
+            // 슬라이드 쇼 시작
+            let currentSlide = 0;
+            // 첫 번째 슬라이드 바로 보여주기
+            slides[currentSlide].classList.add('visible');
+
+            slideIntervals[cardId] = setInterval(() => {
+                // 이전 슬라이드 숨김
+                slides[currentSlide].classList.remove('visible');
+                // 다음 인덱스
+                currentSlide = (currentSlide + 1) % slides.length;
+                // 다음 슬라이드 표시
+                slides[currentSlide].classList.add('visible');
+            }, 2000); // 2초 간격
+        }
+
+        function stopSlideshow(cardId) {
+            const grid = document.getElementById('instructorsGrid');
+            const card = document.getElementById(cardId);
+            const slides = card.querySelectorAll('.profile-img.slide');
+
+            // 효과 초기화
+            grid.classList.remove('hovering');
+            card.classList.remove('active');
+
+            // 인터벌 중지
+            clearInterval(slideIntervals[cardId]);
+            delete slideIntervals[cardId];
+
+            // 모든 슬라이드 숨기기 (기본 이미지 보이게 됨)
+            slides.forEach(slide => slide.classList.remove('visible'));
+        }
+    </script>
 
 </body>
 </html>
