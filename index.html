@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VCML | Visual Core Motion Labs</title>
     
-    <!-- [변경됨] 1. 구글 폰트(Noto Sans KR) 로드 -->
+    <!-- 1. 구글 폰트(Noto Sans KR) 로드 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap" rel="stylesheet">
@@ -27,9 +27,8 @@
         * { box-sizing: border-box; margin: 0; padding: 0; cursor: none; }
         
         body {
-            /* [변경됨] 2. 폰트 패밀리 이름 변경 */
+            /* 폰트 패밀리 이름 변경 */
             font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
-            
             background-color: var(--bg-base);
             color: var(--text-body);
             line-height: 1.6;
@@ -232,6 +231,10 @@
             height: 0; overflow: hidden;
             border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             border: 1px solid #eee;
+            /* 높이를 더 넉넉하게 확보 */
+            min-height: 600px;
+            height: 80vh; 
+            max-height: 800px;
         }
         .calendar-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
 
@@ -454,10 +457,11 @@
         </div>
     </section>
 
+    <!-- [UPDATED] 캘린더 섹션 -->
     <section id="schedule" class="section">
         <h2 class="section-title">강의 <span>일정</span></h2>
         <div class="calendar-container">
-            <iframe src="https://calendar.google.com/calendar/embed?src=c20e665a74ba213b8564f3bafe0d10a02d7add6476f1d061d78c0cb634e75eef%40group.calendar.google.com&ctz=Asia%2FSeoul" style="border: 0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+            <iframe src="https://calendar.google.com/calendar/embed?src=c20e665a74ba213b8564f3bafe0d10a02d7add6476f1d061d78c0cb634e75eef%40group.calendar.google.com&ctz=Asia%2FSeoul&mode=MONTH" style="border-width:0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
         </div>
     </section>
 
