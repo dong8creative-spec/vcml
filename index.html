@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VCML | Visual Core Motion Labs</title>
-    <!-- 폰트 로드 (Pretendard) -->
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    
+    <!-- [변경됨] 1. 구글 폰트(Noto Sans KR) 로드 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap" rel="stylesheet">
+
     <style>
         /* --- [디자인 시스템] 컬러 변수 정의 --- */
         :root {
@@ -17,13 +21,15 @@
             --text-main: #0310A1;
             --text-body: #333333;
             --white: #ffffff;
-            --naver-green: #03C75A; /* 네이버 브랜드 컬러 */
+            --naver-green: #03C75A;
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; cursor: none; }
         
         body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            /* [변경됨] 2. 폰트 패밀리 이름 변경 */
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+            
             background-color: var(--bg-base);
             color: var(--text-body);
             line-height: 1.6;
@@ -171,7 +177,7 @@
         }
         .btn-diagnosis:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(3, 16, 161, 0.3); background-color: var(--deep-blue); }
 
-        /* --- [UPDATED] 4. 수강신청 섹션 --- */
+        /* --- 4. 수강신청 섹션 --- */
         #store { background-color: #FBF6F3; } 
         .store-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -451,7 +457,7 @@
     <section id="schedule" class="section">
         <h2 class="section-title">강의 <span>일정</span></h2>
         <div class="calendar-container">
-            <iframe src="https://calendar.google.com/calendar/embed?height=600&wkst=1&bgcolor=%23ffffff&ctz=Asia%2FSeoul&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0&src=ko.south_korea%23holiday%40group.v.calendar.google.com&color=%230B8043" style="border-width:0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+            <iframe src="https://calendar.google.com/calendar/embed?src=c20e665a74ba213b8564f3bafe0d10a02d7add6476f1d061d78c0cb634e75eef%40group.calendar.google.com&ctz=Asia%2FSeoul" style="border: 0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
         </div>
     </section>
 
@@ -597,21 +603,21 @@
         const storeData = [
             {
                 tag: "BEST", // 뱃지 텍스트
-                title: "캡컷PC PRO 초고속 편집 실무반",
-                price: "550,000원",
-                reviewCount: "5", // 리뷰 수
-                score: "5", // 평점
+                title: "프리미어 프로 실무 마스터 클래스",
+                price: "129,000원",
+                reviewCount: "120", // 리뷰 수
+                score: "4.9", // 평점
                 img: "https://via.placeholder.com/300x200/0310A1/fff?text=Premiere", // 썸네일 이미지
-                url: "https://smartstore.naver.com/donghnc/products/12228369949" // 스마트스토어 상세페이지 링크
+                url: "https://smartstore.naver.com/YOUR_LINK_1" // 스마트스토어 상세페이지 링크
             },
             {
-                tag: "NEW",
-                title: "왕초보를 위한 프리미어 프로 기초강의",
-                price: "1,000원",
+                tag: "HOT",
+                title: "캡컷(CapCut) PC 수익화 숏폼 완성",
+                price: "89,000원",
                 reviewCount: "85",
                 score: "4.8",
                 img: "https://via.placeholder.com/300x200/D5A491/fff?text=CapCut",
-                url: "https://smartstore.naver.com/donghnc/products/12754079960"
+                url: "https://smartstore.naver.com/YOUR_LINK_2"
             },
             {
                 tag: "PREMIUM",
