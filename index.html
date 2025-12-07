@@ -3,336 +3,569 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>크리에이터 포트폴리오</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>VCML | Visual Core Motion Labs</title>
+    
+    <!-- 폰트 로드 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;700&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        /* --- 디자인 시스템 (LIMONELLO Theme) --- */
+        :root {
+            --limo-blue: #003CA6;    /* Deep Blue */
+            --limo-yellow: #E2AB2D;  /* Mustard Yellow */
+            --limo-cream: #F8EFE0;   /* Cream Beige */
+            --limo-white: #F9F9F9;   /* Off White */
+            
+            --bg-base: var(--limo-white);
+            --bg-hero: var(--limo-cream);
+            
+            --primary: var(--limo-blue);
+            --secondary: var(--limo-yellow);
+            
+            --text-main: var(--limo-blue);
+            --text-body: #333333;
+            --white: #ffffff;
+            --naver-green: #03C75A;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; cursor: none; }
         
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            scroll-behavior: smooth;
-        }
-
-        .gradient-text {
-            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-family: 'Montserrat', 'IBM Plex Sans KR', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-body);
+            line-height: 1.6;
+            overflow-x: hidden;
+            letter-spacing: -0.02em;
         }
         
-        /* 커스텀 스크롤바 */
-        ::-webkit-scrollbar {
-            width: 8px;
+        h1, h2, h3, .serif { font-family: 'Montserrat', 'IBM Plex Sans KR', sans-serif; }
+        a { text-decoration: none; color: inherit; transition: 0.3s; }
+        ul { list-style: none; }
+
+        /* 커서 */
+        .cursor-arrow {
+            width: 24px; height: 24px; position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 9999; mix-blend-mode: difference;
+            transform: translate(0, 0); transition: transform 0.1s;
         }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        .cursor-arrow svg { width: 100%; height: 100%; fill: white; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1)); }
+        body.hovered .cursor-arrow { transform: scale(1.5); }
+
+        /* 네비게이션 */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 5%; position: fixed; width: 100%; top: 0;
+            background: rgba(249, 249, 249, 0.95); backdrop-filter: blur(10px);
+            z-index: 1000; border-bottom: 1px solid rgba(0, 60, 166, 0.05);
+            transition: background 0.3s, color 0.3s;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
+        .logo { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; color: var(--limo-blue); }
+        .nav-links { display: flex; gap: 30px; font-size: 0.95rem; font-weight: 600; color: var(--text-body); }
+        .nav-links a:hover { color: var(--limo-blue); }
+        
+        header.dark-mode { background: rgba(0, 60, 166, 0.9); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        header.dark-mode .logo, header.dark-mode .nav-links { color: var(--white); }
+
+        /* 스레드 버튼 */
+        .threads-btn {
+            position: fixed; top: 50%; right: 0; transform: translateY(-50%);
+            background: var(--limo-blue); color: #fff; padding: 10px 14px;
+            border-radius: 20px 0 0 20px; box-shadow: -3px 3px 10px rgba(0,0,0,0.15);
+            z-index: 999; font-weight: 700; font-size: 0.75rem;
+            display: flex; align-items: center; gap: 6px; transition: 0.3s;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
+        .threads-btn:hover { padding-right: 20px; background: var(--limo-yellow); color: var(--limo-blue); }
+        .threads-icon { width: 14px; height: 14px; fill: currentColor; }
+
+        /* 섹션 공통 (90px) */
+        .section { padding: 90px 5%; position: relative; }
+        .section-title { 
+            text-align: center; font-size: 2.5rem; margin-bottom: 60px; 
+            color: var(--limo-blue); font-weight: 800; letter-spacing: -1px;
+        }
+        .section-title span { color: var(--limo-yellow); position: relative; z-index: 1; font-style: normal; }
+
+        /* 1. 히어로 */
+        .hero-wrapper { padding: 100px 5% 0; }
+        .hero-container {
+            background-color: var(--limo-cream); border-radius: 40px; padding: 80px 40px;
+            text-align: center; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .deco-circle { position: absolute; border-radius: 50%; z-index: 0; mix-blend-mode: multiply; }
+        .deco-1 { width: 300px; height: 300px; background: var(--limo-yellow); opacity: 0.15; top: -50px; left: -50px; filter: blur(40px); }
+        .deco-2 { width: 400px; height: 400px; background: var(--limo-blue); opacity: 0.05; bottom: -100px; right: -100px; filter: blur(60px); }
+        .hero-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
+        .hero h1 { font-size: 4rem; line-height: 1.2; margin-bottom: 25px; color: var(--limo-blue); font-weight: 800; letter-spacing: -1px; }
+        .char-anim { display: inline-block; opacity: 0; transform: translateY(-30px); }
+        @keyframes textCascade { 0% { opacity: 0; transform: translateY(-30px); } 100% { opacity: 1; transform: translateY(0); } }
+        .hero p { 
+            font-size: 1.2rem; color: #555; margin-bottom: 40px; word-break: keep-all; 
+            opacity: 0; animation: fadeInUp 0.8s ease-out 0.8s forwards; 
+        }
+        .btn-main {
+            padding: 18px 45px; font-size: 1.1rem; font-weight: 700;
+            background-color: var(--limo-blue); color: var(--white);
+            border-radius: 50px; box-shadow: 0 10px 20px rgba(0, 60, 166, 0.2);
+            transition: all 0.3s ease; border: 2px solid transparent; display: inline-block;
+            opacity: 0; transform: translateY(30px); animation: btnSlideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) 1s forwards;
+        }
+        .btn-main:hover { transform: translateY(-5px); background-color: var(--limo-yellow); color: var(--limo-blue); }
+        @keyframes fadeInUp { to { opacity: 1; } }
+        @keyframes btnSlideUp { to { opacity: 1; transform: translateY(0); } }
+
+        /* 2. 교육과정 */
+        #courses { background-color: var(--white); overflow: hidden; }
+        .slider-container { width: 100%; overflow: hidden; padding: 40px 0; cursor: grab; }
+        .slider-track { display: flex; width: max-content; animation: scrollRight 120s linear infinite; }
+        .courses-track { gap: 15px; padding: 0 5%; }
+        @keyframes scrollRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+        
+        .card {
+            width: 320px; flex-shrink: 0; background: var(--limo-cream); padding: 25px;
+            border-radius: 0 20px 20px 20px; margin-top: 30px; transition: 0.3s;
+            position: relative; overflow: visible; display: flex; flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+        .card::before {
+            content: ''; position: absolute; top: -30px; left: 0;
+            width: 120px; height: 30px; background: inherit; border-radius: 15px 15px 0 0;
+        }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
+        .card-img { width: 100%; aspect-ratio: 16/9; background: var(--white); border-radius: 12px; margin-bottom: 20px; object-fit: cover; }
+        .tag { 
+            display: inline-block; padding: 4px 12px; border-radius: 20px; 
+            font-size: 0.7rem; font-weight: 800; margin-bottom: 10px;
+            background: var(--white); color: var(--limo-blue);
+        }
+        .card h3 { font-size: 1.2rem; margin-bottom: 10px; color: var(--limo-blue); font-weight: 700; line-height: 1.3; }
+        .card p { color: #555; margin-bottom: 15px; font-size: 0.85rem; word-break: keep-all; flex-grow: 1; }
+        .card ul { margin-top: auto; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px; }
+        .card ul li { position: relative; padding-left: 12px; margin-bottom: 5px; color: #555; font-size: 0.8rem; }
+        .card ul li::before { content: '•'; color: var(--limo-yellow); position: absolute; left: 0; font-weight: 700; }
+
+        /* 3. 진단 테스트 */
+        #diagnosis { background-color: var(--white); }
+        .diagnosis-section {
+            background: var(--limo-blue); border-radius: 30px; padding: 80px 40px; text-align: center; color: white;
+            max-width: 1200px; margin: 0 auto; box-shadow: 0 20px 50px rgba(0, 60, 166, 0.2); position: relative; overflow: hidden;
+        }
+        .diagnosis-section::after {
+            content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px;
+            background: var(--limo-yellow); border-radius: 50%; opacity: 0.2;
+        }
+        .diagnosis-content h3 { color: white; margin-bottom: 20px; font-weight: 700; }
+        .diagnosis-content p { color: rgba(255,255,255,0.9); margin-bottom: 40px; }
+        .btn-diagnosis {
+            padding: 18px 45px; background: var(--limo-yellow); color: var(--limo-blue);
+            border-radius: 50px; font-weight: 800; display: inline-block; transition: 0.3s;
+        }
+        .btn-diagnosis:hover { transform: scale(1.05); background: white; color: var(--limo-blue); }
+
+        /* 4. [UPDATED] 수강신청 */
+        #store { background-color: var(--limo-cream); } 
+        .store-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px; max-width: 1100px; margin: 0 auto;
+        }
+        .store-card {
+            background: white; border-radius: 20px; padding: 0; overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s;
+            display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.05);
+        }
+        .store-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        
+        /* 썸네일 1:1 비율 */
+        .store-thumb-container { width: 100%; aspect-ratio: 1/1; overflow: hidden; }
+        .store-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+        .store-card:hover .store-thumb { transform: scale(1.05); }
+
+        .store-info { padding: 25px; flex-grow: 1; }
+        .store-badge { 
+            font-size: 0.75rem; font-weight: 700; color: var(--limo-blue); 
+            background: var(--limo-cream); padding: 4px 10px; border-radius: 4px;
+            display: inline-block; margin-bottom: 10px;
+        }
+        .store-title { font-size: 1.3rem; font-weight: 800; color: var(--limo-blue); margin-bottom: 8px; line-height: 1.3; }
+        .store-desc { font-size: 0.9rem; color: #666; margin-bottom: 15px; word-break: keep-all; line-height: 1.5; }
+        .store-price { color: var(--limo-blue); font-weight: 700; font-size: 1.2rem; margin-bottom: 5px; }
+        .store-review span { color: var(--limo-yellow); }
+        
+        .store-actions { padding: 0 25px 25px; display: flex; gap: 10px; }
+        .btn-link, .btn-npay {
+            flex: 1; padding: 14px; text-align: center; border-radius: 8px; font-weight: 700; font-size: 0.9rem; transition: 0.2s; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-link { border: 1px solid #ddd; color: #555; background: #fff; }
+        .btn-link:hover { background: #f5f5f5; }
+        .btn-npay { background-color: var(--naver-green); color: white; border: none; gap: 5px; }
+        .btn-npay:hover { background-color: #02b351; transform: scale(1.02); }
+        .npay-logo { font-weight: 900; font-family: sans-serif; letter-spacing: -1px; }
+
+        /* 5. 캘린더 */
+        #schedule { background-color: var(--white); }
+        .calendar-container {
+            max-width: 1000px; margin: 0 auto; border-radius: 30px; overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05); border: 2px solid var(--limo-cream); height: 700px;
+        }
+        .calendar-container iframe { width: 100%; height: 100%; border: 0; }
+
+        /* 6. 유튜브 */
+        .youtube-section { background: var(--limo-blue); padding: 90px 0; color: white; overflow: hidden; }
+        .youtube-section .section-title { display: none; }
+        .rolling-container { width: 100%; overflow-x: scroll; overflow-y: hidden; padding: 0; cursor: grab; scrollbar-width: none; }
+        .yt-track { gap: 3px; padding: 0; display: flex; }
+        .yt-card {
+            width: 320px; flex-shrink: 0; border-radius: 8px; overflow: hidden; background: white; transition: 0.3s;
+        }
+        .yt-card:hover { transform: translateY(-3px); }
+        .yt-thumb-box { width: 100%; height: 180px; background: #111; display: flex; align-items: center; justify-content: center; color: #888; }
+        .yt-info { padding: 12px; }
+        .yt-title { font-size: 0.9rem; font-weight: 700; color: var(--limo-blue); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .yt-views { font-size: 0.75rem; color: #888; font-weight: 500; }
+        @keyframes scrollRightToLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        /* 7. 강사 소개 */
+        #about { background-color: var(--limo-cream); }
+        .instructors-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 50px; max-width: 1000px; margin: 0 auto;
+        }
+        .instructor-card { text-align: center; }
+        .profile-box { 
+            width: 280px; height: 280px; margin: 0 auto 30px; 
+            position: relative; overflow: hidden;
+            border-radius: 40px; box-shadow: 15px 15px 0px var(--limo-yellow); border: 4px solid var(--white); background: var(--white);
+        }
+        .profile-img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; transition: opacity 1s; }
+        .profile-img.default { opacity: 1; z-index: 10; }
+        .profile-img.slide.visible { opacity: 1; z-index: 20; }
+        .profile-img.slide { opacity: 0; z-index: 5; }
+        .instructor-name { font-size: 1.8rem; font-weight: 900; color: var(--limo-blue); margin-bottom: 10px; }
+        .instructor-role { color: var(--limo-blue); font-weight: 700; font-size: 0.9rem; margin-bottom: 15px; opacity: 0.8; }
+
+        /* 8. 문의하기 */
+        #qna { background-color: var(--white); }
+        .qna-container {
+            max-width: 800px; margin: 0 auto; background: white; padding: 60px;
+            border-radius: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); border: 1px solid var(--limo-cream);
+        }
+        .qna-desc { text-align: center; color: #555; margin-bottom: 40px; }
+        .qna-label { display: block; font-weight: 700; color: var(--limo-blue); margin-bottom: 8px; font-size: 0.95rem; }
+        .qna-input, .qna-textarea {
+            width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #eee; background: var(--limo-white);
+            margin-bottom: 20px; font-family: 'IBM Plex Sans KR', sans-serif; font-size: 1rem; color: var(--limo-blue);
+        }
+        .qna-input:focus, .qna-textarea:focus { border-color: var(--limo-blue); background: #fff; outline: none; }
+        .btn-submit {
+            width: 100%; padding: 20px; background: var(--limo-blue); color: white;
+            font-weight: 800; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s;
+        }
+        .btn-submit:hover { background-color: var(--limo-yellow); color: var(--limo-blue); }
+
+        /* 푸터 */
+        footer { background: var(--limo-blue); padding: 60px 5%; text-align: center; color: rgba(255,255,255,0.8); }
+        footer strong { color: var(--limo-yellow); font-size: 1.2rem; }
+        .admin-trigger { position: fixed; bottom: 0; left: 0; width: 100px; height: 100px; z-index: 9999; background: transparent; }
+
+        @media (max-width: 768px) {
+            .hero-container { padding: 60px 20px; }
+            .hero h1 { font-size: 2.2rem; }
+            .nav-links { display: none; }
+            .card { width: 280px; }
+            .yt-card { width: 220px; }
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased">
+<body>
 
-    <!-- 네비게이션 -->
-    <nav class="fixed w-full bg-white/90 backdrop-blur-sm z-50 border-b border-gray-100 transition-all duration-300" id="navbar">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex-shrink-0 flex items-center">
-                    <span class="font-bold text-xl tracking-tight">STUDIO<span class="text-blue-500">.</span></span>
-                </div>
-                <div class="hidden md:flex space-x-8 items-center">
-                    <a href="#home" class="text-gray-600 hover:text-blue-600 transition-colors text-sm font-medium">홈</a>
-                    <a href="#about" class="text-gray-600 hover:text-blue-600 transition-colors text-sm font-medium">소개</a>
-                    <a href="#youtube" class="text-gray-600 hover:text-blue-600 transition-colors text-sm font-medium">유튜브</a>
-                    <a href="#contact" class="px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-all shadow-md hover:shadow-lg">문의하기</a>
-                </div>
-                <!-- 모바일 메뉴 버튼 -->
-                <div class="md:hidden flex items-center">
-                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-gray-900 focus:outline-none">
-                        <i class="fas fa-bars text-xl"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <!-- 모바일 메뉴 -->
-        <div class="md:hidden hidden bg-white border-b border-gray-100" id="mobile-menu">
-            <div class="px-4 pt-2 pb-4 space-y-1">
-                <a href="#home" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">홈</a>
-                <a href="#about" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">소개</a>
-                <a href="#youtube" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">유튜브</a>
-                <a href="#contact" class="block px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:bg-blue-50">문의하기</a>
-            </div>
-        </div>
-    </nav>
+    <div class="cursor-arrow">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 3.5L11.5 21.5L14.5 14.5L21.5 11.5L5.5 3.5Z" /></svg>
+    </div>
 
-    <!-- 히어로 섹션 -->
-    <section id="home" class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="text-center max-w-3xl mx-auto">
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-                    당신의 이야기를 <br>
-                    <span class="gradient-text">영상으로 만듭니다</span>
-                </h1>
-                <p class="text-xl text-gray-500 mb-10 leading-relaxed">
-                    크리에이티브한 영상 편집과 감각적인 스토리텔링으로<br class="hidden sm:block">
-                    브랜드의 가치를 높여드립니다.
-                </p>
-                <div class="flex justify-center gap-4">
-                    <a href="#youtube" class="px-8 py-3 rounded-full bg-gray-900 text-white font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                        포트폴리오 보기
-                    </a>
-                    <a href="#contact" class="px-8 py-3 rounded-full bg-white text-gray-900 border border-gray-200 font-medium hover:border-gray-400 transition-all hover:bg-gray-50">
-                        작업 의뢰
-                    </a>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 배경 장식 요소 -->
-        <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
-            <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-100 blur-3xl opacity-50"></div>
-            <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-pink-100 blur-3xl opacity-50"></div>
-        </div>
-    </section>
+    <a href="https://www.threads.net/@official_vcml" target="_blank" class="threads-btn">
+        <svg class="threads-icon" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg"><path d="M141.537 88.9883C140.71 88.5919 139.87 88.2104 139.019 87.8451C137.537 60.5382 122.616 44.905 97.5619 44.745C97.4484 44.7443 97.3355 44.7443 97.222 44.7443C82.3586 44.7443 69.0713 53.3583 56.4272 65.5127C39.2378 82.0339 30.3119 98.7649 29.8133 117.852C29.4932 130.135 34.1612 140.009 43.6872 147.199C54.1204 155.075 68.347 158.732 84.8288 157.971C105.626 157.012 121.761 147.754 132.784 130.455L118.012 122.045C110.632 134.956 99.4452 140.915 85.3411 141.566C74.6229 142.061 65.242 139.662 57.4599 133.788C51.6881 129.432 48.2494 123.332 47.3592 115.632C47.0134 112.637 47.2339 109.529 47.886 106.331C54.2796 104.992 61.7335 103.541 69.8392 102.091C73.1867 117.07 84.6229 125.797 99.2015 125.797C112.969 125.797 122.28 116.327 122.28 102.131C122.28 82.2642 107.817 71.8899 91.5645 71.8899C75.2977 71.8899 64.9972 83.0232 64.9972 97.5513C64.9972 106.969 68.6189 114.739 75.3225 119.539L65.3524 133.463C53.8213 125.205 47.9366 112.23 47.9366 97.5513C47.9366 73.1852 65.5712 55.1611 91.5645 55.1611C116.666 55.1611 139.339 71.2964 139.339 102.131C139.339 122.993 127.279 140.963 97.222 140.963C82.3586 140.963 69.0713 132.349 56.4272 120.195" /></svg>
+    </a>
 
-    <!-- 소개 섹션 -->
-    <section id="about" class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
-                <div class="mb-12 lg:mb-0 relative">
-                    <div class="relative rounded-2xl overflow-hidden shadow-2xl">
-                        <img src="https://images.unsplash.com/photo-1598550476439-6847785fcea6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="작업 공간" class="w-full object-cover">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                    </div>
-                    <!-- 경험 배지 -->
-                    <div class="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-xl hidden md:block">
-                        <p class="text-4xl font-bold text-blue-600">5+</p>
-                        <p class="text-gray-600 text-sm font-medium">Years Experience</p>
-                    </div>
+    <header id="mainHeader">
+        <div class="logo">VCML</div>
+        <nav class="nav-links">
+            <a href="#courses">교육과정</a>
+            <a href="#diagnosis">과정진단</a>
+            <a href="#store">수강신청</a>
+            <a href="#schedule">일정</a>
+            <a href="#youtube">콘텐츠</a>
+            <a href="#about">강사소개</a>
+            <a href="#qna">문의하기</a>
+        </nav>
+    </header>
+
+    <div class="hero-wrapper">
+        <section class="hero-container">
+            <div class="deco-circle deco-1"></div>
+            <div class="deco-circle deco-2"></div>
+            <div class="hero-content">
+                <h1>Visual (or viral)<br>Core Motion Labs</h1>
+                <p>영상 편집의 시작과 끝, VCML이 함께합니다.<br>실무부터 수익화까지 검증된 커리큘럼을 만나보세요.</p>
+                <a href="./test.html" class="btn-main">과정 알아보기 ↓</a>
+            </div>
+        </section>
+    </div>
+
+    <!-- 교육과정 -->
+    <section id="courses" class="section">
+        <h2 class="section-title">Curriculum <span>Overview</span></h2>
+        <div class="slider-container" id="coursesContainer">
+            <div class="slider-track courses-track">
+                <div class="card">
+                    <img src="https://via.placeholder.com/640x360/003CA6/fff?text=Premiere+Pro" class="card-img" alt="Premiere">
+                    <h3>Premiere Pro</h3>
+                    <p>방송/영화/기업 영상 실무 마스터</p>
+                    <ul>
+                        <li>유튜브 롱폼 & 다큐멘터리</li>
+                        <li>기업 실무 포트폴리오</li>
+                    </ul>
                 </div>
-                <div>
-                    <h2 class="text-3xl font-bold mb-6">시선을 사로잡는 <br>콘텐츠를 기획합니다</h2>
-                    <p class="text-gray-600 mb-6 leading-relaxed">
-                        단순한 컷 편집을 넘어, 시청자가 끝까지 몰입할 수 있는 리듬감 있는 영상을 제작합니다. 유튜브 예능, 브이로그, 기업 홍보 영상 등 다양한 장르의 경험을 보유하고 있습니다.
-                    </p>
-                    <ul class="space-y-4 mb-8">
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mt-1">
-                                <i class="fas fa-check text-blue-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-gray-700">트렌디한 자막 및 모션 그래픽</span>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mt-1">
-                                <i class="fas fa-check text-blue-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-gray-700">저작권 걱정 없는 음원 및 효과 사용</span>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mt-1">
-                                <i class="fas fa-check text-blue-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-gray-700">빠른 피드백 반영과 정확한 납기 준수</span>
-                        </li>
+                <div class="card">
+                    <img src="https://via.placeholder.com/640x360/E2AB2D/fff?text=CapCut" class="card-img" alt="CapCut">
+                    <h3>CapCut PC</h3>
+                    <p>바이럴 숏폼 제작 & 수익화 전략</p>
+                    <ul>
+                        <li>릴스/쇼츠 알고리즘 공략</li>
+                        <li>쿠팡파트너스 수익화</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <img src="https://via.placeholder.com/640x360/F8EFE0/003CA6?text=Portfolio" class="card-img" alt="Portfolio">
+                    <h3>Portfolio Class</h3>
+                    <p>취업/이직 성공을 위한 집중 멘토링</p>
+                    <ul>
+                        <li>1:1 맞춤 기획 및 피드백</li>
+                        <li>자소서 컨설팅 포함</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <img src="https://via.placeholder.com/640x360/333333/fff?text=Consulting" class="card-img" alt="Consulting">
+                    <h3>Channel Consulting</h3>
+                    <p>유튜브 채널 진단 및 솔루션</p>
+                    <ul>
+                        <li>데이터 기반 채널 분석</li>
+                        <li>콘텐츠 방향성 제시</li>
                     </ul>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 유튜브 섹션 (상단 텍스트 제거, 간격 3px, 문의하기 바로 위로 이동) -->
-    <section id="youtube" class="py-20 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- 상단 텍스트(제목/설명) 제거됨 -->
-            
-            <!-- 유튜브 그리드: gap-[3px] 적용 -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[3px]">
-                <!-- 영상 아이템 1 -->
-                <div class="group relative aspect-video bg-black overflow-hidden cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1492619175355-f9b385431882?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Vlog Thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                            <i class="fas fa-play text-white ml-1"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 영상 아이템 2 -->
-                <div class="group relative aspect-video bg-black overflow-hidden cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1536240478700-b869070f9279?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Tech Review Thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                            <i class="fas fa-play text-white ml-1"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 영상 아이템 3 -->
-                <div class="group relative aspect-video bg-black overflow-hidden cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Camera Review Thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                            <i class="fas fa-play text-white ml-1"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 영상 아이템 4 -->
-                <div class="group relative aspect-video bg-black overflow-hidden cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1526658866172-17865c3f9c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Cinematic Thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                            <i class="fas fa-play text-white ml-1"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 영상 아이템 5 -->
-                <div class="group relative aspect-video bg-black overflow-hidden cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Editing Tutorial Thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                            <i class="fas fa-play text-white ml-1"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 영상 아이템 6 -->
-                <div class="group relative aspect-video bg-black overflow-hidden cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Travel Vlog Thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                            <i class="fas fa-play text-white ml-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="mt-8 text-center">
-                <a href="#" class="inline-flex items-center text-red-600 hover:text-red-700 font-medium transition-colors">
-                    채널 바로가기 <i class="fas fa-arrow-right ml-2"></i>
-                </a>
+    <!-- 진단 테스트 -->
+    <section id="diagnosis" class="section">
+        <div class="diagnosis-section">
+            <div class="diagnosis-content">
+                <h3>어떤 강의를 들어야 할지 고민되시나요?</h3>
+                <p>3분 만에 끝나는 무료 진단 테스트를 통해<br>나의 편집 목적과 현재 실력에 딱 맞는 과정을 추천받으세요.</p>
+                <a href="./test.html" class="btn-diagnosis">내 맞춤 커리큘럼 확인하기 →</a>
             </div>
         </div>
     </section>
 
-    <!-- 문의하기 섹션 -->
-    <section id="contact" class="py-20 bg-white">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold mb-4">함께 프로젝트를 시작해볼까요?</h2>
-                <p class="text-gray-600">
-                    영상 제작 관련 문의사항이나 제안이 있으시다면 언제든 연락주세요.<br>
-                    24시간 이내에 답변 드리겠습니다.
-                </p>
+    <!-- [UPDATED] 수강신청 섹션 (HTML로 직접 수정) -->
+    <section id="store" class="section">
+        <h2 class="section-title">Class <span>Registration</span></h2>
+        <div class="store-grid">
+            
+            <!-- 상품 1: 프리미어 -->
+            <div class="store-card">
+                <div class="store-thumb-container">
+                    <img src="https://via.placeholder.com/300x300/003CA6/fff?text=Premiere" class="store-thumb" alt="프리미어 마스터">
+                </div>
+                <div class="store-info">
+                    <span class="store-badge">BEST</span>
+                    <h3 class="store-title">프리미어 프로 실무 마스터</h3>
+                    <p class="store-desc">기초부터 실무까지, 전문가로 거듭나는 올인원 패키지</p>
+                    <div class="store-price">129,000원</div>
+                    <div class="store-review"><span>★</span> 4.9 (120개 리뷰)</div>
+                </div>
+                <div class="store-actions">
+                    <!-- ▼▼▼ 링크 수정하는 곳 1 ▼▼▼ -->
+                    <a href="https://smartstore.naver.com/YOUR_LINK_1" target="_blank" class="btn-link">상세보기</a>
+                    <a href="https://smartstore.naver.com/YOUR_LINK_1" target="_blank" class="btn-npay"><span class="npay-logo">N</span> Pay 구매</a>
+                    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+                </div>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100">
-                <form onsubmit="event.preventDefault(); alert('메시지가 전송되었습니다!');" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">이름 / 회사명</label>
-                            <input type="text" id="name" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all" placeholder="홍길동">
-                        </div>
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">이메일</label>
-                            <input type="email" id="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all" placeholder="example@email.com">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="category" class="block text-sm font-medium text-gray-700 mb-2">문의 유형</label>
-                        <select id="category" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white">
-                            <option>유튜브 편집</option>
-                            <option>브랜드 홍보 영상</option>
-                            <option>모션 그래픽</option>
-                            <option>기타 문의</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="message" class="block text-sm font-medium text-gray-700 mb-2">문의 내용</label>
-                        <textarea id="message" rows="5" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all resize-none" placeholder="프로젝트에 대해 자세히 알려주세요..."></textarea>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                        문의하기
-                    </button>
-                </form>
+            <!-- 상품 2: 캡컷 -->
+            <div class="store-card">
+                <div class="store-thumb-container">
+                    <img src="https://via.placeholder.com/300x300/E2AB2D/fff?text=CapCut" class="store-thumb" alt="캡컷 숏폼">
+                </div>
+                <div class="store-info">
+                    <span class="store-badge">HOT</span>
+                    <h3 class="store-title">캡컷 수익화 숏폼 완성</h3>
+                    <p class="store-desc">PC 캡컷으로 10분 만에 만드는 고퀄리티 릴스</p>
+                    <div class="store-price">89,000원</div>
+                    <div class="store-review"><span>★</span> 4.8 (85개 리뷰)</div>
+                </div>
+                <div class="store-actions">
+                    <!-- ▼▼▼ 링크 수정하는 곳 2 ▼▼▼ -->
+                    <a href="https://smartstore.naver.com/YOUR_LINK_2" target="_blank" class="btn-link">상세보기</a>
+                    <a href="https://smartstore.naver.com/YOUR_LINK_2" target="_blank" class="btn-npay"><span class="npay-logo">N</span> Pay 구매</a>
+                    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+                </div>
             </div>
 
-            <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                <div class="p-4">
-                    <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
-                        <i class="fas fa-envelope text-xl"></i>
-                    </div>
-                    <h3 class="font-medium text-gray-900">Email</h3>
-                    <p class="text-gray-500 text-sm mt-1">contact@studio.com</p>
+            <!-- 상품 3: 코칭 -->
+            <div class="store-card">
+                <div class="store-thumb-container">
+                    <img src="https://via.placeholder.com/300x300/F8EFE0/003CA6?text=Coaching" class="store-thumb" alt="1:1 코칭">
                 </div>
-                <div class="p-4">
-                    <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
-                        <i class="fab fa-kakao text-xl"></i>
-                    </div>
-                    <h3 class="font-medium text-gray-900">KakaoTalk</h3>
-                    <p class="text-gray-500 text-sm mt-1">@studio_edit</p>
+                <div class="store-info">
+                    <span class="store-badge">1:1</span>
+                    <h3 class="store-title">맞춤형 온라인 코칭권</h3>
+                    <p class="store-desc">현직자가 내 영상을 직접 피드백하고 방향성을 제시합니다</p>
+                    <div class="store-price">150,000원</div>
+                    <div class="store-review"><span>★</span> 5.0 (40개 리뷰)</div>
                 </div>
-                <div class="p-4">
-                    <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
-                        <i class="fas fa-map-marker-alt text-xl"></i>
-                    </div>
-                    <h3 class="font-medium text-gray-900">Location</h3>
-                    <p class="text-gray-500 text-sm mt-1">Seoul, Korea</p>
+                <div class="store-actions">
+                    <!-- ▼▼▼ 링크 수정하는 곳 3 ▼▼▼ -->
+                    <a href="https://smartstore.naver.com/YOUR_LINK_3" target="_blank" class="btn-link">상세보기</a>
+                    <a href="https://smartstore.naver.com/YOUR_LINK_3" target="_blank" class="btn-npay"><span class="npay-logo">N</span> Pay 구매</a>
+                    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
                 </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 캘린더 -->
+    <section id="schedule" class="section">
+        <h2 class="section-title">Monthly <span>Schedule</span></h2>
+        <div class="calendar-container">
+            <iframe src="https://calendar.google.com/calendar/embed?src=c20e665a74ba213b8564f3bafe0d10a02d7add6476f1d061d78c0cb634e75eef%40group.calendar.google.com&ctz=Asia%2FSeoul&mode=MONTH" style="border-width:0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+        </div>
+    </section>
+
+    <!-- 유튜브 -->
+    <section id="youtube" class="youtube-section">
+        <div class="slider-container" id="ytContainer">
+            <div class="slider-track yt-track" id="ytTrack"></div>
+        </div>
+    </section>
+
+    <!-- 강사 소개 -->
+    <section id="about" class="section">
+        <h2 class="section-title">Our <span>Instructors</span></h2>
+        <div class="instructors-grid">
+            <div class="instructor-card">
+                <div class="profile-box">
+                    <img src="https://via.placeholder.com/400x400/003CA6/fff?text=CEO" class="profile-img default">
+                    <img src="https://via.placeholder.com/400x400/333/fff?text=Portfolio+1" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/555/fff?text=Portfolio+2" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/777/fff?text=Portfolio+3" class="profile-img slide">
+                </div>
+                <h3>Lee Dong Heon</h3>
+                <p class="instructor-role">CEO</p>
+                <p>현직 영상 크리에이터 & 전문 교육 강사<br>어도비 국제 공인 전문가 (ACP)</p>
+            </div>
+            <div class="instructor-card">
+                <div class="profile-box">
+                    <img src="https://via.placeholder.com/400x400/E2AB2D/fff?text=Instructor" class="profile-img default">
+                    <img src="https://via.placeholder.com/400x400/888/fff?text=Portfolio+A" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/aaa/fff?text=Portfolio+B" class="profile-img slide">
+                    <img src="https://via.placeholder.com/400x400/ccc/fff?text=Portfolio+C" class="profile-img slide">
+                </div>
+                <h3>Lee Ga Ram</h3>
+                <p class="instructor-role">Instructor</p>
+                <p>모션 그래픽 디자인 & 숏폼 기획 전문가<br>유튜브/SNS 바이럴 영상 다수 제작</p>
             </div>
         </div>
     </section>
 
-    <!-- 푸터 -->
-    <footer class="bg-gray-900 text-white py-12 border-t border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-6 md:mb-0 text-center md:text-left">
-                    <span class="font-bold text-2xl tracking-tight">STUDIO<span class="text-blue-500">.</span></span>
-                    <p class="text-gray-400 text-sm mt-2">© 2024 Studio Name. All rights reserved.</p>
-                </div>
-                <div class="flex space-x-6">
-                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
-                        <i class="fab fa-youtube text-xl"></i>
-                    </a>
-                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
-                        <i class="fab fa-instagram text-xl"></i>
-                    </a>
-                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
-                        <i class="fab fa-twitter text-xl"></i>
-                    </a>
-                </div>
+    <!-- 문의하기 -->
+    <section id="qna" class="section">
+        <h2 class="section-title">Contact <span>Us</span></h2>
+        <div class="qna-container">
+            <p class="qna-desc">궁금한 점을 남겨주세요. 관리자만 확인 가능한 비밀글로 등록됩니다.</p>
+            <input type="text" id="qnaName" class="qna-input" placeholder="이름">
+            <input type="tel" id="qnaPhone" class="qna-input" placeholder="연락처">
+            <input type="text" id="qnaTitle" class="qna-input" placeholder="제목">
+            <textarea id="qnaContent" class="qna-textarea" placeholder="문의 내용"></textarea>
+            <button class="btn-submit" onclick="submitQna()">문의 접수하기</button>
+        </div>
+    </section>
+
+    <footer>
+        <div>
+            <strong>VCML (Visual & Viral Core Motion Labs)</strong>
+            <p style="margin:10px 0;">Copyright © 2025 All rights reserved.</p>
+            <div style="margin-top:15px;">
+                <a href="mailto:dong8creative@gmail.com">Email</a> | 
+                <a href="https://instagram.com/official_vcml" target="_blank">Instagram</a>
             </div>
         </div>
+        <a href="./admin.html" class="admin-trigger"></a>
     </footer>
 
     <script>
-        // 모바일 메뉴 토글
-        const btn = document.getElementById('mobile-menu-btn');
-        const menu = document.getElementById('mobile-menu');
+        const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_URL_HERE/exec"; 
 
-        btn.addEventListener('click', () => {
-            menu.classList.toggle('hidden');
+        const cursor = document.querySelector('.cursor-arrow');
+        document.addEventListener('mousemove', e => {
+            cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
         });
 
-        // 스크롤 시 네비게이션 스타일 변경
-        window.addEventListener('scroll', () => {
-            const navbar = document.getElementById('navbar');
-            if (window.scrollY > 20) {
-                navbar.classList.add('shadow-md');
-                navbar.classList.add('bg-white/95');
-            } else {
-                navbar.classList.remove('shadow-md');
-                navbar.classList.remove('bg-white/90');
+        const ytData = Array(6).fill({ title:"영상편집 꿀팁", views:"1.2만회", img:"" });
+        const ytTrack = document.getElementById('ytTrack');
+        ytData.forEach((item, i) => {
+            ytTrack.innerHTML += `
+                <div class="yt-card">
+                    <div class="yt-thumb-box" style="background: var(--limo-blue); display:flex; justify-content:center; align-items:center; height:180px; color:#fff;">VIDEO ${i+1}</div>
+                    <div class="yt-info">
+                        <div class="yt-title">${item.title}</div>
+                        <div class="yt-views">${item.views}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        function initSlider(containerId, trackId) {
+            const container = document.getElementById(containerId);
+            const track = document.getElementById(trackId);
+            track.innerHTML += track.innerHTML; 
+            
+            let isDown=false, startX, scrollLeft;
+            container.addEventListener('mousedown', (e) => { isDown=true; startX=e.pageX-container.offsetLeft; scrollLeft=container.scrollLeft; track.style.animationPlayState='paused'; });
+            container.addEventListener('mouseleave', () => { isDown=false; track.style.animationPlayState='running'; });
+            container.addEventListener('mouseup', () => { isDown=false; track.style.animationPlayState='running'; });
+            container.addEventListener('mousemove', (e) => { if(!isDown) return; e.preventDefault(); const x=e.pageX-container.offsetLeft; const walk=(x-startX)*2; container.scrollLeft = scrollLeft-walk; });
+        }
+        initSlider('coursesContainer', 'coursesTrack');
+        initSlider('ytContainer', 'ytTrack');
+        
+        function startSlideshow(card) {
+            const img = card.querySelector('.profile-img.slide');
+            if(img) img.classList.add('visible');
+        }
+        function stopSlideshow(card) {
+            const imgs = card.querySelectorAll('.profile-img.slide');
+            imgs.forEach(i => i.classList.remove('visible'));
+        }
+        document.querySelectorAll('.instructor-card').forEach(card => {
+            card.addEventListener('mouseenter', () => startSlideshow(card));
+            card.addEventListener('mouseleave', () => stopSlideshow(card));
+        });
+
+        function submitQna() {
+            if(confirm("문의를 접수하시겠습니까?")) {
+                const form = new FormData();
+                ['qnaName','qnaPhone','qnaTitle','qnaContent'].forEach(id => form.append(id, document.getElementById(id).value));
+                form.append('result_program', '문의게시판');
+                fetch(SCRIPT_URL, { method:'POST', body:form, mode:'no-cors' })
+                    .then(() => alert("접수되었습니다."))
+                    .catch(() => alert("오류가 발생했습니다."));
             }
-        });
+        }
     </script>
 </body>
 </html>
