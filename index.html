@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영상 편집 교육 과정 맞춤 진단</title>
+<style>
+    :root {
+        --bg-color: #f0f2f5;
+        --text-color: #333;
+        --primary-color: #007bff;
+        --btn-bg: white;
+        --btn-border: #ddd;
+        --transition-speed: 0.5s;
+    }
+
+    /* 동적 테마 클래스 */
+    body.theme-prem-1 { --bg-color: #eaddff; --primary-color: #6200ee; }
+    body.theme-prem-2 { --bg-color: #d0bcff; --primary-color: #5300d6; --text-color: #1c0063; }
+    body.theme-prem-3 { --bg-color: #b69df8; --primary-color: #4500b5; --text-color: #120042; }
+    body.theme-cap-1 { --bg-color: #e0e0e0; --primary-color: #666; --btn-bg: #f9f9f9; }
+    body.theme-cap-2 { --bg-color: #cccccc; --primary-color: #444; --text-color: #222; --btn-bg: #eee; }
+    body.theme-cap-3 { --bg-color: #b3b3b3; --primary-color: #222; --text-color: #000; --btn-bg: #ddd; --btn-border: #999; }
+
+    body {
+        font-family: 'Pretendard', sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        display: flex; justify-content: center; align-items: center;
+        min-height: 100vh; margin: 0;
+        transition: background-color var(--transition-speed), color var(--transition-speed);
+        overflow-x: hidden; 
+    }
+    .container { width: 100%; max-width: 500px; background: rgba(255,255,255,0.95); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; position: relative; z-index: 10; transition: background var(--transition-speed); }
+    
+    .q-image { width: 100%; max-width: 800px; height: auto; aspect-ratio: 4/3; object-fit: cover; border-radius: 12px; margin: 20px 0; border: 2px solid #eee; }
+    
+    .slide { display: none; animation: fadeIn 0.5s; }
+    .slide.active { display: block; }
+    h2 { margin-bottom: 20px; font-size: 1.4rem; word-break: keep-all; line-height: 1.4; }
+    
+    .btn-group { display: flex; flex-direction: column; gap: 10px; }
+    button { padding: 15px; border: 1px solid var(--btn-border); background: var(--btn-bg); color: var(--text-color); border-radius: 10px; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+    button:hover { background: var(--primary-color); border-color: var(--primary-color); color: white; font-weight: bold; }
+    button.primary { background: var(--primary-color); color: white; border: none; margin-top: 20px; width: 100%; font-weight: bold; }
+    button.primary:hover { opacity: 0.9; }
+    
+    input, select { width: 90%; padding: 12px; margin-top: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+    .progress-bar { width: 100%; height: 5px; background: #eee; margin-bottom: 20px; border-radius: 5px; }
+    .progress-fill { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s, background var(--transition-speed); }
+    
+    .consent-box { text-align: left; margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; font-size: 0.85rem; color: #555; }
+    .consent-label { display: flex; align-items: center; cursor: pointer; }
+    .consent-label input { width: auto; margin-right: 10px; margin-top: 0; }
+
+    /* 결과 카드 스타일 */
+    .result-card { background-color: rgba(255,255,255,0.9); border: 3px solid var(--primary-color); border-radius: 15px; padding: 25px; margin: 20px 0; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    .result-program { font-size: 1.6rem; font-weight: 800; color: var(--primary-color); margin-bottom: 10px; }
+    .result-level { font-size: 1.2rem; font-weight: bold; color: var(--text-color); margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 15px; display: inline-block; }
+    .result-desc { font-size: 0.95rem; line-height: 1.5; color: #555; margin-bottom: 10px; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* 비디오 배경 스타일 */
+    .video-banner-container { position: fixed; left: 0; width: 100%; height: 150px; overflow: hidden; z-index: 1; pointer-events: none; opacity: 0.05; display: none; }
+    .video-banner-top { top: 20px; }
+    .video-banner-bottom { bottom: 20px; }
+    .video-track { display: flex; width: max-content; animation-iteration-count: infinite; animation-timing-function: linear; animation-duration: 30s; }
+    .video-item { width: 90px; height: 160px; margin: 0 10px; background: #ccc; border-radius: 8px; flex-shrink: 0; }
+
+    .prem-scroll .video-track { animation-name: scroll-rtl; }
+    .prem-scroll .video-item { background: linear-gradient(45deg, #6a11cb, #2575fc); }
+    .cap-scroll .video-track { animation-name: scroll-ltr; }
+    .cap-scroll .video-item { background: linear-gradient(45deg, #333, #999); }
+
+    @keyframes scroll-rtl { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    @keyframes scroll-ltr { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+</style>
+</head>
+<body>
+
+<div class="video-banner-container video-banner-top" id="bannerTop">
+    <div class="video-track" id="trackTop"></div>
+</div>
+<div class="video-banner-container video-banner-bottom" id="bannerBottom">
+    <div class="video-track" id="trackBottom"></div>
+</div>
+
+<div class="container">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+    <form id="quizForm">
+        <div class="slide active" id="intro">
+            <h2>영상편집 교육 과정 진단</h2>
+            <p>귀하에게 딱 맞는 커리큘럼을<br>무료로 설계해 드립니다.</p>
+            <button type="button" class="primary" onclick="nextSlide('q1')">진단 시작하기</button>
+        </div>
+
+        <div class="slide" id="q1">
+            <h2>Q1. 현재 사용 중인 PC 사양은?</h2>
+            <img src="https://via.placeholder.com/800x600/ccc/666?text=PC+Specs+Image" class="q-image">
+            <div class="btn-group">
+                <button type="button" onclick="selectAnswer('A', 'q2')">고사양 (게임/그래픽 작업 가능)</button>
+                <button type="button" onclick="selectAnswer('B', 'q2')">일반 사무용 또는 노트북</button>
+            </div>
+        </div>
+        <div class="slide" id="q2">
+            <h2>Q2. 월 지출 가능한 예산은?</h2>
+            <div class="btn-group">
+                <button type="button" onclick="selectAnswer('A', 'q3')">월 6만원 이상 (전문가용)</button>
+                <button type="button" onclick="selectAnswer('B', 'q3')">월 2만원 이하 또는 무료</button>
+            </div>
+        </div>
+        <div class="slide" id="q3">
+            <h2>Q3. 선호하는 작업 방식은?</h2>
+            <img src="https://via.placeholder.com/800x600/b39ddb/fff?text=Work+Style" class="q-image">
+            <div class="btn-group">
+                <button type="button" onclick="selectAnswer('A', 'q4')">디테일한 수동 조작</button>
+                <button type="button" onclick="selectAnswer('B', 'q4')">빠른 템플릿/자동화</button>
+            </div>
+        </div>
+        <div class="slide" id="q4">
+            <h2>Q4. 타 디자인 툴과 연동하나요?</h2>
+            <img src="https://via.placeholder.com/800x600/90caf9/fff?text=Integration" class="q-image">
+            <div class="btn-group">
+                <button type="button" onclick="selectAnswer('A', 'check_program')">네, 연동 필수입니다.</button>
+                <button type="button" onclick="selectAnswer('B', 'check_program')">아니오, 하나면 됩니다.</button>
+            </div>
+        </div>
+
+        <div class="slide" id="q5_prem">
+            <h2>Q5. (프리미어) 학습 목적은?</h2>
+            <div class="btn-group">
+                <button type="button" onclick="setGoal('전문취업', 'q6_prem')">취업/이직 (전문 편집자)</button>
+                <button type="button" onclick="setGoal('고퀄홍보', 'q6_prem')">내 사업 홍보 (고퀄리티)</button>
+            </div>
+        </div>
+        <div class="slide" id="q6_prem">
+            <h2>Q6. (프리미어) 제작할 영상 길이는?</h2>
+            <div class="btn-group">
+                <button type="button" onclick="selectAnswer('A', 'q7_common')">긴 호흡의 영상</button>
+                <button type="button" onclick="selectAnswer('A', 'q7_common')">임팩트 있는 숏폼</button>
+            </div>
+        </div>
+
+        <div class="slide" id="q5_cap">
+            <h2>Q5. (캡컷) 학습 목적은?</h2>
+            <div class="btn-group">
+                <button type="button" onclick="setGoal('수익창출', 'q6_cap')">조회수 수익/SNS 키우기</button>
+                <button type="button" onclick="setGoal('세일즈', 'q6_cap')">쿠팡파트너스/공구 판매</button>
+            </div>
+        </div>
+        <div class="slide" id="q6_cap">
+            <h2>Q6. (캡컷) 트렌드 민감도는?</h2>
+            <div class="btn-group">
+                <button type="button" onclick="selectAnswer('B', 'q7_common')">유행/밈 즉시 반영</button>
+                <button type="button" onclick="selectAnswer('B', 'q7_common')">나만의 스타일 고수</button>
+            </div>
+        </div>
+
+        <div class="slide" id="q7_common">
+            <h2>Q7. 영상 편집 경험은?</h2>
+            <div class="btn-group">
+                <button type="button" onclick="selectAnswer('N', 'q8')">완전 처음입니다.</button>
+                <button type="button" onclick="selectAnswer('L', 'q8')">앱으로 조금 해봤습니다.</button>
+                <button type="button" onclick="selectAnswer('P', 'q8')">PC 툴 경험 있습니다.</button>
+            </div>
+        </div>
+        <div class="slide" id="q8">
+            <h2>Q8. '키프레임' 개념을 아시나요?</h2>
+            <div class="btn-group">
+                <button type="button" onclick="setLevel('Basic')">모릅니다.</button>
+                <button type="button" onclick="setLevel('Adv')">이해하고 씁니다.</button>
+            </div>
+        </div>
+
+        <div class="slide" id="result_preview">
+            <h2>진단 결과가 나왔습니다!</h2>
+            <div class="result-card">
+                <div class="result-program" id="preview_program">프로그램명</div>
+                <div class="result-level" id="preview_level">레벨</div>
+                <div class="result-desc">
+                    귀하의 성향과 목표를 분석한 결과,<br>
+                    위 과정이 가장 적합합니다.
+                </div>
+            </div>
+            <p style="margin-bottom:20px; font-weight:bold;">
+                상세 커리큘럼과 수강 안내를 받으시려면<br>
+                아래 버튼을 눌러주세요.
+            </p>
+            <button type="button" class="primary" onclick="nextSlide('q_info1')">커리큘럼 받기 (다음)</button>
+        </div>
+
+        <div class="slide" id="q_info1">
+            <h2>성함을 입력해주세요.</h2>
+            <input type="text" id="username" placeholder="홍길동">
+            <button type="button" class="primary" onclick="validateAndNext('username', 'q_info2')">다음</button>
+        </div>
+
+        <div class="slide" id="q_info2">
+            <h2>연락처를 입력해주세요.</h2>
+            <input type="tel" id="phone" placeholder="010-0000-0000">
+            <button type="button" class="primary" onclick="validateAndNext('phone', 'q_info3')">다음</button>
+        </div>
+        
+        <div class="slide" id="q_info3">
+            <h2>거주 지역 및 동의</h2>
+            <select id="region_select" style="padding:12px; margin-top:10px; width:95%;">
+                <option value="서울/경기">서울/경기</option>
+                <option value="부산/경남">부산/경남</option>
+                <option value="대구/경북">대구/경북</option>
+                <option value="기타">기타 지역</option>
+            </select>
+
+            <div class="consent-box">
+                <label class="consent-label">
+                    <input type="checkbox" id="consentChk">
+                    <span><b>[필수] 개인정보 수집 및 이용 동의</b><br>
+                    입력하신 정보는 결과 안내 목적으로만 사용됩니다.</span>
+                </label>
+            </div>
+
+            <button type="button" class="primary" onclick="checkConsentAndSubmit()">최종 제출하기</button>
+        </div>
+
+        <div class="slide" id="end">
+            <h2>신청이 완료되었습니다!</h2>
+            <p style="margin-top:20px; font-size:1.1rem;">
+                데이터가 성공적으로 전송되었습니다.<br>
+                담당자가 확인 후 연락드리겠습니다.
+            </p>
+        </div>
+
+        <input type="hidden" id="final_program">
+        <input type="hidden" id="final_goal">
+        <input type="hidden" id="final_level">
+    </form>
+</div>
+
+<script>
+    // ▼▼▼ 여기에 구글 앱스 스크립트 URL을 넣으세요 ▼▼▼
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyUTfpNrO5ElEGw808CD7sKWAhzaxi3-C3jFhhF8KZyoqEctiVqyqGaFf1yFlhYkPsxJA/exec"; 
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+    let scores = { A: 0, B: 0 }; 
+    let answersLog = []; 
+    let userData = {};
+    let currentStep = 0;
+
+    function nextSlide(id) {
+        document.querySelectorAll('.slide').forEach(el => el.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        updateProgress(id);
+    }
+
+    function updateProgress(id) {
+        currentStep++;
+        let num = parseInt(id.replace(/\D/g, '')) || 0;
+        if(id === 'result_preview') num = 9; // 결과 미리보기는 90% 지점
+        if(id.includes('info')) num = 9 + (currentStep > 9 ? 0.5 : 0);
+        if(id === 'end') num = 11;
+        const totalSteps = 11;
+        document.getElementById('progress').style.width = (num / totalSteps * 100) + '%';
+    }
+
+    function updateThemeColor() {
+        const body = document.body;
+        body.className = body.className.replace(/theme-\S+/g, '');
+        
+        const diff = scores.A - scores.B;
+        let themeClass = '';
+
+        if (diff > 0) { 
+            if (diff <= 2) themeClass = 'theme-prem-1';
+            else if (diff <= 4) themeClass = 'theme-prem-2';
+            else themeClass = 'theme-prem-3';
+        } else if (diff < 0) { 
+            if (diff >= -2) themeClass = 'theme-cap-1';
+            else if (diff >= -4) themeClass = 'theme-cap-2';
+            else themeClass = 'theme-cap-3';
+        }
+        if(themeClass) body.classList.add(themeClass);
+    }
+
+    function selectAnswer(type, nextId) {
+        if(type === 'A') scores.A++;
+        if(type === 'B') scores.B++;
+        answersLog.push(type);
+        updateThemeColor();
+
+        if(nextId === 'check_program') {
+            if(scores.A >= scores.B) {
+                document.getElementById('final_program').value = "프리미어 프로";
+                nextSlide('q5_prem'); 
+            } else {
+                document.getElementById('final_program').value = "캡컷 (PC)";
+                nextSlide('q5_cap'); 
+            }
+        } else {
+            nextSlide(nextId);
+        }
+    }
+
+    function setGoal(val, nextId) {
+        document.getElementById('final_goal').value = val;
+        answersLog.push(val);
+        nextSlide(nextId);
+    }
+
+    function setLevel(type) {
+        // 1. 레벨값 저장
+        let txt = (type === 'Adv') ? '중급(심화)' : '입문(기초)';
+        document.getElementById('final_level').value = txt;
+        answersLog.push(txt);
+
+        // 2. 결과 미리보기 화면 세팅
+        showPreviewScreen();
+        
+        // 3. 미리보기 화면으로 이동
+        nextSlide('result_preview');
+    }
+
+    // ★ 결과 미리보기 및 비디오 세팅 함수 ★
+    function showPreviewScreen() {
+        const program = document.getElementById('final_program').value;
+        const level = document.getElementById('final_level').value;
+
+        // 텍스트 업데이트
+        document.getElementById('preview_program').innerText = program;
+        document.getElementById('preview_level').innerText = level + " 과정";
+
+        // 비디오 배경 활성화
+        const isPrem = program.includes("프리미어");
+        const scrollClass = isPrem ? 'prem-scroll' : 'cap-scroll';
+        
+        document.getElementById('bannerTop').style.display = 'block';
+        document.getElementById('bannerBottom').style.display = 'block';
+        document.getElementById('bannerTop').classList.add(scrollClass);
+        document.getElementById('bannerBottom').classList.add(scrollClass);
+
+        // 비디오 아이템 생성 (무한 루프)
+        let itemsHtml = '';
+        for(let i=0; i<20; i++) { itemsHtml += '<div class="video-item"></div>'; }
+        const fullTrackHtml = itemsHtml + itemsHtml;
+
+        document.getElementById('trackTop').innerHTML = fullTrackHtml;
+        document.getElementById('trackBottom').innerHTML = fullTrackHtml;
+    }
+
+    function validateAndNext(inputId, nextId) {
+        let val = document.getElementById(inputId).value;
+        if(!val) { alert("내용을 입력해주세요."); return; }
+        userData[inputId] = val;
+        nextSlide(nextId);
+    }
+
+    function checkConsentAndSubmit() {
+        const consentChk = document.getElementById('consentChk');
+        if (!consentChk.checked) {
+            alert("개인정보 수집에 동의해주세요.");
+            return;
+        }
+        submitData();
+    }
+
+    function submitData() {
+        let region = document.getElementById('region_select').value;
+        userData['region'] = region;
+
+        // 로딩 표시 대신 바로 완료 화면으로 이동하면서 백그라운드 전송
+        nextSlide('end');
+
+        let program = document.getElementById('final_program').value;
+        let goal = document.getElementById('final_goal').value;
+        let level = document.getElementById('final_level').value;
+
+        let formData = new FormData();
+        formData.append('username', userData.username);
+        formData.append('phone', userData.phone);
+        formData.append('region', userData.region);
+        formData.append('result_program', program);
+        formData.append('result_goal', goal);
+        formData.append('result_level', level);
+        formData.append('all_answers', answersLog.join(', '));
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: formData,
+            mode: 'no-cors'
+        }).catch(err => {
+            console.error("전송 오류:", err);
+        });
+    }
+</script>
+
+</body>
+</html>
