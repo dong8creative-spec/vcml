@@ -83,7 +83,8 @@
         /* 섹션 공통 (90px) */
         .section { padding: 90px 5%; position: relative; }
         .section-title { 
-            text-align: center; font-size: 2.5rem; margin-bottom: 60px; 
+            text-align: center; font-size: 2.5rem; 
+            margin-bottom: 40px; 
             color: var(--limo-blue); font-weight: 800; letter-spacing: -1px;
         }
         .section-title span { color: var(--limo-yellow); position: relative; z-index: 1; font-style: normal; }
@@ -99,15 +100,29 @@
         .deco-1 { width: 300px; height: 300px; background: var(--limo-yellow); opacity: 0.15; top: -50px; left: -50px; filter: blur(40px); }
         .deco-2 { width: 400px; height: 400px; background: var(--limo-blue); opacity: 0.05; bottom: -100px; right: -100px; filter: blur(60px); }
         .hero-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
-        .hero h1 { font-size: 4rem; line-height: 1.2; margin-bottom: 25px; color: var(--limo-blue); font-weight: 800; letter-spacing: -1px; }
+        
+        .hero h1 { 
+            font-size: 4rem; line-height: 1.2; 
+            /* [수정] 제목 아래 간격 30px로 조정 */
+            margin-bottom: 30px; 
+            color: var(--limo-blue); font-weight: 800; letter-spacing: -1px; 
+        }
+        
         .char-anim { display: inline-block; opacity: 0; transform: translateY(-30px); }
         @keyframes textCascade { 0% { opacity: 0; transform: translateY(-30px); } 100% { opacity: 1; transform: translateY(0); } }
+        
         .hero p { 
-            font-size: 1.2rem; color: #555; margin-bottom: 40px; word-break: keep-all; 
+            font-size: 1.3rem; /* [수정] 폰트 사이즈 살짝 키움 */
+            color: #444; 
+            font-weight: 500; /* [수정] 두께감 추가 */
+            /* [수정] 버튼과의 간격 80px로 조정 (균형 맞춤) */
+            margin-bottom: 80px; 
+            word-break: keep-all; 
             opacity: 0; animation: fadeInUp 0.8s ease-out 0.8s forwards; 
         }
+        
         .btn-main {
-            padding: 18px 45px; font-size: 1.1rem; font-weight: 700;
+            padding: 18px 50px; font-size: 1.1rem; font-weight: 700;
             background-color: var(--limo-blue); color: var(--white);
             border-radius: 50px; box-shadow: 0 10px 20px rgba(0, 60, 166, 0.2);
             transition: all 0.3s ease; border: 2px solid transparent; display: inline-block;
@@ -165,7 +180,7 @@
         }
         .btn-diagnosis:hover { transform: scale(1.05); background: white; color: var(--limo-blue); }
 
-        /* 4. [UPDATED] 수강신청 */
+        /* 4. 수강신청 */
         #store { background-color: var(--limo-cream); } 
         .store-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -273,6 +288,9 @@
         @media (max-width: 768px) {
             .hero-container { padding: 60px 20px; }
             .hero h1 { font-size: 2.2rem; }
+            .hero p { 
+                margin-bottom: 60px; /* 모바일에서도 넉넉하게 조정 */
+            }
             .nav-links { display: none; }
             .card { width: 280px; }
             .yt-card { width: 220px; }
@@ -308,7 +326,7 @@
             <div class="deco-circle deco-2"></div>
             <div class="hero-content">
                 <h1>Visual (or viral)<br>Core Motion Labs</h1>
-                <p>영상 편집의 시작과 끝, VCML이 함께합니다.<br>실무부터 수익화까지 검증된 커리큘럼을 만나보세요.</p>
+                <p>실무능력향상은 VCML과 함께!</p>
                 <a href="./test.html" class="btn-main">과정 알아보기 ↓</a>
             </div>
         </section>
@@ -319,6 +337,7 @@
         <h2 class="section-title">Curriculum <span>Overview</span></h2>
         <div class="slider-container" id="coursesContainer">
             <div class="slider-track courses-track">
+                
                 <div class="card">
                     <img src="https://via.placeholder.com/640x360/003CA6/fff?text=Premiere+Pro" class="card-img" alt="Premiere">
                     <h3>Premiere Pro</h3>
@@ -328,6 +347,7 @@
                         <li>기업 실무 포트폴리오</li>
                     </ul>
                 </div>
+
                 <div class="card">
                     <img src="https://via.placeholder.com/640x360/E2AB2D/fff?text=CapCut" class="card-img" alt="CapCut">
                     <h3>CapCut PC</h3>
@@ -337,6 +357,7 @@
                         <li>쿠팡파트너스 수익화</li>
                     </ul>
                 </div>
+
                 <div class="card">
                     <img src="https://via.placeholder.com/640x360/F8EFE0/003CA6?text=Portfolio" class="card-img" alt="Portfolio">
                     <h3>Portfolio Class</h3>
@@ -346,6 +367,7 @@
                         <li>자소서 컨설팅 포함</li>
                     </ul>
                 </div>
+                
                 <div class="card">
                     <img src="https://via.placeholder.com/640x360/333333/fff?text=Consulting" class="card-img" alt="Consulting">
                     <h3>Channel Consulting</h3>
@@ -355,6 +377,7 @@
                         <li>콘텐츠 방향성 제시</li>
                     </ul>
                 </div>
+
             </div>
         </div>
     </section>
@@ -370,7 +393,7 @@
         </div>
     </section>
 
-    <!-- [UPDATED] 수강신청 섹션 (HTML로 직접 수정) -->
+    <!-- 수강신청 섹션 -->
     <section id="store" class="section">
         <h2 class="section-title">Class <span>Registration</span></h2>
         <div class="store-grid">
