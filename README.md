@@ -1,0 +1,205 @@
+[admin.html](https://github.com/user-attachments/files/24015947/admin.html)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCML | 관리자 페이지</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        :root { --deep-blue: #0310A1; --primary: #046EF2; --bg: #F5F7FA; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: #333; padding: 20px; }
+
+        /* 로그인 오버레이 */
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 16, 161, 0.95); z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .login-box { text-align: center; background: white; padding: 40px; border-radius: 20px; width: 300px; }
+        .login-box h2 { margin-bottom: 20px; color: var(--deep-blue); }
+        .login-input { 
+            width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; 
+            border-radius: 8px; font-size: 1rem; text-align: center;
+        }
+        .btn-login {
+            width: 100%; padding: 12px; background: var(--primary); color: white;
+            border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+
+        /* 메인 컨텐츠 */
+        .container { max-width: 800px; margin: 0 auto; display: none; } /* 로그인 전 숨김 */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { font-size: 1.8rem; color: var(--deep-blue); }
+        .btn-refresh { 
+            padding: 8px 16px; background: white; border: 1px solid #ddd; 
+            border-radius: 6px; cursor: pointer; font-size: 0.9rem; 
+        }
+
+        /* 필터 탭 */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { 
+            padding: 8px 16px; background: #e0e0e0; border-radius: 20px; 
+            cursor: pointer; font-weight: 600; font-size: 0.9rem; color: #666;
+        }
+        .tab.active { background: var(--deep-blue); color: white; }
+
+        /* 리스트 스타일 */
+        .inquiry-list { display: flex; flex-direction: column; gap: 15px; }
+        .inquiry-card {
+            background: white; padding: 20px; border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 5px solid #ddd;
+        }
+        .inquiry-card.qna { border-left-color: var(--primary); } /* 문의는 파란색 띠 */
+        .inquiry-card.test { border-left-color: #03C75A; } /* 진단은 초록색 띠 */
+
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; color: #888; }
+        .badge { 
+            padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; 
+            background: #eee; color: #555;
+        }
+        .badge.qna { background: rgba(4, 110, 242, 0.1); color: var(--primary); }
+        
+        .card-body h3 { font-size: 1.1rem; margin-bottom: 8px; color: #333; }
+        .card-body p { font-size: 0.95rem; color: #555; white-space: pre-wrap; line-height: 1.5; }
+        .card-footer { 
+            margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; 
+            font-size: 0.9rem; font-weight: 600; color: var(--deep-blue);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 로그인 화면 -->
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h2>ADMIN LOGIN</h2>
+            <input type="password" id="adminPw" class="login-input" placeholder="비밀번호 입력">
+            <button class="btn-login" onclick="checkLogin()">접속하기</button>
+        </div>
+    </div>
+
+    <!-- 관리자 대시보드 -->
+    <div class="container" id="dashboard">
+        <div class="header">
+            <h1>고객 문의 관리</h1>
+            <button class="btn-refresh" onclick="loadData()">🔄 새로고침</button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="filterData('all', this)">전체</div>
+            <div class="tab" onclick="filterData('qna', this)">문의게시판</div>
+            <div class="tab" onclick="filterData('test', this)">진단결과</div>
+        </div>
+
+        <div class="inquiry-list" id="listContainer">
+            <div style="text-align:center; padding:50px; color:#888;">데이터를 불러오는 중...</div>
+        </div>
+    </div>
+
+    <script>
+        // ▼▼▼ 본인 앱스 스크립트 URL (index.html과 동일) ▼▼▼
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzx-VPvaNewhDu8KTO58kIVXbRz3aoJyuWLhb6lPZgpWk6-b1yjmkuEDnLXeYdakTH1pw/exec"; 
+        
+        // ★ 관리자 비밀번호 설정 (원하는 걸로 바꾸세요) ★
+        const PASSWORD = "01055064511"; 
+
+        let allData = [];
+
+        // 1. 로그인 체크
+        function checkLogin() {
+            const input = document.getElementById('adminPw').value;
+            if(input === PASSWORD) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                loadData(); // 데이터 로드 시작
+            } else {
+                alert("비밀번호가 틀렸습니다.");
+            }
+        }
+
+        // 2. 데이터 불러오기 (GET)
+        function loadData() {
+            document.getElementById('listContainer').innerHTML = '<div style="text-align:center; padding:50px; color:#888;">데이터 로딩 중...</div>';
+            
+            fetch(SCRIPT_URL)
+                .then(response => response.json())
+                .then(data => {
+                    allData = data;
+                    renderList(data); // 전체 렌더링
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('listContainer').innerHTML = '<div style="text-align:center; color:red;">데이터 로드 실패</div>';
+                });
+        }
+
+        // 3. 리스트 그리기
+        function renderList(data) {
+            const container = document.getElementById('listContainer');
+            container.innerHTML = '';
+
+            if(data.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:50px;">데이터가 없습니다.</div>';
+                return;
+            }
+
+            data.forEach(item => {
+                // 날짜 포맷팅
+                const date = new Date(item.time).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                
+                // 구분 (문의 vs 진단)
+                const isQna = item.category === '문의게시판';
+                const badgeClass = isQna ? 'qna' : 'test';
+                const typeName = isQna ? '문의게시판' : item.category;
+
+                // 내용 구성
+                let titleHtml = isQna ? `<h3>${item.title}</h3>` : `<h3>${item.category} - ${item.title || '진단완료'}</h3>`; // 진단은 title이 레벨일 수 있음
+                let contentHtml = isQna ? `<p>${item.content}</p>` : `<p>진단 결과: ${item.title || ''}</p>`;
+
+                const html = `
+                    <div class="inquiry-card ${badgeClass}">
+                        <div class="card-header">
+                            <span class="badge ${badgeClass}">${typeName}</span>
+                            <span>${date}</span>
+                        </div>
+                        <div class="card-body">
+                            ${titleHtml}
+                            ${contentHtml}
+                        </div>
+                        <div class="card-footer">
+                            ${item.name} (${item.phone})
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        // 4. 탭 필터링
+        function filterData(type, tabElement) {
+            // 탭 스타일 변경
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tabElement.classList.add('active');
+
+            // 데이터 필터링
+            if(type === 'all') {
+                renderList(allData);
+            } else if(type === 'qna') {
+                const filtered = allData.filter(item => item.category === '문의게시판');
+                renderList(filtered);
+            } else if(type === 'test') {
+                const filtered = allData.filter(item => item.category !== '문의게시판');
+                renderList(filtered);
+            }
+        }
+        
+        // 엔터키 로그인 지원
+        document.getElementById('adminPw').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") checkLogin();
+        });
+    </script>
+
+</body>
+</html>
