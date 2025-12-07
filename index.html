@@ -204,7 +204,7 @@
         }
         @keyframes scrollRightToLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-        /* --- 6. [UPDATED] 강사 소개 (호버 인터랙션) --- */
+        /* --- 6. 강사 소개 --- */
         #about { background-color: #FAF5F0; }
         .instructors-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -213,12 +213,9 @@
         .instructor-card { 
             text-align: center; transition: opacity 0.5s ease;
         }
-        
-        /* 호버 시 다른 카드는 투명하게 */
         .instructors-grid.hovering .instructor-card { opacity: 0.2; filter: blur(2px); }
         .instructors-grid.hovering .instructor-card.active { opacity: 1; filter: none; }
 
-        /* 프로필 박스: 이미지 컨테이너 */
         .profile-box { 
             width: 280px; height: 280px; margin: 0 auto 30px; 
             position: relative; overflow: hidden;
@@ -226,21 +223,13 @@
             box-shadow: 15px 15px 0px var(--accent-warm);
             border: 1px solid rgba(0,0,0,0.1);
         }
-        
-        /* 이미지 공통 스타일 (절대 위치로 겹치기) */
         .profile-img {
             width: 100%; height: 100%; object-fit: cover;
             position: absolute; top: 0; left: 0;
-            transition: opacity 1s ease-in-out; /* 디졸브 효과 */
+            transition: opacity 1s ease-in-out; 
         }
-        
-        /* 기본 이미지 */
         .profile-img.default { opacity: 1; z-index: 10; }
-        
-        /* 슬라이드쇼 이미지들 (숨김) */
         .profile-img.slide { opacity: 0; z-index: 5; }
-        
-        /* 활성화된 슬라이드 이미지 */
         .profile-img.slide.visible { opacity: 1; z-index: 20; }
 
         .instructor-name { 
@@ -256,6 +245,33 @@
         .instructor-role { color: var(--primary); font-weight: 700; font-size: 1rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
         .instructor-desc { color: #555; font-size: 1rem; line-height: 1.6; word-break: keep-all; }
 
+        /* --- [NEW] Q&A 게시판 (1:1 비밀 문의) --- */
+        #qna { background-color: #fff; }
+        .qna-container {
+            max-width: 800px; margin: 0 auto;
+            background: #fff; padding: 50px;
+            border-radius: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            border: 1px solid #eee;
+        }
+        .qna-desc { text-align: center; color: #666; margin-bottom: 40px; }
+        .qna-form-group { margin-bottom: 20px; text-align: left; }
+        .qna-label { display: block; font-weight: 700; color: var(--deep-blue); margin-bottom: 8px; font-size: 0.95rem; }
+        .qna-input, .qna-textarea {
+            width: 100%; padding: 15px; border-radius: 12px;
+            border: 1px solid #ddd; font-size: 1rem; font-family: inherit;
+            transition: 0.3s;
+        }
+        .qna-input:focus, .qna-textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(4, 110, 242, 0.1); }
+        .qna-textarea { height: 150px; resize: none; }
+        .btn-submit {
+            width: 100%; padding: 18px; font-size: 1.1rem; font-weight: 800;
+            background-color: var(--deep-blue); color: white;
+            border: none; border-radius: 12px; cursor: pointer;
+            transition: 0.3s; margin-top: 10px;
+        }
+        .btn-submit:hover { background-color: var(--primary); transform: translateY(-2px); }
+
         /* --- 푸터 --- */
         footer {
             background-color: var(--deep-blue); padding: 60px 5%; text-align: center;
@@ -270,6 +286,7 @@
             .nav-links { display: none; }
             .section { padding: 60px 5%; }
             .calendar-container { padding-bottom: 100%; } 
+            .qna-container { padding: 30px 20px; }
         }
     </style>
 </head>
@@ -296,6 +313,7 @@
             <a href="#schedule">일정</a>
             <a href="#youtube">콘텐츠</a>
             <a href="#about">강사소개</a>
+            <a href="#qna">문의하기</a> <!-- 메뉴 추가 -->
         </nav>
     </header>
 
@@ -358,7 +376,6 @@
         </div>
     </section>
 
-    <!-- [UPDATED] 강사 소개 섹션 -->
     <section id="about" class="section">
         <h2 class="section-title">강사 <span>소개</span></h2>
         <div class="instructors-grid" id="instructorsGrid">
@@ -366,16 +383,13 @@
             <!-- 강사 1: 이동헌 -->
             <div class="instructor-card" id="card-lee1">
                 <div class="profile-box">
-                    <!-- 기본 이미지 -->
                     <img src="https://via.placeholder.com/400x400/0310A1/fff?text=CEO" alt="이동헌 강사" class="profile-img default">
-                    <!-- 포트폴리오 이미지 5장 (플레이스홀더) -->
                     <img src="https://via.placeholder.com/400x400/333/fff?text=Portfolio+1" class="profile-img slide">
                     <img src="https://via.placeholder.com/400x400/444/fff?text=Portfolio+2" class="profile-img slide">
                     <img src="https://via.placeholder.com/400x400/555/fff?text=Portfolio+3" class="profile-img slide">
                     <img src="https://via.placeholder.com/400x400/666/fff?text=Portfolio+4" class="profile-img slide">
                     <img src="https://via.placeholder.com/400x400/777/fff?text=Portfolio+5" class="profile-img slide">
                 </div>
-                <!-- Role 변경: Visual Director -> CEO -->
                 <div class="instructor-role">CEO</div>
                 <div class="instructor-name" onmouseenter="startSlideshow('card-lee1')" onmouseleave="stopSlideshow('card-lee1')">이동헌</div>
                 <p class="instructor-desc">
@@ -388,16 +402,13 @@
             <!-- 강사 2: 이가람 -->
             <div class="instructor-card" id="card-lee2">
                 <div class="profile-box">
-                    <!-- 기본 이미지 -->
                     <img src="https://via.placeholder.com/400x400/D5A491/fff?text=Instructor" alt="이가람 강사" class="profile-img default">
-                    <!-- 포트폴리오 이미지 5장 (플레이스홀더) -->
                     <img src="https://via.placeholder.com/400x400/888/fff?text=Portfolio+A" class="profile-img slide">
                     <img src="https://via.placeholder.com/400x400/999/fff?text=Portfolio+B" class="profile-img slide">
                     <img src="https://via.placeholder.com/400x400/aaa/fff?text=Portfolio+C" class="profile-img slide">
                     <img src="https://via.placeholder.com/400x400/bbb/fff?text=Portfolio+D" class="profile-img slide">
                     <img src="https://via.placeholder.com/400x400/ccc/fff?text=Portfolio+E" class="profile-img slide">
                 </div>
-                <!-- Role 변경: Motion Graphic Designer -> Video Production Instructor -->
                 <div class="instructor-role">Video Production Instructor</div>
                 <div class="instructor-name" onmouseenter="startSlideshow('card-lee2')" onmouseleave="stopSlideshow('card-lee2')">이가람</div>
                 <p class="instructor-desc">
@@ -407,6 +418,39 @@
                 </p>
             </div>
 
+        </div>
+    </section>
+
+    <!-- [NEW] Q&A 게시판 (비밀 문의) -->
+    <section id="qna" class="section">
+        <h2 class="section-title">Q&A <span>게시판</span></h2>
+        <div class="qna-container">
+            <p class="qna-desc">
+                강의 문의, 협업 제안 등 궁금한 점을 남겨주세요.<br>
+                작성하신 내용은 <strong>관리자만 확인할 수 있는 비밀글</strong>로 처리됩니다.
+            </p>
+            
+            <div class="qna-form-group">
+                <label class="qna-label">성함</label>
+                <input type="text" id="qnaName" class="qna-input" placeholder="홍길동">
+            </div>
+            
+            <div class="qna-form-group">
+                <label class="qna-label">연락처</label>
+                <input type="tel" id="qnaPhone" class="qna-input" placeholder="01012345678 (숫자만 입력)">
+            </div>
+
+            <div class="qna-form-group">
+                <label class="qna-label">제목</label>
+                <input type="text" id="qnaTitle" class="qna-input" placeholder="문의합니다.">
+            </div>
+
+            <div class="qna-form-group">
+                <label class="qna-label">내용</label>
+                <textarea id="qnaContent" class="qna-textarea" placeholder="궁금하신 내용을 자유롭게 남겨주세요."></textarea>
+            </div>
+
+            <button class="btn-submit" onclick="submitQna()">문의 접수하기</button>
         </div>
     </section>
 
@@ -421,13 +465,16 @@
     </footer>
 
     <script>
+        // ▼▼▼ 본인의 구글 앱스 스크립트 URL로 교체 (Test 페이지와 동일한 URL) ▼▼▼
+        const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_URL_HERE/exec"; 
+
         // 1. 커서 로직
         const cursor = document.querySelector('.cursor-arrow');
         document.addEventListener('mousemove', (e) => {
             cursor.style.left = e.clientX + 'px';
             cursor.style.top = e.clientY + 'px';
         });
-        document.querySelectorAll('a, button, .instructor-name').forEach(item => {
+        document.querySelectorAll('a, button, .instructor-name, input, textarea').forEach(item => {
             item.addEventListener('mouseenter', () => document.body.classList.add('hovered'));
             item.addEventListener('mouseleave', () => document.body.classList.remove('hovered'));
         });
@@ -496,48 +543,69 @@
         ytData.forEach(item => html += createCard(item)); 
         track.innerHTML = html;
 
-        // 5. [NEW] 강사 슬라이드쇼 인터랙션
-        const slideIntervals = {}; // 각 카드별 인터벌 저장
-
+        // 5. 강사 슬라이드쇼
+        const slideIntervals = {}; 
         function startSlideshow(cardId) {
             const grid = document.getElementById('instructorsGrid');
             const card = document.getElementById(cardId);
             const slides = card.querySelectorAll('.profile-img.slide');
-            
-            // 다른 카드 흐리게
             grid.classList.add('hovering');
             card.classList.add('active');
-
-            // 슬라이드 쇼 시작
             let currentSlide = 0;
-            // 첫 번째 슬라이드 바로 보여주기
             slides[currentSlide].classList.add('visible');
-
             slideIntervals[cardId] = setInterval(() => {
-                // 이전 슬라이드 숨김
                 slides[currentSlide].classList.remove('visible');
-                // 다음 인덱스
                 currentSlide = (currentSlide + 1) % slides.length;
-                // 다음 슬라이드 표시
                 slides[currentSlide].classList.add('visible');
-            }, 2000); // 2초 간격
+            }, 2000); 
         }
-
         function stopSlideshow(cardId) {
             const grid = document.getElementById('instructorsGrid');
             const card = document.getElementById(cardId);
             const slides = card.querySelectorAll('.profile-img.slide');
-
-            // 효과 초기화
             grid.classList.remove('hovering');
             card.classList.remove('active');
-
-            // 인터벌 중지
             clearInterval(slideIntervals[cardId]);
             delete slideIntervals[cardId];
-
-            // 모든 슬라이드 숨기기 (기본 이미지 보이게 됨)
             slides.forEach(slide => slide.classList.remove('visible'));
+        }
+
+        // 6. [NEW] 문의하기 제출 (Q&A)
+        function submitQna() {
+            const name = document.getElementById('qnaName').value;
+            const phone = document.getElementById('qnaPhone').value;
+            const title = document.getElementById('qnaTitle').value;
+            const content = document.getElementById('qnaContent').value;
+
+            if(!name || !phone || !title || !content) {
+                alert("모든 항목을 입력해주세요.");
+                return;
+            }
+
+            if(confirm("문의를 접수하시겠습니까?")) {
+                const formData = new FormData();
+                formData.append('username', name);
+                formData.append('phone', phone);
+                formData.append('qna_title', title);
+                formData.append('qna_content', content);
+                formData.append('result_program', '문의게시판'); // 구분용 태그
+
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'no-cors'
+                }).then(() => {
+                    alert("성공적으로 접수되었습니다. 관리자 확인 후 연락드리겠습니다.");
+                    // 폼 초기화
+                    document.getElementById('qnaName').value = '';
+                    document.getElementById('qnaPhone').value = '';
+                    document.getElementById('qnaTitle').value = '';
+                    document.getElementById('qnaContent').value = '';
+                }).catch(err => {
+                    console.error(err);
+                    alert("전송 중 오류가 발생했습니다.");
+                });
+            }
         }
     </script>
 
