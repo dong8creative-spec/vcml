@@ -17,9 +17,10 @@
             --text-main: #0310A1;
             --text-body: #333333;
             --white: #ffffff;
+            --naver-green: #03C75A; /* 네이버 브랜드 컬러 */
         }
         
-        * { box-sizing: border-box; margin: 0; padding: 0; cursor: none; /* 시스템 마우스 숨김 */ }
+        * { box-sizing: border-box; margin: 0; padding: 0; cursor: none; }
         
         body {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -73,13 +74,14 @@
         /* --- 스레드 문의 버튼 --- */
         .threads-btn {
             position: fixed; top: 50%; right: 0; transform: translateY(-50%);
-            background: #000; color: #fff; padding: 15px 20px;
-            border-radius: 30px 0 0 30px; box-shadow: -5px 5px 15px rgba(0,0,0,0.2);
-            z-index: 999; font-weight: 700; font-size: 0.9rem;
-            display: flex; align-items: center; gap: 8px; transition: right 0.3s;
+            background: #000; color: #fff; padding: 10px 14px;
+            border-radius: 20px 0 0 20px; box-shadow: -3px 3px 10px rgba(0,0,0,0.2);
+            z-index: 999; font-weight: 700; font-size: 0.75rem;
+            display: flex; align-items: center; gap: 6px; 
+            transition: right 0.3s, padding-right 0.3s, background 0.3s;
         }
-        .threads-btn:hover { padding-right: 30px; background: var(--primary); }
-        .threads-icon { width: 20px; height: 20px; fill: white; }
+        .threads-btn:hover { padding-right: 20px; background: var(--primary); }
+        .threads-icon { width: 14px; height: 14px; fill: white; }
 
         /* --- 공통 섹션 --- */
         .section { padding: 120px 5%; position: relative; }
@@ -93,7 +95,7 @@
             background-color: rgba(145, 199, 252, 0.4); z-index: -1; transform: skewX(-20deg);
         }
 
-        /* --- 1. 히어로 섹션 --- */
+        /* --- 1. 히어로 --- */
         .hero {
             height: 95vh; display: flex; flex-direction: column;
             justify-content: center; align-items: center; text-align: center;
@@ -108,14 +110,14 @@
         .char-anim { display: inline-block; opacity: 0; transform: translateY(-50px); }
         @keyframes textCascade {
             0% { opacity: 0; transform: translateY(-50px); color: var(--accent-warm); }
-            30% { opacity: 1; color: var(--white); }
-            60% { color: var(--accent-warm); }
+            50% { opacity: 1; color: var(--white); }
+            75% { color: var(--accent-warm); }
             100% { opacity: 1; transform: translateY(0); color: var(--white); }
         }
         .hero p { 
             color: rgba(255,255,255,0.8); font-size: 1.3rem; margin-bottom: 50px; max-width: 650px; 
             font-weight: 400; word-break: keep-all; opacity: 0;
-            animation: fadeInUp 1s ease-out 2.5s forwards;
+            animation: fadeInUp 0.8s ease-out 0.8s forwards; 
         }
         .btn-main {
             padding: 18px 45px; font-size: 1.2rem; font-weight: 800;
@@ -123,7 +125,7 @@
             border-radius: 100px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease; border: 2px solid transparent; display: inline-block;
             opacity: 0; transform: translateY(30px);
-            animation: btnSlideUp 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3s forwards;
+            animation: btnSlideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) 1s forwards;
         }
         .btn-main:hover { transform: translateY(-5px); background-color: var(--accent-warm); color: var(--white); }
         @keyframes fadeInUp { to { opacity: 1; } }
@@ -169,7 +171,54 @@
         }
         .btn-diagnosis:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(3, 16, 161, 0.3); background-color: var(--deep-blue); }
 
-        /* --- 4. 캘린더 --- */
+        /* --- [UPDATED] 4. 수강신청 섹션 --- */
+        #store { background-color: #FBF6F3; } 
+        .store-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px; max-width: 1100px; margin: 0 auto;
+        }
+        .store-card {
+            background: #fff; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: 0.3s;
+            border: 1px solid #eee; display: flex; flex-direction: column;
+        }
+        .store-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(3, 16, 161, 0.1); }
+        .store-thumb {
+            width: 100%; height: 200px; background-color: #eee;
+            object-fit: cover;
+        }
+        .store-info { padding: 25px; flex-grow: 1; }
+        .store-badge { 
+            font-size: 0.8rem; font-weight: 700; color: var(--primary); 
+            background: rgba(4, 110, 242, 0.1); padding: 4px 10px; border-radius: 4px;
+            display: inline-block; margin-bottom: 10px;
+        }
+        .store-title { font-size: 1.3rem; font-weight: 800; color: var(--deep-blue); margin-bottom: 8px; line-height: 1.3; }
+        .store-price { font-size: 1.2rem; font-weight: 700; color: #333; margin-bottom: 10px; }
+        .store-review { font-size: 0.9rem; color: #666; margin-bottom: 15px; font-weight: 500; }
+        .store-review span { color: #f5c518; } /* 별점 색상 */
+        
+        .store-actions {
+            padding: 0 25px 25px; display: flex; gap: 10px;
+        }
+        .btn-link {
+            flex: 1; padding: 12px; text-align: center; border-radius: 8px;
+            border: 1px solid #ddd; font-weight: 600; color: #555; font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .btn-link:hover { background: #f5f5f5; color: #333; }
+        
+        .btn-npay {
+            flex: 1; padding: 12px; text-align: center; border-radius: 8px;
+            background-color: var(--naver-green); color: white; font-weight: 700; font-size: 0.9rem;
+            border: none; display: flex; align-items: center; justify-content: center; gap: 5px;
+            transition: 0.2s;
+        }
+        .btn-npay:hover { background-color: #02b351; transform: scale(1.02); }
+        .npay-logo { font-weight: 900; font-family: sans-serif; letter-spacing: -1px; margin-right: 2px; }
+
+
+        /* --- 5. 캘린더 --- */
         #schedule { background-color: #fff; border-top: 1px solid #eee; }
         .calendar-container {
             max-width: 1000px; margin: 0 auto;
@@ -180,7 +229,7 @@
         }
         .calendar-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
 
-        /* --- 5. 유튜브 --- */
+        /* --- 6. 유튜브 --- */
         .youtube-section { overflow: hidden; padding: 100px 0; background: #111; color: #fff; }
         .youtube-section .section-title { color: #fff; } 
         .youtube-section .section-title span::after { background-color: rgba(4, 110, 242, 0.6); }
@@ -204,7 +253,7 @@
         }
         @keyframes scrollRightToLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-        /* --- 6. 강사 소개 --- */
+        /* --- 7. 강사 소개 --- */
         #about { background-color: #FAF5F0; }
         .instructors-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -245,7 +294,7 @@
         .instructor-role { color: var(--primary); font-weight: 700; font-size: 1rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
         .instructor-desc { color: #555; font-size: 1rem; line-height: 1.6; word-break: keep-all; }
 
-        /* --- Q&A 게시판 --- */
+        /* --- 8. Q&A 게시판 --- */
         #qna { background-color: #fff; }
         .qna-container {
             max-width: 800px; margin: 0 auto;
@@ -281,69 +330,43 @@
         .footer-links a { color: #fff; text-decoration: underline; margin: 0 5px; opacity: 0.8; }
         .footer-links a:hover { opacity: 1; }
 
-        /* ========================================= */
-        /* ★ [MOBILE] 모바일 반응형 디자인 최적화 ★ */
-        /* ========================================= */
         @media (max-width: 768px) {
-            /* 1. 히어로 섹션 */
-            .hero h1 { 
-                font-size: 2rem; /* 4.5rem -> 2rem (과감한 축소) */
-                line-height: 1.3; 
-                margin-bottom: 15px; 
-            }
-            .hero p { 
-                font-size: 0.95rem; /* 1.3rem -> 0.95rem */
-                margin-bottom: 30px; 
-                max-width: 90%; 
-            }
-            .btn-main { 
-                padding: 14px 30px; 
-                font-size: 1rem; 
-            }
-            .nav-links { display: none; } /* 메뉴 숨김 */
-
-            /* 2. 섹션 공통 */
+            .hero h1 { font-size: 1.8rem; line-height: 1.3; margin-bottom: 15px; }
+            .hero p { font-size: 0.9rem; margin-bottom: 30px; max-width: 90%; word-break: keep-all; }
+            .btn-main { padding: 14px 30px; font-size: 1rem; }
+            .nav-links { display: none; } 
             .section { padding: 60px 5%; }
-            .section-title { 
-                font-size: 1.8rem; /* 2.5rem -> 1.8rem */
-                margin-bottom: 40px; 
-            }
-
-            /* 3. 커리큘럼 카드 */
+            .section-title { font-size: 1.6rem; margin-bottom: 40px; }
             .card { padding: 30px 20px; }
-            .card h3 { font-size: 1.4rem; margin-bottom: 10px; }
-            .card p { font-size: 0.9rem; margin-bottom: 15px; }
+            .card h3 { font-size: 1.3rem; margin-bottom: 10px; }
+            .card p { font-size: 0.9rem; margin-bottom: 15px; word-break: break-word; } 
             .card ul li { font-size: 0.85rem; padding-left: 15px; }
             .tag { padding: 5px 10px; font-size: 0.75rem; margin-bottom: 15px; }
-
-            /* 4. 진단 테스트 */
-            .diagnosis-content h3 { font-size: 1.4rem; margin-bottom: 15px; }
-            .diagnosis-content p { font-size: 0.95rem; margin-bottom: 30px; }
-            .btn-diagnosis { padding: 14px 30px; font-size: 0.95rem; }
-
-            /* 5. 유튜브 섹션 */
-            .yt-card { width: 240px; } /* 카드 너비 축소 */
-            .yt-thumb { height: 135px; }
-            .yt-title { padding: 10px; font-size: 0.85rem; }
-
-            /* 6. 강사 소개 */
+            .diagnosis-content h3 { font-size: 1.3rem; margin-bottom: 15px; }
+            .diagnosis-content p { font-size: 0.9rem; margin-bottom: 30px; }
+            .btn-diagnosis { padding: 14px 30px; font-size: 0.9rem; }
+            
+            /* 스토어 모바일 최적화 */
+            .store-grid { gap: 20px; }
+            .store-info { padding: 20px; }
+            .store-title { font-size: 1.2rem; }
+            .store-price { font-size: 1.1rem; }
+            .store-actions { padding: 0 20px 20px; }
+            
+            .yt-card { width: 220px; } 
+            .yt-thumb { height: 125px; }
+            .yt-title { padding: 10px; font-size: 0.8rem; }
             .instructors-grid { gap: 40px; }
-            .profile-box { width: 200px; height: 200px; margin-bottom: 20px; }
-            .instructor-name { font-size: 1.4rem; }
-            .instructor-role { font-size: 0.85rem; margin-bottom: 10px; }
-            .instructor-desc { font-size: 0.9rem; padding: 0 10px; }
-
-            /* 7. Q&A */
+            .profile-box { width: 180px; height: 180px; margin-bottom: 20px; }
+            .instructor-name { font-size: 1.3rem; }
+            .instructor-role { font-size: 0.8rem; margin-bottom: 10px; }
+            .instructor-desc { font-size: 0.9rem; padding: 0 10px; word-break: keep-all; }
             .qna-container { padding: 30px 20px; }
-            .qna-desc { font-size: 0.85rem; margin-bottom: 25px; }
+            .qna-desc { font-size: 0.8rem; margin-bottom: 25px; }
             .qna-input, .qna-textarea { padding: 12px; font-size: 0.9rem; }
             .btn-submit { padding: 15px; font-size: 1rem; }
-
-            /* 8. 캘린더 */
-            .calendar-container { padding-bottom: 120%; } /* 세로가 긴 모바일 화면 대응 */
-            
-            /* 9. 푸터 */
-            footer { padding: 40px 5%; font-size: 0.85rem; }
+            .calendar-container { padding-bottom: 120%; } 
+            footer { padding: 40px 5%; font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -367,10 +390,11 @@
         <nav class="nav-links">
             <a href="#courses">교육과정</a>
             <a href="#diagnosis">과정진단</a>
+            <a href="#store">수강신청</a>
             <a href="#schedule">일정</a>
             <a href="#youtube">콘텐츠</a>
             <a href="#about">강사소개</a>
-            <a href="#qna">문의하기</a> <!-- 메뉴 추가 -->
+            <a href="#qna">문의하기</a>
         </nav>
     </header>
 
@@ -416,6 +440,14 @@
         </div>
     </section>
 
+    <!-- [UPDATED] 스토어 섹션 (데이터 기반 생성) -->
+    <section id="store" class="section">
+        <h2 class="section-title">수강 <span>신청</span></h2>
+        <div class="store-grid" id="storeContainer">
+            <!-- 자바스크립트가 여기에 카드를 채워넣습니다 -->
+        </div>
+    </section>
+
     <section id="schedule" class="section">
         <h2 class="section-title">강의 <span>일정</span></h2>
         <div class="calendar-container">
@@ -436,8 +468,6 @@
     <section id="about" class="section">
         <h2 class="section-title">강사 <span>소개</span></h2>
         <div class="instructors-grid" id="instructorsGrid">
-            
-            <!-- 강사 1: 이동헌 -->
             <div class="instructor-card" id="card-lee1">
                 <div class="profile-box">
                     <img src="https://via.placeholder.com/400x400/0310A1/fff?text=CEO" alt="이동헌 강사" class="profile-img default">
@@ -455,8 +485,6 @@
                     어도비 국제 공인 전문가 (ACP)
                 </p>
             </div>
-
-            <!-- 강사 2: 이가람 -->
             <div class="instructor-card" id="card-lee2">
                 <div class="profile-box">
                     <img src="https://via.placeholder.com/400x400/D5A491/fff?text=Instructor" alt="이가람 강사" class="profile-img default">
@@ -474,7 +502,6 @@
                     유튜브/SNS 바이럴 영상 다수 제작
                 </p>
             </div>
-
         </div>
     </section>
 
@@ -485,27 +512,22 @@
                 강의 문의, 협업 제안 등 궁금한 점을 남겨주세요.<br>
                 작성하신 내용은 <strong>관리자만 확인할 수 있는 비밀글</strong>로 처리됩니다.
             </p>
-            
             <div class="qna-form-group">
                 <label class="qna-label">성함</label>
                 <input type="text" id="qnaName" class="qna-input" placeholder="홍길동">
             </div>
-            
             <div class="qna-form-group">
                 <label class="qna-label">연락처</label>
                 <input type="tel" id="qnaPhone" class="qna-input" placeholder="01012345678 (숫자만 입력)">
             </div>
-
             <div class="qna-form-group">
                 <label class="qna-label">제목</label>
                 <input type="text" id="qnaTitle" class="qna-input" placeholder="문의합니다.">
             </div>
-
             <div class="qna-form-group">
                 <label class="qna-label">내용</label>
                 <textarea id="qnaContent" class="qna-textarea" placeholder="궁금하신 내용을 자유롭게 남겨주세요."></textarea>
             </div>
-
             <button class="btn-submit" onclick="submitQna()">문의 접수하기</button>
         </div>
     </section>
@@ -521,7 +543,7 @@
     </footer>
 
     <script>
-        // ▼▼▼ 본인의 구글 앱스 스크립트 URL로 교체 (Test 페이지와 동일한 URL) ▼▼▼
+        // ▼▼▼ 본인의 구글 앱스 스크립트 URL로 교체 ▼▼▼
         const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_URL_HERE/exec"; 
 
         // 1. 커서 로직
@@ -562,15 +584,75 @@
                 const span = document.createElement('span');
                 span.innerText = char;
                 span.className = 'char-anim';
-                span.style.animation = `textCascade 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`;
-                span.style.animationDelay = Math.random() * 1.5 + 's';
+                span.style.animation = `textCascade 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`;
+                span.style.animationDelay = Math.random() * 0.3 + 's';
                 if (char === ' ') span.style.width = '0.5rem'; 
                 lineDiv.appendChild(span);
             });
             heroTitle.appendChild(lineDiv);
         });
 
-        // 4. 유튜브 롤링
+        // 4. [UPDATED] 스토어 데이터 생성 및 렌더링
+        // ★★★ 여기에 상품 정보만 입력하면 됩니다 ★★★
+        const storeData = [
+            {
+                tag: "BEST", // 뱃지 텍스트
+                title: "프리미어 프로 실무 마스터 클래스",
+                price: "129,000원",
+                reviewCount: "120", // 리뷰 수
+                score: "4.9", // 평점
+                img: "https://via.placeholder.com/300x200/0310A1/fff?text=Premiere", // 썸네일 이미지
+                url: "https://smartstore.naver.com/YOUR_LINK_1" // 스마트스토어 상세페이지 링크
+            },
+            {
+                tag: "HOT",
+                title: "캡컷(CapCut) PC 수익화 숏폼 완성",
+                price: "89,000원",
+                reviewCount: "85",
+                score: "4.8",
+                img: "https://via.placeholder.com/300x200/D5A491/fff?text=CapCut",
+                url: "https://smartstore.naver.com/YOUR_LINK_2"
+            },
+            {
+                tag: "PREMIUM",
+                title: "1:1 맞춤형 온라인 코칭권",
+                price: "150,000원",
+                reviewCount: "40",
+                score: "5.0",
+                img: "https://via.placeholder.com/300x200/91C7FC/fff?text=Coaching",
+                url: "https://smartstore.naver.com/YOUR_LINK_3"
+            }
+        ];
+
+        function createStoreCard(item) {
+            return `
+                <div class="store-card">
+                    <img src="${item.img}" class="store-thumb" alt="${item.title}">
+                    <div class="store-info">
+                        <span class="store-badge">${item.tag}</span>
+                        <h3 class="store-title">${item.title}</h3>
+                        <div class="store-price">${item.price}</div>
+                        <div class="store-review">
+                            <span>★</span> ${item.score} (${item.reviewCount}개 리뷰)
+                        </div>
+                    </div>
+                    <div class="store-actions">
+                        <a href="${item.url}" target="_blank" class="btn-link">상세보기</a>
+                        <a href="${item.url}" target="_blank" class="btn-npay">
+                            <span class="npay-logo">N</span> Pay 구매
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+
+        const storeContainer = document.getElementById('storeContainer');
+        let storeHtml = '';
+        storeData.forEach(item => storeHtml += createStoreCard(item));
+        storeContainer.innerHTML = storeHtml;
+
+
+        // 5. 유튜브 롤링
         const ytData = [
             { title: "프리미어 기초 꿀팁", img: "https://via.placeholder.com/320x180/333?text=Video+1" },
             { title: "캡컷으로 1분 편집", img: "https://via.placeholder.com/320x180/444?text=Video+2" },
@@ -599,7 +681,7 @@
         ytData.forEach(item => html += createCard(item)); 
         track.innerHTML = html;
 
-        // 5. 강사 슬라이드쇼
+        // 6. 강사 슬라이드쇼
         const slideIntervals = {}; 
         function startSlideshow(cardId) {
             const grid = document.getElementById('instructorsGrid');
@@ -626,7 +708,7 @@
             slides.forEach(slide => slide.classList.remove('visible'));
         }
 
-        // 6. [NEW] 문의하기 제출 (Q&A)
+        // 7. Q&A 제출
         function submitQna() {
             const name = document.getElementById('qnaName').value;
             const phone = document.getElementById('qnaPhone').value;
@@ -644,7 +726,7 @@
                 formData.append('phone', phone);
                 formData.append('qna_title', title);
                 formData.append('qna_content', content);
-                formData.append('result_program', '문의게시판'); // 구분용 태그
+                formData.append('result_program', '문의게시판');
 
                 fetch(SCRIPT_URL, {
                     method: 'POST',
@@ -652,7 +734,6 @@
                     mode: 'no-cors'
                 }).then(() => {
                     alert("성공적으로 접수되었습니다. 관리자 확인 후 연락드리겠습니다.");
-                    // 폼 초기화
                     document.getElementById('qnaName').value = '';
                     document.getElementById('qnaPhone').value = '';
                     document.getElementById('qnaTitle').value = '';
