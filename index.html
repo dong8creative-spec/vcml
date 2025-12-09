@@ -73,12 +73,14 @@
         .nav-links { display: flex; gap: 40px; font-size: 0.95rem; font-weight: 600; color: var(--text-main); align-items: center; }
         .nav-links a:hover { color: var(--brand-blue-hover); opacity: 0.7; }
         
+        /* 메뉴 뱃지 (New) */
         .nav-badge {
             background-color: var(--new-badge); color: white;
             font-size: 0.6rem; padding: 2px 5px; border-radius: 4px;
             margin-left: 4px; vertical-align: middle; font-weight: 800;
         }
 
+        /* 문의 버튼 (헤더 우측) */
         .btn-nav-cta {
             padding: 10px 24px; background: var(--brand-blue); color: white;
             border-radius: 30px; font-weight: 600; font-size: 0.9rem;
@@ -107,6 +109,8 @@
             margin-bottom: 50px; 
             color: var(--text-main); font-weight: 800; letter-spacing: -1px;
         }
+        
+        /* 섹션 타이틀 내 뱃지 스타일 */
         .title-badge {
             font-size: 1rem; vertical-align: middle;
             background: var(--new-badge); color: white;
@@ -145,6 +149,7 @@
             word-break: keep-all;
             opacity: 0; animation: fadeInUp 0.8s ease-out 0.8s forwards; 
         }
+        
         @keyframes fadeInUp { to { opacity: 1; } }
 
         /* 2. 과정진단 */
@@ -184,16 +189,12 @@
         .course-card h3 { font-size: 1.5rem; margin-bottom: 15px; font-weight: 700; color: var(--text-main); }
         .course-card p { font-size: 1rem; color: var(--text-sub); margin-bottom: 0; line-height: 1.6; }
 
-        /* 4. [UPDATED] 수강신청 (좁은 간격 + 버튼 변경) */
+        /* 4. 수강신청 (무한 롤링, 버튼 통합) */
         #store { background-color: var(--brand-white); overflow: hidden; } 
-        
-        /* 왼쪽 -> 오른쪽 무한 롤링 (천천히) */
-        .store-track { display: flex; width: max-content; animation: scrollRight 65s linear infinite; }
+        .store-track { display: flex; width: max-content; animation: scrollRight 360s linear infinite; }
         
         .store-card {
-            width: 320px; flex-shrink: 0; 
-            /* [수정] 간격 5px */
-            margin-right: 5px; 
+            width: 320px; flex-shrink: 0; margin-right: 15px; 
             background: white; border-radius: 24px; padding: 0; overflow: hidden;
             box-shadow: 0 5px 20px rgba(0,0,0,0.05); transition: 0.3s;
             display: flex; flex-direction: column; border: 1px solid #eee;
@@ -207,23 +208,20 @@
 
         .store-info { padding: 25px; flex-grow: 1; text-align: left; display: flex; flex-direction: column; }
         .store-badge { 
-            font-size: 0.75rem; font-weight: 700; color: var(--brand-blue); 
+            font-size: 0.8rem; font-weight: 700; color: var(--brand-blue); 
             background: var(--brand-light); padding: 4px 10px; border-radius: 4px;
             display: inline-block; margin-bottom: 12px; align-self: flex-start;
         }
         .store-title { font-size: 1.3rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; line-height: 1.3; }
         .store-desc { font-size: 0.9rem; color: #666; margin-bottom: 20px; line-height: 1.5; flex-grow: 1; }
         
-        /* [수정] 가격과 버튼 같은 줄 배치 */
         .store-footer {
             display: flex; align-items: center; justify-content: space-between;
             margin-top: auto; border-top: 1px solid #f5f5f5; padding-top: 20px;
         }
         .store-price { color: var(--text-main); font-weight: 800; font-size: 1.1rem; }
         
-        /* [수정] 버튼 스타일: 메인 컬러, 텍스트 '신청하기', 크기 5/6 조정 */
         .btn-store {
-            /* padding 조정으로 크기 조절 */
             padding: 10px 20px; text-align: center; border-radius: 30px; 
             font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s;
             background-color: var(--brand-blue); color: white; border: none; 
@@ -231,7 +229,7 @@
         }
         .btn-store:hover { background-color: var(--brand-blue-hover); }
 
-        /* 5. 캘린더 */
+        /* 5. 캘린더 (Schedule) */
         #schedule { background-color: var(--brand-white); }
         .calendar-wrapper { max-width: 1000px; margin: 0 auto; }
         .calendar-box {
@@ -239,7 +237,7 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.05); height: 700px; background: white;
         }
 
-        /* 6. 유튜브 */
+        /* 6. 유튜브 (Content) */
         .youtube-section { 
             padding: 90px 0; background: var(--brand-blue); color: white; overflow: hidden; 
         }
@@ -261,19 +259,7 @@
         @keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         @keyframes scrollRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
 
-        /* 7. 강사 소개 */
-        #about { background-color: var(--brand-gray); }
-        .instructors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 60px; max-width: 1000px; margin: 0 auto; }
-        .instructor-card { text-align: left; }
-        .profile-img { 
-            width: 100%; height: 400px; object-fit: cover; border-radius: 30px; 
-            margin-bottom: 30px; background: #ddd;
-        }
-        .instructor-name { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
-        .instructor-role { color: var(--brand-blue-hover); font-weight: 700; margin-bottom: 20px; display: block; }
-        .instructor-desc { color: #555; line-height: 1.7; word-break: keep-all; font-size: 1.05rem; }
-
-        /* 8. AI 기획 */
+        /* 7. AI 기획 도우미 */
         #ai-tool { background-color: var(--brand-white); }
         .ai-wrapper { 
             max-width: 900px; margin: 0 auto; 
@@ -291,13 +277,15 @@
         .ai-body { padding: 40px; }
         
         .ai-input-group { display: flex; gap: 10px; margin-bottom: 60px; flex-wrap: wrap; }
-        .ai-input, .ai-select { 
-            padding: 15px; border-radius: 12px; border: 1px solid #ddd;
+        
+        .ai-input { 
+            flex: 2; padding: 15px; border-radius: 12px; border: 1px solid #ddd;
             font-size: 1rem; font-family: inherit; background: var(--brand-gray);
         }
-        .ai-input { flex: 2; }
-        .ai-select { flex: 1; min-width: 150px; }
-        
+        .ai-select {
+            flex: 1; padding: 15px; border-radius: 12px; border: 1px solid #ddd;
+            font-size: 1rem; font-family: inherit; background: var(--brand-gray); min-width: 150px;
+        }
         .btn-ai-submit {
             width: 100%; padding: 18px; font-size: 1.1rem; font-weight: 700;
             background-color: var(--brand-blue); color: white;
@@ -306,6 +294,7 @@
             margin-top: 20px; 
         }
         .btn-ai-submit:hover { background-color: var(--brand-blue-hover); }
+        .btn-ai-submit:disabled { background-color: #eee; color: #aaa; cursor: not-allowed; }
 
         .ai-result { 
             margin-top: 30px; padding: 25px; border-radius: 15px; 
@@ -316,6 +305,18 @@
         .ai-loading { text-align: center; display: none; margin-top: 20px; color: var(--brand-blue); font-weight: 600; }
         .ai-loading.active { display: block; }
         .ai-sparkle { font-size: 1.2rem; }
+
+        /* 8. 강사 소개 */
+        #about { background-color: var(--brand-gray); }
+        .instructors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 60px; max-width: 1000px; margin: 0 auto; }
+        .instructor-card { text-align: left; }
+        .profile-img { 
+            width: 100%; height: 400px; object-fit: cover; border-radius: 30px; 
+            margin-bottom: 30px; background: #ddd;
+        }
+        .instructor-name { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
+        .instructor-role { color: var(--brand-blue-hover); font-weight: 700; margin-bottom: 20px; display: block; }
+        .instructor-desc { color: #555; line-height: 1.7; word-break: keep-all; font-size: 1.05rem; }
 
         /* 9. 문의하기 */
         #qna { background-color: var(--brand-white); }
@@ -358,7 +359,7 @@
             .curriculum-grid, .store-grid { grid-template-columns: 1fr; }
             .yt-card { width: 280px; }
             .profile-img { height: 350px; }
-            .store-card { margin-right: 15px; } /* 모바일 간격 */
+            .store-card { margin-right: 15px; } 
         }
     </style>
 </head>
@@ -453,7 +454,7 @@
         </div>
     </section>
 
-    <!-- 4. [FINAL] 수강신청 섹션 (6종 카드, 타이트한 간격) -->
+    <!-- 4. 수강신청 -->
     <section id="store" class="section">
         <div class="section-header">
             <h2 class="section-title">수강 신청</h2>
@@ -530,13 +531,13 @@
                 <img src="https://via.placeholder.com/400x500/10069F/fff?text=CEO" class="profile-img" alt="Lee Dong Heon">
                 <h3 class="instructor-name">이동헌</h3>
                 <span class="instructor-role">CEO & Director</span>
-                <p class="instructor-desc">현직 영상 편집자 & 전문 교육 강사<br>1일 45편 숏폼편집 가능</p>
+                <p class="instructor-desc">현직 전문 영상편집자 & 전문교육 강사<br>(2015~2018)시청자미디어재단 영상제작강사</p>
             </div>
             <div class="instructor-card">
                 <img src="https://via.placeholder.com/400x500/000080/fff?text=Instructor" class="profile-img" alt="Lee Ga Ram">
-                <h3 class="instructor-name">이가람</h3>
+                <h3 class="instructor-name">Lee Ga Ram</h3>
                 <span class="instructor-role">Production Instructor</span>
-                <p class="instructor-desc">대구/울산 시청자미디어센터 책임강사<br>유튜브/SNS 바이럴 영상 다수 제작</p>
+                <p class="instructor-desc">모션 그래픽 디자인 & 숏폼 기획 전문가<br>유튜브/SNS 바이럴 영상 다수 제작</p>
             </div>
         </div>
     </section>
@@ -568,11 +569,11 @@
     </footer>
 
     <script>
-        // ▼▼▼ 본인 앱스 스크립트 URL 입력 ▼▼▼
+        // ▼▼▼ 본인의 앱스 스크립트 URL 입력 ▼▼▼
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwTi1rM3-8rN6OSYz-UF3390p43X6pVGFtZJbmoEUZm4S4O_uNjjD_dHADmMaP4BqcT_Q/exec"; 
         
-        // ★ [필수] Gemini API 키 입력 ★
-        const apiKey = "AIzaSyAhP-5bnxyeeUbKnnXDkxtQ6CDHIbDf4Og"; 
+        // ★ [필수] Gemini API 키를 여기에 넣으세요 ★
+        const apiKey = "AIzaSyCkgQoz8NQ8balo5DbE1-VeomYQOmHKdz4"; 
 
         const cursor = document.querySelector('.cursor-arrow');
         document.addEventListener('mousemove', e => {
@@ -596,30 +597,30 @@
         });
         ytTrack.innerHTML = ytHtml;
 
-        // 2. [FINAL] 수강신청 데이터 (6개 확장 + Adobe 패키지 + 가격 반영)
+        // 2. [FINAL] 수강신청 데이터 (6개 확장 + 버튼 통합)
         const storeData = [
             { 
-                tag:"Basic", title:"CapCut 초보자 과정", price:"10,000원", 
+                tag:"Basic", title:"CapCut 초급 과정", price:"50,000원", 
                 desc: "왕초보도 가능한 컷편집 입문", img:"https://via.placeholder.com/300x300/E2AB2D/fff?text=CapCut", url:"#" 
             },
             { 
-                tag:"Pro", title:"CapCut PC PRO", price:"250,000원", 
+                tag:"Pro", title:"CapCut 프로 과정", price:"150,000원", 
                 desc: "PC 캡컷으로 완성하는 고퀄리티 릴스", img:"https://via.placeholder.com/300x300/E2AB2D/fff?text=CapCut", url:"#" 
             },
             { 
-                tag:"Basic", title:"영상편집자 입문", price:"150,000원", 
-                desc: "프리미어 프로와 애프터 이펙트 기초 다지기", img:"https://via.placeholder.com/300x300/9933FF/fff?text=Adobe+Master", url:"#" 
+                tag:"Adobe Basic", title:"어도비 마스터 패키지 (입문)", price:"250,000원", 
+                desc: "프리미어 프로 + 애프터 이펙트 기초 완성", img:"https://via.placeholder.com/300x300/9933FF/fff?text=Adobe+Master", url:"#" 
             },
             { 
-                tag:"Master", title:"영상편집 실무자반", price:"1,250,000원", 
+                tag:"Adobe Pro", title:"어도비 마스터 패키지 (실무)", price:"550,000원", 
                 desc: "현직자 수준의 실무 테크닉 마스터", img:"https://via.placeholder.com/300x300/9933FF/fff?text=Adobe+Master", url:"#" 
             },
             { 
-                tag:"Revenue 1", title:"수익화 프로그램 / 1채널", price:"800,000원", 
+                tag:"Revenue 1", title:"수익화 프로그램 (1채널)", price:"800,000원", 
                 desc: "제휴마케팅 1개 채널 집중 수익화", img:"https://via.placeholder.com/300x300/FFD700/000?text=Revenue", url:"#" 
             },
             { 
-                tag:"Revenue 5", title:"수익화 프로그램 / 5채널", price:"1,200,000원", 
+                tag:"Revenue 5", title:"수익화 프로그램 (5채널)", price:"1,200,000원", 
                 desc: "5개 채널 동시 운영 자동화 시스템", img:"https://via.placeholder.com/300x300/FFD700/000?text=Revenue", url:"#" 
             }
         ];
@@ -661,10 +662,15 @@
             container.addEventListener('mouseleave', () => { isDown=false; track.style.animationPlayState='running'; });
             container.addEventListener('mouseup', () => { isDown=false; track.style.animationPlayState='running'; });
             container.addEventListener('mousemove', (e) => { if(!isDown) return; e.preventDefault(); const x=e.pageX-container.offsetLeft; const walk=(x-startX)*2; container.scrollLeft = scrollLeft-walk; });
+            
+            // 모바일 터치 이벤트
+            container.addEventListener('touchstart', (e) => { isDown=true; startX=e.touches[0].pageX - container.offsetLeft; scrollLeft=container.scrollLeft; track.style.animationPlayState='paused'; });
+            container.addEventListener('touchend', () => { isDown=false; track.style.animationPlayState='running'; });
+            container.addEventListener('touchmove', (e) => { if(!isDown) return; const x=e.touches[0].pageX - container.offsetLeft; const walk=(x-startX)*2; container.scrollLeft = scrollLeft-walk; });
         }
         
-        initSlider('storeContainer', 'storeTrack', 360); // 360초 (아주 느리게)
-        initSlider('ytContainer', 'ytTrack', 60); // 60초 (보통)
+        initSlider('storeContainer', 'storeTrack', 360); // Store (아주 느리게)
+        initSlider('ytContainer', 'ytTrack', 60); // YouTube (보통)
 
         function submitQna() {
             if(confirm("문의를 접수하시겠습니까?")) {
@@ -677,33 +683,46 @@
             }
         }
         
+        // ★ [FINAL] Gemini AI 로직 (새 창 팝업) ★
         const GEMINI_SYSTEM_PROMPT = `
         당신은 'VCML'의 영상 기획 전문가 AI입니다.
         사용자가 입력한 주제에 맞춰 바이럴 숏폼 영상 기획안을 작성해 주세요.
         톤앤매너: 전문적이면서도 친절하고 재치 있게.
-        출력 형식:
-        1. 🎣 후킹 제목 (3가지 추천)
-        2. 🎬 추천 구성 (도입부 - 본론 - 결말)
-        3. 💡 편집 꿀팁 (프리미어/캡컷 활용법)
+        출력 형식: HTML 태그를 사용하여 깔끔하게 디자인된 보고서 형태.
         `;
 
         async function generateIdea() {
             const topic = document.getElementById('aiTopic').value;
             const platform = document.getElementById('aiPlatform').value;
-            const resultDiv = document.getElementById('aiResult');
-            const loadingDiv = document.getElementById('aiLoading');
 
             if (!topic) {
                 alert("주제를 입력해주세요!");
                 return;
             }
 
-            loadingDiv.classList.add('active');
-            resultDiv.classList.remove('active');
-            resultDiv.innerText = "";
+            // 1. 빈 팝업창 먼저 열기 (팝업 차단 방지)
+            const popup = window.open('', 'AI_RESULT', 'width=600,height=800');
+            popup.document.write(`
+                <html>
+                <head>
+                    <title>AI 기획안 생성 중...</title>
+                    <style>
+                        body { font-family: sans-serif; padding: 40px; text-align: center; color: #333; }
+                        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #10069F; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+                        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                    </style>
+                </head>
+                <body>
+                    <div class="loader"></div>
+                    <h2>AI가 열심히 아이디어를 짜고 있습니다... 🧠</h2>
+                    <p>잠시만 기다려주세요!</p>
+                </body>
+                </html>
+            `);
 
             const userPrompt = `주제: ${topic}, 플랫폼: ${platform}. 위 주제로 영상을 만들려고 해. 기획안을 짜줘.`;
             
+            // Log to Google Sheet
             const formData = new FormData();
             formData.append('result_program', 'AI기획');
             formData.append('qna_title', topic);
@@ -725,20 +744,26 @@
 
                 const data = await response.json();
                 const text = data.candidates[0].content.parts[0].text;
+                
+                // 마크다운을 HTML로 변환 (간단히 줄바꿈 등 처리)
+                const formattedText = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-                loadingDiv.classList.remove('active');
-                resultDiv.innerText = text;
-                resultDiv.classList.add('active');
+                // 팝업창 내용 업데이트
+                popup.document.body.innerHTML = `
+                    <div style="text-align:left; padding:20px; line-height:1.6;">
+                        <h2 style="color:#10069F; border-bottom:2px solid #10069F; padding-bottom:10px;">✨ AI 숏폼 기획안</h2>
+                        <div>${formattedText}</div>
+                        <div style="margin-top:30px; text-align:center;">
+                            <button onclick="window.print()" style="padding:10px 20px; background:#10069F; color:white; border:none; border-radius:5px; cursor:pointer;">인쇄 / PDF 저장</button>
+                            <button onclick="window.close()" style="padding:10px 20px; background:#eee; color:#333; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">닫기</button>
+                        </div>
+                    </div>
+                `;
 
             } catch (error) {
-                console.error("Error generating content:", error);
-                loadingDiv.classList.remove('active');
-                
-                if (apiKey === "") {
-                    alert("API 키가 설정되지 않았습니다. 코드 내 apiKey 변수를 확인해주세요.");
-                } else {
-                    alert("아이디어 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-                }
+                console.error("Error:", error);
+                popup.document.body.innerHTML = `<h3>오류가 발생했습니다. 다시 시도해주세요.</h3>`;
+                if (apiKey === "") alert("API 키가 설정되지 않았습니다.");
             }
         }
     </script>
