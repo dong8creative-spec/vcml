@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쿠팡 파트너스 적성 진단 | VCML</title>
+    
+    <!-- 1. Tailwind CSS 불러오기 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. React & ReactDOM 불러오기 -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 3. Babel (JSX 변환기) 불러오기 -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 폰트 설정 (VCML 테마 유지) -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Montserrat', 'IBM Plex Sans KR', sans-serif; }
+        
+        /* 애니메이션 효과 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- 리액트 앱이 들어갈 뿌리(Root) -->
+    <div id="root"></div>
+
+    <!-- 리액트 코드 작성 (text/babel 필수) -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 아이콘 컴포넌트 (Lucide 아이콘을 SVG로 직접 구현)
+        const ChevronRight = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>
+        );
+        const Zap = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        );
+        const AlertTriangle = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        );
+        const BarChart2 = ({size=24, className="", style={}}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        );
+
+        // 메인 컴포넌트
+        const CoupangPartnersTest = () => {
+            const [step, setStep] = useState('intro');
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [score, setScore] = useState(0);
+            const [progress, setProgress] = useState(0);
+
+            // 디자인 테마 색상 (VCML/쿠팡 브랜드 컬러)
+            const themeColors = {
+                blue: "#10069F",  
+                red: "#E53A40",   
+                green: "#2DB400", 
+                orange: "#FF9600" 
+            };
+
+            const questions = [
+                // PART 1. 트렌드 & 정보 민감도 (Blue)
+                {
+                    id: 1, category: "PART 1. 트렌드 & 정보 민감도", theme: "blue",
+                    q: "최근 일주일 사이 가장 화제가 되었던\n뉴스나 밈(Meme)을 3가지 이상 말할 수 있나요?",
+                    options: [
+                        { text: "A. 바로 떠오르며, 그것과 관련된 상품이나 키워드도 연상된다.", score: 3 },
+                        { text: "B. 들어본 것 같기는 한데 정확한 내용은 검색해봐야 안다.", score: 2 },
+                        { text: "C. 뉴스를 거의 안 봐서 세상 돌아가는 일을 잘 모른다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 2, category: "PART 1. 트렌드 & 정보 민감도", theme: "blue",
+                    q: "평소 정보를 습득하는\n주된 창구는 어디인가요?",
+                    options: [
+                        { text: "A. 트위터(X), 인스타 릴스, 커뮤니티 등 반응 빠른 곳", score: 3 },
+                        { text: "B. 네이버 메인 뉴스, TV 저녁 뉴스", score: 2 },
+                        { text: "C. 지인이 말해주지 않으면 잘 모른다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 3, category: "PART 1. 트렌드 & 정보 민감도", theme: "blue",
+                    q: "'한강 작가 노벨상 수상' 같은\n대형 이슈가 터졌을 때 드는 생각은?",
+                    options: [
+                        { text: "A. \"책 주문 폭주하겠네? 관련 굿즈도 팔릴까?\"", score: 3 },
+                        { text: "B. \"와 대단하다, 국뽕 차오른다.\"", score: 2 },
+                        { text: "C. 별 관심 없다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 4, category: "PART 1. 트렌드 & 정보 민감도", theme: "blue",
+                    q: "10대~20대 사이에서 유행하는\n언어나 챌린지를 보면 어떤가요?",
+                    options: [
+                        { text: "A. 무슨 뜻인지 찾아보고, 내 콘텐츠 제목에 활용해 본다.", score: 3 },
+                        { text: "B. 유치해 보이지만 유행이라니 참고는 한다.", score: 2 },
+                        { text: "C. 요즘 애들은 이상하다며 거부감이 든다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 5, category: "PART 1. 트렌드 & 정보 민감도", theme: "blue",
+                    q: "계절이 바뀌거나 명절(설날, 추석)이\n다가오면 무엇을 준비하나요?",
+                    options: [
+                        { text: "A. 2~3주 전부터 해당 시즌 키워드와 상품을 미리 정리한다.", score: 3 },
+                        { text: "B. 날짜가 닥치면 그때 가서 부랴부랴 관련 글을 쓴다.", score: 2 },
+                        { text: "C. 평소 올리던 대로 똑같이 올린다.", score: 1 }
+                    ]
+                },
+                // PART 2. 마인드셋 (Red)
+                {
+                    id: 6, category: "PART 2. 마인드셋 & 회복탄력성", theme: "red",
+                    q: "열심히 만든 콘텐츠가 반응이 없고\n수익이 0원일 때, 본인의 심경은?",
+                    options: [
+                        { text: "A. \"데이터가 쌓이는 과정이다. 무엇이 문제인지 분석하자.\"", score: 3 },
+                        { text: "B. \"역시 레드오션인가? 다른 부업을 찾아봐야 하나...\"", score: 2 },
+                        { text: "C. \"강의 내용이 잘못된 것 아닌가? 속은 기분이다.\"", score: 1 }
+                    ]
+                },
+                {
+                    id: 7, category: "PART 2. 마인드셋 & 회복탄력성", theme: "red",
+                    q: "강의나 매뉴얼에 나오지 않은\n예상치 못한 오류가 발생했을 때?",
+                    options: [
+                        { text: "A. 오류 메시지를 구글이나 유튜브에 먼저 검색해 해결한다.", score: 3 },
+                        { text: "B. 강사에게 질문하고 답변이 올 때까지 기다린다.", score: 2 },
+                        { text: "C. 짜증이 나서 컴퓨터를 끄거나 포기하고 싶어진다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 8, category: "PART 2. 마인드셋 & 회복탄력성", theme: "red",
+                    q: "플랫폼의 정책 변경으로\n노출이 줄어드는 상황이 온다면?",
+                    options: [
+                        { text: "A. \"플랫폼은 변한다. 변화된 로직을 빨리 파악해 적용하자.\"", score: 3 },
+                        { text: "B. 불안해하며 강사에게 예전 방법이 왜 안 통하는지 따진다.", score: 2 },
+                        { text: "C. \"이제 끝물이다\"라고 단정 짓고 그만둔다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 9, category: "PART 2. 마인드셋 & 회복탄력성", theme: "red",
+                    q: "\"하루 1시간만 투자하면 월 300만 원!\"\n같은 광고 문구를 보면?",
+                    options: [
+                        { text: "A. \"초기엔 10시간 이상의 노력이 압축되었겠지.\"", score: 3 },
+                        { text: "B. \"나도 강의만 들으면 바로 저렇게 되겠지?\"", score: 2 },
+                        { text: "C. \"사기꾼들이다. 다 거짓말이다.\"", score: 1 }
+                    ]
+                },
+                {
+                    id: 10, category: "PART 2. 마인드셋 & 회복탄력성", theme: "red",
+                    q: "이 과정을 수강하는 동안\n본인의 시간 사용 우선순위는?",
+                    options: [
+                        { text: "A. 잠이나 여가 시간을 줄여서라도 과제 시간을 무조건 확보한다.", score: 3 },
+                        { text: "B. 남는 시간에 틈틈이 하겠지만, 본업이나 약속이 우선이다.", score: 2 },
+                        { text: "C. 바빠서 못 할 수도 있으니, 요점만 떠먹여 주길 바란다.", score: 1 }
+                    ]
+                },
+                // PART 3. 디지털 도구 (Green)
+                {
+                    id: 11, category: "PART 3. 디지털 도구 & 생산성", theme: "green",
+                    q: "새로운 스마트폰 앱이나\nPC 프로그램을 설치해야 할 때?",
+                    options: [
+                        { text: "A. 이것저것 눌러보며 직관적으로 기능을 익히는 편이다.", score: 3 },
+                        { text: "B. 사용 설명서나 유튜브 강의를 보며 천천히 따라 한다.", score: 2 },
+                        { text: "C. 설치 과정부터 막혀서 주변의 도움 없이는 불가능하다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 12, category: "PART 3. 디지털 도구 & 생산성", theme: "green",
+                    q: "챗GPT 같은 AI 도구를\n활용해 본 경험은?",
+                    options: [
+                        { text: "A. 업무/창작에 활용해보았고, 질문을 수정하며 원하는 답을 얻는다.", score: 3 },
+                        { text: "B. 신기해서 몇 번 써봤지만, 실질적인 도움은 못 받았다.", score: 2 },
+                        { text: "C. 회원가입도 안 했거나, 사용할 필요성을 못 느낀다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 13, category: "PART 3. 디지털 도구 & 생산성", theme: "green",
+                    q: "간단한 이미지 편집(글씨 넣기, 크기 조절 등)이\n필요할 때?",
+                    options: [
+                        { text: "A. 미리캔버스, 포토샵 등을 이용해 10분 내로 뚝딱 만든다.", score: 3 },
+                        { text: "B. 그림판이나 기본 앱으로 겨우겨우 한다.", score: 2 },
+                        { text: "C. 할 줄 몰라서 텍스트로만 때우거나 남에게 부탁한다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 14, category: "PART 3. 디지털 도구 & 생산성", theme: "green",
+                    q: "엑셀이나 구글 스프레드시트\n활용 능력은?",
+                    options: [
+                        { text: "A. 데이터를 정렬하고 기본 함수를 써서 리스트 관리가 가능하다.", score: 3 },
+                        { text: "B. 칸에 글씨를 입력하고 저장하는 정도는 한다.", score: 2 },
+                        { text: "C. 엑셀을 켜는 것조차 부담스럽다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 15, category: "PART 3. 디지털 도구 & 생산성", theme: "green",
+                    q: "내 콘텐츠의 링크 클릭률(CTR)을\n높이기 위한 시도는?",
+                    options: [
+                        { text: "A. 썸네일 문구와 이미지를 바꿔가며 테스트해 본 적이 있다.", score: 3 },
+                        { text: "B. 남들이 좋다는 방식(노란색 배경 등)을 그대로 따라 한다.", score: 2 },
+                        { text: "C. 그냥 올리면 알아서 클릭해 주겠지 하고 둔다.", score: 1 }
+                    ]
+                },
+                // PART 4. 마케팅 감각 (Orange)
+                {
+                    id: 16, category: "PART 4. 마케팅 감각", theme: "orange",
+                    q: "\"비 오는 날\"에 쿠팡 파트너스로\n무엇을 팔면 좋을까요?",
+                    options: [
+                        { text: "A. 제습기, 레인부츠, 김치전 밀키트", score: 3 },
+                        { text: "B. 우산", score: 2 },
+                        { text: "C. 그냥 평소에 잘 팔리는 생수나 휴지", score: 1 }
+                    ]
+                },
+                {
+                    id: 17, category: "PART 4. 마케팅 감각", theme: "orange",
+                    q: "내가 써보지 않은 물건을 팔아야 할 때,\n상세페이지에서 무엇을 보나요?",
+                    options: [
+                        { text: "A. 구매자들의 '불만족 리뷰'를 찾아 단점을 보완하는 멘트를 짠다.", score: 3 },
+                        { text: "B. 판매자가 적어놓은 장점과 스펙을 그대로 복사해 온다.", score: 2 },
+                        { text: "C. 사진만 대충 캡처해서 올린다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 18, category: "PART 4. 마케팅 감각", theme: "orange",
+                    q: "사람들이 물건을 구매할 때\n가장 결정적인 요인은?",
+                    options: [
+                        { text: "A. \"이 제품이 지금 당장 내 불편함을 해결해 준다\"는 확신", score: 3 },
+                        { text: "B. 제품의 스펙이 얼마나 뛰어난지", score: 2 },
+                        { text: "C. 가격이 무조건 싼 것", score: 1 }
+                    ]
+                },
+                {
+                    id: 19, category: "PART 4. 마케팅 감각", theme: "orange",
+                    q: "경쟁자가 나와 똑같은 상품을 올렸는데\n조회수가 훨씬 높다면?",
+                    options: [
+                        { text: "A. 제목, 키워드, 썸네일을 비교 분석해서 내 것에 적용한다.", score: 3 },
+                        { text: "B. 운이 좋은 놈이라며 부러워한다.", score: 2 },
+                        { text: "C. 기분 나빠서 그 상품을 내린다.", score: 1 }
+                    ]
+                },
+                {
+                    id: 20, category: "PART 4. 마케팅 감각", theme: "orange",
+                    q: "마지막으로,\n강사에게 바라는 점은?",
+                    options: [
+                        { text: "A. \"시행착오를 줄일 방향과 노하우를 주세요. 실행은 제가 합니다.\"", score: 3 },
+                        { text: "B. \"시키는 대로 다 할 테니 수익 안 나면 책임져주세요.\"", score: 2 },
+                        { text: "C. \"저는 바쁘니까 알아서 돈 벌리는 세팅을 다 해주세요.\"", score: 1 }
+                    ]
+                }
+            ];
+
+            const handleStart = () => {
+                setStep('quiz');
+            };
+
+            const handleAnswer = (optionScore) => {
+                setScore(score + optionScore);
+                if (currentQuestion < questions.length - 1) {
+                    setCurrentQuestion(currentQuestion + 1);
+                    setProgress(((currentQuestion + 1) / questions.length) * 100);
+                    window.scrollTo(0, 0);
+                } else {
+                    setStep('analyzing');
+                }
+            };
+
+            useEffect(() => {
+                if (step === 'analyzing') {
+                    const timer = setTimeout(() => { setStep('result'); }, 2500);
+                    return () => clearTimeout(timer);
+                }
+            }, [step]);
+
+            const currentThemeColor = themeColors[questions[currentQuestion]?.theme || 'blue'];
+            const hexToRgba = (hex, alpha) => {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            };
+
+            const getResult = () => {
+                if (score >= 50) {
+                    return {
+                        type: 'A',
+                        icon: <BarChart2 className="w-16 h-16 mb-4" style={{ color: themeColors.blue }} />,
+                        title: "🏆 콘텐츠 수익화 과정 (상위 10% 인재)",
+                        subtitle: "트렌드 감각 + 멘탈 + 실행력 3박자 완비!",
+                        description: "대표님은 이미 준비된 에이스입니다. 기초 툴 사용법 같은 건 건너뛰고, 바로 실전 수익화 전략(키워드 분석, 소구점 타겟팅)으로 들어오시면 됩니다. 지금 바로 시작하면 가장 빠른 성과를 낼 유형입니다.",
+                        borderColor: themeColors.blue,
+                        bgColor: hexToRgba(themeColors.blue, 0.05),
+                        textColor: themeColors.blue,
+                        btnColor: themeColors.blue,
+                        btnHover: "#0d0580",
+                        btnText: "수익화 실전반 신청하기"
+                    };
+                } else if (score >= 35) {
+                    return {
+                        type: 'B',
+                        icon: <Zap className="w-16 h-16 text-yellow-500 mb-4" />,
+                        title: "🌱 콘텐츠 제작반 (기초 필수)",
+                        subtitle: "열정은 충분! 하지만 '무기'가 필요합니다.",
+                        description: "돈을 벌고 싶은 마음은 크지만, 아직 트렌드를 읽는 눈이나 툴 활용 능력이 조금 부족합니다. 지금 바로 수익화 반에 오시면 헤매실 수 있습니다. [콘텐츠 제작반]에서 썸네일, 숏폼 제작 등 '총 쏘는 법'부터 배우고 합류하세요.",
+                        borderColor: "#EAB308", bgColor: "#FEFCE8", textColor: "#713F12",
+                        btnColor: "#CA8A04", btnHover: "#A16207",
+                        btnText: "콘텐츠 기초반 커리큘럼 보기"
+                    };
+                } else {
+                    return {
+                        type: 'C',
+                        icon: <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />,
+                        title: "⛔ 수강 반려 대상",
+                        subtitle: "죄송하지만, 현재 수강이 어렵습니다.",
+                        description: "본 과정은 기본적인 디지털 툴 활용 능력과 하루 3시간 이상의 투입이 필수적입니다. 현재 대표님의 상황(시간 부족, 컴퓨터 활용 능력 등)으로는 수강하셔도 만족스러운 결과를 얻기 어렵습니다. 추후 더 기초적인 과정이 개설되면 안내드리겠습니다.",
+                        borderColor: "#E5E7EB", bgColor: "#F3F4F6", textColor: "#1F2937",
+                        btnColor: "#4B5563", btnHover: "#374151",
+                        btnText: "홈으로 돌아가기"
+                    };
+                }
+            };
+
+            const result = getResult();
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4 font-sans">
+                    <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl overflow-hidden min-h-[600px] flex flex-col transition-colors duration-500">
+                        {step === 'intro' && (
+                            <div className="flex flex-col items-center justify-center h-full p-8 text-center flex-grow animate-fade-in">
+                                <div className="mb-8">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/f/ff/Coupang_logo.svg" alt="Coupang Logo" className="h-16 w-auto" onError={(e) => { e.target.onerror = null; e.target.style.display='none'; }} />
+                                </div>
+                                <h1 className="text-2xl font-bold text-gray-900 mb-2">쿠팡 파트너스<br/>적성 & 등급 진단</h1>
+                                <p className="text-gray-600 mb-8">나는 과연 이 부업으로 돈을 벌 수 있을까?<br/>나에게 맞는 반을 3분 만에 진단해 드립니다.</p>
+                                <div className="p-4 rounded-lg text-sm text-left w-full mb-8" style={{ backgroundColor: hexToRgba(themeColors.blue, 0.05), color: themeColors.blue }}>
+                                    <p className="font-semibold mb-2">💡 테스트 전 확인사항</p>
+                                    <ul className="list-disc pl-4 space-y-1">
+                                        <li>총 20문항입니다.</li>
+                                        <li>솔직하게 답변해 주세요.</li>
+                                        <li>결과에 따라 수강이 거절될 수 있습니다.</li>
+                                    </ul>
+                                </div>
+                                <button onClick={handleStart} className="w-full text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform active:scale-95" style={{ backgroundColor: themeColors.blue }}>
+                                    진단 시작하기 <ChevronRight size={20} />
+                                </button>
+                            </div>
+                        )}
+
+                        {step === 'quiz' && (
+                            <div className="flex flex-col h-full">
+                                <div className="h-2 bg-gray-100 w-full transition-all duration-300">
+                                    <div className="h-full transition-all duration-300 ease-out" style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%`, backgroundColor: currentThemeColor }}></div>
+                                </div>
+                                <div className="p-6 flex-grow flex flex-col">
+                                    <div className="mb-2">
+                                        <span className="text-xs font-bold px-2 py-1 rounded transition-colors duration-300" style={{ color: currentThemeColor, backgroundColor: hexToRgba(currentThemeColor, 0.1) }}>{questions[currentQuestion].category}</span>
+                                        <span className="text-xs text-gray-400 float-right">{currentQuestion + 1} / {questions.length}</span>
+                                    </div>
+                                    <h2 className="text-xl font-bold text-gray-800 mt-2 mb-8 leading-relaxed whitespace-pre-line">{questions[currentQuestion].q}</h2>
+                                    <div className="space-y-3 mt-auto">
+                                        {questions[currentQuestion].options.map((option, index) => (
+                                            <button key={index} onClick={() => handleAnswer(option.score)} className="w-full p-4 text-left border-2 rounded-xl transition-all active:scale-98 text-gray-700 font-medium hover:shadow-md" 
+                                                style={{ borderColor: 'transparent', boxShadow: '0 0 0 1px #f3f4f6 inset' }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = hexToRgba(currentThemeColor, 0.05); e.currentTarget.style.borderColor = currentThemeColor; e.currentTarget.style.boxShadow = `0 0 0 1px ${currentThemeColor} inset`; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = '#f3f4f6'; e.currentTarget.style.boxShadow = 'none'; }}>
+                                                {option.text}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 'analyzing' && (
+                            <div className="flex flex-col items-center justify-center h-full p-8 text-center flex-grow">
+                                <div className="relative mb-6">
+                                    <div className="w-16 h-16 border-4 rounded-full animate-spin" style={{ borderColor: hexToRgba(themeColors.blue, 0.2), borderTopColor: themeColors.blue }}></div>
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900 mb-2">답변 분석 중...</h2>
+                                <p className="text-gray-500 text-sm">대표님의 성향과 콘텐츠 감각을<br/>데이터 기반으로 분류하고 있습니다.</p>
+                            </div>
+                        )}
+
+                        {step === 'result' && (
+                            <div className="flex flex-col h-full animate-fade-in p-6 overflow-y-auto">
+                                <div className="flex flex-col items-center text-center mb-6">
+                                    {result.icon}
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-1">{result.title}</h2>
+                                    <p className="text-gray-500 font-medium">{result.subtitle}</p>
+                                </div>
+                                <div className="p-6 rounded-xl border mb-6" style={{ borderColor: result.borderColor, backgroundColor: result.bgColor, color: result.textColor }}>
+                                    <h3 className="font-bold mb-3 text-lg border-b border-black/10 pb-2">진단 결과 리포트</h3>
+                                    <p className="leading-relaxed text-sm whitespace-pre-line text-gray-700">{result.description}</p>
+                                </div>
+                                <div className="mt-auto space-y-3">
+                                    <button className="w-full py-4 rounded-xl text-white font-bold shadow-lg transition-transform active:scale-95" style={{ backgroundColor: result.btnColor }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = result.btnHover} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = result.btnColor}>{result.btnText}</button>
+                                    <button onClick={() => { window.location.href = 'index.html'; }} className="w-full py-3 text-gray-400 text-sm hover:text-gray-600 transition-colors">홈으로 돌아가기</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<CoupangPartnersTest />);
+    </script>
+</body>
+</html>
