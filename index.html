@@ -73,14 +73,12 @@
         .nav-links { display: flex; gap: 40px; font-size: 0.95rem; font-weight: 600; color: var(--text-main); align-items: center; }
         .nav-links a:hover { color: var(--brand-blue-hover); opacity: 0.7; }
         
-        /* 메뉴 뱃지 (New) */
         .nav-badge {
             background-color: var(--new-badge); color: white;
             font-size: 0.6rem; padding: 2px 5px; border-radius: 4px;
             margin-left: 4px; vertical-align: middle; font-weight: 800;
         }
 
-        /* 문의 버튼 (헤더 우측) */
         .btn-nav-cta {
             padding: 10px 24px; background: var(--brand-blue); color: white;
             border-radius: 30px; font-weight: 600; font-size: 0.9rem;
@@ -109,8 +107,6 @@
             margin-bottom: 50px; 
             color: var(--text-main); font-weight: 800; letter-spacing: -1px;
         }
-        
-        /* 섹션 타이틀 내 뱃지 스타일 */
         .title-badge {
             font-size: 1rem; vertical-align: middle;
             background: var(--new-badge); color: white;
@@ -149,7 +145,6 @@
             word-break: keep-all;
             opacity: 0; animation: fadeInUp 0.8s ease-out 0.8s forwards; 
         }
-        
         @keyframes fadeInUp { to { opacity: 1; } }
 
         /* 2. 과정진단 */
@@ -189,12 +184,16 @@
         .course-card h3 { font-size: 1.5rem; margin-bottom: 15px; font-weight: 700; color: var(--text-main); }
         .course-card p { font-size: 1rem; color: var(--text-sub); margin-bottom: 0; line-height: 1.6; }
 
-        /* 4. 수강신청 (무한 롤링, 버튼 통합) */
+        /* 4. [UPDATED] 수강신청 (좁은 간격 + 버튼 변경) */
         #store { background-color: var(--brand-white); overflow: hidden; } 
-        .store-track { display: flex; width: max-content; animation: scrollRight 360s linear infinite; }
+        
+        /* 왼쪽 -> 오른쪽 무한 롤링 (천천히) */
+        .store-track { display: flex; width: max-content; animation: scrollRight 65s linear infinite; }
         
         .store-card {
-            width: 320px; flex-shrink: 0; margin-right: 30px;
+            width: 320px; flex-shrink: 0; 
+            /* [수정] 간격 5px */
+            margin-right: 5px; 
             background: white; border-radius: 24px; padding: 0; overflow: hidden;
             box-shadow: 0 5px 20px rgba(0,0,0,0.05); transition: 0.3s;
             display: flex; flex-direction: column; border: 1px solid #eee;
@@ -206,30 +205,33 @@
         .store-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
         .store-card:hover .store-thumb { transform: scale(1.05); }
 
-        .store-info { padding: 30px; flex-grow: 1; text-align: left; display: flex; flex-direction: column; }
+        .store-info { padding: 25px; flex-grow: 1; text-align: left; display: flex; flex-direction: column; }
         .store-badge { 
-            font-size: 0.8rem; font-weight: 700; color: var(--brand-blue); 
-            background: var(--brand-light); padding: 5px 12px; border-radius: 20px;
-            display: inline-block; margin-bottom: 15px; align-self: flex-start;
+            font-size: 0.75rem; font-weight: 700; color: var(--brand-blue); 
+            background: var(--brand-light); padding: 4px 10px; border-radius: 4px;
+            display: inline-block; margin-bottom: 12px; align-self: flex-start;
         }
-        .store-title { font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px; line-height: 1.3; }
-        .store-desc { font-size: 0.95rem; color: #666; margin-bottom: 20px; line-height: 1.5; flex-grow: 1; }
+        .store-title { font-size: 1.3rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; line-height: 1.3; }
+        .store-desc { font-size: 0.9rem; color: #666; margin-bottom: 20px; line-height: 1.5; flex-grow: 1; }
         
+        /* [수정] 가격과 버튼 같은 줄 배치 */
         .store-footer {
             display: flex; align-items: center; justify-content: space-between;
             margin-top: auto; border-top: 1px solid #f5f5f5; padding-top: 20px;
         }
-        .store-price { color: var(--text-main); font-weight: 800; font-size: 1.2rem; }
+        .store-price { color: var(--text-main); font-weight: 800; font-size: 1.1rem; }
         
+        /* [수정] 버튼 스타일: 메인 컬러, 텍스트 '신청하기', 크기 5/6 조정 */
         .btn-store {
-            padding: 12px 24px; text-align: center; border-radius: 30px; 
-            font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: 0.2s;
+            /* padding 조정으로 크기 조절 */
+            padding: 10px 20px; text-align: center; border-radius: 30px; 
+            font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s;
             background-color: var(--brand-blue); color: white; border: none; 
-            text-decoration: none;
+            text-decoration: none; display: inline-block;
         }
         .btn-store:hover { background-color: var(--brand-blue-hover); }
 
-        /* 5. 캘린더 (Schedule) */
+        /* 5. 캘린더 */
         #schedule { background-color: var(--brand-white); }
         .calendar-wrapper { max-width: 1000px; margin: 0 auto; }
         .calendar-box {
@@ -237,7 +239,7 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.05); height: 700px; background: white;
         }
 
-        /* 6. 유튜브 (Content) */
+        /* 6. 유튜브 */
         .youtube-section { 
             padding: 90px 0; background: var(--brand-blue); color: white; overflow: hidden; 
         }
@@ -259,7 +261,6 @@
         @keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         @keyframes scrollRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
 
-
         /* 7. 강사 소개 */
         #about { background-color: var(--brand-gray); }
         .instructors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 60px; max-width: 1000px; margin: 0 auto; }
@@ -272,7 +273,7 @@
         .instructor-role { color: var(--brand-blue-hover); font-weight: 700; margin-bottom: 20px; display: block; }
         .instructor-desc { color: #555; line-height: 1.7; word-break: keep-all; font-size: 1.05rem; }
 
-        /* 8. AI 기획 (기획도우미) */
+        /* 8. AI 기획 */
         #ai-tool { background-color: var(--brand-white); }
         .ai-wrapper { 
             max-width: 900px; margin: 0 auto; 
@@ -290,15 +291,13 @@
         .ai-body { padding: 40px; }
         
         .ai-input-group { display: flex; gap: 10px; margin-bottom: 60px; flex-wrap: wrap; }
-        
-        .ai-input { 
-            flex: 2; padding: 15px; border-radius: 12px; border: 1px solid #ddd;
+        .ai-input, .ai-select { 
+            padding: 15px; border-radius: 12px; border: 1px solid #ddd;
             font-size: 1rem; font-family: inherit; background: var(--brand-gray);
         }
-        .ai-select {
-            flex: 1; padding: 15px; border-radius: 12px; border: 1px solid #ddd;
-            font-size: 1rem; font-family: inherit; background: var(--brand-gray); min-width: 150px;
-        }
+        .ai-input { flex: 2; }
+        .ai-select { flex: 1; min-width: 150px; }
+        
         .btn-ai-submit {
             width: 100%; padding: 18px; font-size: 1.1rem; font-weight: 700;
             background-color: var(--brand-blue); color: white;
@@ -307,7 +306,6 @@
             margin-top: 20px; 
         }
         .btn-ai-submit:hover { background-color: var(--brand-blue-hover); }
-        .btn-ai-submit:disabled { background-color: #eee; color: #aaa; cursor: not-allowed; }
 
         .ai-result { 
             margin-top: 30px; padding: 25px; border-radius: 15px; 
@@ -332,11 +330,10 @@
         }
         .qna-input:focus, .qna-textarea:focus { border-color: var(--brand-blue); background: #fff; outline: none; }
         
-        /* 문의하기 버튼 간격 추가 */
         .btn-submit {
             width: 100%; padding: 20px; background: var(--brand-blue); color: white;
             font-weight: 700; border-radius: 12px; border: none; cursor: pointer; font-size: 1.1rem;
-            margin-top: 30px; /* 버튼 위 간격 추가 */
+            margin-top: 30px; 
         }
         .btn-submit:hover { background-color: var(--brand-blue-hover); }
 
@@ -361,6 +358,7 @@
             .curriculum-grid, .store-grid { grid-template-columns: 1fr; }
             .yt-card { width: 280px; }
             .profile-img { height: 350px; }
+            .store-card { margin-right: 15px; } /* 모바일 간격 */
         }
     </style>
 </head>
@@ -388,14 +386,12 @@
     <!-- 1. 히어로 섹션 -->
     <div class="hero-wrapper">
         <section class="hero-container">
-            <!-- 배경 데코 -->
             <div class="hero-bg-circle bg-c1"></div>
             <div class="hero-bg-circle bg-c2"></div>
             
             <div class="hero-content">
                 <h1>실무능력향상은<br>VCML과 함께!</h1>
-                <p>영상 편집의 시작과 끝, VCML이 함께합니다.<br>여러분들의 목적에 꼭맞는 커리큘럼을 알아보세요.</p>
-                <!-- 버튼 삭제됨 -->
+                <p>영상 편집의 시작과 끝, VCML이 함께합니다.<br>당신의 목적에 맞는 최적의 커리큘럼을 제안받아보세요.</p>
             </div>
         </section>
     </div>
@@ -418,7 +414,7 @@
             <div class="course-card">
                 <div class="course-icon">P</div>
                 <h3>Premiere Pro</h3>
-                <p>영화, 기업 홍보영상, 유튜브 롱폼 등 전문적인 영상제작을 위한 필수코스입니다.</p>
+                <p>방송, 영화, 기업 홍보영상 등 전문적인 영상 제작을 위한 필수 코스입니다.</p>
                 <ul class="course-list">
                     <li>유튜브 롱폼 & 다큐멘터리</li>
                     <li>기업 실무 포트폴리오</li>
@@ -428,11 +424,11 @@
             <div class="course-card">
                 <div class="course-icon">C</div>
                 <h3>CapCut PC</h3>
-                <p>가장 빠르고 트렌디한 숏폼을 제작하여 수익을 창출해보세요.</p>
+                <p>가장 빠르고 트렌디하게 숏폼을 제작하여 수익을 창출하는 과정입니다.</p>
                 <ul class="course-list">
                     <li>바이럴 숏폼 제작 (릴스/쇼츠)</li>
                     <li>쿠팡파트너스 수익화 전략</li>
-                    <li>다양한 AI 기능 활용</li>
+                    <li>AI 자동 기능 활용</li>
                 </ul>
             </div>
             <div class="course-card">
@@ -457,7 +453,7 @@
         </div>
     </section>
 
-    <!-- 4. 수강신청 -->
+    <!-- 4. [FINAL] 수강신청 섹션 (6종 카드, 타이트한 간격) -->
     <section id="store" class="section">
         <div class="section-header">
             <h2 class="section-title">수강 신청</h2>
@@ -572,12 +568,11 @@
     </footer>
 
     <script>
-        // ▼▼▼ 여기에 본인의 앱스 스크립트 URL을 넣으세요 ▼▼▼
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwTi1rM3-8rN6OSYz-UF3390p43X6pVGFtZJbmoEUZm4S4O_uNjjD_dHADmMaP4BqcT_Q/exec"; 
+        // ▼▼▼ 본인 앱스 스크립트 URL 입력 ▼▼▼
+        const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_URL_HERE/exec"; 
         
-        // ★ [필수] Gemini API 키를 여기에 넣으세요 ★
-        // (키가 없으면 AI 기능이 작동하지 않습니다)
-        const apiKey = "AIzaSyCkgQoz8NQ8balo5DbE1-VeomYQOmHKdz4"; 
+        // ★ [필수] Gemini API 키 입력 ★
+        const apiKey = "YOUR_GEMINI_API_KEY"; 
 
         const cursor = document.querySelector('.cursor-arrow');
         document.addEventListener('mousemove', e => {
@@ -601,31 +596,31 @@
         });
         ytTrack.innerHTML = ytHtml;
 
-        // 2. [FINAL] 수강신청 데이터 (6개 확장 + 버튼 통합)
+        // 2. [FINAL] 수강신청 데이터 (6개 확장 + Adobe 패키지 + 가격 반영)
         const storeData = [
             { 
-                tag:"BEST", title:"프리미어 프로 실무", price:"129,000원", 
-                desc: "기초부터 실무까지 올인원", img:"https://via.placeholder.com/300x300/10069F/fff?text=Premiere", url:"https://smartstore.naver.com/YOUR_LINK_1" 
+                tag:"Basic", title:"CapCut 초급 과정", price:"50,000원", 
+                desc: "왕초보도 가능한 컷편집 입문", img:"https://via.placeholder.com/300x300/E2AB2D/fff?text=CapCut", url:"#" 
             },
             { 
-                tag:"HOT", title:"캡컷 수익화 숏폼", price:"89,000원", 
-                desc: "PC 캡컷으로 고퀄리티 릴스", img:"https://via.placeholder.com/300x300/000080/fff?text=CapCut", url:"https://smartstore.naver.com/YOUR_LINK_2" 
+                tag:"Pro", title:"CapCut 프로 과정", price:"150,000원", 
+                desc: "PC 캡컷으로 완성하는 고퀄리티 릴스", img:"https://via.placeholder.com/300x300/E2AB2D/fff?text=CapCut", url:"#" 
             },
             { 
-                tag:"1:1", title:"맞춤형 코칭권", price:"150,000원", 
-                desc: "현직자의 1:1 피드백", img:"https://via.placeholder.com/300x300/F0F2FF/10069F?text=Coaching", url:"https://smartstore.naver.com/YOUR_LINK_3" 
+                tag:"Adobe Basic", title:"어도비 마스터 패키지 (입문)", price:"250,000원", 
+                desc: "프리미어 프로 + 애프터 이펙트 기초 완성", img:"https://via.placeholder.com/300x300/9933FF/fff?text=Adobe+Master", url:"#" 
             },
             { 
-                tag:"NEW", title:"유튜브 채널 컨설팅", price:"200,000원", 
-                desc: "채널 방향성 진단 및 솔루션", img:"https://via.placeholder.com/300x300/10069F/fff?text=Consulting", url:"#" 
+                tag:"Adobe Pro", title:"어도비 마스터 패키지 (실무)", price:"550,000원", 
+                desc: "현직자 수준의 실무 테크닉 마스터", img:"https://via.placeholder.com/300x300/9933FF/fff?text=Adobe+Master", url:"#" 
             },
             { 
-                tag:"BASIC", title:"애프터이펙트 기초", price:"99,000원", 
-                desc: "모션그래픽 입문 필수 코스", img:"https://via.placeholder.com/300x300/000080/fff?text=AfterEffects", url:"#" 
+                tag:"Revenue 1", title:"수익화 프로그램 (1채널)", price:"700,000원", 
+                desc: "제휴마케팅 1개 채널 집중 수익화", img:"https://via.placeholder.com/300x300/FFD700/000?text=Revenue", url:"#" 
             },
             { 
-                tag:"BIZ", title:"스마트스토어 마케팅", price:"110,000원", 
-                desc: "매출을 부르는 상세페이지 기획", img:"https://via.placeholder.com/300x300/F0F2FF/10069F?text=Marketing", url:"#" 
+                tag:"Revenue 5", title:"수익화 프로그램 (5채널)", price:"1,200,000원", 
+                desc: "5개 채널 동시 운영 자동화 시스템", img:"https://via.placeholder.com/300x300/FFD700/000?text=Revenue", url:"#" 
             }
         ];
         
@@ -644,7 +639,7 @@
                         
                         <div class="store-footer">
                             <div class="store-price">${item.price}</div>
-                            <a href="${item.url}" target="_blank" class="btn-store">더 알아보기</a>
+                            <a href="${item.url}" target="_blank" class="btn-store">신청하기</a>
                         </div>
                     </div>
                 </div>
@@ -652,7 +647,7 @@
         });
         storeTrack.innerHTML = storeHtml;
 
-        // [FINAL] 슬라이더 초기화 (무한 루프)
+        // [FINAL] 슬라이더 초기화
         function initSlider(containerId, trackId, speed = 60) {
             const container = document.getElementById(containerId);
             const track = document.getElementById(trackId);
@@ -668,8 +663,8 @@
             container.addEventListener('mousemove', (e) => { if(!isDown) return; e.preventDefault(); const x=e.pageX-container.offsetLeft; const walk=(x-startX)*2; container.scrollLeft = scrollLeft-walk; });
         }
         
-        initSlider('storeContainer', 'storeTrack', 360); // Store (아주 느리게)
-        initSlider('ytContainer', 'ytTrack', 60); // YouTube (보통)
+        initSlider('storeContainer', 'storeTrack', 360); // 360초 (아주 느리게)
+        initSlider('ytContainer', 'ytTrack', 60); // 60초 (보통)
 
         function submitQna() {
             if(confirm("문의를 접수하시겠습니까?")) {
@@ -682,9 +677,6 @@
             }
         }
         
-        // ★ [FINAL] Gemini AI 로직 ★
-        // 1. 강사님의 '맞춤형 프롬프트(Gem)'를 여기에 설정하세요.
-        // 2. apiKey 변수에 유효한 키가 있어야 작동합니다.
         const GEMINI_SYSTEM_PROMPT = `
         당신은 'VCML'의 영상 기획 전문가 AI입니다.
         사용자가 입력한 주제에 맞춰 바이럴 숏폼 영상 기획안을 작성해 주세요.
@@ -712,7 +704,6 @@
 
             const userPrompt = `주제: ${topic}, 플랫폼: ${platform}. 위 주제로 영상을 만들려고 해. 기획안을 짜줘.`;
             
-            // Log to Google Sheet
             const formData = new FormData();
             formData.append('result_program', 'AI기획');
             formData.append('qna_title', topic);
