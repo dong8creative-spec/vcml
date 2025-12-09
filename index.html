@@ -229,7 +229,15 @@
         }
         .btn-store:hover { background-color: var(--brand-blue-hover); }
 
-        /* 5. 유튜브 (Content) */
+        /* 5. 캘린더 (Schedule) */
+        #schedule { background-color: var(--brand-white); }
+        .calendar-wrapper { max-width: 1000px; margin: 0 auto; }
+        .calendar-box {
+            border-radius: 30px; overflow: hidden; border: 1px solid #eee;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05); height: 700px; background: white;
+        }
+
+        /* 6. 유튜브 (Content) */
         .youtube-section { 
             padding: 90px 0; background: var(--brand-blue); color: white; overflow: hidden; 
         }
@@ -251,14 +259,6 @@
         @keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         @keyframes scrollRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
 
-
-        /* 6. 캘린더 (Schedule) */
-        #schedule { background-color: var(--brand-white); }
-        .calendar-wrapper { max-width: 1000px; margin: 0 auto; }
-        .calendar-box {
-            border-radius: 30px; overflow: hidden; border: 1px solid #eee;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.05); height: 700px; background: white;
-        }
 
         /* 7. 강사 소개 */
         #about { background-color: var(--brand-gray); }
@@ -332,10 +332,11 @@
         }
         .qna-input:focus, .qna-textarea:focus { border-color: var(--brand-blue); background: #fff; outline: none; }
         
+        /* 문의하기 버튼 간격 추가 */
         .btn-submit {
             width: 100%; padding: 20px; background: var(--brand-blue); color: white;
             font-weight: 700; border-radius: 12px; border: none; cursor: pointer; font-size: 1.1rem;
-            margin-top: 30px; 
+            margin-top: 30px; /* 버튼 위 간격 추가 */
         }
         .btn-submit:hover { background-color: var(--brand-blue-hover); }
 
@@ -376,8 +377,8 @@
             <a href="#diagnosis">과정진단</a>
             <a href="#courses">교육과정</a>
             <a href="#store">수강신청</a>
-            <a href="#youtube">콘텐츠</a> <!-- Youtube -> 콘텐츠 -->
             <a href="#schedule">일정</a>
+            <a href="#youtube">콘텐츠</a>
             <a href="#about">강사소개</a>
             <a href="#ai-tool">ai기획 <span class="nav-badge">New</span></a>
         </nav>
@@ -387,6 +388,7 @@
     <!-- 1. 히어로 섹션 -->
     <div class="hero-wrapper">
         <section class="hero-container">
+            <!-- 배경 데코 -->
             <div class="hero-bg-circle bg-c1"></div>
             <div class="hero-bg-circle bg-c2"></div>
             
@@ -492,28 +494,7 @@
         </div>
     </section>
     
-    <!-- 7. 강사 소개 -->
-    <section id="about" class="section">
-        <div class="section-header">
-            <h2 class="section-title">강사 소개</h2>
-        </div>
-        <div class="instructors-grid">
-            <div class="instructor-card">
-                <img src="https://via.placeholder.com/400x500/10069F/fff?text=CEO" class="profile-img" alt="Lee Dong Heon">
-                <h3 class="instructor-name">Lee Dong Heon</h3>
-                <span class="instructor-role">CEO & Director</span>
-                <p class="instructor-desc">현직 영상 크리에이터 & 전문 교육 강사<br>어도비 국제 공인 전문가 (ACP)</p>
-            </div>
-            <div class="instructor-card">
-                <img src="https://via.placeholder.com/400x500/000080/fff?text=Instructor" class="profile-img" alt="Lee Ga Ram">
-                <h3 class="instructor-name">Lee Ga Ram</h3>
-                <span class="instructor-role">Production Instructor</span>
-                <p class="instructor-desc">모션 그래픽 디자인 & 숏폼 기획 전문가<br>유튜브/SNS 바이럴 영상 다수 제작</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- 8. AI 기획 (기획도우미) - 강사소개 아래 -->
+    <!-- 7. AI 기획 도우미 -->
     <section id="ai-tool" class="section">
         <div class="section-header">
             <h2 class="section-title">ai기획 <span class="title-badge">NEW</span></h2>
@@ -539,6 +520,27 @@
                     AI가 아이디어를 생각 중입니다... <span class="ai-sparkle">🧠</span>
                 </div>
                 <div id="aiResult" class="ai-result"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. 강사 소개 -->
+    <section id="about" class="section">
+        <div class="section-header">
+            <h2 class="section-title">강사 소개</h2>
+        </div>
+        <div class="instructors-grid">
+            <div class="instructor-card">
+                <img src="https://via.placeholder.com/400x500/10069F/fff?text=CEO" class="profile-img" alt="Lee Dong Heon">
+                <h3 class="instructor-name">Lee Dong Heon</h3>
+                <span class="instructor-role">CEO & Director</span>
+                <p class="instructor-desc">현직 영상 크리에이터 & 전문 교육 강사<br>어도비 국제 공인 전문가 (ACP)</p>
+            </div>
+            <div class="instructor-card">
+                <img src="https://via.placeholder.com/400x500/000080/fff?text=Instructor" class="profile-img" alt="Lee Ga Ram">
+                <h3 class="instructor-name">Lee Ga Ram</h3>
+                <span class="instructor-role">Production Instructor</span>
+                <p class="instructor-desc">모션 그래픽 디자인 & 숏폼 기획 전문가<br>유튜브/SNS 바이럴 영상 다수 제작</p>
             </div>
         </div>
     </section>
@@ -571,11 +573,11 @@
 
     <script>
         // ▼▼▼ 여기에 본인의 앱스 스크립트 URL을 넣으세요 ▼▼▼
-        const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_URL_HERE/exec"; 
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwTi1rM3-8rN6OSYz-UF3390p43X6pVGFtZJbmoEUZm4S4O_uNjjD_dHADmMaP4BqcT_Q/exec"; 
         
         // ★ [필수] Gemini API 키를 여기에 넣으세요 ★
         // (키가 없으면 AI 기능이 작동하지 않습니다)
-        const apiKey = "YOUR_GEMINI_API_KEY"; 
+        const apiKey = "AIzaSyCkgQoz8NQ8balo5DbE1-VeomYQOmHKdz4"; 
 
         const cursor = document.querySelector('.cursor-arrow');
         document.addEventListener('mousemove', e => {
@@ -709,6 +711,13 @@
             resultDiv.innerText = "";
 
             const userPrompt = `주제: ${topic}, 플랫폼: ${platform}. 위 주제로 영상을 만들려고 해. 기획안을 짜줘.`;
+            
+            // Log to Google Sheet
+            const formData = new FormData();
+            formData.append('result_program', 'AI기획');
+            formData.append('qna_title', topic);
+            formData.append('qna_content', platform);
+            fetch(SCRIPT_URL, { method:'POST', body:formData, mode:'no-cors' }).catch(e=>console.log(e));
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -734,7 +743,7 @@
                 console.error("Error generating content:", error);
                 loadingDiv.classList.remove('active');
                 
-                if (apiKey === "AIzaSyCkgQoz8NQ8balo5DbE1-VeomYQOmHKdz4") {
+                if (apiKey === "") {
                     alert("API 키가 설정되지 않았습니다. 코드 내 apiKey 변수를 확인해주세요.");
                 } else {
                     alert("아이디어 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
