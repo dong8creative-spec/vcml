@@ -8,25 +8,28 @@
     <!-- 폰트 로드 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;700&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
-        /* --- 디자인 시스템 (LIMONELLO Theme) --- */
+        /* --- 디자인 시스템 (Purple Theme based on Image) --- */
         :root {
-            --limo-blue: #003CA6;    /* Deep Blue */
-            --limo-yellow: #E2AB2D;  /* Mustard Yellow */
-            --limo-cream: #F8EFE0;   /* Cream Beige */
-            --limo-white: #F9F9F9;   /* Off White */
+            /* Palette */
+            --vcml-purple-deep: #4C1D95;  /* Hero BG, Footer, Text Main */
+            --vcml-purple-vivid: #7C3AED; /* Primary Button, Accents */
+            --vcml-purple-light: #F3E8FF; /* Backgrounds, Light Accents */
+            --vcml-white: #FFFFFF;
+            --vcml-gray: #F5F5F5;
             
-            --bg-base: var(--limo-white);
-            --bg-hero: var(--limo-cream);
+            /* Text */
+            --text-main: #2E1065;
+            --text-sub: #5B5B5B;
+            --text-white: #FFFFFF;
             
-            --primary: var(--limo-blue);
-            --secondary: var(--limo-yellow);
+            /* Layout */
+            --radius-box: 40px;
+            --radius-card: 24px;
+            --radius-btn: 50px;
             
-            --text-main: var(--limo-blue);
-            --text-body: #333333;
-            --white: #ffffff;
             --naver-green: #03C75A;
         }
         
@@ -34,8 +37,8 @@
         
         body {
             font-family: 'Montserrat', 'IBM Plex Sans KR', sans-serif;
-            background-color: var(--bg-base);
-            color: var(--text-body);
+            background-color: var(--vcml-white);
+            color: var(--text-main);
             line-height: 1.6;
             overflow-x: hidden;
             letter-spacing: -0.02em;
@@ -57,243 +60,288 @@
         /* 네비게이션 */
         header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 5%; position: fixed; width: 100%; top: 0;
-            background: rgba(249, 249, 249, 0.95); backdrop-filter: blur(10px);
-            z-index: 1000; border-bottom: 1px solid rgba(0, 60, 166, 0.05);
-            transition: background 0.3s, color 0.3s;
+            padding: 15px 40px; position: fixed; width: 100%; top: 0;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            z-index: 1000; border-bottom: 1px solid rgba(76, 29, 149, 0.05);
+            transition: background 0.3s;
         }
-        .logo { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; color: var(--limo-blue); }
-        .nav-links { display: flex; gap: 30px; font-size: 0.95rem; font-weight: 600; color: var(--text-body); }
-        .nav-links a:hover { color: var(--limo-blue); }
+        .logo { font-size: 1.6rem; font-weight: 900; letter-spacing: -0.5px; color: var(--vcml-purple-deep); }
+        .nav-links { display: flex; gap: 40px; font-size: 0.95rem; font-weight: 600; color: var(--text-main); }
+        .nav-links a:hover { color: var(--vcml-purple-vivid); }
         
-        header.dark-mode { background: rgba(0, 60, 166, 0.9); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-        header.dark-mode .logo, header.dark-mode .nav-links { color: var(--white); }
+        /* 문의 버튼 (헤더 우측) */
+        .btn-nav-cta {
+            padding: 10px 24px; background: var(--vcml-purple-deep); color: white;
+            border-radius: 30px; font-weight: 600; font-size: 0.9rem;
+        }
+        .btn-nav-cta:hover { background: var(--vcml-purple-vivid); }
+        header.dark-mode { background: rgba(76, 29, 149, 0.95); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        header.dark-mode .logo, header.dark-mode .nav-links { color: var(--text-white); }
+        header.dark-mode .btn-nav-cta { background: var(--vcml-white); color: var(--vcml-purple-deep); }
 
         /* 스레드 버튼 */
         .threads-btn {
             position: fixed; top: 50%; right: 0; transform: translateY(-50%);
-            background: var(--limo-blue); color: #fff; padding: 10px 14px;
+            background: var(--vcml-purple-deep); color: #fff; padding: 10px 14px;
             border-radius: 20px 0 0 20px; box-shadow: -3px 3px 10px rgba(0,0,0,0.15);
             z-index: 999; font-weight: 700; font-size: 0.75rem;
             display: flex; align-items: center; gap: 6px; transition: 0.3s;
         }
-        .threads-btn:hover { padding-right: 20px; background: var(--limo-yellow); color: var(--limo-blue); }
+        .threads-btn:hover { padding-right: 20px; background: var(--vcml-purple-vivid); }
         .threads-icon { width: 14px; height: 14px; fill: currentColor; }
 
         /* 섹션 공통 (90px) */
         .section { padding: 90px 5%; position: relative; }
         .section-title { 
             text-align: center; font-size: 2.5rem; 
-            margin-bottom: 40px; 
-            color: var(--limo-blue); font-weight: 800; letter-spacing: -1px;
+            margin-bottom: 50px; 
+            color: var(--text-main); font-weight: 800; letter-spacing: -1px;
         }
-        .section-title span { color: var(--limo-yellow); position: relative; z-index: 1; font-style: normal; }
 
-        /* 1. 히어로 */
-        .hero-wrapper { padding: 100px 5% 0; }
+        /* 1. 히어로 섹션 */
+        .hero-wrapper {
+            padding: 120px 20px 0; max-width: 1400px; margin: 0 auto;
+        }
         .hero-container {
-            background-color: var(--limo-cream); border-radius: 40px; padding: 80px 40px;
-            text-align: center; position: relative; overflow: hidden;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .deco-circle { position: absolute; border-radius: 50%; z-index: 0; mix-blend-mode: multiply; }
-        .deco-1 { width: 300px; height: 300px; background: var(--limo-yellow); opacity: 0.15; top: -50px; left: -50px; filter: blur(40px); }
-        .deco-2 { width: 400px; height: 400px; background: var(--limo-blue); opacity: 0.05; bottom: -100px; right: -100px; filter: blur(60px); }
-        .hero-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
-        
-        .hero h1 { 
-            font-size: 4rem; line-height: 1.2; 
-            /* [수정] 제목 아래 간격 30px로 조정 */
-            margin-bottom: 30px; 
-            color: var(--limo-blue); font-weight: 800; letter-spacing: -1px; 
+            background: linear-gradient(135deg, #4C1D95 0%, #6D28D9 100%); /* 보라색 그라데이션 */
+            border-radius: var(--radius-box);
+            padding: 100px 60px;
+            color: var(--text-white);
+            text-align: center;
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 600px;
+            box-shadow: 0 20px 60px rgba(76, 29, 149, 0.2);
         }
         
-        .char-anim { display: inline-block; opacity: 0; transform: translateY(-30px); }
-        @keyframes textCascade { 0% { opacity: 0; transform: translateY(-30px); } 100% { opacity: 1; transform: translateY(0); } }
-        
-        .hero p { 
-            font-size: 1.3rem; /* [수정] 폰트 사이즈 살짝 키움 */
-            color: #444; 
-            font-weight: 500; /* [수정] 두께감 추가 */
-            /* [수정] 버튼과의 간격 80px로 조정 (균형 맞춤) */
-            margin-bottom: 80px; 
-            word-break: keep-all; 
+        .hero-bg-circle { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.3; }
+        .bg-c1 { top: -100px; right: -100px; width: 500px; height: 500px; background: #A78BFA; }
+        .bg-c2 { bottom: -150px; left: -150px; width: 600px; height: 600px; background: #8B5CF6; }
+
+        .hero-content { position: relative; z-index: 2; max-width: 900px; }
+        .hero h1 {
+            font-size: 4rem; line-height: 1.2; margin-bottom: 25px; font-weight: 800;
+        }
+        .hero p {
+            font-size: 1.3rem; font-weight: 400; opacity: 0.95; 
+            margin-bottom: 70px;
+            word-break: keep-all;
             opacity: 0; animation: fadeInUp 0.8s ease-out 0.8s forwards; 
         }
-        
-        .btn-main {
-            padding: 18px 50px; font-size: 1.1rem; font-weight: 700;
-            background-color: var(--limo-blue); color: var(--white);
-            border-radius: 50px; box-shadow: 0 10px 20px rgba(0, 60, 166, 0.2);
-            transition: all 0.3s ease; border: 2px solid transparent; display: inline-block;
-            opacity: 0; transform: translateY(30px); animation: btnSlideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) 1s forwards;
+        .btn-hero {
+            padding: 20px 50px; font-size: 1.2rem; font-weight: 700;
+            background-color: var(--vcml-white); color: var(--vcml-purple-deep);
+            border-radius: var(--radius-btn); display: inline-block;
+            transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         }
-        .btn-main:hover { transform: translateY(-5px); background-color: var(--limo-yellow); color: var(--limo-blue); }
+        .btn-hero:hover { transform: translateY(-5px); background-color: var(--vcml-purple-light); }
+        
         @keyframes fadeInUp { to { opacity: 1; } }
-        @keyframes btnSlideUp { to { opacity: 1; transform: translateY(0); } }
 
         /* 2. 교육과정 */
-        #courses { background-color: var(--white); overflow: hidden; }
-        .slider-container { width: 100%; overflow: hidden; padding: 40px 0; cursor: grab; }
-        .slider-track { display: flex; width: max-content; animation: scrollRight 120s linear infinite; }
-        .courses-track { gap: 15px; padding: 0 5%; }
-        @keyframes scrollRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+        #courses { background-color: var(--vcml-white); }
+        .curriculum-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px; max-width: 1200px; margin: 0 auto;
+        }
+        .course-card {
+            background: var(--vcml-white); padding: 40px 30px; 
+            border-radius: var(--radius-card);
+            border: 1px solid #eee; text-align: center;
+            transition: 0.3s; box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+        }
+        .course-card:hover { transform: translateY(-10px); box-shadow: 0 15px 40px rgba(76, 29, 149, 0.1); border-color: var(--vcml-purple-vivid); }
         
-        .card {
-            width: 320px; flex-shrink: 0; background: var(--limo-cream); padding: 25px;
-            border-radius: 0 20px 20px 20px; margin-top: 30px; transition: 0.3s;
-            position: relative; overflow: visible; display: flex; flex-direction: column;
-            border: 1px solid rgba(0,0,0,0.02);
+        .course-icon {
+            width: 70px; height: 70px; border-radius: 20px;
+            background: var(--vcml-purple-deep); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; font-weight: 900; margin: 0 auto 25px;
         }
-        .card::before {
-            content: ''; position: absolute; top: -30px; left: 0;
-            width: 120px; height: 30px; background: inherit; border-radius: 15px 15px 0 0;
-        }
-        .card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
-        .card-img { width: 100%; aspect-ratio: 16/9; background: var(--white); border-radius: 12px; margin-bottom: 20px; object-fit: cover; }
-        .tag { 
-            display: inline-block; padding: 4px 12px; border-radius: 20px; 
-            font-size: 0.7rem; font-weight: 800; margin-bottom: 10px;
-            background: var(--white); color: var(--limo-blue);
-        }
-        .card h3 { font-size: 1.2rem; margin-bottom: 10px; color: var(--limo-blue); font-weight: 700; line-height: 1.3; }
-        .card p { color: #555; margin-bottom: 15px; font-size: 0.85rem; word-break: keep-all; flex-grow: 1; }
-        .card ul { margin-top: auto; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px; }
-        .card ul li { position: relative; padding-left: 12px; margin-bottom: 5px; color: #555; font-size: 0.8rem; }
-        .card ul li::before { content: '•'; color: var(--limo-yellow); position: absolute; left: 0; font-weight: 700; }
-
+        .course-card h3 { font-size: 1.5rem; margin-bottom: 15px; font-weight: 700; color: var(--text-main); }
+        .course-card p { font-size: 1rem; color: var(--text-sub); margin-bottom: 0; line-height: 1.6; }
+        
         /* 3. 진단 테스트 */
-        #diagnosis { background-color: var(--white); }
-        .diagnosis-section {
-            background: var(--limo-blue); border-radius: 30px; padding: 80px 40px; text-align: center; color: white;
-            max-width: 1200px; margin: 0 auto; box-shadow: 0 20px 50px rgba(0, 60, 166, 0.2); position: relative; overflow: hidden;
+        .diagnosis-wrapper { padding: 0 20px; max-width: 1400px; margin: 0 auto 120px; }
+        .diagnosis-box {
+            background-color: var(--vcml-gray); border-radius: var(--radius-box);
+            padding: 80px 40px; text-align: center;
         }
-        .diagnosis-section::after {
-            content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px;
-            background: var(--limo-yellow); border-radius: 50%; opacity: 0.2;
-        }
-        .diagnosis-content h3 { color: white; margin-bottom: 20px; font-weight: 700; }
-        .diagnosis-content p { color: rgba(255,255,255,0.9); margin-bottom: 40px; }
+        .diagnosis-box h2 { font-size: 2.5rem; margin-bottom: 20px; color: var(--text-main); font-weight: 800; }
+        .diagnosis-box p { font-size: 1.1rem; margin-bottom: 60px; color: #555; } /* 간격 60px로 증가 */
         .btn-diagnosis {
-            padding: 18px 45px; background: var(--limo-yellow); color: var(--limo-blue);
-            border-radius: 50px; font-weight: 800; display: inline-block; transition: 0.3s;
+            padding: 18px 45px; background: var(--vcml-purple-deep); color: white;
+            border-radius: 50px; font-weight: 700; display: inline-block; transition: 0.3s;
         }
-        .btn-diagnosis:hover { transform: scale(1.05); background: white; color: var(--limo-blue); }
+        .btn-diagnosis:hover { background: var(--vcml-purple-vivid); transform: scale(1.05); }
 
         /* 4. 수강신청 */
-        #store { background-color: var(--limo-cream); } 
+        #store { background-color: var(--vcml-white); } 
         .store-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px; max-width: 1100px; margin: 0 auto;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px; max-width: 1200px; margin: 0 auto;
         }
         .store-card {
-            background: white; border-radius: 20px; padding: 0; overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s;
-            display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.05);
+            background: white; border-radius: 24px; overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05); transition: 0.3s;
+            display: flex; flex-direction: column; border: 1px solid #eee;
         }
-        .store-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        .store-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(76, 29, 149, 0.1); border-color: var(--vcml-purple-vivid); }
         
-        /* 썸네일 1:1 비율 */
         .store-thumb-container { width: 100%; aspect-ratio: 1/1; overflow: hidden; }
         .store-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
         .store-card:hover .store-thumb { transform: scale(1.05); }
 
-        .store-info { padding: 25px; flex-grow: 1; }
+        .store-info { padding: 30px; flex-grow: 1; text-align: center; }
         .store-badge { 
-            font-size: 0.75rem; font-weight: 700; color: var(--limo-blue); 
-            background: var(--limo-cream); padding: 4px 10px; border-radius: 4px;
-            display: inline-block; margin-bottom: 10px;
+            font-size: 0.8rem; font-weight: 700; color: var(--vcml-purple-vivid); 
+            background: var(--vcml-purple-light); padding: 5px 12px; border-radius: 20px;
+            display: inline-block; margin-bottom: 15px;
         }
-        .store-title { font-size: 1.3rem; font-weight: 800; color: var(--limo-blue); margin-bottom: 8px; line-height: 1.3; }
-        .store-desc { font-size: 0.9rem; color: #666; margin-bottom: 15px; word-break: keep-all; line-height: 1.5; }
-        .store-price { color: var(--limo-blue); font-weight: 700; font-size: 1.2rem; margin-bottom: 5px; }
-        .store-review span { color: var(--limo-yellow); }
+        .store-title { font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px; }
+        .store-desc { font-size: 0.95rem; color: #666; margin-bottom: 20px; line-height: 1.5; }
+        .store-price { color: var(--text-main); font-weight: 800; font-size: 1.3rem; }
         
-        .store-actions { padding: 0 25px 25px; display: flex; gap: 10px; }
+        .store-actions { padding: 0 30px 30px; display: flex; gap: 10px; }
         .btn-link, .btn-npay {
-            flex: 1; padding: 14px; text-align: center; border-radius: 8px; font-weight: 700; font-size: 0.9rem; transition: 0.2s; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center;
+            flex: 1; padding: 16px; text-align: center; border-radius: 12px; 
+            font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s;
         }
-        .btn-link { border: 1px solid #ddd; color: #555; background: #fff; }
-        .btn-link:hover { background: #f5f5f5; }
-        .btn-npay { background-color: var(--naver-green); color: white; border: none; gap: 5px; }
-        .btn-npay:hover { background-color: #02b351; transform: scale(1.02); }
-        .npay-logo { font-weight: 900; font-family: sans-serif; letter-spacing: -1px; }
+        .btn-link { background: #f5f5f5; color: #333; }
+        .btn-link:hover { background: #e0e0e0; }
+        .btn-npay { background: var(--naver-green); color: white; border: none; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-npay:hover { background: #02b351; transform: scale(1.02); }
 
         /* 5. 캘린더 */
-        #schedule { background-color: var(--white); }
-        .calendar-container {
-            max-width: 1000px; margin: 0 auto; border-radius: 30px; overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.05); border: 2px solid var(--limo-cream); height: 700px;
+        #schedule { background-color: var(--vcml-white); }
+        .calendar-wrapper { max-width: 1000px; margin: 0 auto; }
+        .calendar-box {
+            border-radius: 30px; overflow: hidden; border: 1px solid #eee;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05); height: 700px; background: white;
         }
-        .calendar-container iframe { width: 100%; height: 100%; border: 0; }
 
         /* 6. 유튜브 */
-        .youtube-section { background: var(--limo-blue); padding: 90px 0; color: white; overflow: hidden; }
-        .youtube-section .section-title { display: none; }
-        .rolling-container { width: 100%; overflow-x: scroll; overflow-y: hidden; padding: 0; cursor: grab; scrollbar-width: none; }
-        .yt-track { gap: 3px; padding: 0; display: flex; }
+        .youtube-section { 
+            padding: 80px 0; background: var(--vcml-purple-deep); color: white; overflow: hidden; 
+        }
+        .yt-header { max-width: 1400px; margin: 0 auto 40px; padding: 0 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .yt-header h2 { font-size: 2rem; font-weight: 800; margin: 0; color: white; }
+        .yt-header a { color: var(--vcml-purple-light); text-decoration: underline; font-weight: 600; }
+
+        .slider-container { width: 100%; overflow: hidden; cursor: grab; padding-left: 5%; }
+        .slider-track { display: flex; width: max-content; gap: 20px; animation: scrollLeft 60s linear infinite; }
         .yt-card {
-            width: 320px; flex-shrink: 0; border-radius: 8px; overflow: hidden; background: white; transition: 0.3s;
+            width: 320px; flex-shrink: 0; border-radius: 16px; overflow: hidden;
+            background: #2E1065; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1);
         }
-        .yt-card:hover { transform: translateY(-3px); }
-        .yt-thumb-box { width: 100%; height: 180px; background: #111; display: flex; align-items: center; justify-content: center; color: #888; }
-        .yt-info { padding: 12px; }
-        .yt-title { font-size: 0.9rem; font-weight: 700; color: var(--limo-blue); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .yt-views { font-size: 0.75rem; color: #888; font-weight: 500; }
-        @keyframes scrollRightToLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .yt-card:hover { transform: scale(1.02); border-color: var(--vcml-purple-vivid); }
+        .yt-thumb { width: 100%; height: 180px; background: #000; background-size: cover; }
+        .yt-info { padding: 20px; }
+        .yt-title { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 5px; line-height: 1.4; }
+        .yt-views { font-size: 0.85rem; color: #aaa; }
+        @keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-        /* 7. 강사 소개 */
-        #about { background-color: var(--limo-cream); }
-        .instructors-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 50px; max-width: 1000px; margin: 0 auto;
+        /* 7. AI 기획 도우미 (NEW) */
+        #ai-tool { background-color: var(--vcml-white); }
+        .ai-wrapper { 
+            max-width: 900px; margin: 0 auto; 
+            background: var(--vcml-white);
+            border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            border: 2px solid var(--vcml-purple-light);
+            overflow: hidden;
         }
-        .instructor-card { text-align: center; }
-        .profile-box { 
-            width: 280px; height: 280px; margin: 0 auto 30px; 
-            position: relative; overflow: hidden;
-            border-radius: 40px; box-shadow: 15px 15px 0px var(--limo-yellow); border: 4px solid var(--white); background: var(--white);
+        .ai-header {
+            background: var(--vcml-purple-deep); color: white; padding: 30px; text-align: center;
         }
-        .profile-img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; transition: opacity 1s; }
-        .profile-img.default { opacity: 1; z-index: 10; }
-        .profile-img.slide.visible { opacity: 1; z-index: 20; }
-        .profile-img.slide { opacity: 0; z-index: 5; }
-        .instructor-name { font-size: 1.8rem; font-weight: 900; color: var(--limo-blue); margin-bottom: 10px; }
-        .instructor-role { color: var(--limo-blue); font-weight: 700; font-size: 0.9rem; margin-bottom: 15px; opacity: 0.8; }
+        .ai-header h3 { font-size: 1.8rem; margin-bottom: 5px; color:white; }
+        .ai-header p { opacity: 0.9; font-size: 0.95rem; }
+        
+        .ai-body { padding: 40px; }
+        
+        /* [UPDATED] AI 입력창 간격 확장 */
+        .ai-input-group { display: flex; gap: 10px; margin-bottom: 60px; flex-wrap: wrap; }
+        
+        .ai-input { 
+            flex: 2; padding: 15px; border-radius: 12px; border: 1px solid #ddd;
+            font-size: 1rem; font-family: inherit; background: var(--vcml-gray);
+        }
+        .ai-select {
+            flex: 1; padding: 15px; border-radius: 12px; border: 1px solid #ddd;
+            font-size: 1rem; font-family: inherit; background: var(--vcml-gray); min-width: 150px;
+        }
+        .btn-ai-submit {
+            width: 100%; padding: 18px; font-size: 1.1rem; font-weight: 700;
+            background-color: var(--vcml-purple-vivid); color: white;
+            border: none; border-radius: 12px; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-ai-submit:hover { background-color: var(--vcml-purple-deep); }
+        .btn-ai-submit:disabled { background-color: #eee; color: #aaa; cursor: not-allowed; }
 
-        /* 8. 문의하기 */
-        #qna { background-color: var(--white); }
-        .qna-container {
-            max-width: 800px; margin: 0 auto; background: white; padding: 60px;
-            border-radius: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); border: 1px solid var(--limo-cream);
+        .ai-result { 
+            margin-top: 30px; padding: 25px; border-radius: 15px; 
+            background: var(--vcml-purple-light); border: 1px dashed var(--vcml-purple-vivid);
+            display: none; white-space: pre-wrap; line-height: 1.6; color: #444;
         }
-        .qna-desc { text-align: center; color: #555; margin-bottom: 40px; }
-        .qna-label { display: block; font-weight: 700; color: var(--limo-blue); margin-bottom: 8px; font-size: 0.95rem; }
+        .ai-result.active { display: block; animation: fadeIn 0.5s ease; }
+        .ai-loading { text-align: center; display: none; margin-top: 20px; color: var(--vcml-purple-deep); font-weight: 600; }
+        .ai-loading.active { display: block; }
+        .ai-sparkle { font-size: 1.2rem; }
+
+        /* 8. 강사 소개 */
+        #about { background-color: var(--vcml-gray); }
+        .instructors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 60px; max-width: 1000px; margin: 0 auto; }
+        .instructor-card { text-align: left; }
+        .profile-img { 
+            width: 100%; height: 400px; object-fit: cover; border-radius: 30px; 
+            margin-bottom: 30px; background: #ddd;
+        }
+        .instructor-name { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
+        .instructor-role { color: var(--vcml-purple-vivid); font-weight: 700; margin-bottom: 20px; display: block; }
+        .instructor-desc { color: #555; line-height: 1.7; word-break: keep-all; font-size: 1.05rem; }
+
+        /* 9. 문의하기 */
+        #qna { background-color: var(--vcml-white); }
+        .qna-wrapper { max-width: 800px; margin: 0 auto; }
+        .qna-box {
+            background: white; padding: 60px; border-radius: 30px;
+            border: 1px solid #eee; box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        }
         .qna-input, .qna-textarea {
-            width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #eee; background: var(--limo-white);
-            margin-bottom: 20px; font-family: 'IBM Plex Sans KR', sans-serif; font-size: 1rem; color: var(--limo-blue);
+            width: 100%; padding: 18px; border-radius: 12px; border: 1px solid #ddd;
+            margin-bottom: 20px; font-family: inherit; font-size: 1rem; background: #F9F9F9;
         }
-        .qna-input:focus, .qna-textarea:focus { border-color: var(--limo-blue); background: #fff; outline: none; }
+        .qna-input:focus, .qna-textarea:focus { border-color: var(--vcml-purple-vivid); background: #fff; outline: none; }
+        
+        /* [UPDATED] 문의하기 버튼 간격 추가 */
         .btn-submit {
-            width: 100%; padding: 20px; background: var(--limo-blue); color: white;
-            font-weight: 800; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s;
+            width: 100%; padding: 20px; background: var(--vcml-purple-deep); color: white;
+            font-weight: 700; border-radius: 12px; border: none; cursor: pointer; font-size: 1.1rem;
+            margin-top: 30px; /* 버튼 위 간격 추가 */
         }
-        .btn-submit:hover { background-color: var(--limo-yellow); color: var(--limo-blue); }
+        .btn-submit:hover { background-color: var(--vcml-purple-vivid); }
 
         /* 푸터 */
-        footer { background: var(--limo-blue); padding: 60px 5%; text-align: center; color: rgba(255,255,255,0.8); }
-        footer strong { color: var(--limo-yellow); font-size: 1.2rem; }
+        footer {
+            background: var(--vcml-purple-deep); color: rgba(255,255,255,0.6);
+            padding: 80px 5%; text-align: center; font-size: 0.95rem; border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        footer strong { color: white; font-size: 1.2rem; display: block; margin-bottom: 20px; }
+        .footer-links a { color: #fff; text-decoration: underline; margin: 0 10px; }
         .admin-trigger { position: fixed; bottom: 0; left: 0; width: 100px; height: 100px; z-index: 9999; background: transparent; }
 
+        /* 반응형 */
         @media (max-width: 768px) {
-            .hero-container { padding: 60px 20px; }
-            .hero h1 { font-size: 2.2rem; }
-            .hero p { 
-                margin-bottom: 60px; /* 모바일에서도 넉넉하게 조정 */
-            }
+            header { padding: 15px 20px; }
             .nav-links { display: none; }
-            .card { width: 280px; }
-            .yt-card { width: 220px; }
+            .hero-wrapper { padding: 100px 20px 0; }
+            .hero-container { padding: 60px 20px; text-align: center; align-items: center; min-height: auto; }
+            .hero h1 { font-size: 2.5rem; }
+            .hero p { margin-bottom: 60px; font-size: 1rem; }
+            .section { padding: 80px 20px; }
+            .curriculum-grid, .store-grid { grid-template-columns: 1fr; }
+            .yt-card { width: 280px; }
+            .profile-img { height: 350px; }
         }
     </style>
 </head>
@@ -303,281 +351,285 @@
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 3.5L11.5 21.5L14.5 14.5L21.5 11.5L5.5 3.5Z" /></svg>
     </div>
 
-    <a href="https://www.threads.net/@official_vcml" target="_blank" class="threads-btn">
-        <svg class="threads-icon" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg"><path d="M141.537 88.9883C140.71 88.5919 139.87 88.2104 139.019 87.8451C137.537 60.5382 122.616 44.905 97.5619 44.745C97.4484 44.7443 97.3355 44.7443 97.222 44.7443C82.3586 44.7443 69.0713 53.3583 56.4272 65.5127C39.2378 82.0339 30.3119 98.7649 29.8133 117.852C29.4932 130.135 34.1612 140.009 43.6872 147.199C54.1204 155.075 68.347 158.732 84.8288 157.971C105.626 157.012 121.761 147.754 132.784 130.455L118.012 122.045C110.632 134.956 99.4452 140.915 85.3411 141.566C74.6229 142.061 65.242 139.662 57.4599 133.788C51.6881 129.432 48.2494 123.332 47.3592 115.632C47.0134 112.637 47.2339 109.529 47.886 106.331C54.2796 104.992 61.7335 103.541 69.8392 102.091C73.1867 117.07 84.6229 125.797 99.2015 125.797C112.969 125.797 122.28 116.327 122.28 102.131C122.28 82.2642 107.817 71.8899 91.5645 71.8899C75.2977 71.8899 64.9972 83.0232 64.9972 97.5513C64.9972 106.969 68.6189 114.739 75.3225 119.539L65.3524 133.463C53.8213 125.205 47.9366 112.23 47.9366 97.5513C47.9366 73.1852 65.5712 55.1611 91.5645 55.1611C116.666 55.1611 139.339 71.2964 139.339 102.131C139.339 122.993 127.279 140.963 97.222 140.963C82.3586 140.963 69.0713 132.349 56.4272 120.195" /></svg>
-    </a>
-
-    <header id="mainHeader">
+    <!-- 헤더 -->
+    <header>
         <div class="logo">VCML</div>
         <nav class="nav-links">
-            <a href="#courses">교육과정</a>
-            <a href="#diagnosis">과정진단</a>
-            <a href="#store">수강신청</a>
-            <a href="#schedule">일정</a>
-            <a href="#youtube">콘텐츠</a>
-            <a href="#about">강사소개</a>
-            <a href="#qna">문의하기</a>
+            <a href="#courses">Curriculum</a>
+            <a href="#store">Class</a>
+            <a href="#youtube">Content</a>
+            <a href="#ai-tool">AI Tool</a>
+            <a href="#about">About</a>
         </nav>
+        <a href="#qna" class="btn-nav-cta">문의하기</a>
     </header>
 
+    <!-- 1. 히어로 섹션 -->
     <div class="hero-wrapper">
         <section class="hero-container">
-            <div class="deco-circle deco-1"></div>
-            <div class="deco-circle deco-2"></div>
+            <!-- 배경 데코 -->
+            <div class="hero-bg-circle bg-c1"></div>
+            <div class="hero-bg-circle bg-c2"></div>
+            
             <div class="hero-content">
-                <h1>영상편집 실무능력향상은 VCML과 함께!</h1>
-                <p>VCML만의 노하우로 편집작업시간을 10배 단축하는 과정을 알아봅니다</p>
-                <a href="./test.html" class="btn-main">과정 알아보기 ↓</a>
+                <h1>실무능력향상은<br>VCML과 함께!</h1>
+                <p>영상 편집의 시작과 끝, VCML이 함께합니다.<br>당신의 목적에 맞는 최적의 커리큘럼을 제안받아보세요.</p>
+                <a href="./test.html" class="btn-hero">과정 알아보기 ↓</a>
             </div>
         </section>
     </div>
 
-    <!-- 교육과정 -->
+    <!-- 2. 커리큘럼 -->
     <section id="courses" class="section">
-        <h2 class="section-title">Curriculum <span>Overview</span></h2>
-        <div class="slider-container" id="coursesContainer">
-            <div class="slider-track courses-track">
-                
-                <div class="card">
-                    <img src="https://via.placeholder.com/640x360/003CA6/fff?text=Premiere+Pro" class="card-img" alt="Premiere">
-                    <h3>Premiere Pro</h3>
-                    <p>방송/영화/기업 영상 실무 마스터</p>
-                    <ul>
-                        <li>유튜브 롱폼 & 다큐멘터리</li>
-                        <li>기업 실무 포트폴리오</li>
-                    </ul>
-                </div>
-
-                <div class="card">
-                    <img src="https://via.placeholder.com/640x360/E2AB2D/fff?text=CapCut" class="card-img" alt="CapCut">
-                    <h3>CapCut PC</h3>
-                    <p>바이럴 숏폼 제작 & 수익화 전략</p>
-                    <ul>
-                        <li>릴스/쇼츠 알고리즘 공략</li>
-                        <li>쿠팡파트너스 수익화</li>
-                    </ul>
-                </div>
-
-                <div class="card">
-                    <img src="https://via.placeholder.com/640x360/F8EFE0/003CA6?text=Portfolio" class="card-img" alt="Portfolio">
-                    <h3>Portfolio Class</h3>
-                    <p>취업/이직 성공을 위한 집중 멘토링</p>
-                    <ul>
-                        <li>1:1 맞춤 기획 및 피드백</li>
-                        <li>자소서 컨설팅 포함</li>
-                    </ul>
-                </div>
-                
-                <div class="card">
-                    <img src="https://via.placeholder.com/640x360/333333/fff?text=Consulting" class="card-img" alt="Consulting">
-                    <h3>Channel Consulting</h3>
-                    <p>유튜브 채널 진단 및 솔루션</p>
-                    <ul>
-                        <li>데이터 기반 채널 분석</li>
-                        <li>콘텐츠 방향성 제시</li>
-                    </ul>
-                </div>
-
+        <div class="section-header">
+            <h2 class="section-title">Curriculum Overview</h2>
+        </div>
+        <div class="curriculum-grid">
+            <div class="course-card">
+                <div class="course-icon">P</div>
+                <h3>Premiere Pro</h3>
+                <p>방송, 영화, 기업 홍보영상 등 전문적인 영상 제작을 위한 필수 코스입니다.</p>
+                <ul class="course-list">
+                    <li>유튜브 롱폼 & 다큐멘터리</li>
+                    <li>기업 실무 포트폴리오</li>
+                    <li>어도비 툴 연동 심화</li>
+                </ul>
+            </div>
+            <div class="course-card">
+                <div class="course-icon">C</div>
+                <h3>CapCut PC</h3>
+                <p>가장 빠르고 트렌디하게 숏폼을 제작하여 수익을 창출하는 과정입니다.</p>
+                <ul class="course-list">
+                    <li>바이럴 숏폼 제작 (릴스/쇼츠)</li>
+                    <li>쿠팡파트너스 수익화 전략</li>
+                    <li>AI 자동 기능 활용</li>
+                </ul>
+            </div>
+            <div class="course-card">
+                <div class="course-icon">PF</div>
+                <h3>Portfolio Class</h3>
+                <p>취업과 이직을 목표로 하는 분들을 위한 집중 멘토링 과정입니다.</p>
+                <ul class="course-list">
+                    <li>1:1 맞춤 기획 및 디렉팅</li>
+                    <li>현직자 무제한 피드백</li>
+                    <li>자소서 컨설팅 포함</li>
+                </ul>
+            </div>
+            <div class="course-card">
+                <div class="course-icon">CC</div>
+                <h3>Channel Consulting</h3>
+                <p>정체된 유튜브 채널의 문제점을 진단하고 성장 전략을 제시합니다.</p>
+                <ul class="course-list">
+                    <li>채널 데이터 정밀 분석</li>
+                    <li>콘텐츠 방향성 솔루션</li>
+                </ul>
             </div>
         </div>
     </section>
 
-    <!-- 진단 테스트 -->
-    <section id="diagnosis" class="section">
-        <div class="diagnosis-section">
-            <div class="diagnosis-content">
-                <h3>어떤 강의를 들어야 할지 고민되시나요?</h3>
-                <p>3분 만에 끝나는 무료 진단 테스트를 통해<br>나의 편집 목적과 현재 실력에 딱 맞는 과정을 추천받으세요.</p>
-                <a href="./test.html" class="btn-diagnosis">내 맞춤 커리큘럼 확인하기 →</a>
-            </div>
+    <!-- 3. 진단 테스트 -->
+    <div class="diagnosis-wrapper">
+        <div class="diagnosis-box">
+            <h2>어떤 강의를 들어야 할지 고민되시나요?</h2>
+            <p>3분 만에 끝나는 무료 진단 테스트를 통해<br>나의 편집 목적과 현재 실력에 딱 맞는 과정을 추천받으세요.</p>
+            <a href="./test.html" class="btn-diagnosis">내 맞춤 커리큘럼 확인하기 →</a>
         </div>
-    </section>
+    </div>
 
-    <!-- 수강신청 섹션 -->
+    <!-- 4. 수강신청 -->
     <section id="store" class="section">
-        <h2 class="section-title">Class <span>Registration</span></h2>
+        <div class="section-header">
+            <h2 class="section-title">Class Registration</h2>
+        </div>
         <div class="store-grid">
-            
-            <!-- 상품 1: 프리미어 -->
+            <!-- 상품 1 -->
             <div class="store-card">
                 <div class="store-thumb-container">
-                    <img src="https://via.placeholder.com/300x300/003CA6/fff?text=Premiere" class="store-thumb" alt="프리미어 마스터">
+                    <img src="https://via.placeholder.com/300x300/4C1D95/fff?text=Premiere" class="store-thumb" alt="프리미어 마스터">
                 </div>
                 <div class="store-info">
                     <span class="store-badge">BEST</span>
                     <h3 class="store-title">프리미어 프로 실무 마스터</h3>
                     <p class="store-desc">기초부터 실무까지, 전문가로 거듭나는 올인원 패키지</p>
                     <div class="store-price">129,000원</div>
-                    <div class="store-review"><span>★</span> 4.9 (120개 리뷰)</div>
-                </div>
-                <div class="store-actions">
-                    <!-- ▼▼▼ 링크 수정하는 곳 1 ▼▼▼ -->
-                    <a href="https://smartstore.naver.com/YOUR_LINK_1" target="_blank" class="btn-link">상세보기</a>
-                    <a href="https://smartstore.naver.com/YOUR_LINK_1" target="_blank" class="btn-npay"><span class="npay-logo">N</span> Pay 구매</a>
-                    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+                    <div class="btn-group">
+                        <a href="https://smartstore.naver.com/YOUR_LINK_1" target="_blank" class="btn-link">상세보기</a>
+                        <a href="https://smartstore.naver.com/YOUR_LINK_1" target="_blank" class="btn-npay">N Pay 구매</a>
+                    </div>
                 </div>
             </div>
-
-            <!-- 상품 2: 캡컷 -->
+            <!-- 상품 2 -->
             <div class="store-card">
                 <div class="store-thumb-container">
-                    <img src="https://via.placeholder.com/300x300/E2AB2D/fff?text=CapCut" class="store-thumb" alt="캡컷 숏폼">
+                    <img src="https://via.placeholder.com/300x300/7C3AED/fff?text=CapCut" class="store-thumb" alt="캡컷 숏폼">
                 </div>
                 <div class="store-info">
                     <span class="store-badge">HOT</span>
                     <h3 class="store-title">캡컷 수익화 숏폼 완성</h3>
                     <p class="store-desc">PC 캡컷으로 10분 만에 만드는 고퀄리티 릴스</p>
                     <div class="store-price">89,000원</div>
-                    <div class="store-review"><span>★</span> 4.8 (85개 리뷰)</div>
-                </div>
-                <div class="store-actions">
-                    <!-- ▼▼▼ 링크 수정하는 곳 2 ▼▼▼ -->
-                    <a href="https://smartstore.naver.com/YOUR_LINK_2" target="_blank" class="btn-link">상세보기</a>
-                    <a href="https://smartstore.naver.com/YOUR_LINK_2" target="_blank" class="btn-npay"><span class="npay-logo">N</span> Pay 구매</a>
-                    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+                    <div class="btn-group">
+                        <a href="https://smartstore.naver.com/YOUR_LINK_2" target="_blank" class="btn-link">상세보기</a>
+                        <a href="https://smartstore.naver.com/YOUR_LINK_2" target="_blank" class="btn-npay">N Pay 구매</a>
+                    </div>
                 </div>
             </div>
-
-            <!-- 상품 3: 코칭 -->
+            <!-- 상품 3 -->
             <div class="store-card">
                 <div class="store-thumb-container">
-                    <img src="https://via.placeholder.com/300x300/F8EFE0/003CA6?text=Coaching" class="store-thumb" alt="1:1 코칭">
+                    <img src="https://via.placeholder.com/300x300/F3E8FF/4C1D95?text=Coaching" class="store-thumb" alt="1:1 코칭">
                 </div>
                 <div class="store-info">
                     <span class="store-badge">1:1</span>
                     <h3 class="store-title">맞춤형 온라인 코칭권</h3>
                     <p class="store-desc">현직자가 내 영상을 직접 피드백하고 방향성을 제시합니다</p>
                     <div class="store-price">150,000원</div>
-                    <div class="store-review"><span>★</span> 5.0 (40개 리뷰)</div>
-                </div>
-                <div class="store-actions">
-                    <!-- ▼▼▼ 링크 수정하는 곳 3 ▼▼▼ -->
-                    <a href="https://smartstore.naver.com/YOUR_LINK_3" target="_blank" class="btn-link">상세보기</a>
-                    <a href="https://smartstore.naver.com/YOUR_LINK_3" target="_blank" class="btn-npay"><span class="npay-logo">N</span> Pay 구매</a>
-                    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+                    <div class="btn-group">
+                        <a href="https://smartstore.naver.com/YOUR_LINK_3" target="_blank" class="btn-link">상세보기</a>
+                        <a href="https://smartstore.naver.com/YOUR_LINK_3" target="_blank" class="btn-npay">N Pay 구매</a>
+                    </div>
                 </div>
             </div>
-
         </div>
     </section>
 
-    <!-- 캘린더 -->
+    <!-- 5. 캘린더 -->
     <section id="schedule" class="section">
-        <h2 class="section-title">Monthly <span>Schedule</span></h2>
-        <div class="calendar-container">
-            <iframe src="https://calendar.google.com/calendar/embed?src=c20e665a74ba213b8564f3bafe0d10a02d7add6476f1d061d78c0cb634e75eef%40group.calendar.google.com&ctz=Asia%2FSeoul&mode=MONTH" style="border-width:0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+        <div class="section-header">
+            <h2 class="section-title">Monthly Schedule</h2>
+        </div>
+        <div class="calendar-wrapper">
+            <div class="calendar-box">
+                <iframe src="https://calendar.google.com/calendar/embed?src=c20e665a74ba213b8564f3bafe0d10a02d7add6476f1d061d78c0cb634e75eef%40group.calendar.google.com&ctz=Asia%2FSeoul&mode=MONTH" style="border-width:0" width="100%" height="100%" frameborder="0" scrolling="no"></iframe>
+            </div>
         </div>
     </section>
 
-    <!-- 유튜브 -->
+    <!-- 6. 유튜브 -->
     <section id="youtube" class="youtube-section">
+        <div class="yt-header">
+            <h2>Video Tutorials</h2>
+            <a href="https://www.youtube.com/@your_channel" target="_blank">채널 더보기 →</a>
+        </div>
         <div class="slider-container" id="ytContainer">
-            <div class="slider-track yt-track" id="ytTrack"></div>
+            <div class="slider-track yt-track" id="ytTrack">
+                <!-- JS Load -->
+            </div>
+        </div>
+    </section>
+    
+    <!-- 7. AI Creative Assistant -->
+    <section id="ai-tool" class="section">
+        <div class="section-header">
+            <h2 class="section-title">AI Creative Assistant</h2>
+        </div>
+        <div class="ai-wrapper">
+            <div class="ai-header">
+                <h3>AI 숏폼 아이디어 생성기 ✨</h3>
+                <p>영상 주제만 입력하세요. AI가 기획안을 대신 써드립니다.</p>
+            </div>
+            <div class="ai-body">
+                <div class="ai-input-group">
+                    <input type="text" id="aiTopic" class="ai-input" placeholder="영상 주제 입력 (예: 브이로그, 여행, 먹방)">
+                    <select id="aiPlatform" class="ai-select">
+                        <option value="YouTube Shorts">YouTube Shorts</option>
+                        <option value="Instagram Reels">Instagram Reels</option>
+                        <option value="TikTok">TikTok</option>
+                    </select>
+                </div>
+                <button class="btn-ai-submit" onclick="generateIdea()">
+                    <span class="ai-sparkle">✨</span> 아이디어 생성하기
+                </button>
+                <div id="aiLoading" class="ai-loading">
+                    AI가 아이디어를 생각 중입니다... <span class="ai-sparkle">🧠</span>
+                </div>
+                <div id="aiResult" class="ai-result"></div>
+            </div>
         </div>
     </section>
 
-    <!-- 강사 소개 -->
+    <!-- 8. 강사 소개 -->
     <section id="about" class="section">
-        <h2 class="section-title">Our <span>Instructors</span></h2>
+        <div class="section-header">
+            <h2 class="section-title">Instructors</h2>
+        </div>
         <div class="instructors-grid">
             <div class="instructor-card">
-                <div class="profile-box">
-                    <img src="https://via.placeholder.com/400x400/003CA6/fff?text=CEO" class="profile-img default">
-                    <img src="https://via.placeholder.com/400x400/333/fff?text=Portfolio+1" class="profile-img slide">
-                    <img src="https://via.placeholder.com/400x400/555/fff?text=Portfolio+2" class="profile-img slide">
-                    <img src="https://via.placeholder.com/400x400/777/fff?text=Portfolio+3" class="profile-img slide">
-                </div>
-                <h3>Lee Dong Heon</h3>
-                <p class="instructor-role">CEO</p>
-                <p>현직 영상 크리에이터 & 전문 교육 강사<br>어도비 국제 공인 전문가 (ACP)</p>
+                <img src="https://via.placeholder.com/400x500/4C1D95/fff?text=CEO" class="profile-img" alt="Lee Dong Heon">
+                <h3 class="instructor-name">Lee Dong Heon</h3>
+                <span class="instructor-role">CEO & Director</span>
+                <p class="instructor-desc">현직 영상 크리에이터 & 전문 교육 강사<br>어도비 국제 공인 전문가 (ACP)</p>
             </div>
             <div class="instructor-card">
-                <div class="profile-box">
-                    <img src="https://via.placeholder.com/400x400/E2AB2D/fff?text=Instructor" class="profile-img default">
-                    <img src="https://via.placeholder.com/400x400/888/fff?text=Portfolio+A" class="profile-img slide">
-                    <img src="https://via.placeholder.com/400x400/aaa/fff?text=Portfolio+B" class="profile-img slide">
-                    <img src="https://via.placeholder.com/400x400/ccc/fff?text=Portfolio+C" class="profile-img slide">
-                </div>
-                <h3>Lee Ga Ram</h3>
-                <p class="instructor-role">Instructor</p>
-                <p>모션 그래픽 디자인 & 숏폼 기획 전문가<br>유튜브/SNS 바이럴 영상 다수 제작</p>
+                <img src="https://via.placeholder.com/400x500/7C3AED/fff?text=Instructor" class="profile-img" alt="Lee Ga Ram">
+                <h3 class="instructor-name">Lee Ga Ram</h3>
+                <span class="instructor-role">Production Instructor</span>
+                <p class="instructor-desc">모션 그래픽 디자인 & 숏폼 기획 전문가<br>유튜브/SNS 바이럴 영상 다수 제작</p>
             </div>
         </div>
     </section>
 
-    <!-- 문의하기 -->
+    <!-- 9. 문의하기 -->
     <section id="qna" class="section">
-        <h2 class="section-title">Contact <span>Us</span></h2>
-        <div class="qna-container">
-            <p class="qna-desc">궁금한 점을 남겨주세요. 관리자만 확인 가능한 비밀글로 등록됩니다.</p>
-            <input type="text" id="qnaName" class="qna-input" placeholder="이름">
-            <input type="tel" id="qnaPhone" class="qna-input" placeholder="연락처">
-            <input type="text" id="qnaTitle" class="qna-input" placeholder="제목">
-            <textarea id="qnaContent" class="qna-textarea" placeholder="문의 내용"></textarea>
-            <button class="btn-submit" onclick="submitQna()">문의 접수하기</button>
+        <div class="section-header">
+            <h2 class="section-title">Contact Us</h2>
+        </div>
+        <div class="qna-wrapper">
+            <div class="qna-box">
+                <input type="text" id="qnaName" class="qna-input" placeholder="이름">
+                <input type="tel" id="qnaPhone" class="qna-input" placeholder="연락처">
+                <input type="text" id="qnaTitle" class="qna-input" placeholder="제목">
+                <textarea id="qnaContent" class="qna-textarea" placeholder="문의 내용"></textarea>
+                <button class="btn-submit" onclick="submitQna()">문의 접수하기</button>
+            </div>
         </div>
     </section>
 
     <footer>
-        <div>
-            <strong>VCML (Visual & Viral Core Motion Labs)</strong>
-            <p style="margin:10px 0;">Copyright © 2025 All rights reserved.</p>
-            <div style="margin-top:15px;">
-                <a href="mailto:dong8creative@gmail.com">Email</a> | 
-                <a href="https://instagram.com/official_vcml" target="_blank">Instagram</a>
-            </div>
+        <p><strong>VCML (Visual & Viral Core Motion Labs)</strong></p>
+        <p>Copyright © 2025 All rights reserved.</p>
+        <div style="margin-top:20px;">
+            <a href="mailto:dong8creative@gmail.com" style="color:white; margin:0 10px;">Email</a>
+            <a href="https://instagram.com/official_vcml" target="_blank" style="color:white; margin:0 10px;">Instagram</a>
         </div>
         <a href="./admin.html" class="admin-trigger"></a>
     </footer>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_URL_HERE/exec"; 
+        const apiKey = ""; // Gemini API Key will be provided by the environment
 
         const cursor = document.querySelector('.cursor-arrow');
         document.addEventListener('mousemove', e => {
             cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
         });
 
-        const ytData = Array(6).fill({ title:"영상편집 꿀팁", views:"1.2만회", img:"" });
+        const ytData = Array(6).fill({ title:"영상편집 꿀팁", views:"1.2만회", img:"https://via.placeholder.com/320x180/111/888?text=VIDEO" });
         const ytTrack = document.getElementById('ytTrack');
         ytData.forEach((item, i) => {
             ytTrack.innerHTML += `
                 <div class="yt-card">
-                    <div class="yt-thumb-box" style="background: var(--limo-blue); display:flex; justify-content:center; align-items:center; height:180px; color:#fff;">VIDEO ${i+1}</div>
+                    <div class="yt-thumb" style="background-image:url('${item.img}')"></div>
                     <div class="yt-info">
-                        <div class="yt-title">${item.title}</div>
+                        <div class="yt-title">${item.title} ${i+1}</div>
                         <div class="yt-views">${item.views}</div>
                     </div>
                 </div>
             `;
         });
-        
+
+        // 슬라이더
         function initSlider(containerId, trackId) {
             const container = document.getElementById(containerId);
             const track = document.getElementById(trackId);
             track.innerHTML += track.innerHTML; 
-            
             let isDown=false, startX, scrollLeft;
             container.addEventListener('mousedown', (e) => { isDown=true; startX=e.pageX-container.offsetLeft; scrollLeft=container.scrollLeft; track.style.animationPlayState='paused'; });
             container.addEventListener('mouseleave', () => { isDown=false; track.style.animationPlayState='running'; });
             container.addEventListener('mouseup', () => { isDown=false; track.style.animationPlayState='running'; });
             container.addEventListener('mousemove', (e) => { if(!isDown) return; e.preventDefault(); const x=e.pageX-container.offsetLeft; const walk=(x-startX)*2; container.scrollLeft = scrollLeft-walk; });
         }
-        initSlider('coursesContainer', 'coursesTrack');
         initSlider('ytContainer', 'ytTrack');
-        
-        function startSlideshow(card) {
-            const img = card.querySelector('.profile-img.slide');
-            if(img) img.classList.add('visible');
-        }
-        function stopSlideshow(card) {
-            const imgs = card.querySelectorAll('.profile-img.slide');
-            imgs.forEach(i => i.classList.remove('visible'));
-        }
-        document.querySelectorAll('.instructor-card').forEach(card => {
-            card.addEventListener('mouseenter', () => startSlideshow(card));
-            card.addEventListener('mouseleave', () => stopSlideshow(card));
-        });
 
         function submitQna() {
             if(confirm("문의를 접수하시겠습니까?")) {
@@ -587,6 +639,51 @@
                 fetch(SCRIPT_URL, { method:'POST', body:form, mode:'no-cors' })
                     .then(() => alert("접수되었습니다."))
                     .catch(() => alert("오류가 발생했습니다."));
+            }
+        }
+        
+        async function generateIdea() {
+            const topic = document.getElementById('aiTopic').value;
+            const platform = document.getElementById('aiPlatform').value;
+            const resultDiv = document.getElementById('aiResult');
+            const loadingDiv = document.getElementById('aiLoading');
+
+            if (!topic) {
+                alert("주제를 입력해주세요!");
+                return;
+            }
+
+            loadingDiv.classList.add('active');
+            resultDiv.classList.remove('active');
+            resultDiv.innerText = "";
+
+            const prompt = `Act as a viral video content strategist. A user wants to make a video about '${topic}' for ${platform}.
+            Please provide a response in Korean language.
+            1. Suggest 3 catchy titles (Hook).
+            2. Briefly describe the visual style and editing pace.
+            3. Recommend which tool (Premiere Pro or CapCut) fits best for this style and why.
+            Keep the response concise and practical.`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+
+                if (!response.ok) throw new Error(`API call failed: ${response.statusText}`);
+
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+
+                loadingDiv.classList.remove('active');
+                resultDiv.innerText = text;
+                resultDiv.classList.add('active');
+
+            } catch (error) {
+                console.error("Error generating content:", error);
+                loadingDiv.classList.remove('active');
+                alert("아이디어 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
             }
         }
     </script>
