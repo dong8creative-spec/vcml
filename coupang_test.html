@@ -290,9 +290,10 @@
                 }
             };
 
+            // 결과 계산 및 동작 설정
             const getResult = () => {
                 if (score >= 50) {
-                    // [Type A] 합격 - 수익화 과정
+                    // [Type A] 합격
                     return {
                         type: 'A',
                         icon: <BarChart2 className="w-16 h-16 mb-4" style={{ color: themeColors.blue }} />,
@@ -305,11 +306,12 @@
                         btnColor: themeColors.blue,
                         btnHover: "#0d0580",
                         btnText: "수익화 실전반 신청하기",
-                        // Type A는 신청하기 버튼(외부링크/페이지이동) + 닫기 버튼 둘 다 필요
-                        showSecondaryBtn: true 
+                        showSecondary: true, // 두 번째 버튼(닫기) 보임
+                        action: 'link', // 메인 버튼은 링크 이동
+                        link: '#' // 실제 링크로 수정 필요
                     };
                 } else if (score >= 35) {
-                    // [Type B] 합격 - 기초 과정
+                    // [Type B] 합격 (기초)
                     return {
                         type: 'B',
                         icon: <Zap className="w-16 h-16 text-yellow-500 mb-4" />,
@@ -319,11 +321,12 @@
                         borderColor: "#EAB308", bgColor: "#FEFCE8", textColor: "#713F12",
                         btnColor: "#CA8A04", btnHover: "#A16207",
                         btnText: "콘텐츠 기초반 커리큘럼 보기",
-                        // Type B도 신청하기 + 닫기 버튼 둘 다 필요
-                        showSecondaryBtn: true
+                        showSecondary: true, // 두 번째 버튼(닫기) 보임
+                        action: 'link', // 메인 버튼은 링크 이동
+                        link: '#' // 실제 링크로 수정 필요
                     };
                 } else {
-                    // [Type C] 반려 - 중복 버튼 제거 대상
+                    // [Type C] 반려 (버튼 1개)
                     return {
                         type: 'C',
                         icon: <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />,
@@ -332,8 +335,9 @@
                         description: "본 과정은 기본적인 디지털 툴 활용 능력과 하루 3시간 이상의 투입이 필수적입니다. 현재 대표님의 상황(시간 부족, 컴퓨터 활용 능력 등)으로는 수강하셔도 만족스러운 결과를 얻기 어렵습니다. 추후 더 기초적인 과정이 개설되면 안내드리겠습니다.",
                         borderColor: "#E5E7EB", bgColor: "#F3F4F6", textColor: "#1F2937",
                         btnColor: "#4B5563", btnHover: "#374151",
-                        btnText: "홈으로 돌아가기", // 메인 버튼 자체가 '닫기' 역할을 함
-                        showSecondaryBtn: false // 두 번째 버튼 숨김
+                        btnText: "홈으로 돌아가기",
+                        showSecondary: false, // 두 번째 버튼 숨김
+                        action: 'close' // 메인 버튼 자체가 닫기 기능
                     };
                 }
             };
@@ -418,21 +422,18 @@
                                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = result.btnHover} 
                                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = result.btnColor}
                                         onClick={() => {
-                                            // Type C(반려)일 때는 이 버튼이 닫기 역할을 함
-                                            if (result.type === 'C') {
-                                                handleClose();
+                                            if (result.action === 'close') {
+                                                handleClose(); // C타입: 팝업 닫기
                                             } else {
-                                                // Type A, B일 때는 신청 페이지 이동 (예시로 구글 연결)
-                                                // 실제로는 여기에 신청 페이지 URL을 넣으세요.
-                                                window.open('https://www.google.com', '_blank');
+                                                window.open(result.link, '_blank'); // A, B타입: 링크 이동
                                             }
                                         }}
                                     >
                                         {result.btnText}
                                     </button>
                                     
-                                    {/* Secondary Button (Type C일 때는 숨김) */}
-                                    {result.showSecondaryBtn && (
+                                    {/* Secondary Button (C타입에서는 숨김) */}
+                                    {result.showSecondary && (
                                         <button 
                                             onClick={handleClose} 
                                             className="w-full py-3 text-gray-400 text-sm hover:text-gray-600 transition-colors"
