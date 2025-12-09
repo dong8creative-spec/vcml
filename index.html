@@ -102,7 +102,7 @@
         .threads-btn:hover { padding-right: 20px; background: var(--brand-blue-hover); }
         .threads-icon { width: 14px; height: 14px; fill: currentColor; }
 
-        /* [UPDATED] 섹션 공통 (100px) */
+        /* 섹션 공통 (100px) */
         .section { padding: 100px 5%; position: relative; }
         .section-title { 
             text-align: center; font-size: 2.5rem; 
@@ -152,7 +152,21 @@
         
         @keyframes fadeInUp { to { opacity: 1; } }
 
-        /* 2. 교육과정 */
+        /* 2. 과정진단 */
+        .diagnosis-wrapper { padding: 0 20px; max-width: 1400px; margin: 0 auto 120px; }
+        .diagnosis-box {
+            background-color: var(--brand-gray); border-radius: var(--radius-box);
+            padding: 80px 40px; text-align: center;
+        }
+        .diagnosis-box h2 { font-size: 2.5rem; margin-bottom: 20px; color: var(--text-main); font-weight: 800; }
+        .diagnosis-box p { font-size: 1.1rem; margin-bottom: 60px; color: #555; } 
+        .btn-diagnosis {
+            padding: 18px 45px; background: var(--brand-blue); color: white;
+            border-radius: 50px; font-weight: 700; display: inline-block; transition: 0.3s;
+        }
+        .btn-diagnosis:hover { background: var(--brand-blue-hover); transform: scale(1.05); }
+
+        /* 3. 교육과정 */
         #courses { background-color: var(--brand-white); }
         .curriculum-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -174,31 +188,17 @@
         }
         .course-card h3 { font-size: 1.5rem; margin-bottom: 15px; font-weight: 700; color: var(--text-main); }
         .course-card p { font-size: 1rem; color: var(--text-sub); margin-bottom: 0; line-height: 1.6; }
-        
-        /* 3. 진단 테스트 */
-        .diagnosis-wrapper { padding: 0 20px; max-width: 1400px; margin: 0 auto 120px; }
-        .diagnosis-box {
-            background-color: var(--brand-gray); border-radius: var(--radius-box);
-            padding: 80px 40px; text-align: center;
-        }
-        .diagnosis-box h2 { font-size: 2.5rem; margin-bottom: 20px; color: var(--text-main); font-weight: 800; }
-        .diagnosis-box p { font-size: 1.1rem; margin-bottom: 60px; color: #555; } 
-        .btn-diagnosis {
-            padding: 18px 45px; background: var(--brand-blue); color: white;
-            border-radius: 50px; font-weight: 700; display: inline-block; transition: 0.3s;
-        }
-        .btn-diagnosis:hover { background: var(--brand-blue-hover); transform: scale(1.05); }
 
-        /* 4. 수강신청 */
-        #store { background-color: var(--brand-white); } 
-        .store-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 30px; max-width: 1200px; margin: 0 auto;
-        }
+        /* 4. 수강신청 (무한 롤링, 버튼 통합) */
+        #store { background-color: var(--brand-white); overflow: hidden; } 
+        .store-track { display: flex; width: max-content; animation: scrollRight 360s linear infinite; }
+        
         .store-card {
-            background: white; border-radius: 24px; overflow: hidden;
+            width: 320px; flex-shrink: 0; margin-right: 30px;
+            background: white; border-radius: 24px; padding: 0; overflow: hidden;
             box-shadow: 0 5px 20px rgba(0,0,0,0.05); transition: 0.3s;
             display: flex; flex-direction: column; border: 1px solid #eee;
+            pointer-events: auto;
         }
         .store-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(16, 6, 159, 0.1); border-color: var(--brand-blue); }
         
@@ -206,37 +206,32 @@
         .store-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
         .store-card:hover .store-thumb { transform: scale(1.05); }
 
-        .store-info { padding: 30px; flex-grow: 1; text-align: center; }
+        .store-info { padding: 30px; flex-grow: 1; text-align: left; display: flex; flex-direction: column; }
         .store-badge { 
             font-size: 0.8rem; font-weight: 700; color: var(--brand-blue); 
             background: var(--brand-light); padding: 5px 12px; border-radius: 20px;
-            display: inline-block; margin-bottom: 15px;
+            display: inline-block; margin-bottom: 15px; align-self: flex-start;
         }
-        .store-title { font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px; }
-        .store-desc { font-size: 0.95rem; color: #666; margin-bottom: 20px; line-height: 1.5; }
-        .store-price { color: var(--text-main); font-weight: 800; font-size: 1.3rem; }
+        .store-title { font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px; line-height: 1.3; }
+        .store-desc { font-size: 0.95rem; color: #666; margin-bottom: 20px; line-height: 1.5; flex-grow: 1; }
         
-        .store-actions { padding: 0 30px 30px; display: flex; gap: 10px; }
-        .btn-link, .btn-npay {
-            flex: 1; padding: 16px; text-align: center; border-radius: 12px; 
-            font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s;
+        .store-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: auto; border-top: 1px solid #f5f5f5; padding-top: 20px;
         }
-        .btn-link { background: #f5f5f5; color: #333; }
-        .btn-link:hover { background: #e0e0e0; }
-        .btn-npay { background: var(--naver-green); color: white; border: none; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        .btn-npay:hover { background: #02b351; transform: scale(1.02); }
-
-        /* 5. 캘린더 */
-        #schedule { background-color: var(--brand-white); }
-        .calendar-wrapper { max-width: 1000px; margin: 0 auto; }
-        .calendar-box {
-            border-radius: 30px; overflow: hidden; border: 1px solid #eee;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.05); height: 700px; background: white;
+        .store-price { color: var(--text-main); font-weight: 800; font-size: 1.2rem; }
+        
+        .btn-store {
+            padding: 12px 24px; text-align: center; border-radius: 30px; 
+            font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: 0.2s;
+            background-color: var(--brand-blue); color: white; border: none; 
+            text-decoration: none;
         }
+        .btn-store:hover { background-color: var(--brand-blue-hover); }
 
-        /* 6. 유튜브 */
+        /* 5. 유튜브 (Content) */
         .youtube-section { 
-            padding: 80px 0; background: var(--brand-blue); color: white; overflow: hidden; 
+            padding: 90px 0; background: var(--brand-blue); color: white; overflow: hidden; 
         }
         .yt-header { max-width: 1400px; margin: 0 auto 40px; padding: 0 20px; display: flex; justify-content: space-between; align-items: flex-end; }
         .yt-header h2 { font-size: 2rem; font-weight: 800; margin: 0; color: white; }
@@ -246,7 +241,7 @@
         .slider-track { display: flex; width: max-content; gap: 20px; animation: scrollLeft 60s linear infinite; }
         .yt-card {
             width: 320px; flex-shrink: 0; border-radius: 16px; overflow: hidden;
-            background: #000080; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1);
+            background: #2E1065; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1);
         }
         .yt-card:hover { transform: scale(1.02); border-color: var(--brand-light); }
         .yt-thumb { width: 100%; height: 180px; background: #000; background-size: cover; }
@@ -254,6 +249,16 @@
         .yt-title { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 5px; line-height: 1.4; }
         .yt-views { font-size: 0.85rem; color: #aaa; }
         @keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @keyframes scrollRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+
+
+        /* 6. 캘린더 (Schedule) */
+        #schedule { background-color: var(--brand-white); }
+        .calendar-wrapper { max-width: 1000px; margin: 0 auto; }
+        .calendar-box {
+            border-radius: 30px; overflow: hidden; border: 1px solid #eee;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05); height: 700px; background: white;
+        }
 
         /* 7. 강사 소개 */
         #about { background-color: var(--brand-gray); }
@@ -267,7 +272,7 @@
         .instructor-role { color: var(--brand-blue-hover); font-weight: 700; margin-bottom: 20px; display: block; }
         .instructor-desc { color: #555; line-height: 1.7; word-break: keep-all; font-size: 1.05rem; }
 
-        /* 8. [UPDATED] AI 기획 (기획도우미) */
+        /* 8. AI 기획 (기획도우미) */
         #ai-tool { background-color: var(--brand-white); }
         .ai-wrapper { 
             max-width: 900px; margin: 0 auto; 
@@ -371,10 +376,10 @@
             <a href="#diagnosis">과정진단</a>
             <a href="#courses">교육과정</a>
             <a href="#store">수강신청</a>
+            <a href="#youtube">콘텐츠</a> <!-- Youtube -> 콘텐츠 -->
             <a href="#schedule">일정</a>
-            <a href="#youtube">콘텐츠</a>
             <a href="#about">강사소개</a>
-            <a href="#ai-tool">ai기획 <span class="nav-badge">New</span></a> <!-- 수정된 메뉴명 + 뱃지 -->
+            <a href="#ai-tool">ai기획 <span class="nav-badge">New</span></a>
         </nav>
         <a href="#qna" class="btn-nav-cta">문의하기</a>
     </header>
@@ -382,7 +387,6 @@
     <!-- 1. 히어로 섹션 -->
     <div class="hero-wrapper">
         <section class="hero-container">
-            <!-- 배경 데코 -->
             <div class="hero-bg-circle bg-c1"></div>
             <div class="hero-bg-circle bg-c2"></div>
             
@@ -456,54 +460,9 @@
         <div class="section-header">
             <h2 class="section-title">수강 신청</h2>
         </div>
-        <div class="store-grid">
-            <!-- 상품 1 -->
-            <div class="store-card">
-                <div class="store-thumb-container">
-                    <img src="https://via.placeholder.com/300x300/10069F/fff?text=Premiere" class="store-thumb" alt="프리미어 마스터">
-                </div>
-                <div class="store-info">
-                    <span class="store-badge">BEST</span>
-                    <h3 class="store-title">프리미어 프로 실무 마스터</h3>
-                    <p class="store-desc">기초부터 실무까지, 전문가로 거듭나는 올인원 패키지</p>
-                    <div class="store-price">129,000원</div>
-                    <div class="btn-group">
-                        <a href="https://smartstore.naver.com/YOUR_LINK_1" target="_blank" class="btn-link">상세보기</a>
-                        <a href="https://smartstore.naver.com/YOUR_LINK_1" target="_blank" class="btn-npay">N Pay 구매</a>
-                    </div>
-                </div>
-            </div>
-            <!-- 상품 2 -->
-            <div class="store-card">
-                <div class="store-thumb-container">
-                    <img src="https://via.placeholder.com/300x300/10069F/fff?text=CapCut" class="store-thumb" alt="캡컷 숏폼">
-                </div>
-                <div class="store-info">
-                    <span class="store-badge">HOT</span>
-                    <h3 class="store-title">캡컷 수익화 숏폼 완성</h3>
-                    <p class="store-desc">PC 캡컷으로 10분 만에 만드는 고퀄리티 릴스</p>
-                    <div class="store-price">89,000원</div>
-                    <div class="btn-group">
-                        <a href="https://smartstore.naver.com/YOUR_LINK_2" target="_blank" class="btn-link">상세보기</a>
-                        <a href="https://smartstore.naver.com/YOUR_LINK_2" target="_blank" class="btn-npay">N Pay 구매</a>
-                    </div>
-                </div>
-            </div>
-            <!-- 상품 3 -->
-            <div class="store-card">
-                <div class="store-thumb-container">
-                    <img src="https://via.placeholder.com/300x300/F0F2FF/10069F?text=Coaching" class="store-thumb" alt="1:1 코칭">
-                </div>
-                <div class="store-info">
-                    <span class="store-badge">1:1</span>
-                    <h3 class="store-title">맞춤형 온라인 코칭권</h3>
-                    <p class="store-desc">현직자가 내 영상을 직접 피드백하고 방향성을 제시합니다</p>
-                    <div class="store-price">150,000원</div>
-                    <div class="btn-group">
-                        <a href="https://smartstore.naver.com/YOUR_LINK_3" target="_blank" class="btn-link">상세보기</a>
-                        <a href="https://smartstore.naver.com/YOUR_LINK_3" target="_blank" class="btn-npay">N Pay 구매</a>
-                    </div>
-                </div>
+        <div class="slider-container" id="storeContainer">
+            <div class="slider-track" id="storeTrack">
+                <!-- 자바스크립트로 6개 카드 생성됨 -->
             </div>
         </div>
     </section>
@@ -523,7 +482,7 @@
     <!-- 6. 유튜브 -->
     <section id="youtube" class="youtube-section">
         <div class="yt-header">
-            <h2>영상 튜토리얼</h2>
+            <h2>영상편집 기초 튜토리얼</h2>
             <a href="https://www.youtube.com/@your_channel" target="_blank">채널 더보기 →</a>
         </div>
         <div class="slider-container" id="ytContainer">
@@ -554,7 +513,7 @@
         </div>
     </section>
 
-    <!-- 8. [UPDATED] AI 기획 -->
+    <!-- 8. AI 기획 (기획도우미) - 강사소개 아래 -->
     <section id="ai-tool" class="section">
         <div class="section-header">
             <h2 class="section-title">ai기획 <span class="title-badge">NEW</span></h2>
@@ -611,18 +570,24 @@
     </footer>
 
     <script>
+        // ▼▼▼ 여기에 본인의 앱스 스크립트 URL을 넣으세요 ▼▼▼
         const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_URL_HERE/exec"; 
-        const apiKey = ""; // Gemini API Key will be provided by the environment
+        
+        // ★ [필수] Gemini API 키를 여기에 넣으세요 ★
+        // (키가 없으면 AI 기능이 작동하지 않습니다)
+        const apiKey = "YOUR_GEMINI_API_KEY"; 
 
         const cursor = document.querySelector('.cursor-arrow');
         document.addEventListener('mousemove', e => {
             cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
         });
 
+        // 3. 유튜브 데이터
         const ytData = Array(6).fill({ title:"영상편집 꿀팁", views:"1.2만회", img:"https://via.placeholder.com/320x180/111/888?text=VIDEO" });
         const ytTrack = document.getElementById('ytTrack');
+        let ytHtml = '';
         ytData.forEach((item, i) => {
-            ytTrack.innerHTML += `
+            ytHtml += `
                 <div class="yt-card">
                     <div class="yt-thumb" style="background-image:url('${item.img}')"></div>
                     <div class="yt-info">
@@ -632,19 +597,77 @@
                 </div>
             `;
         });
+        ytTrack.innerHTML = ytHtml;
 
-        // 슬라이더
-        function initSlider(containerId, trackId) {
+        // 2. [FINAL] 수강신청 데이터 (6개 확장 + 버튼 통합)
+        const storeData = [
+            { 
+                tag:"BEST", title:"프리미어 프로 실무", price:"129,000원", 
+                desc: "기초부터 실무까지 올인원", img:"https://via.placeholder.com/300x300/10069F/fff?text=Premiere", url:"https://smartstore.naver.com/YOUR_LINK_1" 
+            },
+            { 
+                tag:"HOT", title:"캡컷 수익화 숏폼", price:"89,000원", 
+                desc: "PC 캡컷으로 고퀄리티 릴스", img:"https://via.placeholder.com/300x300/000080/fff?text=CapCut", url:"https://smartstore.naver.com/YOUR_LINK_2" 
+            },
+            { 
+                tag:"1:1", title:"맞춤형 코칭권", price:"150,000원", 
+                desc: "현직자의 1:1 피드백", img:"https://via.placeholder.com/300x300/F0F2FF/10069F?text=Coaching", url:"https://smartstore.naver.com/YOUR_LINK_3" 
+            },
+            { 
+                tag:"NEW", title:"유튜브 채널 컨설팅", price:"200,000원", 
+                desc: "채널 방향성 진단 및 솔루션", img:"https://via.placeholder.com/300x300/10069F/fff?text=Consulting", url:"#" 
+            },
+            { 
+                tag:"BASIC", title:"애프터이펙트 기초", price:"99,000원", 
+                desc: "모션그래픽 입문 필수 코스", img:"https://via.placeholder.com/300x300/000080/fff?text=AfterEffects", url:"#" 
+            },
+            { 
+                tag:"BIZ", title:"스마트스토어 마케팅", price:"110,000원", 
+                desc: "매출을 부르는 상세페이지 기획", img:"https://via.placeholder.com/300x300/F0F2FF/10069F?text=Marketing", url:"#" 
+            }
+        ];
+        
+        const storeTrack = document.getElementById('storeTrack');
+        let storeHtml = '';
+        storeData.forEach(item => {
+            storeHtml += `
+                <div class="store-card">
+                    <div class="store-thumb-container">
+                        <img src="${item.img}" class="store-thumb" alt="${item.title}">
+                    </div>
+                    <div class="store-info">
+                        <span class="store-badge">${item.tag}</span>
+                        <h3 class="store-title">${item.title}</h3>
+                        <p class="store-desc">${item.desc}</p>
+                        
+                        <div class="store-footer">
+                            <div class="store-price">${item.price}</div>
+                            <a href="${item.url}" target="_blank" class="btn-store">더 알아보기</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        storeTrack.innerHTML = storeHtml;
+
+        // [FINAL] 슬라이더 초기화 (무한 루프)
+        function initSlider(containerId, trackId, speed = 60) {
             const container = document.getElementById(containerId);
             const track = document.getElementById(trackId);
-            track.innerHTML += track.innerHTML; 
+            
+            // 콘텐츠 복제
+            track.innerHTML += track.innerHTML + track.innerHTML; 
+            track.style.animationDuration = speed + 's';
+            
             let isDown=false, startX, scrollLeft;
             container.addEventListener('mousedown', (e) => { isDown=true; startX=e.pageX-container.offsetLeft; scrollLeft=container.scrollLeft; track.style.animationPlayState='paused'; });
             container.addEventListener('mouseleave', () => { isDown=false; track.style.animationPlayState='running'; });
             container.addEventListener('mouseup', () => { isDown=false; track.style.animationPlayState='running'; });
             container.addEventListener('mousemove', (e) => { if(!isDown) return; e.preventDefault(); const x=e.pageX-container.offsetLeft; const walk=(x-startX)*2; container.scrollLeft = scrollLeft-walk; });
         }
-        initSlider('ytContainer', 'ytTrack');
+        
+        initSlider('storeContainer', 'storeTrack', 360); // Store (아주 느리게)
+        initSlider('ytContainer', 'ytTrack', 60); // YouTube (보통)
 
         function submitQna() {
             if(confirm("문의를 접수하시겠습니까?")) {
@@ -657,6 +680,19 @@
             }
         }
         
+        // ★ [FINAL] Gemini AI 로직 ★
+        // 1. 강사님의 '맞춤형 프롬프트(Gem)'를 여기에 설정하세요.
+        // 2. apiKey 변수에 유효한 키가 있어야 작동합니다.
+        const GEMINI_SYSTEM_PROMPT = `
+        당신은 'VCML'의 영상 기획 전문가 AI입니다.
+        사용자가 입력한 주제에 맞춰 바이럴 숏폼 영상 기획안을 작성해 주세요.
+        톤앤매너: 전문적이면서도 친절하고 재치 있게.
+        출력 형식:
+        1. 🎣 후킹 제목 (3가지 추천)
+        2. 🎬 추천 구성 (도입부 - 본론 - 결말)
+        3. 💡 편집 꿀팁 (프리미어/캡컷 활용법)
+        `;
+
         async function generateIdea() {
             const topic = document.getElementById('aiTopic').value;
             const platform = document.getElementById('aiPlatform').value;
@@ -672,18 +708,17 @@
             resultDiv.classList.remove('active');
             resultDiv.innerText = "";
 
-            const prompt = `Act as a viral video content strategist. A user wants to make a video about '${topic}' for ${platform}.
-            Please provide a response in Korean language.
-            1. Suggest 3 catchy titles (Hook).
-            2. Briefly describe the visual style and editing pace.
-            3. Recommend which tool (Premiere Pro or CapCut) fits best for this style and why.
-            Keep the response concise and practical.`;
+            const userPrompt = `주제: ${topic}, 플랫폼: ${platform}. 위 주제로 영상을 만들려고 해. 기획안을 짜줘.`;
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    body: JSON.stringify({
+                        contents: [
+                            { role: "user", parts: [{ text: GEMINI_SYSTEM_PROMPT + "\n\n" + userPrompt }] }
+                        ]
+                    })
                 });
 
                 if (!response.ok) throw new Error(`API call failed: ${response.statusText}`);
@@ -698,7 +733,12 @@
             } catch (error) {
                 console.error("Error generating content:", error);
                 loadingDiv.classList.remove('active');
-                alert("아이디어 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                
+                if (apiKey === "AIzaSyCkgQoz8NQ8balo5DbE1-VeomYQOmHKdz4") {
+                    alert("API 키가 설정되지 않았습니다. 코드 내 apiKey 변수를 확인해주세요.");
+                } else {
+                    alert("아이디어 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                }
             }
         }
     </script>
