@@ -11,18 +11,22 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
-        /* --- 디자인 시스템 (Purple Theme based on Image) --- */
+        /* --- 디자인 시스템 (Pantone Blue 072 C Theme) --- */
         :root {
             /* Palette */
-            --vcml-purple-deep: #4C1D95;  /* Hero BG, Footer, Text Main */
-            --vcml-purple-vivid: #7C3AED; /* Primary Button, Accents */
-            --vcml-purple-light: #F3E8FF; /* Backgrounds, Light Accents */
-            --vcml-white: #FFFFFF;
-            --vcml-gray: #F5F5F5;
+            --brand-blue: #10069F;       /* Main Color (Pantone 072 C) */
+            --brand-blue-hover: #000080; /* Darker for hover */
+            --brand-light: #F0F2FF;      /* Very Light Blue Background */
+            --brand-white: #FFFFFF;
+            --brand-gray: #F4F5F7;
             
+            /* Accents */
+            --accent-yellow: #FFD700;    /* 포인트 컬러 (배지 등) */
+            --new-badge: #FF4757;        /* NEW 스티커 컬러 */
+
             /* Text */
-            --text-main: #2E1065;
-            --text-sub: #5B5B5B;
+            --text-main: #10069F;        /* 메인 텍스트도 브랜드 블루 사용 */
+            --text-sub: #555555;
             --text-white: #FFFFFF;
             
             /* Layout */
@@ -37,7 +41,7 @@
         
         body {
             font-family: 'Montserrat', 'IBM Plex Sans KR', sans-serif;
-            background-color: var(--vcml-white);
+            background-color: var(--brand-white);
             color: var(--text-main);
             line-height: 1.6;
             overflow-x: hidden;
@@ -62,48 +66,65 @@
             display: flex; justify-content: space-between; align-items: center;
             padding: 15px 40px; position: fixed; width: 100%; top: 0;
             background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
-            z-index: 1000; border-bottom: 1px solid rgba(76, 29, 149, 0.05);
+            z-index: 1000; border-bottom: 1px solid rgba(16, 6, 159, 0.05);
             transition: background 0.3s;
         }
-        .logo { font-size: 1.6rem; font-weight: 900; letter-spacing: -0.5px; color: var(--vcml-purple-deep); }
-        .nav-links { display: flex; gap: 40px; font-size: 0.95rem; font-weight: 600; color: var(--text-main); }
-        .nav-links a:hover { color: var(--vcml-purple-vivid); }
+        .logo { font-size: 1.6rem; font-weight: 900; letter-spacing: -0.5px; color: var(--brand-blue); }
+        .nav-links { display: flex; gap: 40px; font-size: 0.95rem; font-weight: 600; color: var(--text-main); align-items: center; }
+        .nav-links a:hover { color: var(--brand-blue-hover); opacity: 0.7; }
         
+        /* 메뉴 뱃지 (New) */
+        .nav-badge {
+            background-color: var(--new-badge); color: white;
+            font-size: 0.6rem; padding: 2px 5px; border-radius: 4px;
+            margin-left: 4px; vertical-align: middle; font-weight: 800;
+        }
+
         /* 문의 버튼 (헤더 우측) */
         .btn-nav-cta {
-            padding: 10px 24px; background: var(--vcml-purple-deep); color: white;
+            padding: 10px 24px; background: var(--brand-blue); color: white;
             border-radius: 30px; font-weight: 600; font-size: 0.9rem;
         }
-        .btn-nav-cta:hover { background: var(--vcml-purple-vivid); }
-        header.dark-mode { background: rgba(76, 29, 149, 0.95); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .btn-nav-cta:hover { background: var(--brand-blue-hover); box-shadow: 0 4px 12px rgba(16, 6, 159, 0.2); }
+        
+        header.dark-mode { background: rgba(16, 6, 159, 0.95); border-bottom: 1px solid rgba(255,255,255,0.1); }
         header.dark-mode .logo, header.dark-mode .nav-links { color: var(--text-white); }
-        header.dark-mode .btn-nav-cta { background: var(--vcml-white); color: var(--vcml-purple-deep); }
+        header.dark-mode .btn-nav-cta { background: var(--brand-white); color: var(--brand-blue); }
 
         /* 스레드 버튼 */
         .threads-btn {
             position: fixed; top: 50%; right: 0; transform: translateY(-50%);
-            background: var(--vcml-purple-deep); color: #fff; padding: 10px 14px;
+            background: var(--brand-blue); color: #fff; padding: 10px 14px;
             border-radius: 20px 0 0 20px; box-shadow: -3px 3px 10px rgba(0,0,0,0.15);
             z-index: 999; font-weight: 700; font-size: 0.75rem;
             display: flex; align-items: center; gap: 6px; transition: 0.3s;
         }
-        .threads-btn:hover { padding-right: 20px; background: var(--vcml-purple-vivid); }
+        .threads-btn:hover { padding-right: 20px; background: var(--brand-blue-hover); }
         .threads-icon { width: 14px; height: 14px; fill: currentColor; }
 
-        /* 섹션 공통 (90px) */
-        .section { padding: 90px 5%; position: relative; }
+        /* [UPDATED] 섹션 공통 (100px) */
+        .section { padding: 100px 5%; position: relative; }
         .section-title { 
             text-align: center; font-size: 2.5rem; 
             margin-bottom: 50px; 
             color: var(--text-main); font-weight: 800; letter-spacing: -1px;
         }
+        
+        /* 섹션 타이틀 내 뱃지 스타일 */
+        .title-badge {
+            font-size: 1rem; vertical-align: middle;
+            background: var(--new-badge); color: white;
+            padding: 4px 10px; border-radius: 20px; margin-left: 10px;
+            animation: bounce 1s infinite alternate; display: inline-block;
+        }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 
         /* 1. 히어로 섹션 */
         .hero-wrapper {
             padding: 120px 20px 0; max-width: 1400px; margin: 0 auto;
         }
         .hero-container {
-            background: linear-gradient(135deg, #4C1D95 0%, #6D28D9 100%); /* 보라색 그라데이션 */
+            background: linear-gradient(135deg, var(--brand-blue) 0%, #3020FF 100%); 
             border-radius: var(--radius-box);
             padding: 100px 60px;
             color: var(--text-white);
@@ -111,12 +132,12 @@
             position: relative; overflow: hidden;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 600px;
-            box-shadow: 0 20px 60px rgba(76, 29, 149, 0.2);
+            box-shadow: 0 20px 60px rgba(16, 6, 159, 0.25);
         }
         
-        .hero-bg-circle { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.3; }
-        .bg-c1 { top: -100px; right: -100px; width: 500px; height: 500px; background: #A78BFA; }
-        .bg-c2 { bottom: -150px; left: -150px; width: 600px; height: 600px; background: #8B5CF6; }
+        .hero-bg-circle { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.25; }
+        .bg-c1 { top: -100px; right: -100px; width: 500px; height: 500px; background: #4D4DFF; }
+        .bg-c2 { bottom: -150px; left: -150px; width: 600px; height: 600px; background: #8080FF; }
 
         .hero-content { position: relative; z-index: 2; max-width: 900px; }
         .hero h1 {
@@ -124,37 +145,30 @@
         }
         .hero p {
             font-size: 1.3rem; font-weight: 400; opacity: 0.95; 
-            margin-bottom: 70px;
+            margin-bottom: 0px; 
             word-break: keep-all;
             opacity: 0; animation: fadeInUp 0.8s ease-out 0.8s forwards; 
         }
-        .btn-hero {
-            padding: 20px 50px; font-size: 1.2rem; font-weight: 700;
-            background-color: var(--vcml-white); color: var(--vcml-purple-deep);
-            border-radius: var(--radius-btn); display: inline-block;
-            transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        }
-        .btn-hero:hover { transform: translateY(-5px); background-color: var(--vcml-purple-light); }
         
         @keyframes fadeInUp { to { opacity: 1; } }
 
         /* 2. 교육과정 */
-        #courses { background-color: var(--vcml-white); }
+        #courses { background-color: var(--brand-white); }
         .curriculum-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px; max-width: 1200px; margin: 0 auto;
         }
         .course-card {
-            background: var(--vcml-white); padding: 40px 30px; 
+            background: var(--brand-white); padding: 40px 30px; 
             border-radius: var(--radius-card);
             border: 1px solid #eee; text-align: center;
             transition: 0.3s; box-shadow: 0 5px 20px rgba(0,0,0,0.03);
         }
-        .course-card:hover { transform: translateY(-10px); box-shadow: 0 15px 40px rgba(76, 29, 149, 0.1); border-color: var(--vcml-purple-vivid); }
+        .course-card:hover { transform: translateY(-10px); box-shadow: 0 15px 40px rgba(16, 6, 159, 0.1); border-color: var(--brand-blue); }
         
         .course-icon {
             width: 70px; height: 70px; border-radius: 20px;
-            background: var(--vcml-purple-deep); color: white;
+            background: var(--brand-blue); color: white;
             display: flex; align-items: center; justify-content: center;
             font-size: 1.8rem; font-weight: 900; margin: 0 auto 25px;
         }
@@ -164,19 +178,19 @@
         /* 3. 진단 테스트 */
         .diagnosis-wrapper { padding: 0 20px; max-width: 1400px; margin: 0 auto 120px; }
         .diagnosis-box {
-            background-color: var(--vcml-gray); border-radius: var(--radius-box);
+            background-color: var(--brand-gray); border-radius: var(--radius-box);
             padding: 80px 40px; text-align: center;
         }
         .diagnosis-box h2 { font-size: 2.5rem; margin-bottom: 20px; color: var(--text-main); font-weight: 800; }
-        .diagnosis-box p { font-size: 1.1rem; margin-bottom: 60px; color: #555; } /* 간격 60px로 증가 */
+        .diagnosis-box p { font-size: 1.1rem; margin-bottom: 60px; color: #555; } 
         .btn-diagnosis {
-            padding: 18px 45px; background: var(--vcml-purple-deep); color: white;
+            padding: 18px 45px; background: var(--brand-blue); color: white;
             border-radius: 50px; font-weight: 700; display: inline-block; transition: 0.3s;
         }
-        .btn-diagnosis:hover { background: var(--vcml-purple-vivid); transform: scale(1.05); }
+        .btn-diagnosis:hover { background: var(--brand-blue-hover); transform: scale(1.05); }
 
         /* 4. 수강신청 */
-        #store { background-color: var(--vcml-white); } 
+        #store { background-color: var(--brand-white); } 
         .store-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 30px; max-width: 1200px; margin: 0 auto;
@@ -186,7 +200,7 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.05); transition: 0.3s;
             display: flex; flex-direction: column; border: 1px solid #eee;
         }
-        .store-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(76, 29, 149, 0.1); border-color: var(--vcml-purple-vivid); }
+        .store-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(16, 6, 159, 0.1); border-color: var(--brand-blue); }
         
         .store-thumb-container { width: 100%; aspect-ratio: 1/1; overflow: hidden; }
         .store-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
@@ -194,8 +208,8 @@
 
         .store-info { padding: 30px; flex-grow: 1; text-align: center; }
         .store-badge { 
-            font-size: 0.8rem; font-weight: 700; color: var(--vcml-purple-vivid); 
-            background: var(--vcml-purple-light); padding: 5px 12px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: 700; color: var(--brand-blue); 
+            background: var(--brand-light); padding: 5px 12px; border-radius: 20px;
             display: inline-block; margin-bottom: 15px;
         }
         .store-title { font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px; }
@@ -213,7 +227,7 @@
         .btn-npay:hover { background: #02b351; transform: scale(1.02); }
 
         /* 5. 캘린더 */
-        #schedule { background-color: var(--vcml-white); }
+        #schedule { background-color: var(--brand-white); }
         .calendar-wrapper { max-width: 1000px; margin: 0 auto; }
         .calendar-box {
             border-radius: 30px; overflow: hidden; border: 1px solid #eee;
@@ -222,74 +236,27 @@
 
         /* 6. 유튜브 */
         .youtube-section { 
-            padding: 80px 0; background: var(--vcml-purple-deep); color: white; overflow: hidden; 
+            padding: 80px 0; background: var(--brand-blue); color: white; overflow: hidden; 
         }
         .yt-header { max-width: 1400px; margin: 0 auto 40px; padding: 0 20px; display: flex; justify-content: space-between; align-items: flex-end; }
         .yt-header h2 { font-size: 2rem; font-weight: 800; margin: 0; color: white; }
-        .yt-header a { color: var(--vcml-purple-light); text-decoration: underline; font-weight: 600; }
+        .yt-header a { color: var(--brand-light); text-decoration: underline; font-weight: 600; }
 
         .slider-container { width: 100%; overflow: hidden; cursor: grab; padding-left: 5%; }
         .slider-track { display: flex; width: max-content; gap: 20px; animation: scrollLeft 60s linear infinite; }
         .yt-card {
             width: 320px; flex-shrink: 0; border-radius: 16px; overflow: hidden;
-            background: #2E1065; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1);
+            background: #000080; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1);
         }
-        .yt-card:hover { transform: scale(1.02); border-color: var(--vcml-purple-vivid); }
+        .yt-card:hover { transform: scale(1.02); border-color: var(--brand-light); }
         .yt-thumb { width: 100%; height: 180px; background: #000; background-size: cover; }
         .yt-info { padding: 20px; }
         .yt-title { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 5px; line-height: 1.4; }
         .yt-views { font-size: 0.85rem; color: #aaa; }
         @keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-        /* 7. AI 기획 도우미 (NEW) */
-        #ai-tool { background-color: var(--vcml-white); }
-        .ai-wrapper { 
-            max-width: 900px; margin: 0 auto; 
-            background: var(--vcml-white);
-            border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-            border: 2px solid var(--vcml-purple-light);
-            overflow: hidden;
-        }
-        .ai-header {
-            background: var(--vcml-purple-deep); color: white; padding: 30px; text-align: center;
-        }
-        .ai-header h3 { font-size: 1.8rem; margin-bottom: 5px; color:white; }
-        .ai-header p { opacity: 0.9; font-size: 0.95rem; }
-        
-        .ai-body { padding: 40px; }
-        
-        /* [UPDATED] AI 입력창 간격 확장 */
-        .ai-input-group { display: flex; gap: 10px; margin-bottom: 60px; flex-wrap: wrap; }
-        
-        .ai-input { 
-            flex: 2; padding: 15px; border-radius: 12px; border: 1px solid #ddd;
-            font-size: 1rem; font-family: inherit; background: var(--vcml-gray);
-        }
-        .ai-select {
-            flex: 1; padding: 15px; border-radius: 12px; border: 1px solid #ddd;
-            font-size: 1rem; font-family: inherit; background: var(--vcml-gray); min-width: 150px;
-        }
-        .btn-ai-submit {
-            width: 100%; padding: 18px; font-size: 1.1rem; font-weight: 700;
-            background-color: var(--vcml-purple-vivid); color: white;
-            border: none; border-radius: 12px; cursor: pointer; transition: 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-ai-submit:hover { background-color: var(--vcml-purple-deep); }
-        .btn-ai-submit:disabled { background-color: #eee; color: #aaa; cursor: not-allowed; }
-
-        .ai-result { 
-            margin-top: 30px; padding: 25px; border-radius: 15px; 
-            background: var(--vcml-purple-light); border: 1px dashed var(--vcml-purple-vivid);
-            display: none; white-space: pre-wrap; line-height: 1.6; color: #444;
-        }
-        .ai-result.active { display: block; animation: fadeIn 0.5s ease; }
-        .ai-loading { text-align: center; display: none; margin-top: 20px; color: var(--vcml-purple-deep); font-weight: 600; }
-        .ai-loading.active { display: block; }
-        .ai-sparkle { font-size: 1.2rem; }
-
-        /* 8. 강사 소개 */
-        #about { background-color: var(--vcml-gray); }
+        /* 7. 강사 소개 */
+        #about { background-color: var(--brand-gray); }
         .instructors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 60px; max-width: 1000px; margin: 0 auto; }
         .instructor-card { text-align: left; }
         .profile-img { 
@@ -297,11 +264,58 @@
             margin-bottom: 30px; background: #ddd;
         }
         .instructor-name { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
-        .instructor-role { color: var(--vcml-purple-vivid); font-weight: 700; margin-bottom: 20px; display: block; }
+        .instructor-role { color: var(--brand-blue-hover); font-weight: 700; margin-bottom: 20px; display: block; }
         .instructor-desc { color: #555; line-height: 1.7; word-break: keep-all; font-size: 1.05rem; }
 
+        /* 8. [UPDATED] AI 기획 (기획도우미) */
+        #ai-tool { background-color: var(--brand-white); }
+        .ai-wrapper { 
+            max-width: 900px; margin: 0 auto; 
+            background: var(--brand-white);
+            border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            border: 2px solid var(--brand-light);
+            overflow: hidden;
+        }
+        .ai-header {
+            background: var(--brand-blue); color: white; padding: 30px; text-align: center;
+        }
+        .ai-header h3 { font-size: 1.8rem; margin-bottom: 5px; color:white; }
+        .ai-header p { opacity: 0.9; font-size: 0.95rem; }
+        
+        .ai-body { padding: 40px; }
+        
+        .ai-input-group { display: flex; gap: 10px; margin-bottom: 60px; flex-wrap: wrap; }
+        
+        .ai-input { 
+            flex: 2; padding: 15px; border-radius: 12px; border: 1px solid #ddd;
+            font-size: 1rem; font-family: inherit; background: var(--brand-gray);
+        }
+        .ai-select {
+            flex: 1; padding: 15px; border-radius: 12px; border: 1px solid #ddd;
+            font-size: 1rem; font-family: inherit; background: var(--brand-gray); min-width: 150px;
+        }
+        .btn-ai-submit {
+            width: 100%; padding: 18px; font-size: 1.1rem; font-weight: 700;
+            background-color: var(--brand-blue); color: white;
+            border: none; border-radius: 12px; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            margin-top: 20px; 
+        }
+        .btn-ai-submit:hover { background-color: var(--brand-blue-hover); }
+        .btn-ai-submit:disabled { background-color: #eee; color: #aaa; cursor: not-allowed; }
+
+        .ai-result { 
+            margin-top: 30px; padding: 25px; border-radius: 15px; 
+            background: var(--brand-light); border: 1px dashed var(--brand-blue);
+            display: none; white-space: pre-wrap; line-height: 1.6; color: #444;
+        }
+        .ai-result.active { display: block; animation: fadeIn 0.5s ease; }
+        .ai-loading { text-align: center; display: none; margin-top: 20px; color: var(--brand-blue); font-weight: 600; }
+        .ai-loading.active { display: block; }
+        .ai-sparkle { font-size: 1.2rem; }
+
         /* 9. 문의하기 */
-        #qna { background-color: var(--vcml-white); }
+        #qna { background-color: var(--brand-white); }
         .qna-wrapper { max-width: 800px; margin: 0 auto; }
         .qna-box {
             background: white; padding: 60px; border-radius: 30px;
@@ -311,19 +325,18 @@
             width: 100%; padding: 18px; border-radius: 12px; border: 1px solid #ddd;
             margin-bottom: 20px; font-family: inherit; font-size: 1rem; background: #F9F9F9;
         }
-        .qna-input:focus, .qna-textarea:focus { border-color: var(--vcml-purple-vivid); background: #fff; outline: none; }
+        .qna-input:focus, .qna-textarea:focus { border-color: var(--brand-blue); background: #fff; outline: none; }
         
-        /* [UPDATED] 문의하기 버튼 간격 추가 */
         .btn-submit {
-            width: 100%; padding: 20px; background: var(--vcml-purple-deep); color: white;
+            width: 100%; padding: 20px; background: var(--brand-blue); color: white;
             font-weight: 700; border-radius: 12px; border: none; cursor: pointer; font-size: 1.1rem;
-            margin-top: 30px; /* 버튼 위 간격 추가 */
+            margin-top: 30px; 
         }
-        .btn-submit:hover { background-color: var(--vcml-purple-vivid); }
+        .btn-submit:hover { background-color: var(--brand-blue-hover); }
 
         /* 푸터 */
         footer {
-            background: var(--vcml-purple-deep); color: rgba(255,255,255,0.6);
+            background: var(--brand-blue); color: rgba(255,255,255,0.6);
             padding: 80px 5%; text-align: center; font-size: 0.95rem; border-top: 1px solid rgba(255,255,255,0.1);
         }
         footer strong { color: white; font-size: 1.2rem; display: block; margin-bottom: 20px; }
@@ -337,7 +350,7 @@
             .hero-wrapper { padding: 100px 20px 0; }
             .hero-container { padding: 60px 20px; text-align: center; align-items: center; min-height: auto; }
             .hero h1 { font-size: 2.5rem; }
-            .hero p { margin-bottom: 60px; font-size: 1rem; }
+            .hero p { margin-bottom: 60px; font-size: 1rem; } 
             .section { padding: 80px 20px; }
             .curriculum-grid, .store-grid { grid-template-columns: 1fr; }
             .yt-card { width: 280px; }
@@ -355,11 +368,13 @@
     <header>
         <div class="logo">VCML</div>
         <nav class="nav-links">
-            <a href="#courses">Curriculum</a>
-            <a href="#store">Class</a>
-            <a href="#youtube">Content</a>
-            <a href="#ai-tool">AI Tool</a>
-            <a href="#about">About</a>
+            <a href="#diagnosis">과정진단</a>
+            <a href="#courses">교육과정</a>
+            <a href="#store">수강신청</a>
+            <a href="#schedule">일정</a>
+            <a href="#youtube">콘텐츠</a>
+            <a href="#about">강사소개</a>
+            <a href="#ai-tool">ai기획 <span class="nav-badge">New</span></a> <!-- 수정된 메뉴명 + 뱃지 -->
         </nav>
         <a href="#qna" class="btn-nav-cta">문의하기</a>
     </header>
@@ -374,15 +389,24 @@
             <div class="hero-content">
                 <h1>실무능력향상은<br>VCML과 함께!</h1>
                 <p>영상 편집의 시작과 끝, VCML이 함께합니다.<br>당신의 목적에 맞는 최적의 커리큘럼을 제안받아보세요.</p>
-                <a href="./test.html" class="btn-hero">과정 알아보기 ↓</a>
+                <!-- 버튼 삭제됨 -->
             </div>
         </section>
     </div>
 
-    <!-- 2. 커리큘럼 -->
+    <!-- 2. 과정진단 -->
+    <div class="diagnosis-wrapper">
+        <div class="diagnosis-box">
+            <h2>어떤 강의를 들어야 할지 고민되시나요?</h2>
+            <p>3분 만에 끝나는 무료 진단 테스트를 통해<br>나의 편집 목적과 현재 실력에 딱 맞는 과정을 추천받으세요.</p>
+            <a href="./test.html" class="btn-diagnosis">내 맞춤 커리큘럼 확인하기 →</a>
+        </div>
+    </div>
+
+    <!-- 3. 교육과정 -->
     <section id="courses" class="section">
         <div class="section-header">
-            <h2 class="section-title">Curriculum Overview</h2>
+            <h2 class="section-title">교육 과정 안내</h2>
         </div>
         <div class="curriculum-grid">
             <div class="course-card">
@@ -427,25 +451,16 @@
         </div>
     </section>
 
-    <!-- 3. 진단 테스트 -->
-    <div class="diagnosis-wrapper">
-        <div class="diagnosis-box">
-            <h2>어떤 강의를 들어야 할지 고민되시나요?</h2>
-            <p>3분 만에 끝나는 무료 진단 테스트를 통해<br>나의 편집 목적과 현재 실력에 딱 맞는 과정을 추천받으세요.</p>
-            <a href="./test.html" class="btn-diagnosis">내 맞춤 커리큘럼 확인하기 →</a>
-        </div>
-    </div>
-
     <!-- 4. 수강신청 -->
     <section id="store" class="section">
         <div class="section-header">
-            <h2 class="section-title">Class Registration</h2>
+            <h2 class="section-title">수강 신청</h2>
         </div>
         <div class="store-grid">
             <!-- 상품 1 -->
             <div class="store-card">
                 <div class="store-thumb-container">
-                    <img src="https://via.placeholder.com/300x300/4C1D95/fff?text=Premiere" class="store-thumb" alt="프리미어 마스터">
+                    <img src="https://via.placeholder.com/300x300/10069F/fff?text=Premiere" class="store-thumb" alt="프리미어 마스터">
                 </div>
                 <div class="store-info">
                     <span class="store-badge">BEST</span>
@@ -461,7 +476,7 @@
             <!-- 상품 2 -->
             <div class="store-card">
                 <div class="store-thumb-container">
-                    <img src="https://via.placeholder.com/300x300/7C3AED/fff?text=CapCut" class="store-thumb" alt="캡컷 숏폼">
+                    <img src="https://via.placeholder.com/300x300/10069F/fff?text=CapCut" class="store-thumb" alt="캡컷 숏폼">
                 </div>
                 <div class="store-info">
                     <span class="store-badge">HOT</span>
@@ -477,7 +492,7 @@
             <!-- 상품 3 -->
             <div class="store-card">
                 <div class="store-thumb-container">
-                    <img src="https://via.placeholder.com/300x300/F3E8FF/4C1D95?text=Coaching" class="store-thumb" alt="1:1 코칭">
+                    <img src="https://via.placeholder.com/300x300/F0F2FF/10069F?text=Coaching" class="store-thumb" alt="1:1 코칭">
                 </div>
                 <div class="store-info">
                     <span class="store-badge">1:1</span>
@@ -496,7 +511,7 @@
     <!-- 5. 캘린더 -->
     <section id="schedule" class="section">
         <div class="section-header">
-            <h2 class="section-title">Monthly Schedule</h2>
+            <h2 class="section-title">월간 일정</h2>
         </div>
         <div class="calendar-wrapper">
             <div class="calendar-box">
@@ -508,7 +523,7 @@
     <!-- 6. 유튜브 -->
     <section id="youtube" class="youtube-section">
         <div class="yt-header">
-            <h2>Video Tutorials</h2>
+            <h2>영상 튜토리얼</h2>
             <a href="https://www.youtube.com/@your_channel" target="_blank">채널 더보기 →</a>
         </div>
         <div class="slider-container" id="ytContainer">
@@ -518,10 +533,31 @@
         </div>
     </section>
     
-    <!-- 7. AI Creative Assistant -->
+    <!-- 7. 강사 소개 -->
+    <section id="about" class="section">
+        <div class="section-header">
+            <h2 class="section-title">강사 소개</h2>
+        </div>
+        <div class="instructors-grid">
+            <div class="instructor-card">
+                <img src="https://via.placeholder.com/400x500/10069F/fff?text=CEO" class="profile-img" alt="Lee Dong Heon">
+                <h3 class="instructor-name">Lee Dong Heon</h3>
+                <span class="instructor-role">CEO & Director</span>
+                <p class="instructor-desc">현직 영상 크리에이터 & 전문 교육 강사<br>어도비 국제 공인 전문가 (ACP)</p>
+            </div>
+            <div class="instructor-card">
+                <img src="https://via.placeholder.com/400x500/000080/fff?text=Instructor" class="profile-img" alt="Lee Ga Ram">
+                <h3 class="instructor-name">Lee Ga Ram</h3>
+                <span class="instructor-role">Production Instructor</span>
+                <p class="instructor-desc">모션 그래픽 디자인 & 숏폼 기획 전문가<br>유튜브/SNS 바이럴 영상 다수 제작</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. [UPDATED] AI 기획 -->
     <section id="ai-tool" class="section">
         <div class="section-header">
-            <h2 class="section-title">AI Creative Assistant</h2>
+            <h2 class="section-title">ai기획 <span class="title-badge">NEW</span></h2>
         </div>
         <div class="ai-wrapper">
             <div class="ai-header">
@@ -548,31 +584,10 @@
         </div>
     </section>
 
-    <!-- 8. 강사 소개 -->
-    <section id="about" class="section">
-        <div class="section-header">
-            <h2 class="section-title">Instructors</h2>
-        </div>
-        <div class="instructors-grid">
-            <div class="instructor-card">
-                <img src="https://via.placeholder.com/400x500/4C1D95/fff?text=CEO" class="profile-img" alt="Lee Dong Heon">
-                <h3 class="instructor-name">Lee Dong Heon</h3>
-                <span class="instructor-role">CEO & Director</span>
-                <p class="instructor-desc">현직 영상 크리에이터 & 전문 교육 강사<br>어도비 국제 공인 전문가 (ACP)</p>
-            </div>
-            <div class="instructor-card">
-                <img src="https://via.placeholder.com/400x500/7C3AED/fff?text=Instructor" class="profile-img" alt="Lee Ga Ram">
-                <h3 class="instructor-name">Lee Ga Ram</h3>
-                <span class="instructor-role">Production Instructor</span>
-                <p class="instructor-desc">모션 그래픽 디자인 & 숏폼 기획 전문가<br>유튜브/SNS 바이럴 영상 다수 제작</p>
-            </div>
-        </div>
-    </section>
-
     <!-- 9. 문의하기 -->
     <section id="qna" class="section">
         <div class="section-header">
-            <h2 class="section-title">Contact Us</h2>
+            <h2 class="section-title">문의하기</h2>
         </div>
         <div class="qna-wrapper">
             <div class="qna-box">
