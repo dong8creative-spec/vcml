@@ -400,15 +400,30 @@
         </section>
     </div>
 
-    <!-- 2. 과정진단 -->
-    <div class="diagnosis-wrapper">
-        <div class="diagnosis-box">
-            <h2>어떤 강의를 들어야 할지 고민되시나요?</h2>
-            <p>3분 만에 끝나는 무료 진단 테스트를 통해<br>나의 편집 목적과 현재 실력에 딱 맞는 과정을 추천받으세요.</p>
-            <a href="./test.html" class="btn-diagnosis">내 맞춤 커리큘럼 확인하기 →</a>
+<!-- 2. 과정진단 (2분할 섹션) -->
+    <div class="diagnosis-wrapper" id="diagnosis">
+        <div class="diagnosis-grid">
+            
+            <!-- 왼쪽: 영상 편집 커리큘럼 진단 -->
+            <div class="diagnosis-card">
+                <div class="diagnosis-icon">🎬</div>
+                <h2>나에게 맞는<br>영상 편집 강의는?</h2>
+                <p>프리미어 프로부터 캡컷까지,<br>현재 실력과 목적에 딱 맞는 과정을 추천받으세요.</p>
+                <!-- 기존 테스트 파일 연결 -->
+                <a href="./test.html" class="btn-diagnosis">영상 과정 추천받기 →</a>
+            </div>
+
+            <!-- 오른쪽: 쿠팡 파트너스 적성 진단 (New) -->
+            <div class="diagnosis-card card-coupang">
+                <div class="diagnosis-icon">💰</div>
+                <h2>쿠팡 파트너스<br>수익화 적성 진단 <span class="nav-badge" style="font-size:0.8rem; position:relative; top:-5px;">NEW</span></h2>
+                <p>나는 수익화가 가능한 유형일까?<br>트렌드 감각과 멘탈을 3분 만에 진단해 드립니다.</p>
+                <!-- 아까 만든 리액트 앱 페이지 연결 (파일명에 맞게 수정하세요) -->
+                <a href="./coupang_test.html" class="btn-diagnosis">수익화 가능성 확인하기 →</a>
+            </div>
+
         </div>
     </div>
-
     <!-- 3. 교육과정 -->
     <section id="courses" class="section">
         <div class="section-header">
