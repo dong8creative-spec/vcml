@@ -221,6 +221,7 @@
         }
         .store-price { color: var(--text-main); font-weight: 800; font-size: 1.1rem; }
         
+        /* 버튼 스타일 조정 (5/6 크기) */
         .btn-store {
             padding: 10px 20px; text-align: center; border-radius: 30px; 
             font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s;
@@ -259,7 +260,20 @@
         @keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         @keyframes scrollRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
 
-        /* 7. AI 기획 도우미 */
+
+        /* 7. 강사 소개 */
+        #about { background-color: var(--brand-gray); }
+        .instructors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 60px; max-width: 1000px; margin: 0 auto; }
+        .instructor-card { text-align: left; }
+        .profile-img { 
+            width: 100%; height: 400px; object-fit: cover; border-radius: 30px; 
+            margin-bottom: 30px; background: #ddd;
+        }
+        .instructor-name { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
+        .instructor-role { color: var(--brand-blue-hover); font-weight: 700; margin-bottom: 20px; display: block; }
+        .instructor-desc { color: #555; line-height: 1.7; word-break: keep-all; font-size: 1.05rem; }
+
+        /* 8. AI 기획 (기획도우미) */
         #ai-tool { background-color: var(--brand-white); }
         .ai-wrapper { 
             max-width: 900px; margin: 0 auto; 
@@ -305,18 +319,6 @@
         .ai-loading { text-align: center; display: none; margin-top: 20px; color: var(--brand-blue); font-weight: 600; }
         .ai-loading.active { display: block; }
         .ai-sparkle { font-size: 1.2rem; }
-
-        /* 8. 강사 소개 */
-        #about { background-color: var(--brand-gray); }
-        .instructors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 60px; max-width: 1000px; margin: 0 auto; }
-        .instructor-card { text-align: left; }
-        .profile-img { 
-            width: 100%; height: 400px; object-fit: cover; border-radius: 30px; 
-            margin-bottom: 30px; background: #ddd;
-        }
-        .instructor-name { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
-        .instructor-role { color: var(--brand-blue-hover); font-weight: 700; margin-bottom: 20px; display: block; }
-        .instructor-desc { color: #555; line-height: 1.7; word-break: keep-all; font-size: 1.05rem; }
 
         /* 9. 문의하기 */
         #qna { background-color: var(--brand-white); }
@@ -387,6 +389,7 @@
     <!-- 1. 히어로 섹션 -->
     <div class="hero-wrapper">
         <section class="hero-container">
+            <!-- 배경 데코 -->
             <div class="hero-bg-circle bg-c1"></div>
             <div class="hero-bg-circle bg-c2"></div>
             
@@ -529,9 +532,9 @@
         <div class="instructors-grid">
             <div class="instructor-card">
                 <img src="https://via.placeholder.com/400x500/10069F/fff?text=CEO" class="profile-img" alt="Lee Dong Heon">
-                <h3 class="instructor-name">이동헌</h3>
+                <h3 class="instructor-name">Lee Dong Heon</h3>
                 <span class="instructor-role">CEO & Director</span>
-                <p class="instructor-desc">현직 전문 영상편집자 & 전문교육 강사<br>(2015~2018)시청자미디어재단 영상제작강사</p>
+                <p class="instructor-desc">현직 영상 크리에이터 & 전문 교육 강사<br>어도비 국제 공인 전문가 (ACP)</p>
             </div>
             <div class="instructor-card">
                 <img src="https://via.placeholder.com/400x500/000080/fff?text=Instructor" class="profile-img" alt="Lee Ga Ram">
@@ -569,11 +572,11 @@
     </footer>
 
     <script>
-        // ▼▼▼ 본인의 앱스 스크립트 URL 입력 ▼▼▼
+        // ▼▼▼ 본인 앱스 스크립트 URL 입력 ▼▼▼
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwTi1rM3-8rN6OSYz-UF3390p43X6pVGFtZJbmoEUZm4S4O_uNjjD_dHADmMaP4BqcT_Q/exec"; 
         
-        // ★ [필수] Gemini API 키를 여기에 넣으세요 ★
-        const apiKey = "AIzaSyCkgQoz8NQ8balo5DbE1-VeomYQOmHKdz4"; 
+        // ★ [필수] Gemini API 키 입력 ★
+        const apiKey = "AIzaSyBPS7TjzpeYTtWcRyRBBWFeDJ-R_9F85D8"; 
 
         const cursor = document.querySelector('.cursor-arrow');
         document.addEventListener('mousemove', e => {
@@ -605,7 +608,7 @@
             },
             { 
                 tag:"Pro", title:"CapCut 프로 과정", price:"150,000원", 
-                desc: "PC 캡컷으로 완성하는 고퀄리티 릴스", img:"https://via.placeholder.com/300x300/E2AB2D/fff?text=CapCut", url:"#" 
+                desc: "PC 캡컷으로 완성하는 고퀄리티 릴스", img:"https://via.placeholder.com/300x300/000080/fff?text=CapCut", url:"#" 
             },
             { 
                 tag:"Adobe Basic", title:"어도비 마스터 패키지 (입문)", price:"250,000원", 
@@ -648,7 +651,7 @@
         });
         storeTrack.innerHTML = storeHtml;
 
-        // [FINAL] 슬라이더 초기화
+        // [FINAL] 슬라이더 초기화 (무한 루프)
         function initSlider(containerId, trackId, speed = 60) {
             const container = document.getElementById(containerId);
             const track = document.getElementById(trackId);
