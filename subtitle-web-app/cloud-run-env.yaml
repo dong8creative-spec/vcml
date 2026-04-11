@@ -1,7 +1,7 @@
 # Cloud Run: gcloud run services update vcml-subtitle --region=asia-northeast3 --env-vars-file=cloud-run-env.yaml
 VCML_CORS_ORIGINS: "https://vcml.kr,https://www.vcml.kr"
 VCML_SUBTITLE_GATE: "1"
-VCML_ACCESS_CODE: "0219"
+VCML_ACCESS_CODE: "0625"
 VCML_TRANSCRIPTION_QUOTA_MODE: "ip"
 VCML_MAX_USES_PER_IP: "10"
 # 배포·스케일 시 컨테이너 디스크가 비워지면 IP 10회가 초기화됩니다. Cloud Run에 영구 볼륨(또는 공유 스토리지)을
