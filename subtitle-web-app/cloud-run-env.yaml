@@ -1,0 +1,8 @@
+# Cloud Run: gcloud run services update vcml-subtitle --region=asia-northeast3 --env-vars-file=cloud-run-env.yaml
+VCML_CORS_ORIGINS: "https://vcml.kr,https://www.vcml.kr"
+VCML_SUBTITLE_GATE: "1"
+VCML_ACCESS_CODE: "0219"
+VCML_TRANSCRIPTION_QUOTA_MODE: "ip"
+VCML_MAX_USES_PER_IP: "10"
+WHISPER_MODEL: "small"
+VCML_TRUST_X_FORWARDED_FOR: "1"
