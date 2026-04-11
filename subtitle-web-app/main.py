@@ -81,6 +81,8 @@ PREVIEW_VIDEO_EXT = {".mp4", ".webm", ".mpeg"}
 _model = None
 
 jobs_lock = threading.Lock()
+# 프로세스 메모리 전용. Cloud Run 등에서 인스턴스가 2개 이상이면 POST /api/jobs 와 GET /api/jobs/{id} 가
+# 서로 다른 컨테이너로 가며 404 가 난다 → 서비스는 --max-instances=1 (또는 외부 작업 저장소) 필요.
 jobs: dict[str, dict] = {}
 
 
