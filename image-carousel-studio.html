@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>이미지 편집 스튜디오 (단일 HTML)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Batang&family=Nanum+Gothic:wght@400;700&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --border: #2d3344;
+      --text: #e8eaef;
+      --muted: #8b93a7;
+      --accent: #6c8cff;
+      --danger: #ff6b7a;
+      --ok: #5cdb95;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Noto Sans KR", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .app-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem 1rem;
+    }
+    .app-header h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+    .app-header p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+      max-width: 42rem;
+    }
+    .steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-left: auto;
+    }
+    .steps button {
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .steps button.active {
+      border-color: var(--accent);
+      background: rgba(108, 140, 255, 0.15);
+      color: #c9d4ff;
+    }
+    .steps button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    main {
+      padding: 1rem 1.25rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .panel {
+      display: none;
+      animation: fade 0.2s ease;
+    }
+    .panel.active {
+      display: block;
+    }
+    @keyframes fade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1rem;
+    }
+    .card h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1rem;
+    }
+    .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    textarea, input[type="text"], input[type="url"], select {
+      width: 100%;
+      padding: 0.55rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #12141c;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 0.65rem;
+    }
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #5a6fc9, var(--accent));
+      color: #fff;
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-danger {
+      background: rgba(255, 107, 122, 0.2);
+      color: #ffb3bc;
+      border: 1px solid rgba(255, 107, 122, 0.4);
+    }
+    .pool-grid, .pick-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .thumb {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      background: #12141c;
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .thumb.selected {
+      border-color: var(--ok);
+      box-shadow: 0 0 0 2px rgba(92, 219, 149, 0.35);
+    }
+    .thumb .badge {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      font-size: 0.65rem;
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+    }
+    .thumb.err::after {
+      content: "로드 실패";
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: var(--danger);
+      background: rgba(0, 0, 0, 0.6);
+    }
+    .preview-wrap {
+      position: relative;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .edit-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-bottom: 0.75rem;
+      align-items: center;
+    }
+    .edit-strip-thumb {
+      width: 56px;
+      height: 56px;
+      padding: 0;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      background: #12141c;
+    }
+    .edit-strip-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .edit-strip-thumb.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(108, 140, 255, 0.35);
+    }
+    .preview-stage {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .preview-stage .preview-main-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #000;
+    }
+    .overlay-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .overlay-layer .txt {
+      position: absolute;
+      pointer-events: auto;
+      cursor: move;
+      user-select: none;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+      white-space: pre-wrap;
+      max-width: 90%;
+      line-height: 1.2;
+    }
+    .overlay-layer .txt.selected {
+      outline: 2px dashed var(--accent);
+    }
+    .editor-tools {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    @media (min-width: 800px) {
+      .editor-tools {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .crop-box {
+      max-height: 420px;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #000;
+    }
+    .crop-box img {
+      max-width: 100%;
+      display: block;
+    }
+    .warn {
+      background: rgba(255, 180, 80, 0.12);
+      border: 1px solid rgba(255, 180, 80, 0.35);
+      color: #ffd8a8;
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      margin-bottom: 0.75rem;
+    }
+    .export-preview {
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      max-height: 200px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>이미지 편집 스튜디오</h1>
+      <p>
+        한 파일 안에서 단계를 나눠 최대 10장을 고른 뒤, 편집할 이미지를 골라 크롭·텍스트 배치·스타일을 적용합니다.
+        임의 사이트 이미지를 JS로 “긁기”(fetch)는 보통 CORS로 막히므로, URL은 브라우저가 직접 불러오는 방식(&lt;img&gt;)으로 시도합니다. 막힌 URL은 표시되지 않을 수 있습니다.
+      </p>
+    </div>
+    <nav class="steps" aria-label="단계">
+      <button type="button" data-go="0" class="active">1. 수집</button>
+      <button type="button" data-go="1">2. 선별</button>
+      <button type="button" data-go="2">3. 편집</button>
+      <button type="button" data-go="3">4. 보내기</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="warn" role="note">
+      저작권·이용약관은 사용자 책임입니다. 상업·공개용은 출처·라이선스를 확인하세요.
+    </div>
+
+    <!-- 1. 수집 -->
+    <section class="panel active" data-panel="0">
+      <div class="card">
+        <h2>파일에서 추가</h2>
+        <p class="hint">여러 장 선택 가능 (로컬 파일은 크롭·PNG 저장에 유리합니다)</p>
+        <input type="file" id="fileIn" accept="image/*" multiple />
+      </div>
+      <div class="card">
+        <h2>URL로 추가</h2>
+        <p class="hint">한 줄에 이미지 주소 하나. 일부 사이트는 hotlink 차단으로 실패합니다.</p>
+        <textarea id="urlTa" placeholder="https://example.com/a.jpg&#10;https://…"></textarea>
+        <div class="row">
+          <button type="button" class="btn btn-primary" id="btnUrlAdd">URL 불러오기</button>
+          <button type="button" class="btn btn-ghost" id="btnPoolClear">수집 풀 비우기</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>수집 풀 (<span id="poolCount">0</span>장)</h2>
+        <div class="pool-grid" id="poolGrid"></div>
+      </div>
+    </section>
+
+    <!-- 2. 선별 -->
+    <section class="panel" data-panel="1">
+      <div class="card">
+        <h2>최대 10장 선택</h2>
+        <p class="hint">썸네일을 눌러 선택/해제합니다. 3단계에서 편집할 이미지를 고릅니다.</p>
+        <p class="hint">선택됨: <strong id="pickCount">0</strong> / 10</p>
+        <div class="pick-grid" id="pickGrid"></div>
+      </div>
+    </section>
+
+    <!-- 3. 편집 -->
+    <section class="panel" data-panel="2">
+      <div class="card preview-wrap">
+        <h2>미리보기</h2>
+        <p class="hint">선택한 이미지 중 편집할 한 장을 아래 썸네일에서 고릅니다.</p>
+        <div class="edit-strip" id="editStrip" aria-label="편집할 이미지 선택"></div>
+        <div class="preview-stage" id="previewStage">
+          <img id="previewMainImg" class="preview-main-img" alt="" />
+          <div class="overlay-layer" id="overlayLayer"></div>
+        </div>
+      </div>
+
+      <div class="card editor-tools">
+        <div>
+          <h2>이미지 크롭 (현재 이미지)</h2>
+          <p class="hint">Cropper로 영역 지정 후 적용하면 지금 고른 이미지에만 반영됩니다.</p>
+          <div class="crop-box">
+            <img id="cropImg" alt="" style="max-width:100%;" />
+          </div>
+          <div class="row">
+            <button type="button" class="btn btn-primary" id="btnCropApply">크롭 적용</button>
+            <button type="button" class="btn btn-ghost" id="btnCropReset">크롭 초기화</button>
+          </div>
+        </div>
+        <div>
+          <h2>텍스트 오버레이</h2>
+          <p class="hint">미리보기 위 문장을 드래그해 위치를 옮깁니다. 항목을 클릭하면 선택됩니다.</p>
+          <div class="row">
+            <input type="text" id="newText" placeholder="새 텍스트" />
+            <button type="button" class="btn btn-primary" id="btnAddText">추가</button>
+          </div>
+          <div class="row">
+            <label style="font-size:0.8rem;color:var(--muted);">크기(px)</label>
+            <input type="number" id="txtSize" min="8" max="200" value="28" style="width:5rem;" />
+            <label style="font-size:0.8rem;color:var(--muted);">글꼴</label>
+            <select id="txtFont">
+              <option value='"Noto Sans KR", sans-serif'>Noto Sans KR</option>
+              <option value='"Nanum Gothic", sans-serif'>Nanum Gothic</option>
+              <option value='"Black Han Sans", sans-serif'>Black Han Sans</option>
+              <option value='"Gowun Batang", serif'>Gowun Batang</option>
+              <option value="system-ui, sans-serif">시스템 UI</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="monospace">고정폭</option>
+            </select>
+          </div>
+          <div class="row">
+            <label style="font-size:0.8rem;color:var(--muted);">색</label>
+            <input type="color" id="txtColor" value="#ffffff" />
+            <button type="button" class="btn btn-danger" id="btnDelText">선택 텍스트 삭제</button>
+          </div>
+          <ul id="textList" class="hint" style="list-style:none;padding:0;margin:0.5rem 0 0;"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 보내기 -->
+    <section class="panel" data-panel="3">
+      <div class="card">
+        <h2>프로젝트 JSON</h2>
+        <p class="hint">나중에 같은 파일에 붙여넣어 복원할 수 있습니다(이미지는 URL/데이터 URL 포함).</p>
+        <div class="row">
+          <button type="button" class="btn btn-primary" id="btnExportJson">JSON 다운로드</button>
+          <button type="button" class="btn btn-ghost" id="btnCopyJson">클립보드 복사</button>
+          <button type="button" class="btn btn-ghost" id="btnImportJson">아래 JSON으로 복원</button>
+        </div>
+        <textarea id="jsonOut" class="hint" style="min-height:160px;margin-top:0.75rem;font-family:monospace;font-size:0.72rem;"></textarea>
+      </div>
+      <div class="card">
+        <h2>현재 이미지 PNG 저장</h2>
+        <p class="hint">cross-origin 이미지가 끼어 있으면 캔버스가 오염되어 저장이 막힐 수 있습니다. 그때는 로컬 파일만 사용하세요.</p>
+        <div class="row">
+          <button type="button" class="btn btn-primary" id="btnPngSlide">현재 이미지 PNG</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" crossorigin="anonymous"></script>
+  <script>
+(function () {
+  var MAX_PICK = 10;
+  var pool = [];
+  var poolId = 0;
+  var selectedIds = [];
+  var slideIndex = 0;
+  var cropper = null;
+  var dragging = null;
+  var selectedTextId = null;
+
+  function uid() {
+    return "i" + ++poolId + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function setStep(n) {
+    var panels = document.querySelectorAll("[data-panel]");
+    var tabs = document.querySelectorAll(".steps [data-go]");
+    panels.forEach(function (p) {
+      p.classList.toggle("active", parseInt(p.getAttribute("data-panel"), 10) === n);
+    });
+    tabs.forEach(function (t) {
+      t.classList.toggle("active", parseInt(t.getAttribute("data-go"), 10) === n);
+    });
+    if (n === 2) {
+      refreshEditStep();
+    }
+    if (n === 3) refreshJsonPreview();
+  }
+
+  document.querySelectorAll(".steps [data-go]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      setStep(parseInt(btn.getAttribute("data-go"), 10));
+    });
+  });
+
+  function addToPool(src, kind) {
+    var id = uid();
+    var item = { id: id, src: src, kind: kind || "file", texts: [], cropData: null };
+    pool.push(item);
+    renderPool();
+  }
+
+  function renderPool() {
+    var grid = document.getElementById("poolGrid");
+    var cnt = document.getElementById("poolCount");
+    grid.innerHTML = "";
+    cnt.textContent = String(pool.length);
+    pool.forEach(function (it) {
+      var div = document.createElement("div");
+      div.className = "thumb";
+      div.dataset.id = it.id;
+      var img = document.createElement("img");
+      img.alt = "";
+      img.src = it.src;
+      img.onerror = function () {
+        div.classList.add("err");
+      };
+      var b = document.createElement("span");
+      b.className = "badge";
+      b.textContent = it.kind === "url" ? "URL" : "file";
+      div.appendChild(img);
+      div.appendChild(b);
+      grid.appendChild(div);
+    });
+    renderPickGrid();
+  }
+
+  function renderPickGrid() {
+    var grid = document.getElementById("pickGrid");
+    var pc = document.getElementById("pickCount");
+    grid.innerHTML = "";
+    pc.textContent = String(selectedIds.length);
+    pool.forEach(function (it) {
+      var div = document.createElement("div");
+      div.className = "thumb" + (selectedIds.indexOf(it.id) >= 0 ? " selected" : "");
+      div.dataset.id = it.id;
+      var img = document.createElement("img");
+      img.src = it.src;
+      img.alt = "";
+      img.onerror = function () {
+        div.classList.add("err");
+      };
+      div.appendChild(img);
+      var order = selectedIds.indexOf(it.id);
+      if (order >= 0) {
+        var b = document.createElement("span");
+        b.className = "badge";
+        b.textContent = String(order + 1);
+        div.appendChild(b);
+      }
+      div.addEventListener("click", function () {
+        var i = selectedIds.indexOf(it.id);
+        if (i >= 0) {
+          selectedIds.splice(i, 1);
+        } else {
+          if (selectedIds.length >= MAX_PICK) {
+            alert("최대 " + MAX_PICK + "장까지 선택할 수 있습니다.");
+            return;
+          }
+          selectedIds.push(it.id);
+        }
+        renderPickGrid();
+      });
+      grid.appendChild(div);
+    });
+  }
+
+  function getSlides() {
+    return selectedIds
+      .map(function (id) {
+        return pool.find(function (x) {
+          return x.id === id;
+        });
+      })
+      .filter(Boolean);
+  }
+
+  function renderEditStrip() {
+    var strip = document.getElementById("editStrip");
+    strip.innerHTML = "";
+    var slides = getSlides();
+    if (!slides.length) {
+      strip.innerHTML =
+        '<span class="hint" style="margin:0;color:var(--muted);">2단계에서 먼저 이미지를 선택하세요.</span>';
+      return;
+    }
+    slides.forEach(function (it, idx) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "edit-strip-thumb" + (idx === slideIndex ? " active" : "");
+      var im = document.createElement("img");
+      im.src = it.src;
+      im.alt = "";
+      im.referrerPolicy = "no-referrer";
+      btn.appendChild(im);
+      btn.addEventListener("click", function () {
+        slideIndex = idx;
+        renderEditStrip();
+        syncPreviewImage();
+        syncCropper();
+        renderOverlay();
+      });
+      strip.appendChild(btn);
+    });
+  }
+
+  function syncPreviewImage() {
+    var it = currentItem();
+    var img = document.getElementById("previewMainImg");
+    if (!it || !img) return;
+    img.referrerPolicy = "no-referrer";
+    img.onload = function () {
+      applyCropToPreviewImg(it);
+    };
+    img.src = it.src;
+  }
+
+  function refreshEditStep() {
+    renderEditStrip();
+    var slides = getSlides();
+    if (!slides.length) {
+      slideIndex = 0;
+      var pm = document.getElementById("previewMainImg");
+      if (pm) pm.removeAttribute("src");
+      var layer = document.getElementById("overlayLayer");
+      if (layer) layer.innerHTML = "";
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+      var cel = document.getElementById("cropImg");
+      if (cel) cel.removeAttribute("src");
+      return;
+    }
+    if (slideIndex >= slides.length) slideIndex = 0;
+    syncPreviewImage();
+    syncCropper();
+    renderOverlay();
+  }
+
+  function currentItem() {
+    var slides = getSlides();
+    return slides[slideIndex] || null;
+  }
+
+  function syncCropper() {
+    var imgEl = document.getElementById("cropImg");
+    var it = currentItem();
+    if (cropper) {
+      cropper.destroy();
+      cropper = null;
+    }
+    if (!it) {
+      imgEl.removeAttribute("src");
+      return;
+    }
+    imgEl.src = it.src;
+    imgEl.referrerPolicy = "no-referrer";
+    imgEl.onload = function () {
+      cropper = new Cropper(imgEl, {
+        viewMode: 1,
+        autoCropArea: 1,
+        responsive: true,
+      });
+      if (it.cropData) {
+        cropper.setData(it.cropData);
+      }
+    };
+  }
+
+  document.getElementById("btnCropApply").addEventListener("click", function () {
+    var it = currentItem();
+    if (!it || !cropper) return;
+    var c = cropper.getData(true);
+    it.cropData = { x: c.x, y: c.y, width: c.width, height: c.height };
+    applyCropToPreviewImg(it);
+    alert("현재 이미지에 크롭 영역이 적용되었습니다. (미리보기 반영)");
+  });
+
+  document.getElementById("btnCropReset").addEventListener("click", function () {
+    var it = currentItem();
+    if (!it) return;
+    it.cropData = null;
+    if (cropper) cropper.reset();
+    applyCropToPreviewImg(it);
+  });
+
+  function applyCropToPreviewImg(it) {
+    var img = document.getElementById("previewMainImg");
+    var stage = document.getElementById("previewStage");
+    if (!img || !stage || !it) return;
+    if (!it.cropData || !it.cropData.width) {
+      img.style.objectFit = "contain";
+      img.style.objectPosition = "center";
+      img.style.transform = "";
+      img.style.width = "100%";
+      img.style.height = "100%";
+      return;
+    }
+    var d = it.cropData;
+    img.style.objectFit = "none";
+    img.style.width = (img.naturalWidth || 1) + "px";
+    img.style.height = (img.naturalHeight || 1) + "px";
+    img.style.transformOrigin = "top left";
+    var rw = stage.clientWidth;
+    var rh = stage.clientHeight;
+    var sx = d.x;
+    var sy = d.y;
+    var sw = d.width;
+    var sh = d.height;
+    var scale = Math.min(rw / sw, rh / sh);
+    img.style.transform =
+      "translate(" +
+      (rw - sw * scale) / 2 +
+      "px," +
+      (rh - sh * scale) / 2 +
+      "px) scale(" +
+      scale +
+      ") translate(" +
+      -sx +
+      "px," +
+      -sy +
+      "px)";
+  }
+
+  function renderOverlay() {
+    var layer = document.getElementById("overlayLayer");
+    if (!layer) return;
+    layer.innerHTML = "";
+    var it = currentItem();
+    if (!it || !it.texts) return;
+    it.texts.forEach(function (t) {
+      var el = document.createElement("div");
+      el.className = "txt" + (t.id === selectedTextId ? " selected" : "");
+      el.textContent = t.text;
+      el.style.left = t.x + "%";
+      el.style.top = t.y + "%";
+      el.style.fontSize = t.size + "px";
+      el.style.fontFamily = t.font;
+      el.style.color = t.color;
+      el.dataset.tid = t.id;
+      el.addEventListener("mousedown", function (e) {
+        e.preventDefault();
+        selectedTextId = t.id;
+        dragging = { id: t.id, el: el, startX: e.clientX, startY: e.clientY, ox: t.x, oy: t.y };
+        renderTextList();
+        document.querySelectorAll(".txt").forEach(function (x) {
+          x.classList.toggle("selected", x.dataset.tid === t.id);
+        });
+      });
+      layer.appendChild(el);
+    });
+    renderTextList();
+  }
+
+  document.addEventListener("mousemove", function (e) {
+    if (!dragging) return;
+    var it = currentItem();
+    if (!it) return;
+    var stage = document.getElementById("previewStage");
+    var rect = stage.getBoundingClientRect();
+    var dx = ((e.clientX - dragging.startX) / rect.width) * 100;
+    var dy = ((e.clientY - dragging.startY) / rect.height) * 100;
+    var t = it.texts.find(function (x) {
+      return x.id === dragging.id;
+    });
+    if (!t) return;
+    t.x = Math.max(0, Math.min(92, dragging.ox + dx));
+    t.y = Math.max(0, Math.min(92, dragging.oy + dy));
+    dragging.el.style.left = t.x + "%";
+    dragging.el.style.top = t.y + "%";
+  });
+  document.addEventListener("mouseup", function () {
+    dragging = null;
+  });
+
+  function renderTextList() {
+    var ul = document.getElementById("textList");
+    var it = currentItem();
+    ul.innerHTML = "";
+    if (!it) return;
+    it.texts.forEach(function (t) {
+      var li = document.createElement("li");
+      li.style.marginBottom = "0.25rem";
+      li.innerHTML =
+        '<button type="button" class="btn btn-ghost" style="padding:0.2rem 0.45rem;font-size:0.72rem;" data-pick="' +
+        t.id +
+        '">' +
+        (t.id === selectedTextId ? "▶ " : "") +
+        (t.text.slice(0, 18) || "(빈칸)") +
+        "</button>";
+      li.querySelector("button").addEventListener("click", function () {
+        selectedTextId = t.id;
+        document.getElementById("txtSize").value = String(t.size);
+        document.getElementById("txtFont").value = t.font;
+        document.getElementById("txtColor").value = t.color;
+        renderOverlay();
+      });
+      ul.appendChild(li);
+    });
+  }
+
+  document.getElementById("btnAddText").addEventListener("click", function () {
+    var it = currentItem();
+    if (!it) {
+      alert("먼저 2단계에서 이미지를 선택하세요.");
+      return;
+    }
+    var tx = (document.getElementById("newText").value || "텍스트").trim();
+    if (!tx) return;
+    it.texts.push({
+      id: uid(),
+      text: tx,
+      x: 8,
+      y: 8,
+      size: parseInt(document.getElementById("txtSize").value, 10) || 28,
+      font: document.getElementById("txtFont").value,
+      color: document.getElementById("txtColor").value,
+    });
+    document.getElementById("newText").value = "";
+    selectedTextId = it.texts[it.texts.length - 1].id;
+    renderOverlay();
+  });
+
+  function applyStyleToSelected() {
+    var it = currentItem();
+    if (!it || !selectedTextId) return;
+    var t = it.texts.find(function (x) {
+      return x.id === selectedTextId;
+    });
+    if (!t) return;
+    t.size = parseInt(document.getElementById("txtSize").value, 10) || 28;
+    t.font = document.getElementById("txtFont").value;
+    t.color = document.getElementById("txtColor").value;
+    renderOverlay();
+  }
+  ["txtSize", "txtFont", "txtColor"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", applyStyleToSelected);
+    document.getElementById(id).addEventListener("input", applyStyleToSelected);
+  });
+
+  document.getElementById("btnDelText").addEventListener("click", function () {
+    var it = currentItem();
+    if (!it || !selectedTextId) return;
+    it.texts = it.texts.filter(function (x) {
+      return x.id !== selectedTextId;
+    });
+    selectedTextId = null;
+    renderOverlay();
+  });
+
+  document.getElementById("fileIn").addEventListener("change", function (e) {
+    var files = e.target.files;
+    if (!files) return;
+    for (var i = 0; i < files.length; i++) {
+      addToPool(URL.createObjectURL(files[i]), "file");
+    }
+    e.target.value = "";
+  });
+
+  document.getElementById("btnUrlAdd").addEventListener("click", function () {
+    var raw = document.getElementById("urlTa").value || "";
+    raw.split(/\n/).forEach(function (line) {
+      var u = line.trim();
+      if (!u || !/^https?:\/\//i.test(u)) return;
+      addToPool(u, "url");
+    });
+  });
+
+  document.getElementById("btnPoolClear").addEventListener("click", function () {
+    if (!confirm("수집 풀과 선택을 모두 비울까요?")) return;
+    pool = [];
+    selectedIds = [];
+    slideIndex = 0;
+    renderPool();
+  });
+
+  function projectToJson() {
+    return JSON.stringify(
+      {
+        version: 1,
+        selectedIds: selectedIds.slice(),
+        pool: pool.map(function (it) {
+          return {
+            id: it.id,
+            src: it.src,
+            kind: it.kind,
+            cropData: it.cropData,
+            texts: it.texts.slice(),
+          };
+        }),
+      },
+      null,
+      2
+    );
+  }
+
+  function refreshJsonPreview() {
+    document.getElementById("jsonOut").value = projectToJson();
+  }
+
+  document.getElementById("btnExportJson").addEventListener("click", function () {
+    var blob = new Blob([projectToJson()], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "image-edit-project.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  document.getElementById("btnCopyJson").addEventListener("click", function () {
+    refreshJsonPreview();
+    navigator.clipboard.writeText(document.getElementById("jsonOut").value).then(
+      function () {
+        alert("클립보드에 복사했습니다.");
+      },
+      function () {
+        alert("복사에 실패했습니다. 텍스트 영역에서 직접 복사하세요.");
+      }
+    );
+  });
+
+  document.getElementById("btnImportJson").addEventListener("click", function () {
+    var raw = document.getElementById("jsonOut").value.trim();
+    if (!raw) {
+      alert("JSON을 아래 칸에 붙여넣은 뒤 다시 눌러 주세요.");
+      return;
+    }
+    try {
+      var data = JSON.parse(raw);
+      if (!data.pool || !Array.isArray(data.pool)) throw new Error("pool 배열이 없습니다.");
+      pool = data.pool.map(function (p) {
+        return {
+          id: p.id || uid(),
+          src: p.src,
+          kind: p.kind || "url",
+          texts: Array.isArray(p.texts) ? p.texts.slice() : [],
+          cropData: p.cropData || null,
+        };
+      });
+      selectedIds = Array.isArray(data.selectedIds) ? data.selectedIds.slice(0, MAX_PICK) : [];
+      slideIndex = 0;
+      renderPool();
+      alert("복원했습니다. 1·2단계에서 풀과 선택을 확인하세요.");
+      setStep(0);
+    } catch (e) {
+      alert("JSON 해석 실패: " + (e.message || e));
+    }
+  });
+
+  document.getElementById("btnPngSlide").addEventListener("click", function () {
+    var stage = document.getElementById("previewStage");
+    var img = document.getElementById("previewMainImg");
+    if (!img || !img.src) {
+      alert("표시할 이미지가 없습니다.");
+      return;
+    }
+    var w = stage.clientWidth;
+    var h = stage.clientHeight;
+    var c = document.createElement("canvas");
+    c.width = w * 2;
+    c.height = h * 2;
+    var ctx = c.getContext("2d");
+    ctx.scale(2, 2);
+    var drawImg = function () {
+      try {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, w, h);
+        if (img.complete && img.naturalWidth) {
+          var it = currentItem();
+          if (it && it.cropData && it.cropData.width) {
+            var d = it.cropData;
+            ctx.drawImage(img, d.x, d.y, d.width, d.height, 0, 0, w, h);
+          } else {
+            var ir = img.getBoundingClientRect();
+            var sr = stage.getBoundingClientRect();
+            var scaleX = img.naturalWidth / (ir.width || 1);
+            var scaleY = img.naturalHeight / (ir.height || 1);
+            var dx = ir.left - sr.left;
+            var dy = ir.top - sr.top;
+            ctx.drawImage(
+              img,
+              -dx * scaleX,
+              -dy * scaleY,
+              sr.width * scaleX,
+              sr.height * scaleY,
+              0,
+              0,
+              w,
+              h
+            );
+          }
+        }
+        var it2 = currentItem();
+        if (it2 && it2.texts.length) {
+          it2.texts.forEach(function (t) {
+            ctx.font = "bold " + t.size + "px " + t.font;
+            ctx.fillStyle = t.color;
+            ctx.shadowColor = "rgba(0,0,0,0.8)";
+            ctx.shadowBlur = 4;
+            ctx.fillText(t.text, (t.x / 100) * w, (t.y / 100) * h + t.size * 0.8);
+            ctx.shadowBlur = 0;
+          });
+        }
+        c.toBlob(function (blob) {
+          if (!blob) {
+            alert("PNG 생성 실패(캔버스 오염 가능). 로컬 이미지로 시도하세요.");
+            return;
+          }
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "image-" + (slideIndex + 1) + ".png";
+          a.click();
+          URL.revokeObjectURL(a.href);
+        });
+      } catch (err) {
+        alert(String(err.message || err));
+      }
+    };
+    if (img.complete) drawImg();
+    else img.onload = drawImg;
+  });
+
+  window.addEventListener("resize", function () {
+    var it = currentItem();
+    if (it) applyCropToPreviewImg(it);
+  });
+})();
+  </script>
+</body>
+</html>
