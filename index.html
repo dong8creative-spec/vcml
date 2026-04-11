@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 자막 API(FastAPI) 공개 URL. 다른 도메인이면 여기만 바꾸면 됩니다. -->
-    <meta name="vcml-subtitle-app" content="https://sub.vcml.kr">
+    <!-- 자막 API = Google Cloud Run 기본 URL(서브도메인 불필요). Run 재배포 시 콘솔 주소와 동일하게 유지하세요. -->
+    <meta name="vcml-subtitle-app" content="https://vcml-subtitle-117004466618.asia-northeast3.run.app">
     <title>VCML | Visual Core Motion Labs</title>
     
     <!-- 폰트 로드 -->
@@ -735,7 +735,9 @@
             if (c && String(c).trim()) return String(c).trim().replace(/\/$/, '');
             var h = location.hostname;
             if (h === '127.0.0.1' || h === 'localhost') return 'http://127.0.0.1:8844';
-            if (h === 'vcml.kr' || h === 'www.vcml.kr') return 'https://sub.vcml.kr';
+            if (h === 'vcml.kr' || h === 'www.vcml.kr') {
+                return 'https://vcml-subtitle-117004466618.asia-northeast3.run.app';
+            }
             return '';
         }
 
@@ -760,7 +762,7 @@
             if (!code) { alert('접속 코드를 입력해 주세요.'); return; }
             var base = getSubtitleAppOrigin();
             if (!base) {
-                alert('자막 서버 주소가 설정되지 않았습니다.\n\nvcml.kr 같은 운영 사이트에서는 이 파일 <head>의\n<meta name="vcml-subtitle-app" content="여기에_자막서버_https주소">\n에 실제 배포 URL을 넣어 주세요. (예: https://sub.vcml.kr)\n\n자막 서버(subtitle-web-app)는 별도 호스팅에서 항상 켜 두어야 하며,\n그 서버 환경 변수 VCML_CORS_ORIGINS 에 https://vcml.kr 을 포함해야 합니다.');
+                alert('자막 서버 주소가 설정되지 않았습니다.\n\n이 파일 <head>의\n<meta name="vcml-subtitle-app" content="Cloud_Run_서비스_URL">\n에 Google Cloud Run 주소를 넣어 주세요.\n\n자막 서버 환경 변수 VCML_CORS_ORIGINS 에 https://vcml.kr 과 https://www.vcml.kr 이 있어야 합니다.');
                 return;
             }
             var fd = new FormData();
