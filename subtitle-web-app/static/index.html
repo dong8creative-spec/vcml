@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VCML 자막 자동생성기 ver 3.5</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="page-home">
+  <div class="wrap">
+    <header>
+      <h1 class="app-title-row">
+        <span class="app-title-text">VCML 자막 자동생성기</span>
+        <span class="ver-tag">ver 3.5</span>
+        <span id="quotaBadge" class="quota-badge" aria-live="polite">자막 만들기 · …</span>
+      </h1>
+      <p id="quotaBlockMsg" class="quota-block-msg hidden" role="alert"></p>
+      <p class="lead">한국어 음성 오디오를 업로드하면 SRT or VTT 자막을 만든 뒤 편집 페이지에서 타임코드·대사를 나눠 고칠 수 있습니다.</p>
+      <p class="field-hint"><a href="/edit-srt">이미 있는 SRT·VTT 파일을 불러와 오디오와 함께 고치기</a></p>
+    </header>
+
+    <div class="home-layout">
+      <div class="home-layout-main">
+        <form id="form" class="card home-card-main">
+          <div class="field">
+            <span class="label">오디오 파일</span>
+            <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="오디오 파일을 끌어다 놓거나 클릭하여 선택">
+              <input type="file" id="file" name="file" class="drop-zone-input" accept=".mp3,.wav,.m4a,.aac,.ogg,.opus,.flac,.webm,.mp4,.mpeg,.mpga,audio/*,video/*" required />
+              <div class="drop-zone-inner">
+                <p class="drop-zone-title">여기로 <strong>드래그 앤 드롭</strong>하거나 눌러서 선택</p>
+                <p class="drop-zone-hint">놓는 즉시 자막 생성이 시작됩니다.</p>
+                <p class="drop-zone-file" id="fileLabel">선택된 파일 없음</p>
+              </div>
+            </div>
+          </div>
+
+          <p class="field-hint lang-note">음성 인식 언어는 <strong>한국어</strong>만 지원합니다.</p>
+          <label class="field">
+            <span class="label">자막 형식</span>
+            <select id="subtitle_format" name="subtitle_format">
+              <option value="srt">SRT</option>
+              <option value="vtt">VTT (WebVTT)</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="label">시작 시각 보정 (초)</span>
+            <input type="number" id="time_offset_sec" name="time_offset_sec" min="-3" max="3" step="0.05" value="0" />
+          </label>
+          <p class="field-hint">자막이 소리보다 늦게 나오면 <strong>음수</strong>(예: -0.15), 빨리 나오면 <strong>양수</strong>. 전체 구간이 같은 만큼 앞·뒤로 밀립니다.</p>
+
+          <button type="submit" class="btn" id="submitBtn">자막 만들기</button>
+        </form>
+      </div>
+
+      <aside class="home-layout-side" aria-label="길이 옵션 및 저장 공간">
+        <div class="card home-card-options">
+          <fieldset class="fieldset home-fieldset-length">
+            <legend>길이 조절 (선택)</legend>
+            <div class="row home-row-compact">
+              <label class="field half">
+                <span class="label">자막 블록 최대 글자 수</span>
+                <span class="input-desc">Whisper가 한 번에 준 자막 덩어리를 글자 수로 더 잘게 나눕니다. 0이면 사용하지 않습니다.</span>
+                <input type="number" id="max_chars" name="max_chars" min="0" max="200" value="0" placeholder="0" />
+              </label>
+              <label class="field half">
+                <span class="label">자막 블록 최대 어절 수</span>
+                <span class="input-desc">공백으로 나뉜 어절(말덩어리) 개수 기준으로 나눕니다. 0이면 사용하지 않습니다.</span>
+                <input type="number" id="max_eojeol" name="max_eojeol" min="0" max="200" value="0" placeholder="0" />
+              </label>
+            </div>
+            <p class="field-hint lang-note">
+              생성되는 각 자막 큐는 <strong>항상 한 줄</strong>입니다. (줄바꿈 없음)
+            </p>
+          </fieldset>
+        </div>
+
+        <div class="card cache-card home-cache-card">
+          <h2 class="cache-heading">미리보기 저장 공간</h2>
+          <p class="field-hint cache-hint">
+            편집 화면 재생용으로 서버에 복사해 둔 원본 파일만 지웁니다. 자막 데이터와 다운로드는 그대로이며, 이미 연 편집 탭의 재생만 안 될 수 있습니다.
+          </p>
+          <button type="button" class="btn btn-outline" id="btnClearPreviewCache">미리보기 사본 삭제</button>
+        </div>
+      </aside>
+    </div>
+
+    <p id="status" class="status" aria-live="polite"></p>
+  </div>
+
+  <div
+    id="progressModal"
+    class="progress-modal-root hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-hidden="true"
+    aria-labelledby="progressModalTitle"
+  >
+    <div class="progress-modal-backdrop" aria-hidden="true"></div>
+    <div class="progress-modal-panel">
+      <p id="progressModalTitle" class="progress-modal-title">자막 생성 중</p>
+      <p class="progress-modal-hint">아래 막대는 대략적인 진행률입니다. 잠시만 기다려 주세요.</p>
+      <div
+        class="progress-track"
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+        id="progressA11y"
+      >
+        <div id="progressBar" class="progress-bar"></div>
+      </div>
+      <p id="progressPhase" class="progress-phase"></p>
+    </div>
+  </div>
+  <script src="/static/app.js?v=2"></script>
+</body>
+</html>

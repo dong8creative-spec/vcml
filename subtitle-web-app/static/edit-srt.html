@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SRT 가져와 수정</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="wrap edit-page">
+    <header class="edit-header">
+      <a href="/" class="back-link">← 업로드로 돌아가기</a>
+      <h1>SRT·VTT 가져와 수정</h1>
+      <p id="metaLine" class="edit-meta"></p>
+      <p class="edit-lead">
+        <strong>자막 파일</strong>과 <strong>미리보기용 오디오·영상</strong>을 각각 선택합니다. 표에서 <strong>시작·끝(초)</strong>과 대사를 고치고 재생하며 확인할 수 있습니다.
+        <strong>이어붙이기</strong>는 큐 사이 무음 간격을 없애 인접 큐가 맞닿게 하고, <strong>간격 초기화</strong>는 파일을 불러온 직후의 타임라인으로 되돌리며 <em>텍스트 수정은 유지</em>합니다.
+        <strong>자막 저장하기</strong>는 표에 적힌 시작·끝 시각 그대로 반영합니다. 저장 시 문장 부호는 <strong>!</strong>와 <strong>?</strong>만 남고 나머지 기호는 제거됩니다.
+      </p>
+    </header>
+
+    <div class="card edit-srt-uploads" aria-label="파일 선택">
+      <div class="row edit-srt-upload-row">
+        <label class="field half">
+          <span class="label">자막 파일 (SRT / VTT)</span>
+          <input type="file" id="srtFile" accept=".srt,.vtt,text/plain" />
+        </label>
+        <label class="field half">
+          <span class="label">미리보기 오디오·영상</span>
+          <input type="file" id="mediaFile" accept="audio/*,video/*,.mp3,.wav,.m4a,.aac,.ogg,.opus,.flac,.webm,.mp4,.mpeg,.mpga" />
+        </label>
+      </div>
+      <p id="uploadHint" class="field-hint">자막을 먼저 불러오면 표가 열립니다. 미리보기 파일은 선택 사항입니다.</p>
+    </div>
+
+    <p id="loadError" class="status error hidden" role="alert"></p>
+
+    <div id="editorMain" class="edit-layout edit-layout--no-preview hidden">
+      <div class="edit-layout-main">
+        <div class="card cue-card">
+          <div class="table-scroll">
+            <table class="cue-table" aria-label="자막 목록">
+              <thead>
+                <tr>
+                  <th class="col-idx">#</th>
+                  <th class="col-start">시작(초)</th>
+                  <th class="col-end">끝(초)</th>
+                  <th class="col-text">자막</th>
+                </tr>
+              </thead>
+              <tbody id="cueBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <aside class="edit-layout-preview" aria-label="미리보기">
+        <div id="previewSection" class="card preview-card preview-card--sticky hidden">
+          <div class="preview-frame preview-frame--916">
+            <video id="previewVideo" playsinline class="preview-media preview-media--video hidden"></video>
+            <audio id="previewAudio" class="preview-media preview-media--audio hidden"></audio>
+            <div id="subOverlayWrap" class="sub-overlay-wrap" aria-live="polite">
+              <input type="text" id="subOverlay" class="sub-overlay" spellcheck="false" autocomplete="off" aria-label="현재 구간 자막, 미리보기에서 직접 편집" disabled />
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <footer id="editTimingDock" class="edit-timing-dock yt-editor-dock hidden" aria-label="미리보기 및 자막 타임라인">
+    <div class="yt-editor-dock-inner">
+      <div class="yt-dock-player">
+        <div class="yt-dock-media-chrome hidden" aria-label="미리보기 재생 진행">
+          <div class="yt-dock-progress-track">
+            <input type="range" id="dockSeek" class="yt-dock-seek-input" min="0" max="1" step="0.01" value="0" aria-label="재생 위치" />
+          </div>
+        </div>
+        <div class="yt-dock-timeline-strip" aria-label="자막 구간 타임라인">
+          <div id="cueTimeline" class="cue-timeline" role="group" aria-label="자막 길이 블록"></div>
+        </div>
+        <div class="yt-dock-media-chrome yt-dock-media-chrome--bar hidden">
+          <div class="yt-dock-bar">
+            <button type="button" class="yt-dock-iconbtn" id="dockBtnPlay" aria-label="재생">
+              <svg class="yt-ico yt-ico-play" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+              <svg class="yt-ico yt-ico-pause hidden" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <span id="dockMediaTime" class="yt-dock-time" aria-live="polite">0:00 / 0:00</span>
+            <div class="yt-dock-actions" role="group" aria-label="편집 작업">
+              <button type="button" class="yt-dock-textbtn" id="dockBtnChain" aria-label="이어붙이기">이어붙이기</button>
+              <button type="button" class="yt-dock-textbtn" id="dockBtnResetSpacing" aria-label="간격 초기화">간격 초기화</button>
+              <button type="button" class="yt-dock-textbtn yt-dock-textbtn--primary" id="dockBtnSaveSubtitle" disabled aria-label="자막 저장하기">자막 저장하기</button>
+              <div class="yt-dock-replace" aria-label="틀린 표현 일괄 바꾸기" title="모든 자막에서 찾아 바꿉니다. 비우면 삭제">
+                <input type="text" id="replaceFind" class="yt-dock-replace-input" placeholder="찾기" autocomplete="off" spellcheck="false" aria-label="찾을 텍스트" />
+                <span class="yt-dock-replace-sep" aria-hidden="true">→</span>
+                <input type="text" id="replaceWith" class="yt-dock-replace-input" placeholder="바꿀" autocomplete="off" spellcheck="false" aria-label="바꿀 내용, 비우면 삭제" />
+                <span id="replaceCount" class="yt-dock-replace-count" aria-live="polite"></span>
+                <button type="button" class="yt-dock-textbtn yt-dock-textbtn--micro" id="btnReplaceAll">바꾸기</button>
+              </div>
+            </div>
+            <span class="yt-dock-bar-spacer" aria-hidden="true"></span>
+            <button type="button" class="yt-dock-iconbtn" id="dockBtnMute" aria-label="음소거">
+              <svg class="yt-ico yt-ico-vol" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+              <svg class="yt-ico yt-ico-mute hidden" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+            </button>
+            <input type="range" id="dockVolume" class="yt-dock-vol-input" min="0" max="100" value="100" step="1" aria-label="음량" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/edit-srt.js?v=1"></script>
+</body>
+</html>

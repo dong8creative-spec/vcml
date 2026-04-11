@@ -224,6 +224,53 @@
         .popup-check-label input[type="checkbox"] {
             width: 11px; height: 11px; margin: 0; cursor: pointer; accent-color: #555;
         }
+
+        /* 자막 도구 접속 코드 모달 */
+        .subtitle-gate-overlay {
+            display: none; position: fixed; inset: 0; z-index: 100002;
+            background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(4px);
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .subtitle-gate-overlay.open { display: flex; }
+        .subtitle-gate-box {
+            width: 100%; max-width: 400px; background: var(--brand-white);
+            border-radius: var(--radius-card); padding: 36px 32px;
+            box-shadow: 0 24px 60px rgba(16, 6, 159, 0.2);
+            border: 1px solid rgba(16, 6, 159, 0.08);
+            position: relative;
+        }
+        .subtitle-gate-box h3 {
+            font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;
+        }
+        .subtitle-gate-box p.hint {
+            font-size: 0.9rem; color: var(--text-sub); margin-bottom: 22px; line-height: 1.5;
+        }
+        .subtitle-gate-box input[type="password"],
+        .subtitle-gate-box input[type="text"] {
+            width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid #e8e8f0;
+            font-size: 1rem; margin-bottom: 16px; font-family: inherit;
+            box-sizing: border-box;
+        }
+        .subtitle-gate-box input:focus {
+            outline: none; border-color: var(--brand-blue);
+        }
+        .subtitle-gate-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .subtitle-gate-actions button {
+            flex: 1; min-width: 120px; padding: 14px 20px; border-radius: 50px; font-weight: 700;
+            font-size: 0.95rem; cursor: pointer; border: none; font-family: inherit;
+        }
+        .btn-gate-submit { background: var(--brand-blue); color: white; }
+        .btn-gate-submit:hover { background: var(--brand-blue-hover); }
+        .btn-gate-cancel { background: var(--brand-gray); color: var(--text-main); }
+        .subtitle-gate-close {
+            position: absolute; top: 14px; right: 16px; background: none; border: none;
+            font-size: 1.6rem; line-height: 1; cursor: pointer; color: #888;
+        }
+        .subtitle-gate-close:hover { color: var(--text-main); }
+        .visually-hidden {
+            position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+            overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+        }
         
         /* 모달(테스트용) 스타일 */
         .modal-overlay {
@@ -426,6 +473,21 @@
         </div>
     </div>
 
+    <!-- 자막 도구: 접속 코드 -->
+    <div id="subtitleGateModal" class="subtitle-gate-overlay" role="dialog" aria-modal="true" aria-labelledby="subtitleGateTitle">
+        <div class="subtitle-gate-box">
+            <button type="button" class="subtitle-gate-close" onclick="closeSubtitleGateModal()" aria-label="닫기">&times;</button>
+            <h3 id="subtitleGateTitle">자막 도구</h3>
+            <p class="hint">VCML 자막 생성·편집 기능입니다. 접속 코드를 입력한 뒤 이동합니다.<br>(동일 IP에서 자막 자동 생성은 10회까지 이용 가능합니다.)</p>
+            <label for="subtitleGateCode" class="visually-hidden">접속 코드</label>
+            <input type="password" id="subtitleGateCode" inputmode="numeric" autocomplete="off" placeholder="접속 코드" maxlength="32" />
+            <div class="subtitle-gate-actions">
+                <button type="button" class="btn-gate-cancel" onclick="closeSubtitleGateModal()">취소</button>
+                <button type="button" class="btn-gate-submit" onclick="submitSubtitleGateCode()">확인</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 모달(팝업) 컨테이너 -->
     <div id="testModal" class="modal-overlay">
         <div class="modal-container">
@@ -441,7 +503,7 @@
         <a href="#courses" onclick="toggleMenu()">교육과정</a>
         <a href="#store" onclick="toggleMenu()">수강신청</a>
         <a href="#schedule" onclick="toggleMenu()">일정</a>
-        <a href="#youtube" onclick="toggleMenu()">콘텐츠</a>
+        <a href="#" onclick="event.preventDefault(); openSubtitleGateFromNav();">자막 자동생성</a>
         <a href="#about" onclick="toggleMenu()">강사소개</a>
         <a href="#ai-tool" onclick="toggleMenu()">ai기획</a>
         <a href="#qna" onclick="toggleMenu()" style="background:var(--brand-blue); color:white; padding:10px 25px; border-radius:30px; margin-top:20px; font-size:1.2rem;">문의하기</a>
@@ -461,7 +523,7 @@
             <a href="#courses">교육과정</a>
             <a href="#store">수강신청</a>
             <a href="#schedule">일정</a>
-            <a href="#youtube">콘텐츠</a>
+            <a href="#" onclick="event.preventDefault(); openSubtitleGateFromNav();">자막 자동생성</a>
             <a href="#about">강사소개</a>
             <a href="#ai-tool">ai기획 <span class="nav-badge">New</span></a>
         </nav>
@@ -665,6 +727,51 @@
     </footer>
 
     <script>
+        /** 자막 서버( uvicorn ) 주소. 메인 페이지와 호스트는 같게(둘 다 127.0.0.1 권장). */
+        const SUBTITLE_APP_ORIGIN = "http://127.0.0.1:8844";
+
+        function openSubtitleGateModal() {
+            const modal = document.getElementById('subtitleGateModal');
+            const input = document.getElementById('subtitleGateCode');
+            if (modal) modal.classList.add('open');
+            if (input) { input.value = ''; setTimeout(function () { input.focus(); }, 50); }
+        }
+        function closeSubtitleGateModal() {
+            const modal = document.getElementById('subtitleGateModal');
+            if (modal) modal.classList.remove('open');
+        }
+        function openSubtitleGateFromNav() {
+            var menu = document.getElementById('mobileMenu');
+            if (menu && menu.classList.contains('active')) menu.classList.remove('active');
+            openSubtitleGateModal();
+        }
+        async function submitSubtitleGateCode() {
+            var input = document.getElementById('subtitleGateCode');
+            var code = (input && input.value) ? input.value.trim() : '';
+            if (!code) { alert('접속 코드를 입력해 주세요.'); return; }
+            var fd = new FormData();
+            fd.append('code', code);
+            try {
+                var r = await fetch(SUBTITLE_APP_ORIGIN + '/api/subtitle-gate', { method: 'POST', body: fd, credentials: 'include' });
+                if (!r.ok) {
+                    alert(r.status === 401 ? '접속 코드가 올바르지 않습니다.' : '인증에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+                    return;
+                }
+                window.location.href = SUBTITLE_APP_ORIGIN + '/';
+            } catch (e) {
+                alert('자막 서버에 연결할 수 없습니다. subtitle-web-app 서버가 실행 중인지, 포트(기본 8844)와 SUBTITLE_APP_ORIGIN 설정을 확인해 주세요.');
+            }
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeSubtitleGateModal();
+        });
+        (function () {
+            var codeEl = document.getElementById('subtitleGateCode');
+            if (codeEl) codeEl.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); submitSubtitleGateCode(); }
+            });
+        })();
+
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwTi1rM3-8rN6OSYz-UF3390p43X6pVGFtZJbmoEUZm4S4O_uNjjD_dHADmMaP4BqcT_Q/exec"; 
         
         const keyPart1 = "AIzaSyBPS7TjzpeY";

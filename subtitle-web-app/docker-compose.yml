@@ -1,0 +1,23 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8765:8765"
+    environment:
+      WHISPER_MODEL: ${WHISPER_MODEL:-small}
+      WHISPER_DEVICE: cpu
+      WHISPER_COMPUTE: int8
+      MAX_AUDIO_DURATION_SEC: ${MAX_AUDIO_DURATION_SEC:-120}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-500}
+      # PC 로컬 배포용 횟수 제한은 컨테이너에 두면 인스턴스 전체가 막히므로 기본 해제
+      VCML_USAGE_BYPASS: ${VCML_USAGE_BYPASS:-1}
+      # IP 허용 목록(선택): 예 203.0.113.1,10.0.0.0/24 — 프록시 뒤면 VCML_TRUST_X_FORWARDED_FOR=1
+      # VCML_ALLOWED_IPS: ${VCML_ALLOWED_IPS:-}
+      # VCML_TRUST_X_FORWARDED_FOR: "1"
+    volumes:
+      # 모델·캐시 재다운로드 방지 (첫 요청 시 용량·시간 소요)
+      - whisper-cache:/root/.cache
+    restart: unless-stopped
+
+volumes:
+  whisper-cache:
