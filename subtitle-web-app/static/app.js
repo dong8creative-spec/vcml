@@ -16,6 +16,8 @@
   var quotaBadge = document.getElementById("quotaBadge");
 
   var pollTimer = null;
+  /** /api/transcription-quota 의 max_upload_mb (없으면 보수적 기본 28MB, Cloud Run 대응) */
+  var serverMaxUploadMb = 28;
 
   /** 서버 job_id 는 uuid.hex 32자리. 깨진 ID로 폴링하면 404 만 반복된다. */
   function normalizeJobId(raw) {
@@ -31,6 +33,9 @@
   }
 
   function applyQuotaFromServer(data) {
+    if (data && typeof data.max_upload_mb === "number" && data.max_upload_mb > 0) {
+      serverMaxUploadMb = data.max_upload_mb;
+    }
     var unlimited = !data || data.limited === false;
     var rem = unlimited ? null : typeof data.remaining === "number" ? data.remaining : 0;
     var exhausted = !unlimited && rem <= 0;
@@ -114,6 +119,22 @@
         return data.detail.map(function (x) { return x.msg; }).join(" ");
       }
     } catch (e) {}
+    if (res.status === 413) {
+      return (
+        "파일 용량이 서버 한도를 넘습니다. " +
+        serverMaxUploadMb +
+        "MB 이하로 줄이거나, 긴 파일은 잘라서 나누어 올려 주세요. (클라우드 호스팅은 요청 크기 상한이 더 작을 수 있습니다.)"
+      );
+    }
+    if (res.status === 404) {
+      return "작업을 찾을 수 없습니다. 새로고침 후 다시 업로드하거나, 다른 탭에서 같은 작업을 열지 않았는지 확인해 주세요.";
+    }
+    if (res.status === 429) {
+      return (
+        "지금은 서버에서 다른 전사가 진행 중입니다. 잠시 후 다시 시도해 주세요. " +
+        "(탭을 여러 개 열어 동시에 올리면 이 메시지가 날 수 있습니다.)"
+      );
+    }
     if (res.status === 503 || res.status === 502) {
       return "서버가 일시적으로 응답할 수 없습니다(과부하 또는 재시작). 잠시 후 다시 시도해 주세요.";
     }
@@ -264,14 +285,16 @@
       setStatus("파일을 선택해 주세요.", true);
       return;
     }
-
-    var fd = new FormData();
-    fd.append("file", f);
-    fd.append("subtitle_format", (subtitleFormat && subtitleFormat.value) || "srt");
-    fd.append("max_chars", (maxChars && maxChars.value) || "0");
-    fd.append("max_eojeol", (maxEojeol && maxEojeol.value) || "0");
-    fd.append("max_line_chars", "0");
-    fd.append("time_offset_sec", (timeOffsetSec && timeOffsetSec.value) || "0");
+    var maxBytes = serverMaxUploadMb * 1024 * 1024;
+    if (f.size > maxBytes) {
+      setStatus(
+        "파일이 너무 큽니다(약 " +
+          serverMaxUploadMb +
+          "MB 이하만 가능). 긴 녹음·영상은 잘라서 올려 주세요.",
+        true
+      );
+      return;
+    }
 
     submitBtn.disabled = true;
     clearPoll();
@@ -279,12 +302,38 @@
     setProgressVisible(true);
     setProgressUi(1, "업로드 중…");
 
-    fetch("/api/jobs", {
-      method: "POST",
-      body: fd,
-    })
-      .then(function (res) {
+    function buildJobFormData() {
+      var x = new FormData();
+      x.append("file", f);
+      x.append("subtitle_format", (subtitleFormat && subtitleFormat.value) || "srt");
+      x.append("max_chars", (maxChars && maxChars.value) || "0");
+      x.append("max_eojeol", (maxEojeol && maxEojeol.value) || "0");
+      x.append("max_line_chars", "0");
+      x.append("time_offset_sec", (timeOffsetSec && timeOffsetSec.value) || "0");
+      return x;
+    }
+
+    function postJobsOnce() {
+      return fetch("/api/jobs", {
+        method: "POST",
+        body: buildJobFormData(),
+        credentials: "same-origin",
+      });
+    }
+
+    function postJobsWith429Retry(attempt) {
+      var maxR = 10;
+      return postJobsOnce().then(function (res) {
         return res.text().then(function (text) {
+          if (res.status === 429 && attempt < maxR - 1) {
+            setProgressUi(
+              Math.min(5 + attempt * 3, 32),
+              "다른 전사가 끝날 때까지 대기 중… 자동 재시도 (" + (attempt + 1) + "/" + maxR + ")"
+            );
+            return sleepMs(2000 + attempt * 800).then(function () {
+              return postJobsWith429Retry(attempt + 1);
+            });
+          }
           if (!res.ok) throw new Error(parseErrorDetail(res, text));
           try {
             return JSON.parse(text);
@@ -292,7 +341,10 @@
             throw new Error("서버 응답을 해석할 수 없습니다.");
           }
         });
-      })
+      });
+    }
+
+    postJobsWith429Retry(0)
       .then(function (data) {
         if (!data.job_id) throw new Error("job_id가 없습니다.");
         setStatus("");

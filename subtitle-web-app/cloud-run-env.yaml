@@ -6,3 +6,11 @@ VCML_TRANSCRIPTION_QUOTA_MODE: "ip"
 VCML_MAX_USES_PER_IP: "10"
 WHISPER_MODEL: "small"
 VCML_TRUST_X_FORWARDED_FOR: "1"
+# 부하·비용: 인스턴스당 동시 전사(Whisper) 상한. 초과 시 POST /api/jobs → 429
+VCML_MAX_CONCURRENT_TRANSCRIBES: "1"
+# 품질 대비 CPU: 낮출수록 빠르고 가벼움(기본 5)
+WHISPER_BEAM_SIZE: "3"
+# 업로드 허용 최대 길이(초). 0이면 제한 없음
+MAX_AUDIO_DURATION_SEC: "120"
+# Cloud Run HTTP 요청 본문 상한 약 32MiB — 멀티파트 여유 두고 설정(초과 시 플랫폼이 413)
+MAX_UPLOAD_MB: "28"
