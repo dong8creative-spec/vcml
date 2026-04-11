@@ -1323,6 +1323,14 @@
     });
   }
 
+  function purgeJobOnServer() {
+    if (!jobId) return;
+    fetch("/api/jobs/" + encodeURIComponent(jobId), {
+      method: "DELETE",
+      credentials: "same-origin",
+    }).catch(function () {});
+  }
+
   function doSubtitleDownload() {
     var cues = [];
     getRows().forEach(function (tr) {
@@ -1367,6 +1375,7 @@
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
+        purgeJobOnServer();
       })
       .catch(function (e) {
         alert(e.message || String(e));
