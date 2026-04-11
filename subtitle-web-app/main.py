@@ -306,6 +306,71 @@ def _verify_gate_cookie(request: Request) -> bool:
     return hmac.compare_digest(expected, sig)
 
 
+def _gate_landing_html() -> str:
+    """게이트 쿠키 없이 HTML 페이지를 요청했을 때: 접속 코드 입력 후 같은 호스트에서 자막 앱 시작."""
+    return """<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VCML 자막 자동생성 — 접속</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;max-width:420px;margin:2.5rem auto;padding:0 1.25rem;
+  background:linear-gradient(165deg,#061426 0%,#0c2744 45%,#143d68 100%);min-height:100vh;color:#f0f6fc}
+h1{font-size:1.35rem;font-weight:700;margin:0 0 .4rem;letter-spacing:-.02em}
+.sub{color:rgba(255,255,255,.65);font-size:.9rem;line-height:1.55;margin:0 0 1.35rem}
+label{display:block;font-size:.78rem;font-weight:600;margin-bottom:.35rem;opacity:.9}
+input{width:100%;box-sizing:border-box;padding:.8rem 1rem;border-radius:10px;border:1px solid rgba(255,255,255,.22);
+  background:rgba(6,28,52,.5);color:#fff;font-size:1rem;margin-bottom:1rem}
+input::placeholder{color:rgba(255,255,255,.35)}
+button{width:100%;padding:.9rem;border:none;border-radius:10px;background:#4a9eff;color:#fff;
+  font-weight:700;font-size:1rem;cursor:pointer}
+button:hover{filter:brightness(1.06)}
+#error{color:#ffb4b4;font-size:.88rem;margin-top:.85rem;min-height:1.3rem}
+.foot{margin-top:1.75rem;font-size:.82rem}
+.foot a{color:#9fd4ff;text-decoration:none}
+.foot a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<h1>VCML 자막 자동생성</h1>
+<p class="sub">접속 코드를 입력하면 바로 자막 만들기 화면으로 이동합니다.</p>
+<form id="gateForm">
+<label for="gateCode">접속 코드</label>
+<input id="gateCode" name="code" type="password" inputmode="numeric" autocomplete="off" maxlength="32" required placeholder="접속 코드"/>
+<button type="submit">시작하기</button>
+<div id="error" role="alert"></div>
+</form>
+<p class="foot"><a href="https://vcml.kr">VCML 메인 사이트</a></p>
+<script>
+(function(){
+var form=document.getElementById("gateForm");
+var err=document.getElementById("error");
+form.addEventListener("submit",function(e){
+  e.preventDefault();
+  err.textContent="";
+  var code=(document.getElementById("gateCode").value||"").trim();
+  if(!code){err.textContent="접속 코드를 입력해 주세요.";return;}
+  var fd=new FormData();
+  fd.append("code",code);
+  fetch("/api/subtitle-gate",{method:"POST",body:fd,credentials:"include"})
+    .then(function(r){
+      if(!r.ok){
+        err.textContent=r.status===401?"접속 코드가 올바르지 않습니다.":"인증에 실패했습니다.";
+        return;
+      }
+      var q=window.location.search||"";
+      window.location.href=window.location.pathname+q;
+    })
+    .catch(function(){err.textContent="네트워크 오류입니다. 잠시 후 다시 시도해 주세요.";});
+});
+document.getElementById("gateCode").focus();
+})();
+</script>
+</body>
+</html>"""
+
+
 def _cors_middleware_kwargs() -> dict[str, Any]:
     """
     VCML_CORS_ORIGINS 가 비어 있으면 로컬 전용: 127.0.0.1 / localhost 의 임의 포트 허용
@@ -494,18 +559,11 @@ async def vcml_subtitle_gate_middleware(request: Request, call_next):
         return await call_next(request)
     accept = request.headers.get("accept") or ""
     if request.method == "GET" and p in ("/", "/edit", "/edit-srt") and "text/html" in accept:
-        return HTMLResponse(
-            content=(
-                "<!DOCTYPE html><html lang=\"ko\"><head><meta charset=\"utf-8\"/>"
-                "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/>"
-                "<title>VCML 자막 도구</title></head><body style=\"font-family:sans-serif;padding:2rem;max-width:520px;\">"
-                "<p>자막 도구는 VCML 메인 사이트 상단 메뉴 <strong>자막 자동생성</strong>에서 접속 코드를 입력한 뒤 이용할 수 있습니다.</p>"
-                "</body></html>"
-            ),
-            status_code=401,
-        )
+        return HTMLResponse(content=_gate_landing_html(), status_code=200)
     return JSONResponse(
-        {"detail": "자막 도구를 쓰려면 메인 사이트(자막 자동생성 메뉴)에서 접속 코드 인증이 필요합니다."},
+        {
+            "detail": "접속 코드가 필요합니다. 브라우저에서 자막 앱 주소를 연 뒤 코드를 입력하거나, vcml.kr 자막 자동생성 메뉴를 이용하세요."
+        },
         status_code=401,
     )
 
