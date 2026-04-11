@@ -306,6 +306,23 @@ def _verify_gate_cookie(request: Request) -> bool:
     return hmac.compare_digest(expected, sig)
 
 
+def _gate_should_return_landing_html(request: Request, path: str) -> bool:
+    """
+    주소창에서 Run URL을 열 때 등: Accept 에 text/html 이 없어도(예: */* 만) HTML 폼을 내려준다.
+    application/json 만 명시한 클라이언트는 JSON 401 유지.
+    """
+    if request.method != "GET" or path not in ("/", "/edit", "/edit-srt"):
+        return False
+    accept = (request.headers.get("accept") or "").lower()
+    if "text/html" in accept:
+        return True
+    if (request.headers.get("sec-fetch-mode") or "").lower() == "navigate":
+        return True
+    if "application/json" in accept and "text/html" not in accept:
+        return False
+    return True
+
+
 def _gate_landing_html() -> str:
     """게이트 쿠키 없이 HTML 페이지를 요청했을 때: 접속 코드 입력 후 같은 호스트에서 자막 앱 시작."""
     return """<!DOCTYPE html>
@@ -557,8 +574,7 @@ async def vcml_subtitle_gate_middleware(request: Request, call_next):
         return await call_next(request)
     if _verify_gate_cookie(request):
         return await call_next(request)
-    accept = request.headers.get("accept") or ""
-    if request.method == "GET" and p in ("/", "/edit", "/edit-srt") and "text/html" in accept:
+    if _gate_should_return_landing_html(request, p):
         return HTMLResponse(content=_gate_landing_html(), status_code=200)
     return JSONResponse(
         {
