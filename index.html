@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 운영: 배포한 자막 API(FastAPI)의 https:// 전체 주소(끝 슬래시 없음). 예: content="https://sub.vcml.kr" -->
+    <!-- 로컬(127.0.0.1 / localhost)에서는 비워 두면 자동으로 http://127.0.0.1:8844 사용 -->
+    <meta name="vcml-subtitle-app" content="">
     <title>VCML | Visual Core Motion Labs</title>
     
     <!-- 폰트 로드 -->
@@ -727,8 +730,14 @@
     </footer>
 
     <script>
-        /** 자막 서버( uvicorn ) 주소. 메인 페이지와 호스트는 같게(둘 다 127.0.0.1 권장). */
-        const SUBTITLE_APP_ORIGIN = "http://127.0.0.1:8844";
+        function getSubtitleAppOrigin() {
+            var meta = document.querySelector('meta[name="vcml-subtitle-app"]');
+            var c = meta && meta.getAttribute('content');
+            if (c && String(c).trim()) return String(c).trim().replace(/\/$/, '');
+            var h = location.hostname;
+            if (h === '127.0.0.1' || h === 'localhost') return 'http://127.0.0.1:8844';
+            return '';
+        }
 
         function openSubtitleGateModal() {
             const modal = document.getElementById('subtitleGateModal');
@@ -749,17 +758,22 @@
             var input = document.getElementById('subtitleGateCode');
             var code = (input && input.value) ? input.value.trim() : '';
             if (!code) { alert('접속 코드를 입력해 주세요.'); return; }
+            var base = getSubtitleAppOrigin();
+            if (!base) {
+                alert('자막 서버 주소가 설정되지 않았습니다.\n\nvcml.kr 같은 운영 사이트에서는 이 파일 <head>의\n<meta name="vcml-subtitle-app" content="여기에_자막서버_https주소">\n에 실제 배포 URL을 넣어 주세요. (예: https://sub.vcml.kr)\n\n자막 서버(subtitle-web-app)는 별도 호스팅에서 항상 켜 두어야 하며,\n그 서버 환경 변수 VCML_CORS_ORIGINS 에 https://vcml.kr 을 포함해야 합니다.');
+                return;
+            }
             var fd = new FormData();
             fd.append('code', code);
             try {
-                var r = await fetch(SUBTITLE_APP_ORIGIN + '/api/subtitle-gate', { method: 'POST', body: fd, credentials: 'include' });
+                var r = await fetch(base + '/api/subtitle-gate', { method: 'POST', body: fd, credentials: 'include' });
                 if (!r.ok) {
                     alert(r.status === 401 ? '접속 코드가 올바르지 않습니다.' : '인증에 실패했습니다. 잠시 후 다시 시도해 주세요.');
                     return;
                 }
-                window.location.href = SUBTITLE_APP_ORIGIN + '/';
+                window.location.href = base + '/';
             } catch (e) {
-                alert('자막 서버에 연결할 수 없습니다. subtitle-web-app 서버가 실행 중인지, 포트(기본 8844)와 SUBTITLE_APP_ORIGIN 설정을 확인해 주세요.');
+                alert('자막 서버에 연결할 수 없습니다.\n\n· 서버가 켜져 있는지\n· meta의 주소가 맞는지(https, 포트)\n· 자막 서버 VCML_CORS_ORIGINS 에 이 사이트(' + location.origin + ')가 있는지\n확인해 주세요.');
             }
         }
         document.addEventListener('keydown', function (e) {
