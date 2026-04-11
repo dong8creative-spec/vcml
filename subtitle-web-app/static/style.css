@@ -1,5 +1,21 @@
 * { box-sizing: border-box; }
-/* 팔레트: 딥블루 베이스 + 화이트/아이스블루 포인트 */
+
+/* VCML.kr 메인(index) Pantone Blue 072 C — 자막 홈·게이트와 공유 토큰 */
+:root {
+  --vcml-brand-blue: #10069f;
+  --vcml-brand-blue-hover: #000080;
+  --vcml-brand-light: #f0f2ff;
+  --vcml-brand-white: #ffffff;
+  --vcml-brand-gray: #f4f5f7;
+  --vcml-text-main: #10069f;
+  --vcml-text-sub: #555555;
+  --vcml-hero-end: #3020ff;
+  --vcml-shadow-card: 0 20px 50px rgba(0, 0, 0, 0.1);
+  --vcml-border-soft: rgba(16, 6, 159, 0.08);
+  --vcml-border-strong: rgba(16, 6, 159, 0.12);
+}
+
+/* 팔레트: 딥블루 베이스 + 화이트/아이스블루 포인트 (편집·도크 페이지) */
 body {
   margin: 0;
   min-height: 100vh;
@@ -91,6 +107,196 @@ body {
     order: 1;
   }
 }
+
+/* 자막 자동생성 홈 — 메인 사이트와 동일 색 옵션 */
+body.page-home {
+  background: var(--vcml-brand-white);
+  color: var(--vcml-text-main);
+}
+
+.page-home header h1 {
+  color: var(--vcml-text-main);
+}
+
+.page-home .lead {
+  color: var(--vcml-text-sub);
+}
+
+.page-home .ver-tag {
+  background: var(--vcml-brand-light);
+  color: var(--vcml-text-main);
+  border: 1px solid var(--vcml-border-strong);
+}
+
+.page-home .quota-badge {
+  background: rgba(16, 6, 159, 0.08);
+  border: 1px solid rgba(16, 6, 159, 0.18);
+  color: var(--vcml-brand-blue);
+}
+
+.page-home .quota-badge.quota-empty {
+  background: rgba(255, 71, 87, 0.12);
+  border-color: rgba(255, 71, 87, 0.35);
+  color: #c62828;
+}
+
+.page-home .quota-block-msg {
+  color: #7f1d1d;
+  background: rgba(255, 71, 87, 0.12);
+  border: 1px solid rgba(255, 71, 87, 0.28);
+}
+
+.page-home .card {
+  background: var(--vcml-brand-white);
+  border: 1px solid var(--vcml-border-soft);
+  box-shadow: var(--vcml-shadow-card);
+  backdrop-filter: none;
+}
+
+.page-home .cache-heading {
+  color: var(--vcml-text-main);
+}
+
+.page-home .label {
+  color: var(--vcml-text-main);
+}
+
+.page-home .field-hint,
+.page-home .lang-note {
+  color: #666666;
+}
+
+.page-home .lang-note strong {
+  color: var(--vcml-text-main);
+}
+
+.page-home .fieldset {
+  border-color: var(--vcml-border-strong);
+}
+
+.page-home .fieldset legend {
+  color: var(--vcml-text-main);
+}
+
+.page-home .home-fieldset-length .input-desc {
+  color: var(--vcml-text-sub);
+}
+
+.page-home .drop-zone {
+  border-color: rgba(16, 6, 159, 0.22);
+  background: var(--vcml-brand-gray);
+}
+
+.page-home .drop-zone:hover,
+.page-home .drop-zone:focus-visible {
+  border-color: var(--vcml-brand-blue);
+  background: var(--vcml-brand-light);
+}
+
+.page-home .drop-zone.dragover {
+  border-color: var(--vcml-brand-blue);
+  background: var(--vcml-brand-light);
+  box-shadow: 0 0 0 3px rgba(16, 6, 159, 0.18);
+}
+
+.page-home .drop-zone-title {
+  color: var(--vcml-text-main);
+}
+
+.page-home .drop-zone-title strong {
+  color: var(--vcml-brand-blue);
+}
+
+.page-home .drop-zone-hint {
+  color: var(--vcml-text-sub);
+}
+
+.page-home .drop-zone-file {
+  color: var(--vcml-brand-blue-hover);
+}
+
+.page-home select,
+.page-home input[type="number"] {
+  border: 1px solid var(--vcml-border-strong);
+  background: var(--vcml-brand-white);
+  color: var(--vcml-text-main);
+}
+
+.page-home .btn {
+  background: linear-gradient(135deg, var(--vcml-brand-blue) 0%, var(--vcml-hero-end) 100%);
+  box-shadow: 0 10px 20px rgba(16, 6, 159, 0.2);
+  border-radius: 50px;
+}
+
+.page-home .btn:hover:not(:disabled) {
+  filter: none;
+  background: linear-gradient(135deg, var(--vcml-brand-blue-hover) 0%, #2520cc 100%);
+  box-shadow: 0 4px 12px rgba(16, 6, 159, 0.25);
+}
+
+.page-home .btn-outline {
+  border-color: rgba(16, 6, 159, 0.35) !important;
+  color: var(--vcml-text-main) !important;
+}
+
+.page-home .btn-outline:hover:not(:disabled) {
+  background: var(--vcml-brand-light) !important;
+  border-color: var(--vcml-brand-blue) !important;
+}
+
+.page-home .field-hint a,
+.page-home a {
+  color: var(--vcml-brand-blue);
+}
+
+.page-home .field-hint a:hover,
+.page-home a:hover {
+  color: var(--vcml-brand-blue-hover);
+}
+
+.page-home .progress-modal-backdrop {
+  background: rgba(16, 6, 159, 0.25);
+}
+
+.page-home .progress-modal-panel {
+  background: var(--vcml-brand-white);
+  border: 1px solid var(--vcml-border-soft);
+  box-shadow:
+    0 30px 60px rgba(16, 6, 159, 0.15),
+    0 0 0 1px rgba(16, 6, 159, 0.06);
+}
+
+.page-home .progress-modal-title {
+  color: var(--vcml-text-main);
+}
+
+.page-home .progress-modal-hint {
+  color: var(--vcml-text-sub);
+}
+
+.page-home .progress-modal-panel .progress-track {
+  background: var(--vcml-brand-gray);
+  border-color: var(--vcml-border-strong);
+}
+
+.page-home .progress-bar {
+  background: linear-gradient(
+    90deg,
+    var(--vcml-brand-blue),
+    var(--vcml-hero-end),
+    #6060ff,
+    #a5b4ff
+  );
+}
+
+.page-home .progress-modal-panel .progress-phase {
+  color: var(--vcml-text-main);
+}
+
+.page-home .cache-hint {
+  color: #666666;
+}
+
 header h1 {
   margin: 0 0 0.5rem;
   font-size: 1.75rem;

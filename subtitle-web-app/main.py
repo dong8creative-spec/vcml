@@ -332,21 +332,24 @@ def _gate_landing_html() -> str:
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>VCML 자막 자동생성 — 접속</title>
 <style>
+/* VCML.kr 메인과 동일 Pantone Blue 072 C */
 body{font-family:system-ui,-apple-system,sans-serif;max-width:420px;margin:2.5rem auto;padding:0 1.25rem;
-  background:linear-gradient(165deg,#061426 0%,#0c2744 45%,#143d68 100%);min-height:100vh;color:#f0f6fc}
-h1{font-size:1.35rem;font-weight:700;margin:0 0 .4rem;letter-spacing:-.02em}
-.sub{color:rgba(255,255,255,.65);font-size:.9rem;line-height:1.55;margin:0 0 1.35rem}
-label{display:block;font-size:.78rem;font-weight:600;margin-bottom:.35rem;opacity:.9}
-input{width:100%;box-sizing:border-box;padding:.8rem 1rem;border-radius:10px;border:1px solid rgba(255,255,255,.22);
-  background:rgba(6,28,52,.5);color:#fff;font-size:1rem;margin-bottom:1rem}
-input::placeholder{color:rgba(255,255,255,.35)}
-button{width:100%;padding:.9rem;border:none;border-radius:10px;background:#4a9eff;color:#fff;
-  font-weight:700;font-size:1rem;cursor:pointer}
-button:hover{filter:brightness(1.06)}
-#error{color:#ffb4b4;font-size:.88rem;margin-top:.85rem;min-height:1.3rem}
+  background:#fff;min-height:100vh;color:#10069F}
+h1{font-size:1.35rem;font-weight:700;margin:0 0 .4rem;letter-spacing:-.02em;color:#10069F}
+.sub{color:#555;font-size:.9rem;line-height:1.55;margin:0 0 1.35rem}
+label{display:block;font-size:.78rem;font-weight:600;margin-bottom:.35rem;color:#10069F}
+input{width:100%;box-sizing:border-box;padding:.8rem 1rem;border-radius:10px;border:1px solid rgba(16,6,159,.15);
+  background:#fff;color:#10069F;font-size:1rem;margin-bottom:1rem}
+input::placeholder{color:rgba(16,6,159,.35)}
+button{width:100%;padding:.9rem;border:none;border-radius:999px;
+  background:linear-gradient(135deg,#10069F 0%,#3020FF 100%);color:#fff;
+  font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 10px 20px rgba(16,6,159,.2)}
+button:hover{filter:none;background:linear-gradient(135deg,#000080 0%,#2520cc 100%);
+  box-shadow:0 4px 12px rgba(16,6,159,.25)}
+#error{color:#c62828;font-size:.88rem;margin-top:.85rem;min-height:1.3rem}
 .foot{margin-top:1.75rem;font-size:.82rem}
-.foot a{color:#9fd4ff;text-decoration:none}
-.foot a:hover{text-decoration:underline}
+.foot a{color:#10069F;text-decoration:none}
+.foot a:hover{text-decoration:underline;color:#000080}
 </style>
 </head>
 <body>
