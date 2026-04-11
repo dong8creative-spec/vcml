@@ -16,10 +16,16 @@ services:
       # IP 허용 목록(선택): 예 203.0.113.1,10.0.0.0/24 — 프록시 뒤면 VCML_TRUST_X_FORWARDED_FOR=1
       # VCML_ALLOWED_IPS: ${VCML_ALLOWED_IPS:-}
       # VCML_TRUST_X_FORWARDED_FOR: "1"
+      # 제한을 켠 뒤에도 이미지 업데이트 후 IP별 10회가 리셋되지 않게 하려면 영구 볼륨 경로 지정:
+      # VCML_USAGE_BYPASS: "0"
+      # VCML_QUOTA_DATA_DIR: /data/vcml-quota
     volumes:
       # 모델·캐시 재다운로드 방지 (첫 요청 시 용량·시간 소요)
       - whisper-cache:/root/.cache
+      # 위 VCML_QUOTA_DATA_DIR 와 함께 마운트
+      # - vcml-quota:/data/vcml-quota
     restart: unless-stopped
 
 volumes:
   whisper-cache:
+  # vcml-quota:

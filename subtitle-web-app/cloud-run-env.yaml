@@ -4,6 +4,9 @@ VCML_SUBTITLE_GATE: "1"
 VCML_ACCESS_CODE: "0219"
 VCML_TRANSCRIPTION_QUOTA_MODE: "ip"
 VCML_MAX_USES_PER_IP: "10"
+# 배포·스케일 시 컨테이너 디스크가 비워지면 IP 10회가 초기화됩니다. Cloud Run에 영구 볼륨(또는 공유 스토리지)을
+# 마운트한 뒤 그 경로를 지정하세요. 예: 서비스에 volume mount path=/mnt/quota → 아래 주석 해제
+# VCML_QUOTA_DATA_DIR: "/mnt/quota"
 WHISPER_MODEL: "small"
 VCML_TRUST_X_FORWARDED_FOR: "1"
 # 부하·비용: 인스턴스당 동시 전사(Whisper) 상한. 초과 시 POST /api/jobs → 429
