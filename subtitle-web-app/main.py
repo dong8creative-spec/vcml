@@ -92,7 +92,23 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 STATIC = Path(__file__).resolve().parent / "static"
-ALLOWED_EXT = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".opus", ".flac", ".webm", ".mp4", ".mpeg", ".mpga"}
+# 업로드는 오디오 파일만 허용(영상 컨테이너·웹캠 녹화 mp4 등은 제외).
+ALLOWED_EXT = {
+    ".mp3",
+    ".wav",
+    ".m4a",
+    ".aac",
+    ".ogg",
+    ".opus",
+    ".flac",
+    ".mpga",
+    ".oga",
+    ".aiff",
+    ".aif",
+    ".wma",
+    ".caf",
+}
+# 과거 작업 호환: DB에 남은 영상 경로만 미리보기 종류 판별에 사용.
 PREVIEW_VIDEO_EXT = {".mp4", ".webm", ".mpeg"}
 
 _model = None
@@ -1506,7 +1522,8 @@ async def create_job(
     if suf not in ALLOWED_EXT:
         raise HTTPException(
             400,
-            f"지원 형식: {', '.join(sorted(ALLOWED_EXT))}",
+            "오디오 파일만 업로드할 수 있습니다. "
+            f"지원 확장자: {', '.join(sorted(ALLOWED_EXT))}",
         )
 
     fmt = (subtitle_format or "srt").lower().strip()
@@ -1527,7 +1544,7 @@ async def create_job(
             status_code=413,
             detail=(
                 f"파일이 너무 큽니다. 이 서버는 최대 {max_mb}MB까지 업로드할 수 있습니다. "
-                "긴 녹음·영상은 잘라서 나누어 올려 주세요."
+                "긴 녹음은 잘라서 나누어 올려 주세요."
             ),
         )
 

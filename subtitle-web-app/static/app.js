@@ -19,6 +19,26 @@
   /** /api/transcription-quota 의 max_upload_mb (없으면 보수적 기본 28MB, Cloud Run 대응) */
   var serverMaxUploadMb = 28;
 
+  /** 서버 main.py ALLOWED_EXT 와 동기화 */
+  var AUDIO_EXT_RE = /\.(mp3|wav|m4a|aac|ogg|opus|flac|mpga|oga|aiff|aif|wma|caf)$/i;
+  var FILE_TYPE_WARN_TEXT =
+    "오디오 파일만 업로드할 수 있습니다. mp3·wav·m4a 등 음성 파일을 선택해 주세요. (영상·문서·이미지는 불가)";
+
+  function isAllowedAudioFile(file) {
+    if (!file || !file.name) return false;
+    var t = (file.type || "").toLowerCase();
+    if (t.indexOf("video/") === 0) return false;
+    if (t.indexOf("audio/") === 0) return true;
+    return AUDIO_EXT_RE.test(file.name);
+  }
+
+  function setFileTypeWarning(show) {
+    var el = document.getElementById("fileTypeWarning");
+    if (!el) return;
+    el.textContent = show ? FILE_TYPE_WARN_TEXT : "";
+    el.classList.toggle("hidden", !show);
+  }
+
   /** 서버 job_id 는 uuid.hex 32자리. 깨진 ID로 폴링하면 404 만 반복된다. */
   function normalizeJobId(raw) {
     var id = String(raw == null ? "" : raw)
@@ -189,6 +209,8 @@
     if (!fileInput || !fileLabel) return;
     var f = fileInput.files[0];
     fileLabel.textContent = f ? f.name : "선택된 파일 없음";
+    if (f) setFileTypeWarning(!isAllowedAudioFile(f));
+    else setFileTypeWarning(false);
   }
 
   if (fileInput) fileInput.addEventListener("change", updateLabelFromInput);
@@ -220,6 +242,12 @@
         return;
       }
       var file = files[0];
+      if (!isAllowedAudioFile(file)) {
+        setFileTypeWarning(true);
+        setStatus("", false);
+        return;
+      }
+      setFileTypeWarning(false);
       setFileFromBlob(file);
       setStatus("");
       form.requestSubmit();
@@ -285,12 +313,18 @@
       setStatus("파일을 선택해 주세요.", true);
       return;
     }
+    if (!isAllowedAudioFile(f)) {
+      setFileTypeWarning(true);
+      setStatus(FILE_TYPE_WARN_TEXT, true);
+      return;
+    }
+    setFileTypeWarning(false);
     var maxBytes = serverMaxUploadMb * 1024 * 1024;
     if (f.size > maxBytes) {
       setStatus(
         "파일이 너무 큽니다(약 " +
           serverMaxUploadMb +
-          "MB 이하만 가능). 긴 녹음·영상은 잘라서 올려 주세요.",
+          "MB 이하만 가능). 긴 녹음은 잘라서 올려 주세요.",
         true
       );
       return;
@@ -359,38 +393,6 @@
         refreshQuota();
       });
   });
-  }
-
-  var btnClearPreviewCache = document.getElementById("btnClearPreviewCache");
-  if (btnClearPreviewCache) {
-    btnClearPreviewCache.addEventListener("click", function () {
-      if (!window.confirm("미리보기용 원본 사본을 모두 삭제할까요?")) return;
-      btnClearPreviewCache.disabled = true;
-      fetch("/api/preview-cache/clear", { method: "POST" })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            if (!res.ok) {
-              var msg =
-                typeof data.detail === "string"
-                  ? data.detail
-                  : Array.isArray(data.detail) && data.detail[0] && data.detail[0].msg
-                    ? data.detail[0].msg
-                    : "삭제 실패";
-              throw new Error(msg);
-            }
-            return data;
-          });
-        })
-        .then(function (data) {
-          setStatus((data.message || "완료") + (data.path ? " · " + data.path : ""), false);
-        })
-        .catch(function (err) {
-          setStatus(err.message || String(err), true);
-        })
-        .finally(function () {
-          btnClearPreviewCache.disabled = false;
-        });
-    });
   }
 
   updateLabelFromInput();

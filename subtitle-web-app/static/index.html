@@ -25,10 +25,11 @@
           <div class="field">
             <span class="label">오디오 파일</span>
             <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="오디오 파일을 끌어다 놓거나 클릭하여 선택">
-              <input type="file" id="file" name="file" class="drop-zone-input" accept=".mp3,.wav,.m4a,.aac,.ogg,.opus,.flac,.webm,.mp4,.mpeg,.mpga,audio/*,video/*" required />
+              <input type="file" id="file" name="file" class="drop-zone-input" accept=".mp3,.wav,.m4a,.aac,.ogg,.opus,.flac,.mpga,.oga,.aiff,.aif,.wma,.caf,audio/*" required />
               <div class="drop-zone-inner">
                 <p class="drop-zone-title">여기로 <strong>드래그 앤 드롭</strong>하거나 눌러서 선택</p>
-                <p class="drop-zone-hint">놓는 즉시 자막 생성이 시작됩니다. 파일 크기는 서버 한도(보통 수십 MB 이하)를 넘을 수 없습니다.</p>
+                <p class="drop-zone-hint">놓는 즉시 자막 생성이 시작됩니다. <strong>오디오 파일만</strong> 가능합니다(영상·문서 등은 불가). 파일 크기는 서버 한도(보통 수십 MB 이하)를 넘을 수 없습니다.</p>
+                <p id="fileTypeWarning" class="file-type-warning hidden" role="alert"></p>
                 <p class="drop-zone-file" id="fileLabel">선택된 파일 없음</p>
               </div>
             </div>
@@ -53,7 +54,7 @@
         </form>
       </div>
 
-      <aside class="home-layout-side" aria-label="길이 옵션 및 저장 공간">
+      <aside class="home-layout-side" aria-label="길이 옵션">
         <div class="card home-card-options">
           <fieldset class="fieldset home-fieldset-length">
             <legend>길이 조절 (선택)</legend>
@@ -73,14 +74,6 @@
               생성되는 각 자막 큐는 <strong>항상 한 줄</strong>입니다. (줄바꿈 없음)
             </p>
           </fieldset>
-        </div>
-
-        <div class="card cache-card home-cache-card">
-          <h2 class="cache-heading">미리보기 저장 공간</h2>
-          <p class="field-hint cache-hint">
-            편집 화면 재생용으로 서버에 복사해 둔 원본 파일만 지웁니다. 자막 데이터와 다운로드는 그대로이며, 이미 연 편집 탭의 재생만 안 될 수 있습니다.
-          </p>
-          <button type="button" class="btn btn-outline" id="btnClearPreviewCache">미리보기 사본 삭제</button>
         </div>
       </aside>
     </div>
@@ -112,6 +105,6 @@
       <p id="progressPhase" class="progress-phase"></p>
     </div>
   </div>
-  <script src="/static/app.js?v=6"></script>
+  <script src="/static/app.js?v=7"></script>
 </body>
 </html>
