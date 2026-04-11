@@ -6,6 +6,10 @@
   PORT 환경 변수가 있으면(예: Railway, Render) 해당 포트를 사용하세요.
 
 Docker: 저장소의 Dockerfile / docker-compose.yml 참고.
+
+Cloud Run 운영 시 503·OOM 방지: faster-whisper(small) CPU+int8 도 메모리 스파이크가 크다.
+  권장: 메모리 2Gi 이상, CPU 2, 요청 timeout 900s, container concurrency 2~8(과도한 동시 전사 방지).
+  예: gcloud run services update SERVICE --memory=2Gi --cpu=2 --concurrency=4 --timeout=900 --max-instances=1
 사전 요구: ffmpeg·ffprobe가 PATH에 있음(이미지에 포함됨), pip install -r requirements.txt
 
 정확도 관련 환경 변수(예시):

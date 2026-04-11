@@ -114,7 +114,46 @@
         return data.detail.map(function (x) { return x.msg; }).join(" ");
       }
     } catch (e) {}
+    if (res.status === 503 || res.status === 502) {
+      return "서버가 일시적으로 응답할 수 없습니다(과부하 또는 재시작). 잠시 후 다시 시도해 주세요.";
+    }
     return text || res.statusText || "요청 실패";
+  }
+
+  function sleepMs(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  /**
+   * 작업 상태 폴링. Cloud Run OOM/재시작·일시 과부하 시 502/503 이 잠깐 나올 수 있어
+   * 짧은 백오프로 재시도한다(한 번의 폴링 틱 안에서만).
+   */
+  function fetchJobStatus(jobId) {
+    var url = "/api/jobs/" + encodeURIComponent(jobId);
+    var attempt = 0;
+    var maxAttempts = 14;
+
+    function tryOnce() {
+      return fetch(url, { credentials: "same-origin" }).then(function (res) {
+        if (
+          (res.status === 502 || res.status === 503 || res.status === 504) &&
+          attempt < maxAttempts - 1
+        ) {
+          attempt += 1;
+          var wait = Math.min(1500 + attempt * 800, 12000);
+          setProgressUi(
+            Math.min(12 + attempt * 3, 45),
+            "서버 연결 대기 중… (" + attempt + "/" + maxAttempts + ")"
+          );
+          return sleepMs(wait).then(tryOnce);
+        }
+        return res;
+      });
+    }
+
+    return tryOnce();
   }
 
   function setFileFromBlob(file) {
@@ -179,7 +218,7 @@
     setProgressUi(0, "작업 시작…");
 
     pollTimer = setInterval(function () {
-      fetch("/api/jobs/" + encodeURIComponent(jobId))
+      fetchJobStatus(jobId)
         .then(function (res) {
           if (!res.ok) return res.text().then(function (t) { throw new Error(parseErrorDetail(res, t)); });
           return res.json();
