@@ -1,6 +1,8 @@
 # Cloud Run: gcloud run services update vcml-subtitle --region=asia-northeast3 --env-vars-file=cloud-run-env.yaml
 VCML_CORS_ORIGINS: "https://vcml.kr,https://www.vcml.kr"
 VCML_SUBTITLE_GATE: "1"
+# 0이면 자막 앱·API 전체 중단(503). 디자인/운영 중엔 "1"
+VCML_SUBTITLE_ENABLED: "1"
 VCML_ACCESS_CODE: "0625"
 VCML_TRANSCRIPTION_QUOTA_MODE: "ip"
 VCML_MAX_USES_PER_IP: "10"

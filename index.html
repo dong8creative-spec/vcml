@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 자막 API = Google Cloud Run 기본 URL(서브도메인 불필요). Run 재배포 시 콘솔 주소와 동일하게 유지하세요. -->
+    <!-- 로컬 미리보기: 저장소 루트에서 python3 serve_main_site.py → http://127.0.0.1:8080/ -->
+    <!-- 자막 앱 URL — Run 재배포 시 콘솔 주소와 동일하게 유지 -->
     <meta name="vcml-subtitle-app" content="https://vcml-subtitle-117004466618.asia-northeast3.run.app">
     <title>VCML | Visual Core Motion Labs</title>
     
@@ -273,7 +274,7 @@
             position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
             overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
         }
-        
+
         /* 모달(테스트용) 스타일 */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -734,7 +735,7 @@
             var c = meta && meta.getAttribute('content');
             if (c && String(c).trim()) return String(c).trim().replace(/\/$/, '');
             var h = location.hostname;
-            if (h === '127.0.0.1' || h === 'localhost') return 'http://127.0.0.1:8844';
+            if (h === '127.0.0.1' || h === 'localhost') return 'http://127.0.0.1:8765';
             if (h === 'vcml.kr' || h === 'www.vcml.kr') {
                 return 'https://vcml-subtitle-117004466618.asia-northeast3.run.app';
             }
@@ -762,7 +763,7 @@
             if (!code) { alert('접속 코드를 입력해 주세요.'); return; }
             var base = getSubtitleAppOrigin();
             if (!base) {
-                alert('자막 서버 주소가 설정되지 않았습니다.\n\n이 파일 <head>의\n<meta name="vcml-subtitle-app" content="Cloud_Run_서비스_URL">\n에 Google Cloud Run 주소를 넣어 주세요.\n\n자막 서버 환경 변수 VCML_CORS_ORIGINS 에 https://vcml.kr 과 https://www.vcml.kr 이 있어야 합니다.');
+                alert('자막 서버 주소가 설정되지 않았습니다.\n\n<head>의 <meta name="vcml-subtitle-app" content="Cloud_Run_또는_로컬_URL"> 을 확인하세요.\n로컬은 보통 http://127.0.0.1:8765 (uvicorn 포트).');
                 return;
             }
             var fd = new FormData();
@@ -775,7 +776,7 @@
                 }
                 window.location.href = base + '/';
             } catch (e) {
-                alert('자막 서버에 연결할 수 없습니다.\n\n· 서버가 켜져 있는지\n· meta의 주소가 맞는지(https, 포트)\n· 자막 서버 VCML_CORS_ORIGINS 에 이 사이트(' + location.origin + ')가 있는지\n확인해 주세요.');
+                alert('자막 서버에 연결할 수 없습니다.\n\n· 서버가 켜져 있는지\n· meta 주소가 맞는지\n· 자막 서버 VCML_CORS_ORIGINS 에 이 사이트(' + location.origin + ')가 있는지\n확인해 주세요.');
             }
         }
         document.addEventListener('keydown', function (e) {
@@ -872,14 +873,12 @@
         });
         ytTrack.innerHTML = ytHtml;
 
-        // 수강신청 데이터 (스마트 로더 적용)
+        // 수강신청 데이터 (스마트 로더 적용) — CapCut·프리미어 프로(어도비 패키지)만 노출
         const storeData = [
             { tag:"Basic", title:"CapCut 초급 과정", price:"50,000원", desc: "왕초보도 가능한 컷편집 입문", imgName:"course_01", url:"#" },
             { tag:"Pro", title:"CapCut 프로 과정", price:"150,000원", desc: "PC 캡컷으로 완성하는 고퀄리티 릴스", imgName:"course_02", url:"#" },
             { tag:"Adobe Basic", title:"어도비 마스터 패키지 (입문)", price:"250,000원", desc: "프리미어 프로 + 애프터 이펙트 기초 완성", imgName:"course_03", url:"#" },
-            { tag:"Adobe Pro", title:"어도비 마스터 패키지 (실무)", price:"550,000원", desc: "현직자 수준의 실무 테크닉 마스터", imgName:"course_04", url:"#" },
-            { tag:"Revenue 1", title:"수익화 프로그램 (1채널)", price:"800,000원", desc: "제휴마케팅 1개 채널 집중 수익화", imgName:"course_05", url:"#" },
-            { tag:"Revenue 5", title:"수익화 프로그램 (5채널)", price:"1,200,000원", desc: "5개 채널 동시 운영 자동화 시스템", imgName:"course_06", url:"#" }
+            { tag:"Adobe Pro", title:"어도비 마스터 패키지 (실무)", price:"550,000원", desc: "현직자 수준의 실무 테크닉 마스터", imgName:"course_04", url:"#" }
         ];
         
         const storeTrack = document.getElementById('storeTrack');

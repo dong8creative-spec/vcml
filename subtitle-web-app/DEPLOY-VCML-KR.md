@@ -37,12 +37,13 @@
 
 | 할 일 | 설명 |
 |--------|------|
+| 로컬 미리보기 | 저장소 **루트**에서 `python3 serve_main_site.py` → 브라우저 `http://127.0.0.1:8080/` (포트 변경: `python3 serve_main_site.py 9000` 또는 `VCML_SITE_PORT`). |
 | 푸시 | 수정한 `index.html` 을 커밋 후 `vcml.kr` 이 바라보는 브랜치에 푸시. |
 | 반영 확인 | 시크릿 창에서 `https://vcml.kr` 열고, 페이지 소스에서 `vcml-subtitle-app` 의 `content` 가 최신 Run URL인지 확인. |
 
 ### 4. 동작 테스트
 
-1. `https://vcml.kr` → **자막 자동생성** → 접속 코드 `0625` → 자막 페이지로 이동하는지.
+1. `https://vcml.kr` → **자막 자동생성** → 접속 코드 `0625` → 자막 페이지로 이동하는지. (중단 시 `VCML_SUBTITLE_ENABLED=0` 및 메뉴 제거.)
 2. 짧은 오디오로 **자막 만들기** 한 번 실행.
 3. 개발자 도구 Network 탭에서 `subtitle-gate`·`/api/jobs` 가 실패하지 않는지 (CORS·401 등).
 
