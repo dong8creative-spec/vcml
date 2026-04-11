@@ -11,6 +11,8 @@ services:
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-500}
       # PC 로컬 배포용 횟수 제한은 컨테이너에 두면 인스턴스 전체가 막히므로 기본 해제
       VCML_USAGE_BYPASS: ${VCML_USAGE_BYPASS:-1}
+      # 메인 사이트(vcml.kr)에서 접속 코드·fetch 허용 — 운영 시 필수
+      VCML_CORS_ORIGINS: ${VCML_CORS_ORIGINS:-https://vcml.kr,https://www.vcml.kr}
       # IP 허용 목록(선택): 예 203.0.113.1,10.0.0.0/24 — 프록시 뒤면 VCML_TRUST_X_FORWARDED_FOR=1
       # VCML_ALLOWED_IPS: ${VCML_ALLOWED_IPS:-}
       # VCML_TRUST_X_FORWARDED_FOR: "1"
