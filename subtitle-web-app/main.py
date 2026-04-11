@@ -31,6 +31,8 @@ VCML 메인(index) 연동 — 자막 자동생성 메뉴·접속 코드·IP별 �
   VCML_ACCESS_CODE           기본 0219. POST /api/subtitle-gate 의 code 와 일치해야 함.
   VCML_GATE_SECRET           게이트 쿠키 서명용(선택).
   VCML_CORS_ORIGINS          메인 사이트 출처(쉼표 구분). 비우면 로컬 127.0.0.1·localhost 임의 포트 허용.
+  VCML_JOBS_SQLITE           (선택) 자막 작업 상태 SQLite 경로. 기본 $TMPDIR/vcml_subtitle_jobs.sqlite3.
+                              Cloud Run 은 인스턴스마다 디스크가 분리되므로 --max-instances=1 권장(또는 공유 DB).
   운영(HTTPS)에서는 게이트 쿠키를 SameSite=None; Secure 로 발급해, 메인에서 fetch 로 코드 입력 후 Run 으로 넘어갈 때 한 번만 입력하면 됩니다.
   VCML_TRANSCRIPTION_QUOTA_MODE=ip|machine  기본 ip(IP별 할당량). machine 은 기존 PC·계정 지문 방식.
   VCML_MAX_USES_PER_IP       IP별 자막 자동 생성 허용 횟수(기본 10). 0 이하면 무제한.
@@ -81,9 +83,118 @@ PREVIEW_VIDEO_EXT = {".mp4", ".webm", ".mpeg"}
 _model = None
 
 jobs_lock = threading.Lock()
-# 프로세스 메모리 전용. Cloud Run 등에서 인스턴스가 2개 이상이면 POST /api/jobs 와 GET /api/jobs/{id} 가
-# 서로 다른 컨테이너로 가며 404 가 난다 → 서비스는 --max-instances=1 (또는 외부 작업 저장소) 필요.
-jobs: dict[str, dict] = {}
+_jobs_init_lock = threading.Lock()
+_jobs_sqlite: Optional[sqlite3.Connection] = None
+
+# 작업 ID는 uuid.uuid4().hex (32자리 16진) 만 허용 — 잘못된 URL·캐시 깨짐 시 원인 구분용
+_JOB_ID_RE = re.compile(r"^[a-f0-9]{32}$")
+
+
+def _jobs_db_path() -> Path:
+    raw = (os.environ.get("VCML_JOBS_SQLITE") or "").strip()
+    if raw:
+        return Path(raw)
+    return Path(os.environ.get("TMPDIR", "/tmp")) / "vcml_subtitle_jobs.sqlite3"
+
+
+def _jobs_conn_unlocked() -> sqlite3.Connection:
+    """단일 연결 + WAL. 호출부에서 jobs_lock(또는 _jobs_init_lock)으로 직렬화."""
+    global _jobs_sqlite
+    if _jobs_sqlite is not None:
+        return _jobs_sqlite
+    with _jobs_init_lock:
+        if _jobs_sqlite is not None:
+            return _jobs_sqlite
+        path = _jobs_db_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(path), check_same_thread=False, timeout=120.0)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS jobs (
+              id TEXT PRIMARY KEY NOT NULL,
+              status TEXT NOT NULL,
+              progress INTEGER NOT NULL DEFAULT 0,
+              phase TEXT,
+              error TEXT,
+              body_bytes BLOB,
+              media_type TEXT,
+              download_filename TEXT,
+              ext TEXT,
+              duration_sec REAL,
+              download_base TEXT,
+              preview_path TEXT
+            );
+            """
+        )
+        conn.commit()
+        _jobs_sqlite = conn
+    return _jobs_sqlite
+
+
+def _job_row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "status": row["status"],
+        "progress": row["progress"],
+        "phase": row["phase"],
+        "error": row["error"],
+        "body_bytes": row["body_bytes"],
+        "media_type": row["media_type"],
+        "download_filename": row["download_filename"],
+        "ext": row["ext"],
+        "duration_sec": row["duration_sec"],
+        "download_base": row["download_base"],
+        "preview_path": row["preview_path"],
+    }
+
+
+def _job_tuple_for_write(job_id: str, d: dict[str, Any]) -> tuple:
+    return (
+        job_id,
+        str(d.get("status") or "unknown"),
+        int(d.get("progress") or 0),
+        d.get("phase"),
+        d.get("error"),
+        d.get("body_bytes"),
+        d.get("media_type"),
+        d.get("download_filename"),
+        d.get("ext"),
+        d.get("duration_sec"),
+        d.get("download_base"),
+        d.get("preview_path"),
+    )
+
+
+def _validate_job_id(job_id: str) -> str:
+    j = (job_id or "").strip().lower()
+    if not _JOB_ID_RE.match(j):
+        raise HTTPException(
+            status_code=400,
+            detail="잘못된 작업 ID입니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
+        )
+    return j
+
+
+def _job_get(job_id: str) -> Optional[dict[str, Any]]:
+    with jobs_lock:
+        conn = _jobs_conn_unlocked()
+        row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
+    return _job_row_to_dict(row) if row else None
+
+
+def _job_insert(job_id: str, row: dict[str, Any]) -> None:
+    with jobs_lock:
+        conn = _jobs_conn_unlocked()
+        conn.execute(
+            """
+            INSERT INTO jobs (id,status,progress,phase,error,body_bytes,media_type,download_filename,ext,duration_sec,download_base,preview_path)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            _job_tuple_for_write(job_id, row),
+        )
+        conn.commit()
 
 
 def _usage_limit_db_path() -> Path:
@@ -352,25 +463,31 @@ def _gate_landing_html() -> str:
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>VCML 자막 자동생성 — 접속</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&amp;family=Montserrat:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
 <style>
-/* VCML.kr 메인과 동일 Pantone Blue 072 C */
-body{font-family:system-ui,-apple-system,sans-serif;max-width:420px;margin:2.5rem auto;padding:0 1.25rem;
-  background:#fff;min-height:100vh;color:#10069F}
-h1{font-size:1.35rem;font-weight:700;margin:0 0 .4rem;letter-spacing:-.02em;color:#10069F}
-.sub{color:#555;font-size:.9rem;line-height:1.55;margin:0 0 1.35rem}
-label{display:block;font-size:.78rem;font-weight:600;margin-bottom:.35rem;color:#10069F}
-input{width:100%;box-sizing:border-box;padding:.8rem 1rem;border-radius:10px;border:1px solid rgba(16,6,159,.15);
-  background:#fff;color:#10069F;font-size:1rem;margin-bottom:1rem}
+/* index.html 과 동일 토큰 — 레이아웃 수치는 유지, 폰트·색만 통일 */
+:root{--brand-blue:#10069F;--brand-blue-hover:#000080;--brand-light:#F0F2FF;--brand-white:#FFFFFF;--brand-gray:#F4F5F7;
+  --text-main:#10069F;--text-sub:#555555;--text-white:#FFFFFF;--new-badge:#FF4757}
+body{font-family:'Montserrat','IBM Plex Sans KR',sans-serif;max-width:420px;margin:2.5rem auto;padding:0 1.25rem;
+  background:var(--brand-white);min-height:100vh;color:var(--text-main);letter-spacing:-.02em;line-height:1.6}
+h1{font-size:1.35rem;font-weight:800;margin:0 0 .4rem;letter-spacing:-.02em;color:var(--text-main)}
+.sub{color:var(--text-sub);font-size:.9rem;line-height:1.55;margin:0 0 1.35rem}
+label{display:block;font-size:.78rem;font-weight:600;margin-bottom:.35rem;color:var(--text-main)}
+input{width:100%;box-sizing:border-box;padding:.8rem 1rem;border-radius:10px;border:1px solid rgba(16,6,159,.08);
+  background:var(--brand-white);color:var(--text-main);font-size:1rem;font-family:inherit;margin-bottom:1rem}
 input::placeholder{color:rgba(16,6,159,.35)}
-button{width:100%;padding:.9rem;border:none;border-radius:999px;
-  background:linear-gradient(135deg,#10069F 0%,#3020FF 100%);color:#fff;
+input:focus{outline:none;border-color:rgba(16,6,159,.22);box-shadow:0 0 0 3px rgba(16,6,159,.08)}
+button{width:100%;padding:.9rem;border:none;border-radius:999px;font-family:inherit;
+  background:linear-gradient(135deg,var(--brand-blue) 0%,#3020FF 100%);color:var(--text-white);
   font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 10px 20px rgba(16,6,159,.2)}
-button:hover{filter:none;background:linear-gradient(135deg,#000080 0%,#2520cc 100%);
+button:hover{filter:none;background:linear-gradient(135deg,var(--brand-blue-hover) 0%,#2520cc 100%);
   box-shadow:0 4px 12px rgba(16,6,159,.25)}
-#error{color:#c62828;font-size:.88rem;margin-top:.85rem;min-height:1.3rem}
+#error{color:var(--new-badge);font-size:.88rem;margin-top:.85rem;min-height:1.3rem;font-weight:600}
 .foot{margin-top:1.75rem;font-size:.82rem}
-.foot a{color:#10069F;text-decoration:none}
-.foot a:hover{text-decoration:underline;color:#000080}
+.foot a{color:var(--brand-blue);text-decoration:none}
+.foot a:hover{text-decoration:underline;color:var(--brand-blue-hover)}
 </style>
 </head>
 <body>
@@ -606,6 +723,40 @@ async def vcml_subtitle_gate_middleware(request: Request, call_next):
         },
         status_code=401,
     )
+
+
+def _static_asset_file(name: str) -> FileResponse:
+    path = STATIC / name
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다.")
+    if name.endswith(".js"):
+        media = "application/javascript"
+    elif name.endswith(".css"):
+        media = "text/css"
+    else:
+        media = None
+    return FileResponse(path, media_type=media)
+
+
+# 예전 HTML·캐시에서 /app.js 처럼 루트 경로를 쓰는 경우 404 방지 (정식 경로는 /static/…)
+@app.get("/app.js")
+def legacy_root_app_js():
+    return _static_asset_file("app.js")
+
+
+@app.get("/edit.js")
+def legacy_root_edit_js():
+    return _static_asset_file("edit.js")
+
+
+@app.get("/edit-srt.js")
+def legacy_root_edit_srt_js():
+    return _static_asset_file("edit-srt.js")
+
+
+@app.get("/style.css")
+def legacy_root_style_css():
+    return _static_asset_file("style.css")
 
 
 app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
@@ -1027,8 +1178,9 @@ def clear_preview_cache() -> dict[str, Any]:
             except OSError as e:
                 errors.append(f"{child.name}: {e}")
     with jobs_lock:
-        for j in jobs.values():
-            j["preview_path"] = None
+        conn = _jobs_conn_unlocked()
+        conn.execute("UPDATE jobs SET preview_path = NULL")
+        conn.commit()
     msg = f"삭제한 항목 {removed}개." if removed else "지울 사본이 없었습니다."
     if errors:
         msg += " 일부만 지워졌을 수 있습니다."
@@ -1091,8 +1243,21 @@ def api_transcription_quota(request: Request):
 
 def _job_update(job_id: str, **kwargs: object) -> None:
     with jobs_lock:
-        if job_id in jobs:
-            jobs[job_id].update(kwargs)
+        conn = _jobs_conn_unlocked()
+        row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
+        if not row:
+            return
+        d = _job_row_to_dict(row)
+        for k, v in kwargs.items():
+            d[k] = v
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO jobs (id,status,progress,phase,error,body_bytes,media_type,download_filename,ext,duration_sec,download_base,preview_path)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            _job_tuple_for_write(job_id, d),
+        )
+        conn.commit()
 
 
 def _parse_opt_float(v: str, name: str, min_v: float, max_v: float) -> float:
@@ -1298,13 +1463,22 @@ async def create_job(
         f.write(content)
 
     job_id = uuid.uuid4().hex
-    with jobs_lock:
-        jobs[job_id] = {
+    _job_insert(
+        job_id,
+        {
             "status": "queued",
             "progress": 0,
             "phase": "대기 중",
             "error": None,
-        }
+            "body_bytes": None,
+            "media_type": None,
+            "download_filename": None,
+            "ext": None,
+            "duration_sec": None,
+            "download_base": None,
+            "preview_path": None,
+        },
+    )
 
     thread = threading.Thread(
         target=_job_worker,
@@ -1317,8 +1491,8 @@ async def create_job(
 
 @app.get("/api/jobs/{job_id}")
 def get_job_status(job_id: str):
-    with jobs_lock:
-        j = jobs.get(job_id)
+    job_id = _validate_job_id(job_id)
+    j = _job_get(job_id)
     if not j:
         raise HTTPException(404, "작업을 찾을 수 없습니다.")
     return {
@@ -1331,8 +1505,8 @@ def get_job_status(job_id: str):
 
 @app.get("/api/jobs/{job_id}/cues")
 def get_job_cues(job_id: str):
-    with jobs_lock:
-        j = jobs.get(job_id)
+    job_id = _validate_job_id(job_id)
+    j = _job_get(job_id)
     if not j or j.get("status") != "done":
         raise HTTPException(404, "완료된 작업만 편집할 수 있습니다.")
     raw = (j.get("body_bytes") or b"").decode("utf-8")
@@ -1435,11 +1609,11 @@ def build_subtitle_explicit(body: BuildExplicitSubtitleBody):
 @app.get("/api/jobs/{job_id}/preview-media")
 def get_job_preview_media(job_id: str):
     """편집 화면 미리보기용 원본 오디오/영상(완료 작업만)."""
-    with jobs_lock:
-        j = jobs.get(job_id)
-        if not j or j.get("status") != "done":
-            raise HTTPException(404, "완료된 작업만 미리보기할 수 있습니다.")
-        p = j.get("preview_path")
+    job_id = _validate_job_id(job_id)
+    j = _job_get(job_id)
+    if not j or j.get("status") != "done":
+        raise HTTPException(404, "완료된 작업만 미리보기할 수 있습니다.")
+    p = j.get("preview_path")
     if not p:
         raise HTTPException(404, "미리보기 파일이 없습니다.")
     path = Path(str(p))
@@ -1460,20 +1634,20 @@ def post_clear_preview_cache():
 
 @app.get("/api/jobs/{job_id}/download")
 def download_job_result(job_id: str):
-    with jobs_lock:
-        j = jobs.get(job_id)
-        if not j or j.get("status") != "done":
-            raise HTTPException(404, "아직 완료되지 않았거나 없는 작업입니다.")
-        body = j.get("body_bytes")
-        media = j.get("media_type") or "text/plain; charset=utf-8"
-        fname = j.get("download_filename") or "subtitle.srt"
-        ext = j.get("ext") or "srt"
+    job_id = _validate_job_id(job_id)
+    j = _job_get(job_id)
+    if not j or j.get("status") != "done":
+        raise HTTPException(404, "아직 완료되지 않았거나 없는 작업입니다.")
+    body = j.get("body_bytes")
+    media = j.get("media_type") or "text/plain; charset=utf-8"
+    fname = j.get("download_filename") or "subtitle.srt"
+    ext = j.get("ext") or "srt"
     cd = (
         f'attachment; filename="subtitle.{ext}"; '
         f"filename*=UTF-8''{quote(fname)}"
     )
     return Response(
-        content=body,
+        content=body or b"",
         media_type=media,
         headers={"Content-Disposition": cd},
     )

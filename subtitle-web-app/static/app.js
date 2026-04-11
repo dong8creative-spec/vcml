@@ -17,6 +17,19 @@
 
   var pollTimer = null;
 
+  /** 서버 job_id 는 uuid.hex 32자리. 깨진 ID로 폴링하면 404 만 반복된다. */
+  function normalizeJobId(raw) {
+    var id = String(raw == null ? "" : raw)
+      .trim()
+      .toLowerCase();
+    if (!/^[a-f0-9]{32}$/.test(id)) {
+      throw new Error(
+        "서버에서 받은 작업 ID가 올바르지 않습니다. 페이지를 새로고침(Cmd/Ctrl+Shift+R) 후 다시 시도해 주세요."
+      );
+    }
+    return id;
+  }
+
   function applyQuotaFromServer(data) {
     var unlimited = !data || data.limited === false;
     var rem = unlimited ? null : typeof data.remaining === "number" ? data.remaining : 0;
@@ -244,7 +257,7 @@
       .then(function (data) {
         if (!data.job_id) throw new Error("job_id가 없습니다.");
         setStatus("");
-        runJob(data.job_id);
+        runJob(normalizeJobId(data.job_id));
       })
       .catch(function (err) {
         setStatus(err.message || String(err), true);

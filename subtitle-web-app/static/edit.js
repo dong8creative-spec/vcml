@@ -1,6 +1,11 @@
 (function () {
   var params = new URLSearchParams(window.location.search);
-  var jobId = params.get("job");
+  var jobIdRaw = params.get("job");
+  var jobId = null;
+  if (jobIdRaw) {
+    var jnorm = String(jobIdRaw).trim().toLowerCase();
+    if (/^[a-f0-9]{32}$/.test(jnorm)) jobId = jnorm;
+  }
   var loadError = document.getElementById("loadError");
   var editorMain = document.getElementById("editorMain");
   var metaLine = document.getElementById("metaLine");
@@ -1149,7 +1154,11 @@
   }
 
   if (!jobId) {
-    showErr("URL에 job 번호가 없습니다. 업로드 페이지에서 자막 생성을 완료해 주세요.");
+    showErr(
+      jobIdRaw
+        ? "URL의 작업 ID 형식이 올바르지 않습니다. 업로드 페이지에서 자막을 다시 만들어 주세요."
+        : "URL에 job 번호가 없습니다. 업로드 페이지에서 자막 생성을 완료해 주세요."
+    );
   } else {
     fetch("/api/jobs/" + encodeURIComponent(jobId) + "/cues")
       .then(function (res) {
