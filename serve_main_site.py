@@ -14,8 +14,12 @@ from __future__ import annotations
 
 import argparse
 import errno
+import json
 import os
 import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 
@@ -42,6 +46,53 @@ def main() -> int:
 
     class RootHandler(SimpleHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
+
+        def do_GET(self) -> None:
+            if self.path.startswith("/api/ig-thumb"):
+                self._ig_thumb_proxy()
+                return
+            super().do_GET()
+
+        def _ig_thumb_proxy(self) -> None:
+            """브라우저 CORS 없이 Instagram oEmbed로 썸네일 URL만 조회합니다."""
+            parsed = urllib.parse.urlparse(self.path)
+            qs = urllib.parse.parse_qs(parsed.query)
+            url = (qs.get("url") or [""])[0].strip()
+            if not url or "instagram.com" not in url.lower():
+                self.send_error(400, "url query required (instagram reel/post URL)")
+                return
+
+            oembed = (
+                "https://api.instagram.com/oembed/?url="
+                + urllib.parse.quote(url, safe="")
+                + "&omitscript=true"
+            )
+            thumb = None
+            try:
+                req = urllib.request.Request(
+                    oembed,
+                    headers={
+                        "User-Agent": (
+                            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                        ),
+                    },
+                    method="GET",
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                tu = data.get("thumbnail_url")
+                if isinstance(tu, str) and tu.startswith("http"):
+                    thumb = tu
+            except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, TimeoutError, OSError):
+                pass
+
+            body = json.dumps({"thumbnail_url": thumb}).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "public, max-age=1800")
+            self.end_headers()
+            self.wfile.write(body)
 
         def __init__(self, *a, **kw):
             super().__init__(*a, directory=root, **kw)

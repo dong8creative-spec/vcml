@@ -19,7 +19,7 @@
             --pin-gap: 8px;
             --radius-p: 20px;
             --radius-pill: 999px;
-            /* 꺾임(45°) 깊이 고정 → 상·하·좌·우 가운데는 직선이 길어지는 '늘어진' 팔각(챰퍼) */
+            /* 우측 하단만 45° 챰퍼, 나머지 모서리는 직각 */
             --mb-oct-c: min(0.65rem, 10px, 2.1vmin);
         }
         .mb-p-logo, .mb-pill, .mb-tag-chip, .mb-preset-tags label,
@@ -27,24 +27,18 @@
         #mbSubmit, .mb-btn-google, .mb-btn-out, .mb-modal-close,
         #mbUrl, #mbNote, #mbCustomTags {
             -webkit-clip-path: polygon(
-                var(--mb-oct-c) 0,
-                calc(100% - var(--mb-oct-c)) 0,
-                100% var(--mb-oct-c),
+                0 0,
+                100% 0,
                 100% calc(100% - var(--mb-oct-c)),
                 calc(100% - var(--mb-oct-c)) 100%,
-                var(--mb-oct-c) 100%,
-                0 calc(100% - var(--mb-oct-c)),
-                0 var(--mb-oct-c)
+                0 100%
             );
             clip-path: polygon(
-                var(--mb-oct-c) 0,
-                calc(100% - var(--mb-oct-c)) 0,
-                100% var(--mb-oct-c),
+                0 0,
+                100% 0,
                 100% calc(100% - var(--mb-oct-c)),
                 calc(100% - var(--mb-oct-c)) 100%,
-                var(--mb-oct-c) 100%,
-                0 calc(100% - var(--mb-oct-c)),
-                0 var(--mb-oct-c)
+                0 100%
             );
         }
         .mb-tag-chip, .mb-preset-tags label {
@@ -72,31 +66,31 @@
             padding-bottom: 88px;
         }
         .mb-layout {
-            display: flex;
-            align-items: stretch;
             min-height: 100vh;
         }
         .mb-main {
-            flex: 1;
+            margin-left: 72px;
             min-width: 0;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
         .mb-rail {
-            flex-shrink: 0;
-            width: 72px;
-            min-height: 100vh;
-            position: sticky;
+            position: fixed;
+            left: 0;
             top: 0;
-            align-self: flex-start;
+            width: 72px;
+            height: 100vh;
+            height: 100dvh;
             z-index: 350;
             background: #111;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 12px 0 16px;
-            gap: 4px;
+            padding: 16px 0;
+            gap: 10px;
             box-shadow: 1px 0 0 rgba(255,255,255,0.06);
+            overflow-y: auto;
         }
         .mb-rail-top {
             display: flex;
@@ -104,9 +98,6 @@
             align-items: center;
             gap: 10px;
             width: 100%;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            margin-bottom: 8px;
         }
         .mb-rail-logo.mb-p-logo {
             width: 48px;
@@ -173,17 +164,6 @@
         .mb-rail-btn:focus-visible {
             outline: 2px solid #fff;
             outline-offset: 2px;
-        }
-        .mb-rail-spacer { flex: 1; min-height: 12px; }
-        .mb-rail-bottom {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding-top: 8px;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            margin-top: auto;
-            width: 100%;
         }
         #mbConfigWarn {
             background: #fff3cd; color: #664d00; font-size: 0.86rem; padding: 8px 16px; text-align: center; border-bottom: 1px solid #e6d08c;
@@ -267,7 +247,7 @@
             position: relative;
         }
         .mb-card-inner {
-            background: #fff; border-radius: var(--radius-p);
+            background: #0a0a0a; border-radius: var(--radius-p);
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transition: box-shadow 0.2s, transform 0.2s;
@@ -279,16 +259,47 @@
         .mb-pin-link {
             text-decoration: none; color: inherit; display: block;
         }
-        .mb-embed { position: relative; width: 100%; background: #0a0a0a; }
-        .mb-embed--1 { aspect-ratio: 9 / 16; }
-        .mb-embed--2 { aspect-ratio: 9 / 18; }
-        .mb-embed--3 { aspect-ratio: 2 / 3; }
+        /* 릴스·쇼츠 세로 원본 비율(9:16) 고정 — 임의 비율 클래스 제거 */
+        .mb-embed { position: relative; width: 100%; background: #0a0a0a; aspect-ratio: 9 / 16; }
         .mb-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 1; }
+        .mb-embed--reel { overflow: hidden; }
+        .mb-reel-poster-link {
+            position: absolute; inset: 0; z-index: 1;
+            display: block; text-decoration: none; color: inherit;
+            background: #1a1a1a;
+        }
+        .mb-reel-poster-link--empty {
+            background: linear-gradient(145deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+        }
+        .mb-reel-poster-img {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; object-position: center;
+        }
+        .mb-reel-poster-img.mb-reel-poster-fallback { display: none; }
+        .mb-reel-poster-play {
+            position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            width: 52px; height: 52px; border-radius: 50%;
+            background: rgba(0,0,0,0.5); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem; padding-left: 5px;
+            pointer-events: none; line-height: 1;
+        }
         .mb-pin-overlay {
             position: absolute; inset: 0; pointer-events: none;
             display: flex; flex-direction: column; justify-content: space-between; padding: 10px; z-index: 3;
         }
-        .mb-card:hover .mb-pin-overlay { pointer-events: auto; }
+        .mb-embed-lazy {
+            position: absolute; inset: 0; z-index: 2;
+            background: #141414;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .mb-embed-lazy-btn {
+            padding: 12px 22px; border: none; border-radius: 999px;
+            background: rgba(255,255,255,0.18); color: #fff;
+            font: inherit; font-weight: 700; font-size: 0.88rem; cursor: pointer;
+        }
+        .mb-embed-lazy-btn:hover { background: rgba(255,255,255,0.28); }
         .mb-pin-ov-t { display: flex; justify-content: flex-end; }
         .mb-save {
             pointer-events: auto;
@@ -310,9 +321,7 @@
             position: absolute; top: 10px; left: 10px; z-index: 4; pointer-events: none;
             background: rgba(0,0,0,0.65); color: #fff; font-size: 0.65rem; font-weight: 800; padding: 5px 10px; text-transform: uppercase; letter-spacing: 0.04em;
         }
-        .mb-title-line { padding: 8px 10px 6px; font-size: 0.8rem; font-weight: 600; line-height: 1.3; }
-        .mb-title-line:empty { display: none; }
-        .mb-sub-line { padding: 0 10px 10px; font-size: 0.72rem; color: var(--p-sub); }
+        .mb-title-line, .mb-card-tags, .mb-sub-line { display: none !important; }
         .mb-del {
             position: absolute; top: 8px; left: 8px; z-index: 4;
             padding: 6px 10px; font-size: 0.7rem; font-weight: 700; border: none;
@@ -392,18 +401,15 @@
         <button type="button" class="mb-rail-btn" aria-label="만들기" title="만들기">
             <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect class="mb-ico-o" x="4" y="4" width="16" height="16" rx="4"/><path class="mb-ico-o" d="M12 8v8M8 12h8"/></svg>
         </button>
-        <div class="mb-rail-spacer" aria-hidden="true"></div>
         <button type="button" class="mb-rail-btn" aria-label="알림" title="알림">
             <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><path class="mb-ico-o" d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path class="mb-ico-o" d="M13.73 21a2 2 0 01-3.46 0"/></svg>
         </button>
         <button type="button" class="mb-rail-btn" aria-label="메시지" title="메시지">
             <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><path class="mb-ico-o" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8.5z"/><circle class="mb-ico-f" cx="9" cy="12" r="1"/><circle class="mb-ico-f" cx="12" cy="12" r="1"/><circle class="mb-ico-f" cx="15" cy="12" r="1"/></svg>
         </button>
-        <div class="mb-rail-bottom">
-            <button type="button" class="mb-rail-btn" aria-label="설정" title="설정">
-                <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle class="mb-ico-o" cx="12" cy="12" r="3"/><path class="mb-ico-o" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            </button>
-        </div>
+        <button type="button" class="mb-rail-btn" aria-label="설정" title="설정">
+            <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle class="mb-ico-o" cx="12" cy="12" r="3"/><path class="mb-ico-o" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
     </aside>
     <div class="mb-main">
     <header class="mb-header">
@@ -440,21 +446,21 @@
     </div>
     </div>
     </div>
-    <button type="button" class="mb-fab" id="mbFab" title="핀 추가" aria-label="핀 추가">+</button>
+    <button type="button" class="mb-fab" id="mbFab" title="숏폼 추가" aria-label="숏폼 추가">+</button>
     <div id="mbAddModal" class="mb-modal" hidden>
         <div class="mb-modal-back" data-close="1"></div>
         <div class="mb-modal-box" role="dialog" aria-modal="true" aria-labelledby="mbModalTitle">
             <button type="button" class="mb-modal-close" data-close="1" aria-label="닫기">×</button>
-            <h2 id="mbModalTitle">핀 추가</h2>
+            <h2 id="mbModalTitle">숏폼 추가</h2>
             <p style="font-size:0.82rem;color:#767676;margin:-8px 0 4px">릴스·쇼츠 URL만 등록됩니다.</p>
-            <form id="mbForm" hidden>
+            <form id="mbForm">
                 <div>
                     <label for="mbUrl">URL</label>
                     <input type="url" id="mbUrl" name="url" required placeholder="instagram.com/reel/… / youtube.com/shorts/…" autocomplete="off" />
                 </div>
                 <div>
                     <label for="mbNote">제목 (선택)</label>
-                    <input type="text" id="mbNote" name="note" maxlength="200" placeholder="핀에 보일 한 줄" />
+                    <input type="text" id="mbNote" name="note" maxlength="200" placeholder="영상을 등록하는 이유 한줄" />
                 </div>
                 <span class="mb-form-tags-label">태그 (기본, 복수 선택)</span>
                 <div class="mb-preset-tags" id="mbPresetTags">
