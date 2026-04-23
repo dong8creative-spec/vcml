@@ -3,994 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 로컬 미리보기: 저장소 루트에서 python3 serve_main_site.py → http://127.0.0.1:8080/ -->
-    <!-- 자막 앱 URL — Run 재배포 시 콘솔 주소와 동일하게 유지 -->
-    <meta name="vcml-subtitle-app" content="https://vcml-subtitle-117004466618.asia-northeast3.run.app">
-    <title>VCML | Visual Core Motion Labs</title>
-    
-    <!-- 폰트 로드 -->
+    <title>VCML | 시작</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="reelboard-fonts.css" />
     <style>
-        /* --- 디자인 시스템 (Pantone Blue 072 C Theme) --- */
         :root {
-            /* Palette */
-            --brand-blue: #10069F;       /* Main Color */
-            --brand-blue-hover: #000080; 
-            --brand-light: #F0F2FF;      
-            --brand-white: #FFFFFF;
-            --brand-gray: #F4F5F7;
-            
-            /* Accents */
-            --accent-yellow: #FFD700;    
-            --new-badge: #FF4757;        
-
-            /* Text */
-            --text-main: #10069F;        
-            --text-sub: #555555;
-            --text-white: #FFFFFF;
-            
-            /* Layout */
-            --radius-box: 40px;
-            --radius-card: 24px;
-            --radius-btn: 50px;
+            --brand-blue: #10069F;
+            --brand-blue-hover: #000080;
+            --brand-light: #F0F2FF;
+            --text-main: #10069F;
+            --text-sub: #555;
         }
-        
-        * { box-sizing: border-box; margin: 0; padding: 0; cursor: none; }
-        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Montserrat', 'IBM Plex Sans KR', sans-serif;
-            background-color: var(--brand-white);
+            min-height: 100vh;
+            background: linear-gradient(160deg, #f8f9ff 0%, #eef0ff 45%, #ffffff 100%);
             color: var(--text-main);
-            line-height: 1.6;
-            overflow-x: hidden;
-            letter-spacing: -0.02em;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
-        
-        h1, h2, h3, .serif { font-family: 'Montserrat', 'IBM Plex Sans KR', sans-serif; }
-        a { text-decoration: none; color: inherit; transition: 0.3s; }
-        ul { list-style: none; }
-
-        /* 커서 (PC에서만 보임) */
-        .cursor-arrow {
-            width: 24px; height: 24px; position: fixed; top: 0; left: 0;
-            pointer-events: none; z-index: 9999; mix-blend-mode: difference;
-            transform: translate(0, 0); transition: transform 0.1s;
-        }
-        .cursor-arrow svg { width: 100%; height: 100%; fill: white; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1)); }
-        body.hovered .cursor-arrow { transform: scale(1.5); }
-
-        /* 네비게이션 */
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 40px; position: fixed; width: 100%; top: 0;
-            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
-            z-index: 1000; border-bottom: 1px solid rgba(16, 6, 159, 0.05);
-            transition: background 0.3s;
-        }
-        .logo { font-size: 1.6rem; font-weight: 900; letter-spacing: -0.5px; color: var(--brand-blue); z-index: 1001; }
-        
-        .nav-links { display: flex; gap: 40px; font-size: 0.95rem; font-weight: 600; color: var(--text-main); align-items: center; }
-        .nav-links a:hover { color: var(--brand-blue-hover); opacity: 0.7; }
-        
-        /* 모바일 메뉴 버튼 (기본 숨김) */
-        .mobile-menu-btn { display: none; font-size: 1.5rem; color: var(--brand-blue); z-index: 1001; background: none; border: none; cursor: pointer; }
-
-        /* 모바일 메뉴 오버레이 */
-        .mobile-nav-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
-            background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px);
-            z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transform: translateY(-100%); transition: transform 0.4s ease-in-out;
-        }
-        .mobile-nav-overlay.active { transform: translateY(0); }
-        .mobile-nav-overlay a {
-            font-size: 1.5rem; font-weight: 700; margin: 15px 0; color: var(--brand-blue);
-        }
-
-        .nav-badge {
-            background-color: var(--new-badge); color: white;
-            font-size: 0.6rem; padding: 2px 5px; border-radius: 4px;
-            margin-left: 4px; vertical-align: middle; font-weight: 800;
-        }
-
-        .btn-nav-cta {
-            padding: 10px 24px; background: var(--brand-blue); color: white;
-            border-radius: 30px; font-weight: 600; font-size: 0.9rem;
-        }
-        .btn-nav-cta:hover { background: var(--brand-blue-hover); box-shadow: 0 4px 12px rgba(16, 6, 159, 0.2); }
-        
-        /* 섹션 공통 */
-        .section { padding: 100px 5%; position: relative; }
-        .section-title { 
-            text-align: center; font-size: 2.5rem; 
-            margin-bottom: 50px; 
-            color: var(--text-main); font-weight: 800; letter-spacing: -1px;
-        }
-        .title-badge {
-            font-size: 1rem; vertical-align: middle;
-            background: var(--new-badge); color: white;
-            padding: 4px 10px; border-radius: 20px; margin-left: 10px;
-            animation: bounce 1s infinite alternate; display: inline-block;
-        }
-        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
-
-        /* 1. 히어로 섹션 */
-        .hero-wrapper { padding: 0; width: 100%; }
-        .hero-container {
-            background: linear-gradient(135deg, var(--brand-blue) 0%, #3020FF 100%); 
-            border-radius: 0 0 60px 60px;
-            padding: 180px 20px 220px;
-            color: var(--text-white);
+        .portal-header {
             text-align: center;
-            position: relative; overflow: hidden;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: auto;
-            box-shadow: 0 20px 60px rgba(16, 6, 159, 0.15);
+            margin-bottom: 40px;
+            max-width: 520px;
         }
-        
-        .hero-bg-circle { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.3; }
-        .bg-c1 { top: -100px; right: -100px; width: 500px; height: 500px; background: #4D4DFF; }
-        .bg-c2 { bottom: 0; left: -150px; width: 600px; height: 600px; background: #8080FF; }
-
-        .hero-content { position: relative; z-index: 2; max-width: 900px; }
-        .hero h1 {
-            font-size: 4.5rem; line-height: 1.1; margin-bottom: 25px; font-weight: 800; letter-spacing: -2px;
+        .portal-header h1 {
+            font-size: clamp(1.8rem, 4vw, 2.4rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 12px;
         }
-        .hero p {
-            font-size: 1.4rem; font-weight: 400; opacity: 0.95; 
-            margin-bottom: 0px; word-break: keep-all;
-            opacity: 0; animation: fadeInUp 0.8s ease-out 0.5s forwards; 
+        .portal-header p {
+            font-size: 0.98rem;
+            color: var(--text-sub);
+            line-height: 1.6;
         }
-        @keyframes fadeInUp { to { opacity: 1; } }
-
-        /* 2. 과정진단 */
-        .diagnosis-wrapper { 
-            padding: 0 20px; max-width: 1100px; margin: -140px auto 100px;
-            position: relative; z-index: 10;
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            width: 100%;
+            max-width: 880px;
         }
-        .diagnosis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-
-        .diagnosis-card {
-            background-color: white; border-radius: 30px;
-            padding: 60px 40px; text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
-            border: 1px solid rgba(0,0,0,0.05);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-        }
-        .diagnosis-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 30px 60px rgba(16, 6, 159, 0.15);
-            border-color: rgba(16, 6, 159, 0.1);
-        }
-        .diagnosis-icon { font-size: 3.5rem; margin-bottom: 20px; }
-        .diagnosis-card h2 {
-            font-size: 1.8rem; margin-bottom: 15px; color: var(--text-main); font-weight: 800; line-height: 1.3;
-        }
-        .diagnosis-card p {
-            font-size: 1rem; margin-bottom: 40px; color: #666; word-break: keep-all; line-height: 1.6;
-        }
-        .btn-diagnosis {
-            padding: 16px 40px; background: var(--brand-blue); color: white;
-            border-radius: 50px; font-weight: 700; display: inline-block; transition: 0.3s;
-            font-size: 1rem; box-shadow: 0 10px 20px rgba(16, 6, 159, 0.2);
-            border: none; cursor: pointer; text-decoration: none;
-        }
-        .btn-diagnosis:hover { background: var(--brand-blue-hover); transform: scale(1.05); }
-        .card-coupang .btn-diagnosis { background: #10069F; }
-
-        /* [NEW] 메인 공지 팝업 스타일 (500x500 최적화) */
-        .main-popup-overlay {
-            display: none; /* 기본 숨김 */
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); z-index: 99999;
-            align-items: center; justify-content: center;
-            backdrop-filter: blur(3px);
-        }
-        .main-popup-content {
-            width: 500px; height: 500px; 
-            background: white; border-radius: 16px; overflow: hidden;
-            position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.4);
-            display: flex; flex-direction: column;
-        }
-        .main-popup-body {
-            flex: 1; padding: 0; overflow: hidden; background: #000;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .main-popup-body img {
-            width: 100%; height: 100%; object-fit: cover;
-            display: block; 
-        }
-        .main-popup-footer {
-            height: 36px;
-            background: #222; color: #ccc;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 15px; 
-            font-size: 11px;
-            font-family: sans-serif;
-        }
-        .popup-close-btn {
-            background: none; border: none; color: white; font-weight: 500; 
-            font-size: 11px; cursor: pointer; opacity: 0.8; transition: opacity 0.2s;
-        }
-        .popup-close-btn:hover { opacity: 1; }
-        
-        .popup-check-label { 
-            cursor: pointer; display: flex; align-items: center; gap: 5px; 
-            opacity: 0.8; transition: opacity 0.2s;
-        }
-        .popup-check-label:hover { opacity: 1; }
-        
-        .popup-check-label input[type="checkbox"] {
-            width: 11px; height: 11px; margin: 0; cursor: pointer; accent-color: #555;
-        }
-
-        /* 자막 도구 접속 코드 모달 */
-        .subtitle-gate-overlay {
-            display: none; position: fixed; inset: 0; z-index: 100002;
-            background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(4px);
-            align-items: center; justify-content: center; padding: 20px;
-        }
-        .subtitle-gate-overlay.open { display: flex; }
-        .subtitle-gate-box {
-            width: 100%; max-width: 400px; background: var(--brand-white);
-            border-radius: var(--radius-card); padding: 36px 32px;
-            box-shadow: 0 24px 60px rgba(16, 6, 159, 0.2);
+        .portal-card {
+            display: block;
+            padding: 36px 28px;
+            border-radius: 28px;
+            background: #fff;
             border: 1px solid rgba(16, 6, 159, 0.08);
+            box-shadow: 0 16px 48px rgba(16, 6, 159, 0.08);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+        .portal-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(16, 6, 159, 0.04), transparent 55%);
+            pointer-events: none;
+        }
+        .portal-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 22px 56px rgba(16, 6, 159, 0.12);
+            border-color: rgba(16, 6, 159, 0.15);
+        }
+        .portal-card h2 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            margin-bottom: 10px;
             position: relative;
         }
-        .subtitle-gate-box h3 {
-            font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;
+        .portal-card p {
+            font-size: 0.92rem;
+            color: var(--text-sub);
+            line-height: 1.55;
+            position: relative;
         }
-        .subtitle-gate-box p.hint {
-            font-size: 0.9rem; color: var(--text-sub); margin-bottom: 22px; line-height: 1.5;
+        .portal-card .portal-cta {
+            margin-top: 20px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--brand-blue);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            position: relative;
         }
-        .subtitle-gate-box input[type="password"],
-        .subtitle-gate-box input[type="text"] {
-            width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid #e8e8f0;
-            font-size: 1rem; margin-bottom: 16px; font-family: inherit;
-            box-sizing: border-box;
+        .portal-card .portal-cta span { transition: transform 0.2s; }
+        .portal-card:hover .portal-cta span { transform: translateX(4px); }
+        .portal-badge {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--brand-blue);
+            background: var(--brand-light);
+            padding: 4px 10px;
+            border-radius: 999px;
+            margin-bottom: 12px;
+            position: relative;
         }
-        .subtitle-gate-box input:focus {
-            outline: none; border-color: var(--brand-blue);
+        .portal-foot {
+            margin-top: 48px;
+            font-size: 0.82rem;
+            color: #888;
+            text-align: center;
         }
-        .subtitle-gate-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .subtitle-gate-actions button {
-            flex: 1; min-width: 120px; padding: 14px 20px; border-radius: 50px; font-weight: 700;
-            font-size: 0.95rem; cursor: pointer; border: none; font-family: inherit;
-        }
-        .btn-gate-submit { background: var(--brand-blue); color: white; }
-        .btn-gate-submit:hover { background: var(--brand-blue-hover); }
-        .btn-gate-cancel { background: var(--brand-gray); color: var(--text-main); }
-        .subtitle-gate-close {
-            position: absolute; top: 14px; right: 16px; background: none; border: none;
-            font-size: 1.6rem; line-height: 1; cursor: pointer; color: #888;
-        }
-        .subtitle-gate-close:hover { color: var(--text-main); }
-        .visually-hidden {
-            position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-            overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
-        }
-
-        /* 모달(테스트용) 스타일 */
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7); z-index: 9999;
-            align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s;
-            backdrop-filter: blur(5px);
-        }
-        .modal-overlay.open { display: flex; opacity: 1; }
-        
-        .modal-container {
-            width: 90%; max-width: 600px; height: 85vh;
-            background: white; border-radius: 24px; overflow: hidden; position: relative;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .modal-overlay.open .modal-container { transform: translateY(0); }
-        
-        .modal-close {
-            position: absolute; top: 15px; right: 20px;
-            width: 36px; height: 36px; border-radius: 50%;
-            background: rgba(255,255,255,0.9); border: 1px solid #eee;
-            font-size: 1.5rem; color: #333; line-height: 1;
-            cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center;
-            transition: 0.2s;
-        }
-        .modal-close:hover { background: #f0f0f0; transform: rotate(90deg); }
-        
-        #testFrame { width: 100%; height: 100%; background: #fff; }
-
-        /* 3. 교육과정 */
-        #courses { background-color: var(--brand-white); }
-        .curriculum-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            gap: 30px; max-width: 1200px; margin: 0 auto; 
-        }
-        .course-card {
-            background: var(--brand-white); padding: 40px 30px; border-radius: var(--radius-card);
-            border: 1px solid #eee; text-align: center; transition: 0.3s; box-shadow: 0 5px 20px rgba(0,0,0,0.03);
-        }
-        .course-card:hover { transform: translateY(-10px); box-shadow: 0 15px 40px rgba(16, 6, 159, 0.1); border-color: var(--brand-blue); }
-        .course-icon {
-            width: 70px; height: 70px; border-radius: 20px; background: var(--brand-blue); color: white;
-            display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; margin: 0 auto 25px;
-        }
-        .course-card h3 { font-size: 1.5rem; margin-bottom: 15px; font-weight: 700; color: var(--text-main); }
-        .course-card p { font-size: 1rem; color: var(--text-sub); margin-bottom: 0; line-height: 1.6; }
-
-        /* 4. 수강신청 */
-        #store { background-color: var(--brand-white); overflow: hidden; } 
-        .store-track { display: flex; width: max-content; animation: scrollRight 360s linear infinite; }
-        .store-card {
-            width: 320px; flex-shrink: 0; margin-right: 15px; background: white; border-radius: 24px; padding: 0; overflow: hidden;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05); transition: 0.3s; display: flex; flex-direction: column; border: 1px solid #eee;
-            pointer-events: auto;
-        }
-        .store-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(16, 6, 159, 0.1); border-color: var(--brand-blue); }
-        .store-thumb-container { width: 100%; aspect-ratio: 1/1; overflow: hidden; }
-        .store-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
-        .store-card:hover .store-thumb { transform: scale(1.05); }
-        .store-info { padding: 25px; flex-grow: 1; text-align: left; display: flex; flex-direction: column; }
-        .store-badge { 
-            font-size: 0.8rem; font-weight: 700; color: var(--brand-blue); background: var(--brand-light); 
-            padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 12px; align-self: flex-start;
-        }
-        .store-title { font-size: 1.3rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; line-height: 1.3; }
-        .store-desc { font-size: 0.9rem; color: #666; margin-bottom: 20px; line-height: 1.5; flex-grow: 1; }
-        .store-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; border-top: 1px solid #f5f5f5; padding-top: 20px; }
-        .store-price { color: var(--text-main); font-weight: 800; font-size: 1.1rem; }
-        .btn-store {
-            padding: 10px 20px; text-align: center; border-radius: 30px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s;
-            background-color: var(--brand-blue); color: white; border: none; text-decoration: none; display: inline-block;
-        }
-        .btn-store:hover { background-color: var(--brand-blue-hover); }
-
-        /* 5. 캘린더 */
-        #schedule { background-color: var(--brand-white); }
-        .calendar-wrapper { max-width: 1000px; margin: 0 auto; }
-        .calendar-box {
-            border-radius: 30px; overflow: hidden; border: 1px solid #eee; box-shadow: 0 10px 40px rgba(0,0,0,0.05); height: 700px; background: white;
-        }
-
-        /* 6. 유튜브 */
-        .youtube-section { padding: 90px 0; background: var(--brand-blue); color: white; overflow: hidden; }
-        .yt-header { max-width: 1400px; margin: 0 auto 40px; padding: 0 20px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .yt-header h2 { font-size: 2rem; font-weight: 800; margin: 0; color: white; }
-        .yt-header a { color: var(--brand-light); text-decoration: underline; font-weight: 600; }
-        .slider-container { width: 100%; overflow: hidden; cursor: grab; padding-left: 5%; }
-        .slider-track { display: flex; width: max-content; gap: 20px; animation: scrollLeft 60s linear infinite; }
-        .yt-card {
-            width: 320px; flex-shrink: 0; border-radius: 16px; overflow: hidden; background: #2E1065; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1);
-        }
-        .yt-card:hover { transform: scale(1.02); border-color: var(--brand-light); }
-        .yt-thumb { width: 100%; height: 180px; background: #000; background-size: cover; }
-        .yt-info { padding: 20px; }
-        .yt-title { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 5px; line-height: 1.4; }
-        .yt-views { font-size: 0.85rem; color: #aaa; }
-        @keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        @keyframes scrollRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
-
-        /* 7. 강사 소개 */
-        #about { background-color: var(--brand-gray); }
-        .instructors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 60px; max-width: 1000px; margin: 0 auto; }
-        .instructor-card { text-align: left; }
-        .profile-img { width: 100%; height: 400px; object-fit: cover; border-radius: 30px; margin-bottom: 30px; background: #ddd; }
-        .instructor-name { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
-        .instructor-role { color: var(--brand-blue-hover); font-weight: 700; margin-bottom: 20px; display: block; }
-        .instructor-desc { color: #555; line-height: 1.7; word-break: keep-all; font-size: 1.05rem; }
-
-        /* 8. AI 기획 */
-        #ai-tool { background-color: var(--brand-white); }
-        .ai-wrapper { 
-            max-width: 900px; margin: 0 auto; background: var(--brand-white); border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); border: 2px solid var(--brand-light); overflow: hidden;
-        }
-        .ai-header { background: var(--brand-blue); color: white; padding: 30px; text-align: center; }
-        .ai-header h3 { font-size: 1.8rem; margin-bottom: 5px; color:white; }
-        .ai-header p { opacity: 0.9; font-size: 0.95rem; }
-        .ai-body { padding: 40px; }
-        .ai-input-group { display: flex; gap: 10px; margin-bottom: 60px; flex-wrap: wrap; }
-        .ai-input { flex: 2; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 1rem; font-family: inherit; background: var(--brand-gray); }
-        .ai-select { flex: 1; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 1rem; font-family: inherit; background: var(--brand-gray); min-width: 150px; }
-        .btn-ai-submit {
-            width: 100%; padding: 18px; font-size: 1.1rem; font-weight: 700; background-color: var(--brand-blue); color: white; border: none; border-radius: 12px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 20px; 
-        }
-        .btn-ai-submit:hover { background-color: var(--brand-blue-hover); }
-        .btn-ai-submit:disabled { background-color: #eee; color: #aaa; cursor: not-allowed; }
-        .ai-result { 
-            margin-top: 30px; padding: 25px; border-radius: 15px; background: var(--brand-light); border: 1px dashed var(--brand-blue); display: none; white-space: pre-wrap; line-height: 1.6; color: #444;
-        }
-        .ai-result.active { display: block; animation: fadeIn 0.5s ease; }
-        .ai-loading { text-align: center; display: none; margin-top: 20px; color: var(--brand-blue); font-weight: 600; }
-        .ai-loading.active { display: block; }
-        .ai-sparkle { font-size: 1.2rem; }
-
-        /* 9. 문의하기 */
-        #qna { background-color: var(--brand-white); }
-        .qna-wrapper { max-width: 800px; margin: 0 auto; }
-        .qna-box { background: white; padding: 60px; border-radius: 30px; border: 1px solid #eee; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
-        .qna-input, .qna-textarea { width: 100%; padding: 18px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-family: inherit; font-size: 1rem; background: #F9F9F9; }
-        .qna-input:focus, .qna-textarea:focus { border-color: var(--brand-blue); background: #fff; outline: none; }
-        .btn-submit { width: 100%; padding: 20px; background: var(--brand-blue); color: white; font-weight: 700; border-radius: 12px; border: none; cursor: pointer; font-size: 1.1rem; margin-top: 30px; }
-        .btn-submit:hover { background-color: var(--brand-blue-hover); }
-
-        /* 푸터 */
-        footer { background: var(--brand-blue); color: rgba(255,255,255,0.6); padding: 80px 5%; text-align: center; font-size: 0.95rem; border-top: 1px solid rgba(255,255,255,0.1); }
-        footer strong { color: white; font-size: 1.2rem; display: block; margin-bottom: 20px; }
-        .footer-links a { color: #fff; text-decoration: underline; margin: 0 10px; }
-        .admin-trigger { position: fixed; bottom: 0; left: 0; width: 100px; height: 100px; z-index: 9999; background: transparent; }
-
-        /* 모바일 반응형 */
-        @media (max-width: 768px) {
-            .cursor-arrow { display: none; }
-            * { cursor: auto; }
-            header { padding: 15px 20px; justify-content: space-between; }
-            .nav-links { display: none; }
-            .btn-nav-cta { display: none; }
-            .mobile-menu-btn { display: block; }
-            .hero-container { padding: 120px 20px 80px; border-radius: 0 0 40px 40px; min-height: auto; }
-            .hero h1 { font-size: 2.2rem; margin-bottom: 20px; }
-            .hero p { font-size: 1rem; margin-bottom: 0; }
-            .diagnosis-wrapper { margin-top: -50px; padding: 0 20px; }
-            .diagnosis-grid { grid-template-columns: 1fr; gap: 20px; }
-            .diagnosis-card { padding: 40px 25px; }
-            .diagnosis-card h2 { font-size: 1.5rem; }
-            .diagnosis-icon { font-size: 2.5rem; }
-            .section { padding: 70px 20px; }
-            .section-title { font-size: 1.8rem; margin-bottom: 30px; }
-            .curriculum-grid, .instructors-grid { grid-template-columns: 1fr; }
-            .store-card, .yt-card { width: 85vw; max-width: 320px; margin-right: 15px; }
-            .calendar-box { height: 400px; }
-            .modal-container { width: 95%; height: 80vh; }
-            .ai-body, .qna-box { padding: 30px 20px; }
-            .ai-input, .ai-select, .qna-input, .qna-textarea { font-size: 0.95rem; }
-            
-            /* 메인 팝업 모바일 최적화 */
-            .main-popup-content { width: 90%; height: auto; max-height: 80vh; border-radius: 16px; }
-            .main-popup-body { height: auto; aspect-ratio: 1/1; }
+        .portal-foot a { color: var(--brand-blue); font-weight: 600; }
+        .portal-card h2.reel-board-name {
+            font-size: 1.7rem;
         }
     </style>
 </head>
 <body>
-
-    <!-- [New] 메인 공지 팝업 (500x500) -->
-    <div id="mainNoticePopup" class="main-popup-overlay">
-        <div class="main-popup-content">
-            <div class="main-popup-body">
-                <!-- 스마트 이미지 로더: index_01.jpg -> index_01.png -> 예시 이미지 순으로 시도 -->
-                <img src="index_01.jpg" 
-                     onerror="this.onerror=null; this.src='index_01.png'; this.onerror=function(){this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1000&auto=format&fit=crop';}" 
-                     alt="Main Notice"
-                     style="width: 100%; height: 100%; object-fit: cover; display: block;">
-            </div>
-            <div class="main-popup-footer">
-                <label class="popup-check-label">
-                    <input type="checkbox" id="popupDontShowToday"> 오늘 하루 열지 않기
-                </label>
-                <button class="popup-close-btn" onclick="closeMainPopup()">닫기 [X]</button>
-            </div>
-        </div>
+    <div class="portal-header">
+        <h1>VCML</h1>
+        <p>이동할 화면을 선택해 주세요.</p>
     </div>
-
-    <!-- 자막 도구: 접속 코드 -->
-    <div id="subtitleGateModal" class="subtitle-gate-overlay" role="dialog" aria-modal="true" aria-labelledby="subtitleGateTitle">
-        <div class="subtitle-gate-box">
-            <button type="button" class="subtitle-gate-close" onclick="closeSubtitleGateModal()" aria-label="닫기">&times;</button>
-            <h3 id="subtitleGateTitle">자막 도구</h3>
-            <p class="hint">VCML 자막 생성·편집 기능입니다. 접속 코드를 입력한 뒤 이동합니다.<br>(동일 IP에서 자막 자동 생성은 10회까지 이용 가능합니다.)</p>
-            <label for="subtitleGateCode" class="visually-hidden">접속 코드</label>
-            <input type="password" id="subtitleGateCode" inputmode="numeric" autocomplete="off" placeholder="접속 코드" maxlength="32" />
-            <div class="subtitle-gate-actions">
-                <button type="button" class="btn-gate-cancel" onclick="closeSubtitleGateModal()">취소</button>
-                <button type="button" class="btn-gate-submit" onclick="submitSubtitleGateCode()">확인</button>
-            </div>
-        </div>
+    <div class="portal-grid">
+        <a href="main-site.html" class="portal-card">
+            <span class="portal-badge">소개 · 신청 · 문의</span>
+            <h2>VCML 사이트</h2>
+            <p>과정 안내, 과정진단, 수강신청, 편집문의 등 기존 메인 콘텐츠로 이동합니다.</p>
+            <div class="portal-cta">열기 <span>→</span></div>
+        </a>
+        <a href="moodboard.html" class="portal-card">
+            <span class="portal-badge">릴스 · 쇼츠 모아보기</span>
+            <h2 class="reel-board-name">reel board</h2>
+            <p>인스타그램 릴스와 유튜브 쇼츠만 모아 두는 보드입니다. Google 로그인 후 등록할 수 있습니다.</p>
+            <div class="portal-cta">열기 <span>→</span></div>
+        </a>
     </div>
-
-    <!-- 모달(팝업) 컨테이너 -->
-    <div id="testModal" class="modal-overlay">
-        <div class="modal-container">
-            <button class="modal-close" onclick="closeModal()">×</button>
-            <iframe id="testFrame" src="" frameborder="0"></iframe>
-        </div>
-    </div>
-
-    <!-- 모바일 메뉴 오버레이 -->
-    <div id="mobileMenu" class="mobile-nav-overlay">
-        <button onclick="toggleMenu()" style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:2rem; cursor:pointer;">&times;</button>
-        <a href="#diagnosis" onclick="toggleMenu()">과정진단</a>
-        <a href="#courses" onclick="toggleMenu()">교육과정</a>
-        <a href="#store" onclick="toggleMenu()">수강신청</a>
-        <a href="#schedule" onclick="toggleMenu()">일정</a>
-        <a href="#" onclick="event.preventDefault(); openSubtitleGateFromNav();">자막 자동생성</a>
-        <a href="#about" onclick="toggleMenu()">강사소개</a>
-        <a href="#ai-tool" onclick="toggleMenu()">ai기획</a>
-        <a href="#qna" onclick="toggleMenu()" style="background:var(--brand-blue); color:white; padding:10px 25px; border-radius:30px; margin-top:20px; font-size:1.2rem;">문의하기</a>
-    </div>
-
-    <div class="cursor-arrow">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 3.5L11.5 21.5L14.5 14.5L21.5 11.5L5.5 3.5Z" /></svg>
-    </div>
-
-    <!-- 헤더 -->
-    <header>
-        <div class="logo">VCML</div>
-        
-        <!-- PC 메뉴 -->
-        <nav class="nav-links">
-            <a href="#diagnosis">과정진단</a>
-            <a href="#courses">교육과정</a>
-            <a href="#store">수강신청</a>
-            <a href="#schedule">일정</a>
-            <a href="#" onclick="event.preventDefault(); openSubtitleGateFromNav();">자막 자동생성</a>
-            <a href="#about">강사소개</a>
-            <a href="#ai-tool">ai기획 <span class="nav-badge">New</span></a>
-        </nav>
-        <a href="#qna" class="btn-nav-cta">문의하기</a>
-
-        <!-- 모바일 햄버거 버튼 -->
-        <button class="mobile-menu-btn" onclick="toggleMenu()">☰</button>
-    </header>
-
-    <!-- 1. 히어로 섹션 -->
-    <div class="hero-wrapper">
-        <section class="hero-container">
-            <div class="hero-bg-circle bg-c1"></div>
-            <div class="hero-bg-circle bg-c2"></div>
-            <div class="hero-content">
-                <h1>실무능력향상은<br>VCML과 함께!</h1>
-                <p>영상 편집의 시작과 끝, VCML이 함께합니다.<br>당신의 목적에 맞는 최적의 커리큘럼을 제안받아보세요.</p>
-            </div>
-        </section>
-    </div>
-
-    <!-- 2. 과정진단 (팝업 기능 연결) -->
-    <div class="diagnosis-wrapper" id="diagnosis">
-        <div class="diagnosis-grid">
-            
-            <div class="diagnosis-card">
-                <div class="diagnosis-icon">🎬</div>
-                <h2>나에게 맞는<br>영상 편집 강의는?</h2>
-                <p>프리미어 프로부터 캡컷까지,<br>현재 실력과 목적에 딱 맞는 과정을 추천받으세요.</p>
-                <!-- 영상 과정 테스트 (팝업) -->
-                <button onclick="openModal('filmmaker_test.html')" class="btn-diagnosis">영상 과정 추천받기 →</button>
-            </div>
-
-            <div class="diagnosis-card card-coupang">
-                <div class="diagnosis-icon">💰</div>
-                <h2>쿠팡 파트너스<br>수익화 적성 진단 <span class="nav-badge" style="font-size:0.8rem; position:relative; top:-5px;">NEW</span></h2>
-                <p>나는 수익화가 가능한 유형일까?<br>트렌드 감각과 멘탈을 3분 만에 진단해 드립니다.</p>
-                <!-- 쿠팡 파트너스 테스트 (팝업) -->
-                <button onclick="openModal('coupang_test.html')" class="btn-diagnosis">수익화 가능성 확인하기 →</button>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- 3. 교육과정 -->
-    <section id="courses" class="section">
-        <div class="section-header">
-            <h2 class="section-title">교육 과정 안내</h2>
-        </div>
-        <div class="curriculum-grid">
-            <div class="course-card">
-                <div class="course-icon">P</div>
-                <h3>Premiere Pro</h3>
-                <p>방송, 영화, 기업 홍보영상 등 전문적인 영상 제작을 위한 필수 코스입니다.</p>
-                <ul class="course-list">
-                    <li>유튜브 롱폼 & 다큐멘터리</li>
-                    <li>기업 실무 포트폴리오</li>
-                    <li>어도비 툴 연동 심화</li>
-                </ul>
-            </div>
-            <div class="course-card">
-                <div class="course-icon">C</div>
-                <h3>CapCut PC</h3>
-                <p>가장 빠르고 트렌디하게 숏폼을 제작하여 수익을 창출하는 과정입니다.</p>
-                <ul class="course-list">
-                    <li>바이럴 숏폼 제작 (릴스/쇼츠)</li>
-                    <li>쿠팡파트너스 수익화 전략</li>
-                    <li>AI 자동 기능 활용</li>
-                </ul>
-            </div>
-            <div class="course-card">
-                <div class="course-icon">PF</div>
-                <h3>Portfolio Class</h3>
-                <p>취업과 이직을 목표로 하는 분들을 위한 집중 멘토링 과정입니다.</p>
-                <ul class="course-list">
-                    <li>1:1 맞춤 기획 및 디렉팅</li>
-                    <li>현직자 무제한 피드백</li>
-                    <li>자소서 컨설팅 포함</li>
-                </ul>
-            </div>
-            <div class="course-card">
-                <div class="course-icon">CC</div>
-                <h3>Channel Consulting</h3>
-                <p>정체된 유튜브 채널의 문제점을 진단하고 성장 전략을 제시합니다.</p>
-                <ul class="course-list">
-                    <li>채널 데이터 정밀 분석</li>
-                    <li>콘텐츠 방향성 솔루션</li>
-                </ul>
-            </div>
-        </div>
-    </section>
-
-    <!-- 4. 수강신청 -->
-    <section id="store" class="section">
-        <div class="section-header">
-            <h2 class="section-title">수강 신청</h2>
-        </div>
-        <div class="slider-container" id="storeContainer">
-            <div class="slider-track" id="storeTrack"></div>
-        </div>
-    </section>
-
-    <!-- 5. 캘린더 -->
-    <section id="schedule" class="section">
-        <div class="section-header">
-            <h2 class="section-title">월간 일정</h2>
-        </div>
-        <div class="calendar-wrapper">
-            <div class="calendar-box">
-                <iframe src="https://calendar.google.com/calendar/embed?src=c20e665a74ba213b8564f3bafe0d10a02d7add6476f1d061d78c0cb634e75eef%40group.calendar.google.com&ctz=Asia%2FSeoul&mode=MONTH" style="border-width:0" width="100%" height="100%" frameborder="0" scrolling="no"></iframe>
-            </div>
-        </div>
-    </section>
-
-    <!-- 6. 유튜브 -->
-    <section id="youtube" class="youtube-section">
-        <div class="yt-header">
-            <h2>영상편집 기초 튜토리얼</h2>
-            <a href="https://www.youtube.com/@your_channel" target="_blank">채널 더보기 →</a>
-        </div>
-        <div class="slider-container" id="ytContainer">
-            <div class="slider-track yt-track" id="ytTrack"></div>
-        </div>
-    </section>
-    
-    <!-- 7. AI 기획 도우미 -->
-    <section id="ai-tool" class="section">
-        <div class="section-header">
-            <h2 class="section-title">ai기획 <span class="title-badge">NEW</span></h2>
-        </div>
-        <div class="ai-wrapper">
-            <div class="ai-header">
-                <h3>AI 숏폼 아이디어 생성기 ✨</h3>
-                <p>영상 주제만 입력하세요. AI가 기획안을 대신 써드립니다.</p>
-            </div>
-            <div class="ai-body">
-                <div class="ai-input-group">
-                    <input type="text" id="aiTopic" class="ai-input" placeholder="영상 주제 입력 (예: 브이로그, 여행, 먹방)">
-                    <select id="aiPlatform" class="ai-select">
-                        <option value="YouTube Shorts">YouTube Shorts</option>
-                        <option value="Instagram Reels">Instagram Reels</option>
-                        <option value="TikTok">TikTok</option>
-                    </select>
-                </div>
-                <button class="btn-ai-submit" onclick="generateIdea()">
-                    <span class="ai-sparkle">✨</span> 아이디어 생성하기
-                </button>
-                <div id="aiLoading" class="ai-loading">
-                    AI가 아이디어를 생각 중입니다... <span class="ai-sparkle">🧠</span>
-                </div>
-                <div id="aiResult" class="ai-result"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 8. 강사 소개 -->
-    <section id="about" class="section">
-        <div class="section-header">
-            <h2 class="section-title">강사 소개</h2>
-        </div>
-        <div class="instructors-grid">
-            <div class="instructor-card">
-                <img src="profile_01.jpg" onerror="this.onerror=null; this.src='profile_01.png'; this.onerror=function(){this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMTAwNjlGIi8+PC9zdmc+';}" class="profile-img" alt="Lee Dong Heon">
-                <h3 class="instructor-name">Lee Dong Heon</h3>
-                <span class="instructor-role">CEO & Director</span>
-                <p class="instructor-desc">현직 영상 크리에이터 & 전문 교육 강사<br>어도비 국제 공인 전문가 (ACP)</p>
-            </div>
-            <div class="instructor-card">
-                <img src="profile_02.jpg" onerror="this.onerror=null; this.src='profile_02.png'; this.onerror=function(){this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDAwMDgwIi8+PC9zdmc+';}" class="profile-img" alt="Lee Ga Ram">
-                <h3 class="instructor-name">Lee Ga Ram</h3>
-                <span class="instructor-role">Production Instructor</span>
-                <p class="instructor-desc">모션 그래픽 디자인 & 숏폼 기획 전문가<br>유튜브/SNS 바이럴 영상 다수 제작</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- 9. 문의하기 -->
-    <section id="qna" class="section">
-        <div class="section-header">
-            <h2 class="section-title">문의하기</h2>
-        </div>
-        <div class="qna-wrapper">
-            <div class="qna-box">
-                <input type="text" id="qnaName" class="qna-input" placeholder="이름">
-                <input type="tel" id="qnaPhone" class="qna-input" placeholder="연락처">
-                <input type="text" id="qnaTitle" class="qna-input" placeholder="제목">
-                <textarea id="qnaContent" class="qna-textarea" placeholder="문의 내용"></textarea>
-                <button class="btn-submit" onclick="submitQna()">문의 접수하기</button>
-            </div>
-        </div>
-    </section>
-
-    <footer>
-        <p><strong>VCML (Visual & Viral Core Motion Labs)</strong></p>
-        <p>Copyright © 2025 All rights reserved.</p>
-        <div style="margin-top:20px;">
-            <a href="mailto:dong8creative@gmail.com" style="color:white; margin:0 10px;">Email</a>
-            <a href="https://instagram.com/official_vcml" target="_blank" style="color:white; margin:0 10px;">Instagram</a>
-        </div>
-        <a href="./admin.html" class="admin-trigger"></a>
-    </footer>
-
-    <script>
-        function getSubtitleAppOrigin() {
-            var meta = document.querySelector('meta[name="vcml-subtitle-app"]');
-            var c = meta && meta.getAttribute('content');
-            if (c && String(c).trim()) return String(c).trim().replace(/\/$/, '');
-            var h = location.hostname;
-            if (h === '127.0.0.1' || h === 'localhost') return 'http://127.0.0.1:8765';
-            if (h === 'vcml.kr' || h === 'www.vcml.kr') {
-                return 'https://vcml-subtitle-117004466618.asia-northeast3.run.app';
-            }
-            return '';
-        }
-
-        function openSubtitleGateModal() {
-            const modal = document.getElementById('subtitleGateModal');
-            const input = document.getElementById('subtitleGateCode');
-            if (modal) modal.classList.add('open');
-            if (input) { input.value = ''; setTimeout(function () { input.focus(); }, 50); }
-        }
-        function closeSubtitleGateModal() {
-            const modal = document.getElementById('subtitleGateModal');
-            if (modal) modal.classList.remove('open');
-        }
-        function openSubtitleGateFromNav() {
-            var menu = document.getElementById('mobileMenu');
-            if (menu && menu.classList.contains('active')) menu.classList.remove('active');
-            openSubtitleGateModal();
-        }
-        async function submitSubtitleGateCode() {
-            var input = document.getElementById('subtitleGateCode');
-            var code = (input && input.value) ? input.value.trim() : '';
-            if (!code) { alert('접속 코드를 입력해 주세요.'); return; }
-            var base = getSubtitleAppOrigin();
-            if (!base) {
-                alert('자막 서버 주소가 설정되지 않았습니다.\n\n<head>의 <meta name="vcml-subtitle-app" content="Cloud_Run_또는_로컬_URL"> 을 확인하세요.\n로컬은 보통 http://127.0.0.1:8765 (uvicorn 포트).');
-                return;
-            }
-            var fd = new FormData();
-            fd.append('code', code);
-            try {
-                var r = await fetch(base + '/api/subtitle-gate', { method: 'POST', body: fd, credentials: 'include' });
-                if (!r.ok) {
-                    alert(r.status === 401 ? '접속 코드가 올바르지 않습니다.' : '인증에 실패했습니다. 잠시 후 다시 시도해 주세요.');
-                    return;
-                }
-                window.location.href = base + '/';
-            } catch (e) {
-                alert('자막 서버에 연결할 수 없습니다.\n\n· 서버가 켜져 있는지\n· meta 주소가 맞는지\n· 자막 서버 VCML_CORS_ORIGINS 에 이 사이트(' + location.origin + ')가 있는지\n확인해 주세요.');
-            }
-        }
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeSubtitleGateModal();
-        });
-        (function () {
-            var codeEl = document.getElementById('subtitleGateCode');
-            if (codeEl) codeEl.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') { e.preventDefault(); submitSubtitleGateCode(); }
-            });
-        })();
-
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwTi1rM3-8rN6OSYz-UF3390p43X6pVGFtZJbmoEUZm4S4O_uNjjD_dHADmMaP4BqcT_Q/exec"; 
-        
-        const keyPart1 = "AIzaSyBPS7TjzpeY";
-        const keyPart2 = "TtWcRyRBBWFeDJ-R_9F85D8";
-        const apiKey = keyPart1 + keyPart2; 
-
-        const cursor = document.querySelector('.cursor-arrow');
-        document.addEventListener('mousemove', e => {
-            cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
-        });
-
-        // 모바일 메뉴 토글
-        function toggleMenu() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('active');
-        }
-
-        // 모달(테스트창) 제어 함수
-        function openModal(url) {
-            const modal = document.getElementById('testModal');
-            const frame = document.getElementById('testFrame');
-            if(modal && frame) {
-                frame.src = url;
-                modal.classList.add('open');
-                document.body.style.overflow = 'hidden'; 
-            }
-        }
-        function closeModal() {
-            const modal = document.getElementById('testModal');
-            const frame = document.getElementById('testFrame');
-            if(modal) {
-                modal.classList.remove('open');
-                document.body.style.overflow = ''; 
-                setTimeout(() => { if(frame) frame.src = ''; }, 300); 
-            }
-        }
-
-        // [New] 메인 공지 팝업 제어
-        function checkMainPopup() {
-            const expireDate = localStorage.getItem('mainPopupExpire');
-            const today = new Date();
-            // 만료일이 없거나, 현재 시간이 만료일보다 지났으면 표시
-            if (!expireDate || today > new Date(expireDate)) {
-                document.getElementById('mainNoticePopup').style.display = 'flex';
-            }
-        }
-
-        function closeMainPopup() {
-            const checkbox = document.getElementById('popupDontShowToday');
-            if (checkbox.checked) {
-                // 내일 자정으로 만료일 설정
-                const tomorrow = new Date();
-                tomorrow.setHours(24, 0, 0, 0); 
-                localStorage.setItem('mainPopupExpire', tomorrow);
-            }
-            document.getElementById('mainNoticePopup').style.display = 'none';
-        }
-
-        // 페이지 로드 시 팝업 체크
-        window.onload = checkMainPopup;
-
-        // 유튜브 데이터 (스마트 로더 적용 - 일괄 처리)
-        // youtube_thumb.jpg -> png -> placeholder 순
-        const ytData = Array(6).fill({ title:"영상편집 꿀팁", views:"1.2만회" });
-        const ytTrack = document.getElementById('ytTrack');
-        let ytHtml = '';
-        ytData.forEach((item, i) => {
-            const imgName = `youtube_0${i+1}`; // youtube_01.jpg ~ youtube_06.jpg
-            ytHtml += `
-                <div class="yt-card">
-                    <div class="yt-thumb">
-                        <img src="${imgName}.jpg" 
-                             onerror="this.onerror=null; this.src='${imgName}.png'; this.onerror=function(){this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMTExIi8+PC9zdmc+';}"
-                             style="width:100%; height:100%; object-fit:cover;">
-                    </div>
-                    <div class="yt-info">
-                        <div class="yt-title">${item.title} ${i+1}</div>
-                        <div class="yt-views">${item.views}</div>
-                    </div>
-                </div>
-            `;
-        });
-        ytTrack.innerHTML = ytHtml;
-
-        // 수강신청 데이터 (스마트 로더 적용) — CapCut·프리미어 프로(어도비 패키지)만 노출
-        const storeData = [
-            { tag:"Basic", title:"CapCut 초급 과정", price:"50,000원", desc: "왕초보도 가능한 컷편집 입문", imgName:"course_01", url:"#" },
-            { tag:"Pro", title:"CapCut 프로 과정", price:"150,000원", desc: "PC 캡컷으로 완성하는 고퀄리티 릴스", imgName:"course_02", url:"#" },
-            { tag:"Adobe Basic", title:"어도비 마스터 패키지 (입문)", price:"250,000원", desc: "프리미어 프로 + 애프터 이펙트 기초 완성", imgName:"course_03", url:"#" },
-            { tag:"Adobe Pro", title:"어도비 마스터 패키지 (실무)", price:"550,000원", desc: "현직자 수준의 실무 테크닉 마스터", imgName:"course_04", url:"#" }
-        ];
-        
-        const storeTrack = document.getElementById('storeTrack');
-        let storeHtml = '';
-        storeData.forEach(item => {
-            storeHtml += `
-                <div class="store-card">
-                    <div class="store-thumb-container">
-                        <img src="${item.imgName}.jpg" 
-                             onerror="this.onerror=null; this.src='${item.imgName}.png'; this.onerror=function(){this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRTJBQjJEIi8+PC9zdmc+';}"
-                             class="store-thumb" alt="${item.title}">
-                    </div>
-                    <div class="store-info">
-                        <span class="store-badge">${item.tag}</span>
-                        <h3 class="store-title">${item.title}</h3>
-                        <p class="store-desc">${item.desc}</p>
-                        <div class="store-footer">
-                            <div class="store-price">${item.price}</div>
-                            <a href="${item.url}" target="_blank" class="btn-store">신청하기</a>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        storeTrack.innerHTML = storeHtml;
-
-        function initSlider(containerId, trackId, speed = 60) {
-            const container = document.getElementById(containerId);
-            const track = document.getElementById(trackId);
-            track.innerHTML += track.innerHTML + track.innerHTML; 
-            track.style.animationDuration = speed + 's';
-            let isDown=false, startX, scrollLeft;
-            
-            const start = (x) => { isDown=true; startX=x-container.offsetLeft; scrollLeft=container.scrollLeft; track.style.animationPlayState='paused'; };
-            const end = () => { isDown=false; track.style.animationPlayState='running'; };
-            const move = (x) => { if(!isDown) return; const walk=(x-container.offsetLeft-startX)*2; container.scrollLeft = scrollLeft-walk; };
-
-            container.addEventListener('mousedown', e => start(e.pageX));
-            container.addEventListener('mouseleave', end);
-            container.addEventListener('mouseup', end);
-            container.addEventListener('mousemove', e => { e.preventDefault(); move(e.pageX); });
-            container.addEventListener('touchstart', e => start(e.touches[0].pageX));
-            container.addEventListener('touchend', end);
-            container.addEventListener('touchmove', e => move(e.touches[0].pageX));
-        }
-        
-        initSlider('storeContainer', 'storeTrack', 360);
-        initSlider('ytContainer', 'ytTrack', 60);
-
-        function submitQna() {
-            if(confirm("문의를 접수하시겠습니까?")) {
-                const form = new FormData();
-                ['qnaName','qnaPhone','qnaTitle','qnaContent'].forEach(id => form.append(id, document.getElementById(id).value));
-                form.append('result_program', '문의게시판');
-                fetch(SCRIPT_URL, { method:'POST', body:form, mode:'no-cors' })
-                    .then(() => alert("접수되었습니다."))
-                    .catch(() => alert("오류가 발생했습니다."));
-            }
-        }
-        
-        const GEMINI_SYSTEM_PROMPT = `
-        당신은 'VCML'의 영상 기획 전문가 AI입니다.
-        사용자가 입력한 주제에 맞춰 바이럴 숏폼 영상 기획안을 작성해 주세요.
-        톤앤매너: 전문적이면서도 친절하고 재치 있게.
-        출력 형식: HTML 태그를 사용하여 깔끔하게 디자인된 보고서 형태.
-        `;
-
-        async function generateIdea() {
-            const topic = document.getElementById('aiTopic').value;
-            const platform = document.getElementById('aiPlatform').value;
-
-            if (!topic) { alert("주제를 입력해주세요!"); return; }
-
-            const popup = window.open('', 'AI_RESULT', 'width=600,height=800');
-            popup.document.write(`<html><head><title>AI 기획안 생성 중...</title><style>body{font-family:sans-serif;padding:40px;text-align:center;color:#333}.loader{border:5px solid #f3f3f3;border-top:5px solid #10069F;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin:0 auto 20px}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style></head><body><div class="loader"></div><h2>AI가 열심히 아이디어를 짜고 있습니다... 🧠</h2><p>잠시만 기다려주세요!</p></body></html>`);
-
-            const userPrompt = `주제: ${topic}, 플랫폼: ${platform}. 위 주제로 영상을 만들려고 해. 기획안을 짜줘.`;
-            
-            const formData = new FormData();
-            formData.append('result_program', 'AI기획');
-            formData.append('qna_title', topic);
-            formData.append('qna_content', platform);
-            fetch(SCRIPT_URL, { method:'POST', body:formData, mode:'no-cors' }).catch(e=>console.log(e));
-
-            try {
-                // 수정된 모델명 적용 (gemini-1.5-flash)
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: GEMINI_SYSTEM_PROMPT + "\n\n" + userPrompt }] }] })
-                });
-
-                if (!response.ok) throw new Error(`API call failed: ${response.statusText}`);
-
-                const data = await response.json();
-                const text = data.candidates[0].content.parts[0].text;
-                const formattedText = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-                popup.document.body.innerHTML = `<div style="text-align:left; padding:20px; line-height:1.6;"><h2 style="color:#10069F; border-bottom:2px solid #10069F; padding-bottom:10px;">✨ AI 숏폼 기획안</h2><div>${formattedText}</div><div style="margin-top:30px; text-align:center;"><button onclick="window.print()" style="padding:10px 20px; background:#10069F; color:white; border:none; border-radius:5px; cursor:pointer;">인쇄 / PDF 저장</button><button onclick="window.close()" style="padding:10px 20px; background:#eee; color:#333; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">닫기</button></div></div>`;
-
-            } catch (error) {
-                console.error("Error:", error);
-                popup.document.body.innerHTML = `
-                    <div style="text-align:center; padding:40px;">
-                        <h3 style="color:#E53A40;">기획안 생성에 실패했습니다.</h3>
-                        <p style="color:#666; margin-bottom:30px;">일시적인 네트워크 오류거나<br>설정 문제일 수 있습니다.</p>
-                        <button onclick="window.close()" style="padding:12px 25px; background:#10069F; color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">홈으로 돌아가기</button>
-                    </div>
-                `;
-                if (apiKey === "") alert("API 키가 설정되지 않았습니다.");
-            }
-        }
-    </script>
+    <p class="portal-foot">자막 도구는 <a href="main-site.html#top">VCML 사이트</a> 상단 메타/링크를 통해 이용할 수 있습니다.</p>
 </body>
 </html>

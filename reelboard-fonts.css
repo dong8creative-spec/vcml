@@ -1,0 +1,26 @@
+/**
+ * "Messy Handwritten" — Google Fonts에 없음 → 아래 woff/woff2를 fonts/에 두면 적용.
+ * 1001 Fonts 등에서 받을 때 상업·개인 이용 조건(FFC 등)을 확인하세요.
+ * 파일이 없을 때: Rock Salt(또한 낙서/손글씨 느낌)로 표시.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap");
+
+@font-face {
+    font-family: "Messy Handwritten";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local("Messy Handwritten"), local("MessyHandwritten"),
+        url("fonts/messy-handwritten.woff2") format("woff2"),
+        url("fonts/messy-handwritten.woff") format("woff");
+}
+
+.reel-board-name,
+.portal-card h2.reel-board-name,
+.mb-nav-home.reel-board-name,
+.nav-links a.reel-board-name,
+.mobile-nav-overlay a.reel-board-name {
+    font-family: "Messy Handwritten", "Rock Salt", cursive;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+}

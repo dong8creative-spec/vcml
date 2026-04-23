@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 본문은 main-site.html (진입: index.html에서 분기) · 로컬: python3 serve_main_site.py -->
+    <!-- 자막 앱 URL — Run 재배포 시 콘솔 주소와 동일하게 유지 -->
+    <meta name="vcml-subtitle-app" content="https://vcml-subtitle-117004466618.asia-northeast3.run.app">
+    <title>VCML | Visual Core Motion Labs</title>
+    
+    <!-- 폰트 로드 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="reelboard-fonts.css" />
+
+    <style>
+        /* --- 디자인 시스템 (Pantone Blue 072 C Theme) --- */
+        :root {
+            /* Palette */
+            --brand-blue: #10069F;       /* Main Color */
+            --brand-blue-hover: #000080; 
+            --brand-light: #F0F2FF;      
+            --brand-white: #FFFFFF;
+            --brand-gray: #F4F5F7;
+            
+            /* Accents */
+            --accent-yellow: #FFD700;
+
+            /* Text */
+            --text-main: #10069F;        
+            --text-sub: #555555;
+            --text-white: #FFFFFF;
+            
+            /* Layout */
+            --radius-box: 40px;
+            --radius-card: 24px;
+            --radius-btn: 50px;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; cursor: none; }
+        
+        body {
+            font-family: 'Montserrat', 'IBM Plex Sans KR', sans-serif;
+            background-color: var(--brand-white);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            letter-spacing: -0.02em;
+        }
+        
+        h1, h2, h3, .serif { font-family: 'Montserrat', 'IBM Plex Sans KR', sans-serif; }
+        a { text-decoration: none; color: inherit; transition: 0.3s; }
+        ul { list-style: none; }
+
+        /* 커서 (PC에서만 보임) */
+        .cursor-arrow {
+            width: 24px; height: 24px; position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 9999; mix-blend-mode: difference;
+            transform: translate(0, 0); transition: transform 0.1s;
+        }
+        .cursor-arrow svg { width: 100%; height: 100%; fill: white; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1)); }
+        body.hovered .cursor-arrow { transform: scale(1.5); }
+
+        /* 네비게이션 */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 40px; position: fixed; width: 100%; top: 0;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            z-index: 1000; border-bottom: 1px solid rgba(16, 6, 159, 0.05);
+            transition: background 0.3s;
+        }
+        a.logo { font-size: 1.6rem; font-weight: 900; letter-spacing: -0.5px; color: var(--brand-blue); z-index: 1001; display: inline-block; }
+        a.logo:hover { opacity: 0.85; }
+        
+        .nav-links { display: flex; gap: 40px; font-size: calc(0.95rem - 2pt); font-weight: 600; color: var(--text-main); align-items: center; }
+        .nav-links a:hover { color: var(--brand-blue-hover); opacity: 0.7; }
+        
+        /* 모바일 메뉴 버튼 (기본 숨김) */
+        .mobile-menu-btn { display: none; font-size: 1.5rem; color: var(--brand-blue); z-index: 1001; background: none; border: none; cursor: pointer; }
+
+        /* 모바일 메뉴 오버레이 */
+        .mobile-nav-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px);
+            z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transform: translateY(-100%); transition: transform 0.4s ease-in-out;
+        }
+        .mobile-nav-overlay.active { transform: translateY(0); }
+        .mobile-nav-overlay a {
+            font-size: calc(1.5rem - 2pt); font-weight: 700; margin: 15px 0; color: var(--brand-blue);
+        }
+
+        /* 섹션 공통 */
+        .section { padding: 100px 5%; position: relative; }
+        .section-title { 
+            text-align: center; font-size: 2.5rem; 
+            margin-bottom: 50px; 
+            color: var(--text-main); font-weight: 800; letter-spacing: -1px;
+        }
+        #courses .section-title,
+        #store .section-title {
+            font-size: calc(2.5rem - 2pt);
+        }
+        /* 1. 히어로 섹션 */
+        .hero-wrapper { padding: 0; width: 100%; }
+        .hero-container {
+            background: linear-gradient(135deg, var(--brand-blue) 0%, #3020FF 100%); 
+            border-radius: 0 0 60px 60px;
+            padding: 180px 20px 220px;
+            color: var(--text-white);
+            text-align: center;
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: auto;
+            box-shadow: 0 20px 60px rgba(16, 6, 159, 0.15);
+        }
+        
+        .hero-bg-circle { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.3; }
+        .bg-c1 { top: -100px; right: -100px; width: 500px; height: 500px; background: #4D4DFF; }
+        .bg-c2 { bottom: 0; left: -150px; width: 600px; height: 600px; background: #8080FF; }
+
+        .hero-content { position: relative; z-index: 2; max-width: 900px; }
+        .hero h1 {
+            font-size: 4.5rem; line-height: 1.1; margin-bottom: 25px; font-weight: 800; letter-spacing: -2px;
+        }
+        .hero p {
+            font-size: 1.4rem; font-weight: 400; opacity: 0.95; 
+            margin-bottom: 0px; word-break: keep-all;
+            opacity: 0; animation: fadeInUp 0.8s ease-out 0.5s forwards; 
+        }
+        @keyframes fadeInUp { to { opacity: 1; } }
+
+        /* 2. 과정진단 (카드·타이포 약 75% — 전체적으로 1/4 축소 느낌) */
+        .diagnosis-wrapper { 
+            padding: 0 20px; max-width: 825px; margin: -105px auto 75px;
+            position: relative; z-index: 10;
+        }
+        .diagnosis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+        .diagnosis-card {
+            background-color: white; border-radius: 22px;
+            padding: 45px 30px; text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 15px 38px rgba(0,0,0,0.1);
+        }
+        .diagnosis-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 22px 45px rgba(16, 6, 159, 0.15);
+            border-color: rgba(16, 6, 159, 0.1);
+        }
+        .diagnosis-icon { font-size: 2.65rem; margin-bottom: 15px; }
+        .diagnosis-card h2 {
+            font-size: 1.35rem; margin-bottom: 11px; color: var(--text-main); font-weight: 800; line-height: 1.3;
+        }
+        .diagnosis-card p {
+            font-size: 0.9rem; margin-bottom: 30px; color: #666; word-break: keep-all; line-height: 1.6;
+        }
+        .btn-diagnosis {
+            padding: 12px 30px; background: var(--brand-blue); color: white;
+            border-radius: 50px; font-weight: 700; display: inline-block; transition: 0.3s;
+            font-size: 0.88rem; box-shadow: 0 8px 16px rgba(16, 6, 159, 0.2);
+            border: none; cursor: pointer; text-decoration: none;
+        }
+        a.btn-diagnosis { color: white; }
+        .btn-diagnosis:hover { background: var(--brand-blue-hover); transform: scale(1.05); }
+        .card-coupang .btn-diagnosis { background: #10069F; }
+
+        /* 과정진단 테스트 iframe 모달 */
+        .diagnosis-test-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); z-index: 100010;
+            align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .diagnosis-test-overlay.open { display: flex; opacity: 1; }
+        .diagnosis-test-modal {
+            width: 90%; max-width: 600px; height: 85vh;
+            background: white; border-radius: 24px; overflow: hidden; position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .diagnosis-test-overlay.open .diagnosis-test-modal { transform: translateY(0); }
+        .diagnosis-test-close {
+            position: absolute; top: 15px; right: 20px;
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(255,255,255,0.95); border: 1px solid #eee;
+            font-size: 1.5rem; color: #333; line-height: 1;
+            cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .diagnosis-test-close:hover { background: #f0f0f0; transform: rotate(90deg); }
+        #diagnosisTestFrame { width: 100%; height: 100%; background: #fff; border: 0; display: block; }
+
+        /* 3. 교육과정 */
+        #courses { background-color: var(--brand-white); }
+        .curriculum-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 30px; max-width: 1200px; margin: 0 auto; 
+        }
+        .course-card {
+            background: var(--brand-white); padding: 40px 30px; border-radius: var(--radius-card);
+            border: 1px solid #eee; text-align: center; transition: 0.3s; box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+        }
+        .course-card:hover { transform: translateY(-10px); box-shadow: 0 15px 40px rgba(16, 6, 159, 0.1); border-color: var(--brand-blue); }
+        .course-icon {
+            width: 70px; height: 70px; border-radius: 20px; background: var(--brand-blue); color: white;
+            display: flex; align-items: center; justify-content: center; font-size: calc(1.8rem - 2pt); font-weight: 900; margin: 0 auto 25px;
+        }
+        .course-card h3 { font-size: calc(1.5rem - 2pt); margin-bottom: 15px; font-weight: 700; color: var(--text-main); }
+        .course-card p { font-size: calc(1rem - 2pt); color: var(--text-sub); margin-bottom: 0; line-height: 1.6; }
+        .course-list { margin-top: 16px; text-align: left; font-size: calc(0.92rem - 2pt); color: var(--text-sub); line-height: 1.7; }
+        .course-list li { padding: 4px 0; padding-left: 1.1em; position: relative; }
+        .course-list li::before { content: "·"; position: absolute; left: 0; color: var(--brand-blue); font-weight: 800; }
+        .soon-badge {
+            display: inline-block; font-size: calc(0.65rem - 2pt); font-weight: 800; vertical-align: middle;
+            margin-left: 8px; padding: 3px 8px; border-radius: 6px; background: #e8eaef; color: #555;
+        }
+        .course-card-soon .course-icon { background: #8b92a8; }
+
+        /* 4. 수강신청 (무한 슬라이더 복제 없음 — 카드 개수만큼만 표시) */
+        #store { background-color: var(--brand-white); overflow: hidden; }
+        .store-slider-wrap {
+            width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 24px 8px;
+            display: flex; justify-content: center;
+            overflow-x: auto; -webkit-overflow-scrolling: touch;
+        }
+        .store-track-row {
+            display: inline-flex; flex-wrap: nowrap; justify-content: center; align-items: stretch;
+            gap: clamp(12px, 1.5vw, 20px); min-width: 100%; animation: none; box-sizing: border-box;
+        }
+        .store-card {
+            position: relative;
+            flex: 1 1 calc(25% - 16px); min-width: 220px; max-width: 300px;
+            background: white; border-radius: 24px; padding: 0; overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05); transition: 0.3s; display: flex; flex-direction: column; border: 1px solid #eee;
+            pointer-events: auto;
+        }
+        .store-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(16, 6, 159, 0.1); border-color: var(--brand-blue); }
+        .store-thumb-container { width: 100%; aspect-ratio: 1/1; overflow: hidden; }
+        .store-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+        .store-card:hover .store-thumb { transform: scale(1.05); }
+        .store-info { padding: 25px; flex-grow: 1; text-align: left; display: flex; flex-direction: column; }
+        .store-badge { 
+            font-size: calc(0.8rem - 2pt); font-weight: 700; color: var(--brand-blue); background: var(--brand-light); 
+            padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 12px; align-self: flex-start;
+        }
+        .store-title { font-size: calc(1.3rem - 2pt); font-weight: 700; color: var(--text-main); margin-bottom: 8px; line-height: 1.3; }
+        .store-desc { font-size: calc(0.9rem - 2pt); color: #666; margin-bottom: 20px; line-height: 1.5; flex-grow: 1; }
+        .store-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; border-top: 1px solid #f5f5f5; padding-top: 20px; }
+        .store-price { color: var(--text-main); font-weight: 800; font-size: calc(1.1rem - 2pt); }
+        .btn-store {
+            padding: 10px 20px; text-align: center; border-radius: 30px; font-weight: 700; font-size: calc(0.85rem - 2pt); cursor: pointer; transition: 0.2s;
+            background-color: var(--brand-blue); color: white; border: none; text-decoration: none; display: inline-block;
+        }
+        .btn-store:hover { background-color: var(--brand-blue-hover); }
+
+        /* 5. 캘린더 */
+        #schedule { background-color: var(--brand-white); }
+        .calendar-wrapper { max-width: 1000px; margin: 0 auto; }
+        .calendar-box {
+            border-radius: 30px; overflow: hidden; border: 1px solid #eee; box-shadow: 0 10px 40px rgba(0,0,0,0.05); height: 700px; background: white;
+        }
+
+        /* 6. 유튜브 (링크 있는 항목만 카드 표시 · 없으면 섹션 비활성) */
+        .youtube-section { padding: 90px 0; background: var(--brand-blue); color: white; overflow: hidden; }
+        .youtube-section.youtube-section--idle {
+            pointer-events: none; user-select: none; opacity: 0.62;
+        }
+        .yt-header { max-width: 1400px; margin: 0 auto 40px; padding: 0 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .yt-header h2 { font-size: 2rem; font-weight: 800; margin: 0; color: white; }
+        .yt-channel-link { color: var(--brand-light); text-decoration: underline; font-weight: 600; }
+        .yt-channel-link:hover { color: #fff; }
+        .yt-idle-panel {
+            max-width: 720px; margin: 0 auto; padding: 28px 24px 8px; text-align: center;
+        }
+        .yt-idle-msg {
+            font-size: 1rem; font-weight: 500; color: rgba(255,255,255,0.85); line-height: 1.65; margin: 0;
+        }
+        .slider-container { width: 100%; overflow: hidden; cursor: grab; padding-left: 5%; }
+        .slider-track { display: flex; width: max-content; gap: 20px; animation: scrollLeft 60s linear infinite; }
+        a.yt-card {
+            width: 320px; flex-shrink: 0; border-radius: 16px; overflow: hidden; background: #2E1065; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1);
+            color: inherit; text-decoration: none; display: block; box-sizing: border-box;
+        }
+        a.yt-card:hover { transform: scale(1.02); border-color: var(--brand-light); }
+        .yt-thumb { width: 100%; height: 180px; background: #000; background-size: cover; }
+        .yt-info { padding: 20px; }
+        .yt-title { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 5px; line-height: 1.4; }
+        .yt-views { font-size: 0.85rem; color: #aaa; }
+        @keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        /* 7. 강사 소개 */
+        #about { background-color: var(--brand-gray); }
+        .instructors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 60px; max-width: 1000px; margin: 0 auto; }
+        .instructor-card { text-align: left; }
+        .profile-img { width: 100%; height: 400px; object-fit: cover; border-radius: 30px; margin-bottom: 30px; background: #ddd; }
+        .instructor-name { font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; }
+        .instructor-role { color: var(--brand-blue-hover); font-weight: 700; margin-bottom: 20px; display: block; }
+        .instructor-desc { color: #555; line-height: 1.7; word-break: keep-all; font-size: 1.05rem; }
+
+        /* 8. 편집문의 (다단계 카드) */
+        #qna { background-color: var(--brand-white); }
+        .qna-wrapper { max-width: 640px; margin: 0 auto; }
+        .eiw-card {
+            background: white; padding: 44px 40px 36px; border-radius: 30px; border: 1px solid #eee;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03); min-height: 420px; display: flex; flex-direction: column;
+        }
+        .eiw-bar {
+            display: flex; align-items: stretch; gap: 5px; width: 100%; margin-bottom: 20px;
+        }
+        .eiw-bar-seg {
+            flex: 1; height: 3px; border-radius: 2px; background: #e4e8f0; transition: background 0.28s ease, box-shadow 0.28s ease;
+        }
+        .eiw-bar-seg.is-filled {
+            background: linear-gradient(90deg, var(--brand-blue) 0%, #3020FF 100%);
+            box-shadow: 0 1px 4px rgba(16, 6, 159, 0.2);
+        }
+        .eiw-bar-seg.is-filled.is-current {
+            box-shadow: 0 2px 8px rgba(16, 6, 159, 0.32);
+        }
+        .eiw-step-title {
+            display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+            font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px; line-height: 1.3;
+        }
+        .eiw-step-badge {
+            flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+            background: var(--brand-blue); color: #fff; font-size: 0.85rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; line-height: 1;
+            box-shadow: 0 6px 16px rgba(16, 6, 159, 0.25);
+        }
+        .eiw-step-title-text { text-align: center; }
+        .eiw-step-sub { text-align: center; font-size: 0.82rem; color: var(--text-sub); margin-bottom: 28px; }
+        .eiw-panels { position: relative; flex: 1; }
+        .eiw-panel { display: none; animation: eiwIn 0.28s ease; }
+        .eiw-panel.is-active { display: block; }
+        @keyframes eiwIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .eiw-q {
+            display: flex; align-items: flex-start; gap: 10px; font-size: 0.92rem; font-weight: 700;
+            color: var(--text-main); margin: 18px 0 8px; line-height: 1.45;
+        }
+        .eiw-q::before {
+            content: ""; flex-shrink: 0; width: 7px; height: 7px; margin-top: 0.42em;
+            background: var(--brand-blue); border-radius: 0;
+        }
+        .eiw-q:first-child { margin-top: 0; }
+        .eiw-q-spaced { margin-top: 22px; }
+        .eiw-hint { font-size: 0.8rem; color: var(--text-sub); margin: -4px 0 10px; line-height: 1.5; }
+        .eiw-input, .eiw-textarea {
+            width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid #ddd; font-family: inherit; font-size: 0.95rem;
+            background: #F9F9F9; box-sizing: border-box;
+        }
+        .eiw-input:focus, .eiw-textarea:focus { border-color: var(--brand-blue); background: #fff; outline: none; }
+        .eiw-textarea { min-height: 120px; resize: vertical; line-height: 1.55; }
+        .eiw-file-wrap {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 4px;
+        }
+        .eiw-file-native {
+            position: absolute; width: 0.1px; height: 0.1px; opacity: 0; overflow: hidden; z-index: -1;
+        }
+        .eiw-file-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 12px 18px; border-radius: 12px; border: 1px solid #ddd; background: #F9F9F9;
+            font-size: 0.9rem; font-weight: 700; color: var(--text-main); cursor: pointer; font-family: inherit;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .eiw-file-btn:hover { border-color: var(--brand-blue); background: #fff; }
+        .eiw-file-names {
+            flex: 1; min-width: 200px; font-size: 0.82rem; color: var(--text-sub); line-height: 1.45; word-break: break-all;
+        }
+        .eiw-check-row, .eiw-radio-row {
+            display: flex; align-items: flex-start; gap: 10px; margin: 10px 0; font-size: 0.9rem; color: #444; line-height: 1.45; cursor: pointer;
+        }
+        .eiw-check-row input, .eiw-radio-row input { margin-top: 4px; flex-shrink: 0; accent-color: var(--brand-blue); width: 18px; height: 18px; }
+        .eiw-inline-input { flex: 1; min-width: 0; margin-top: -2px; }
+        .eiw-nav { display: flex; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid #f0f0f0; }
+        .eiw-btn {
+            flex: 1; padding: 16px 20px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; border: none; font-family: inherit; transition: 0.2s;
+        }
+        .eiw-btn-prev { background: var(--brand-gray); color: var(--text-main); }
+        .eiw-btn-prev:hover:not(:disabled) { background: #e4e6ec; }
+        .eiw-btn-prev:disabled { opacity: 0.45; cursor: not-allowed; }
+        .eiw-btn-next { background: var(--brand-blue); color: #fff; }
+        .eiw-btn-next:hover { background: var(--brand-blue-hover); }
+        .eiw-btn-submit { background: var(--brand-blue); color: #fff; }
+        .eiw-btn-submit:hover { background: var(--brand-blue-hover); }
+
+        /* 푸터 */
+        footer { background: var(--brand-blue); color: rgba(255,255,255,0.6); padding: 80px 5%; text-align: center; font-size: 0.95rem; border-top: 1px solid rgba(255,255,255,0.1); }
+        footer strong { color: white; font-size: 1.2rem; display: block; margin-bottom: 20px; }
+        .footer-links a { color: #fff; text-decoration: underline; margin: 0 10px; }
+        .admin-trigger { position: fixed; bottom: 0; left: 0; width: 100px; height: 100px; z-index: 9999; background: transparent; }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .cursor-arrow { display: none; }
+            * { cursor: auto; }
+            header { padding: 15px 20px; justify-content: space-between; }
+            .nav-links { display: none; }
+            .mobile-menu-btn { display: block; }
+            .hero-container { padding: 120px 20px 80px; border-radius: 0 0 40px 40px; min-height: auto; }
+            .hero h1 { font-size: 2.2rem; margin-bottom: 20px; }
+            .hero p { font-size: 1rem; margin-bottom: 0; }
+            .diagnosis-wrapper { margin-top: -40px; padding: 0 20px; }
+            .diagnosis-grid { grid-template-columns: 1fr; gap: 16px; }
+            .diagnosis-card { padding: 30px 20px; }
+            .diagnosis-card h2 { font-size: 1.15rem; }
+            .diagnosis-icon { font-size: 1.9rem; }
+            .section { padding: 70px 20px; }
+            .section-title { font-size: 1.8rem; margin-bottom: 30px; }
+            #courses .section-title,
+            #store .section-title { font-size: calc(1.8rem - 2pt); }
+            .curriculum-grid, .instructors-grid { grid-template-columns: 1fr; }
+            .store-slider-wrap { justify-content: flex-start; }
+            .store-track-row { flex-wrap: nowrap; justify-content: flex-start; width: max-content; max-width: none; min-width: 0; padding-bottom: 6px; }
+            .store-card { flex: 0 0 min(72vw, 260px); min-width: min(72vw, 260px); max-width: min(72vw, 260px); }
+            a.yt-card { width: 85vw; max-width: 320px; margin-right: 15px; }
+            .calendar-box { height: 400px; }
+            .diagnosis-test-modal { width: 95%; height: 80vh; }
+            .eiw-card { padding: 28px 20px 24px; min-height: 0; }
+            .eiw-step-title { font-size: 1.05rem; }
+            .eiw-nav { flex-direction: column; }
+            
+        }
+        .nav-links a.reel-board-name,
+        .mobile-nav-overlay a.reel-board-name {
+            font-size: 1.35rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 과정진단: 테스트 iframe 모달 -->
+    <div id="diagnosisTestModal" class="diagnosis-test-overlay" role="dialog" aria-modal="true" aria-label="과정 진단" onclick="if(event.target===this)closeDiagnosisTestModal()">
+        <div class="diagnosis-test-modal">
+            <button type="button" class="diagnosis-test-close" onclick="closeDiagnosisTestModal()" aria-label="닫기">×</button>
+            <iframe id="diagnosisTestFrame" title="과정 진단"></iframe>
+        </div>
+    </div>
+
+    <!-- 모바일 메뉴 오버레이 -->
+    <div id="mobileMenu" class="mobile-nav-overlay">
+        <button onclick="toggleMenu()" style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:2rem; cursor:pointer;">&times;</button>
+        <a href="index.html" onclick="toggleMenu()">시작</a>
+        <a href="#top" onclick="toggleMenu()">VCML</a>
+        <a href="moodboard.html" class="reel-board-name" onclick="toggleMenu()">reel board</a>
+        <a href="#diagnosis" onclick="toggleMenu()">과정진단</a>
+        <a href="#courses" onclick="toggleMenu()">교육과정</a>
+        <a href="#store" onclick="toggleMenu()">수강신청</a>
+        <a href="#qna" onclick="toggleMenu()">편집문의</a>
+    </div>
+
+    <div class="cursor-arrow">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 3.5L11.5 21.5L14.5 14.5L21.5 11.5L5.5 3.5Z" /></svg>
+    </div>
+
+    <!-- 헤더 -->
+    <header>
+        <a href="index.html" class="logo" title="시작 화면">VCML</a>
+        
+        <!-- PC 메뉴 -->
+        <nav class="nav-links">
+            <a href="#top">VCML</a>
+            <a href="moodboard.html" class="reel-board-name">reel board</a>
+            <a href="#diagnosis">과정진단</a>
+            <a href="#courses">교육과정</a>
+            <a href="#store">수강신청</a>
+            <a href="#qna">편집문의</a>
+        </nav>
+
+        <!-- 모바일 햄버거 버튼 -->
+        <button class="mobile-menu-btn" onclick="toggleMenu()">☰</button>
+    </header>
+
+    <!-- 1. 히어로 섹션 -->
+    <div class="hero-wrapper" id="top">
+        <section class="hero-container">
+            <div class="hero-bg-circle bg-c1"></div>
+            <div class="hero-bg-circle bg-c2"></div>
+            <div class="hero-content">
+                <h1>실무능력향상은<br>VCML과 함께!</h1>
+                <p>영상 편집의 시작과 끝, VCML이 함께합니다.<br>당신의 목적에 맞는 최적의 커리큘럼을 제안받아보세요.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- 2. 과정진단 (팝업 기능 연결) -->
+    <div class="diagnosis-wrapper" id="diagnosis">
+        <div class="diagnosis-grid">
+            
+            <div class="diagnosis-card">
+                <div class="diagnosis-icon">🎬</div>
+                <h2>나에게 맞는<br>영상 편집 강의는?</h2>
+                <p>프리미어 프로부터 캡컷까지,<br>현재 실력과 목적에 딱 맞는 과정을 추천받으세요.</p>
+                <button type="button" class="btn-diagnosis" onclick="openDiagnosisTestModal('filmmaker_test.html')">영상 과정 추천받기 →</button>
+            </div>
+
+            <div class="diagnosis-card card-coupang">
+                <div class="diagnosis-icon">💰</div>
+                <h2>쿠팡 파트너스<br>수익화 적성 진단</h2>
+                <p>나는 수익화가 가능한 유형일까?<br>트렌드 감각과 멘탈을 3분 만에 진단해 드립니다.</p>
+                <button type="button" class="btn-diagnosis" onclick="openDiagnosisTestModal('coupang_test.html')">수익화 가능성 확인하기 →</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 3. 교육과정 -->
+    <section id="courses" class="section">
+        <div class="section-header">
+            <h2 class="section-title">교육 과정 안내</h2>
+        </div>
+        <div class="curriculum-grid">
+            <div class="course-card course-card-soon">
+                <div class="course-icon">P</div>
+                <h3>Premiere Pro <span class="soon-badge">준비중</span></h3>
+                <p>프리미어 프로 과정은 준비 중입니다. 오픈 시 공지·문의로 안내드립니다.</p>
+                <ul class="course-list">
+                    <li>준비중</li>
+                </ul>
+            </div>
+            <div class="course-card">
+                <div class="course-icon">C</div>
+                <h3>CapCut PC</h3>
+                <p>가장 빠르고 트렌디하게 숏폼을 제작하여 수익을 창출하는 과정입니다.</p>
+                <ul class="course-list">
+                    <li>바이럴 숏폼 제작 (릴스/쇼츠)</li>
+                    <li>쿠팡파트너스 수익화 전략</li>
+                    <li>AI 자동 기능 활용</li>
+                </ul>
+            </div>
+            <div class="course-card">
+                <div class="course-icon">IG</div>
+                <h3>자영업자 인스타그램 활용법</h3>
+                <p>소상공인·자영업자를 위한 인스타그램으로 매출과 단골을 늘리는 실전 과정입니다.</p>
+                <ul class="course-list">
+                    <li>릴스·피드·스토리로 매장·서비스 홍보</li>
+                    <li>비즈니스 계정·인사이트로 성과 측정</li>
+                    <li>콘텐츠 캘린더·DM·댓글 운영 요령</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. 수강신청 -->
+    <section id="store" class="section">
+        <div class="section-header">
+            <h2 class="section-title">수강 신청</h2>
+        </div>
+        <div class="store-slider-wrap" id="storeContainer">
+            <div class="store-track-row" id="storeTrack"></div>
+        </div>
+    </section>
+
+    <!-- 5. 캘린더 -->
+    <section id="schedule" class="section">
+        <div class="section-header">
+            <h2 class="section-title">월간 일정</h2>
+        </div>
+        <div class="calendar-wrapper">
+            <div class="calendar-box">
+                <iframe title="VCML 월간 일정" src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=Asia%2FSeoul&showPrint=0&src=ZG9uZzhjcmVhdGl2ZUBnbWFpbC5jb20&src=YzIwZTY2NWE3NGJhMjEzYjg1NjRmM2JhZmUwZDEwYTAyZDdhZGQ2NDc2ZjFkMDYxZDc4YzBjYjYzNGU3NWVlZkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=a28uc291dGhfa29yZWEjaG9saWRheUBncm91cC52LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%23ff9500&color=%234285f4&color=%237cb342&mode=MONTH" style="border-width:0" width="100%" height="100%" frameborder="0" scrolling="no"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. 유튜브: YOUTUBE_TUTORIAL_VIDEOS 에 url 이 있는 항목만 카드로 생성. 비어 있으면 비활성(칸 없음). -->
+    <section id="youtube" class="youtube-section youtube-section--idle" aria-disabled="true">
+        <div class="yt-header">
+            <h2>영상편집 실제 작업기</h2>
+            <a id="ytChannelLink" class="yt-channel-link" href="#" target="_blank" rel="noopener noreferrer" hidden>채널 더보기 →</a>
+        </div>
+        <div id="ytIdlePanel" class="yt-idle-panel">
+            <p class="yt-idle-msg">작업기 영상 링크가 준비되면 이곳에 표시됩니다.</p>
+        </div>
+        <div class="slider-container" id="ytContainer" hidden>
+            <div class="slider-track yt-track" id="ytTrack"></div>
+        </div>
+    </section>
+
+    <!-- 7. 강사 소개 -->
+    <section id="about" class="section">
+        <div class="section-header">
+            <h2 class="section-title">강사 소개</h2>
+        </div>
+        <div class="instructors-grid">
+            <div class="instructor-card">
+                <img src="profile_01.jpg" onerror="this.onerror=null; this.src='profile_01.png'; this.onerror=function(){this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMTAwNjlGIi8+PC9zdmc+';}" class="profile-img" alt="Lee Dong Heon">
+                <h3 class="instructor-name">Lee Dong Heon</h3>
+                <span class="instructor-role">CEO & Director</span>
+                <p class="instructor-desc">현직 영상 크리에이터 & 전문 교육 강사<br>어도비 국제 공인 전문가 (ACP)</p>
+            </div>
+            <div class="instructor-card">
+                <img src="profile_02.jpg" onerror="this.onerror=null; this.src='profile_02.png'; this.onerror=function(){this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDAwMDgwIi8+PC9zdmc+';}" class="profile-img" alt="Lee Ga Ram">
+                <h3 class="instructor-name">Lee Ga Ram</h3>
+                <span class="instructor-role">Production Instructor</span>
+                <p class="instructor-desc">모션 그래픽 디자인 & 숏폼 기획 전문가<br>유튜브/SNS 바이럴 영상 다수 제작</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. 편집문의 (카드형 단계 작성) -->
+    <section id="qna" class="section">
+        <div class="section-header">
+            <h2 class="section-title">편집문의</h2>
+        </div>
+        <div class="qna-wrapper">
+            <form id="editInquiryForm" class="eiw-card" onsubmit="return false;" novalidate>
+                <div class="eiw-bar" id="eiwProgressBar" role="progressbar" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" aria-label="편집문의 작성 단계">
+                    <span class="eiw-bar-seg" data-step-i="0"></span>
+                    <span class="eiw-bar-seg" data-step-i="1"></span>
+                    <span class="eiw-bar-seg" data-step-i="2"></span>
+                    <span class="eiw-bar-seg" data-step-i="3"></span>
+                    <span class="eiw-bar-seg" data-step-i="4"></span>
+                </div>
+                <h3 class="eiw-step-title">
+                    <span class="eiw-step-badge" id="eiwStepBadge" aria-hidden="true">1</span>
+                    <span class="eiw-step-title-text" id="eiwStepTitle">기본 정보</span>
+                </h3>
+                <p class="eiw-step-sub" id="eiwStepSub">단계별로 입력해 주세요.</p>
+
+                <div class="eiw-panels">
+                    <div class="eiw-panel is-active" data-step="0" role="group" aria-labelledby="eiwStepTitle">
+                        <p class="eiw-q">의뢰인 성함 또는 기업/채널명</p>
+                        <input type="text" id="ew_client_name" class="eiw-input" name="ew_client_name" autocomplete="name" placeholder="성함 또는 기업·채널명" />
+                        <p class="eiw-q">연락 받으실 이메일 및 연락처</p>
+                        <input type="text" id="ew_contact" class="eiw-input" name="ew_contact" autocomplete="email" placeholder="이메일, 휴대폰 등" />
+                    </div>
+
+                    <div class="eiw-panel" data-step="1">
+                        <p class="eiw-q">제작하실 영상의 주된 용도는 무엇인가요? (중복 선택 가능)</p>
+                        <label class="eiw-check-row"><input type="checkbox" id="ew_use_store" /> 매장홍보</label>
+                        <label class="eiw-check-row"><input type="checkbox" id="ew_use_knowledge" /> 지식전달</label>
+                        <label class="eiw-check-row"><input type="checkbox" id="ew_use_meme" /> 밈 / 트랜드 콘텐츠</label>
+                        <label class="eiw-check-row"><input type="checkbox" id="ew_use_event_record" /> 행사기록</label>
+
+                        <p class="eiw-q eiw-q-spaced">최종 완성본의 희망 길이 (숏폼 전용)</p>
+                        <p class="eiw-hint">쇼츠·릴스 등 짧은 영상 단위만 선택할 수 있습니다.</p>
+                        <label class="eiw-radio-row"><input type="radio" name="ew_len" value="15초" /> 15초</label>
+                        <label class="eiw-radio-row"><input type="radio" name="ew_len" value="30초" /> 30초</label>
+                        <label class="eiw-radio-row"><input type="radio" name="ew_len" value="45초" /> 45초</label>
+                        <label class="eiw-radio-row"><input type="radio" name="ew_len" value="59초" /> 59초</label>
+                        <label class="eiw-radio-row"><input type="radio" name="ew_len" value="2분" /> 2분</label>
+                        <label class="eiw-radio-row"><input type="radio" name="ew_len" value="3분" /> 3분</label>
+                    </div>
+
+                    <div class="eiw-panel" data-step="2">
+                        <p class="eiw-q">전달해주실 원본 영상의 총 분량</p>
+                        <p class="eiw-hint">예: 1시간 분량 영상 2개, 총 30분 분량의 컷본 10개 등</p>
+                        <textarea id="ew_source_volume" class="eiw-textarea" name="ew_source_volume" placeholder="원본 분량을 자유롭게 적어 주세요."></textarea>
+
+                        <p class="eiw-q">자막 작업 수준</p>
+                        <label class="eiw-radio-row"><input type="radio" name="ew_subtitle" value="풀 자막 (말하는 모든 내용)" /> 풀 자막 (말하는 모든 내용을 자막으로 삽입)</label>
+                        <label class="eiw-radio-row"><input type="radio" name="ew_subtitle" value="포인트 자막" /> 포인트 자막 (강조·효과음 구간만)</label>
+                        <label class="eiw-radio-row"><input type="radio" name="ew_subtitle" value="자막 불필요" /> 자막 불필요</label>
+
+                        <p class="eiw-q eiw-q-spaced">레퍼런스(참고 영상) 링크</p>
+                        <p class="eiw-hint">컷 템포·자막 스타일·분위기를 파악할 수 있는 링크 1~2개를 기재해 주세요.</p>
+                        <input type="text" id="ew_reference" class="eiw-input" name="ew_reference" placeholder="https://..." />
+                    </div>
+
+                    <div class="eiw-panel" data-step="3">
+                        <p class="eiw-q">최종본 마감일</p>
+                        <input type="date" id="ew_deadline" class="eiw-input" name="ew_deadline" />
+
+                        <p class="eiw-q eiw-q-spaced">예산 범위</p>
+                        <p class="eiw-hint">예산에 맞춰 편집 디테일과 투입 리소스를 조율해 제안해 드립니다.</p>
+                        <input type="text" id="ew_budget" class="eiw-input" name="ew_budget" placeholder="예산 범위를 입력해 주세요" />
+                    </div>
+
+                    <div class="eiw-panel" data-step="4">
+                        <p class="eiw-q">추가 요청 사항</p>
+                        <p class="eiw-hint">브랜드 컬러·폰트, BGM 분위기, 모자이크 등 자유롭게 적어 주세요.</p>
+                        <textarea id="ew_extra" class="eiw-textarea" name="ew_extra" placeholder="기타 요구사항 (선택)"></textarea>
+
+                        <p class="eiw-q eiw-q-spaced">참고 파일 첨부 (선택)</p>
+                        <p class="eiw-hint">레퍼런스 영상·이미지·문서 등을 올릴 수 있습니다. 영상·이미지·오디오, PDF, ZIP, 문서 등. 합계 12MB 이하, 최대 6개.</p>
+                        <div class="eiw-file-wrap">
+                            <input type="file" id="ew_attach" class="eiw-file-native" name="ew_attach" multiple
+                                accept="video/*,image/*,audio/*,.pdf,.zip,.ppt,.pptx,.doc,.docx,.txt,.srt" />
+                            <label for="ew_attach" class="eiw-file-btn">파일 선택</label>
+                            <span class="eiw-file-names" id="ew_attach_names">선택된 파일 없음</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="eiw-nav">
+                    <button type="button" class="eiw-btn eiw-btn-prev" id="eiwBtnPrev" disabled>이전</button>
+                    <button type="button" class="eiw-btn eiw-btn-next" id="eiwBtnNext">다음</button>
+                    <button type="button" class="eiw-btn eiw-btn-submit" id="eiwBtnSubmit" style="display:none;">접수하기</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <p><strong>VCML (Visual & Viral Core Motion Labs)</strong></p>
+        <p>Copyright © 2025 All rights reserved.</p>
+        <div style="margin-top:20px;">
+            <a href="mailto:dong8creative@gmail.com" style="color:white; margin:0 10px;">Email</a>
+            <a href="https://instagram.com/official_vcml" target="_blank" style="color:white; margin:0 10px;">Instagram</a>
+        </div>
+        <a href="./admin.html" class="admin-trigger"></a>
+    </footer>
+
+    <script>
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeDiagnosisTestModal();
+        });
+
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwTi1rM3-8rN6OSYz-UF3390p43X6pVGFtZJbmoEUZm4S4O_uNjjD_dHADmMaP4BqcT_Q/exec";
+
+        const cursor = document.querySelector('.cursor-arrow');
+        document.addEventListener('mousemove', e => {
+            cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+        });
+
+        // 모바일 메뉴 토글
+        function toggleMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+        }
+
+        function openDiagnosisTestModal(url) {
+            var modal = document.getElementById('diagnosisTestModal');
+            var frame = document.getElementById('diagnosisTestFrame');
+            if (!modal || !frame) return;
+            frame.src = url;
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeDiagnosisTestModal() {
+            var modal = document.getElementById('diagnosisTestModal');
+            var frame = document.getElementById('diagnosisTestFrame');
+            if (modal) modal.classList.remove('open');
+            document.body.style.overflow = '';
+            if (frame) setTimeout(function () { frame.src = ''; }, 300);
+        }
+
+        /** 유튜브 채널(선택). 비우면 「채널 더보기」 링크 숨김. */
+        const YOUTUBE_CHANNEL_URL = '';
+        /**
+         * 튜토리얼 카드 — url 필수(유튜브 watch / youtu.be / shorts). 없는 항목은 렌더하지 않음.
+         * 선택: title, views, imgName(로컬 youtube_01 등, 없으면 썸네일은 영상 ID로 자동)
+         */
+        const YOUTUBE_TUTORIAL_VIDEOS = [
+        ];
+
+        function youtubeVideoIdFromUrl(url) {
+            try {
+                var u = new URL(url);
+                var h = u.hostname.replace(/^www\./, '');
+                if (h === 'youtu.be') return (u.pathname.split('/').filter(Boolean)[0] || '').split('?')[0];
+                var v = u.searchParams.get('v');
+                if (v) return v;
+                var m = u.pathname.match(/\/shorts\/([^/?]+)/);
+                if (m) return m[1];
+            } catch (e) { /* ignore */ }
+            return '';
+        }
+
+        (function renderYoutubeTutorialSection() {
+            var section = document.getElementById('youtube');
+            var ytTrack = document.getElementById('ytTrack');
+            var ytContainer = document.getElementById('ytContainer');
+            var idlePanel = document.getElementById('ytIdlePanel');
+            var chLink = document.getElementById('ytChannelLink');
+            if (!section || !ytTrack || !ytContainer || !idlePanel) return;
+
+            var channel = (YOUTUBE_CHANNEL_URL || '').trim();
+            if (chLink) {
+                if (channel && /^https?:\/\//i.test(channel)) {
+                    chLink.href = channel;
+                    chLink.hidden = false;
+                } else {
+                    chLink.hidden = true;
+                }
+            }
+
+            var list = (YOUTUBE_TUTORIAL_VIDEOS || []).filter(function (item) {
+                var u = item && item.url != null ? String(item.url).trim() : '';
+                return u && /^https?:\/\//i.test(u) && youtubeVideoIdFromUrl(u);
+            });
+
+            if (list.length === 0) {
+                section.classList.add('youtube-section--idle');
+                section.setAttribute('aria-disabled', 'true');
+                idlePanel.hidden = false;
+                ytContainer.hidden = true;
+                ytTrack.innerHTML = '';
+                return;
+            }
+
+            section.classList.remove('youtube-section--idle');
+            section.removeAttribute('aria-disabled');
+            idlePanel.hidden = true;
+            ytContainer.hidden = false;
+
+            var ytHtml = '';
+            list.forEach(function (item) {
+                var url = String(item.url).trim();
+                var id = youtubeVideoIdFromUrl(url);
+                var title = (item.title != null && String(item.title).trim()) ? String(item.title).trim() : '튜토리얼';
+                var views = (item.views != null && String(item.views).trim()) ? String(item.views).trim() : '';
+                var imgName = item.imgName != null ? String(item.imgName).trim() : '';
+                var thumbSrc = imgName
+                    ? (imgName + '.jpg')
+                    : ('https://i.ytimg.com/vi/' + id + '/hqdefault.jpg');
+                var onerr = imgName
+                    ? "this.onerror=null; this.src='" + imgName + ".png'; this.onerror=function(){this.src='https://i.ytimg.com/vi/" + id + "/hqdefault.jpg';}"
+                    : "this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMTExIi8+PC9zdmc+';";
+                ytHtml +=
+                    '<a class="yt-card" href="' + url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer">' +
+                    '<div class="yt-thumb"><img src="' + thumbSrc.replace(/"/g, '&quot;') + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="' + onerr + '"></div>' +
+                    '<div class="yt-info"><div class="yt-title">' + title.replace(/</g, '&lt;') + '</div>' +
+                    (views ? '<div class="yt-views">' + views.replace(/</g, '&lt;') + '</div>' : '') +
+                    '</div></a>';
+            });
+            ytTrack.innerHTML = ytHtml;
+            initSlider('ytContainer', 'ytTrack', 60);
+        })();
+
+        // 수강신청 — CapCut Pro 4단계만
+        const storeData = [
+            { tag:"CapCut Pro", title:"CapCut Pro 초급과정", price:"50,000원", desc: "PC 캡컷 입문·기본 컷편집과 숏폼 제작 기초", imgName:"course_01", url:"#" },
+            { tag:"CapCut Pro", title:"CapCut Pro 중급과정", price:"110,000원", desc: "트렌디한 편집·템플릿·효과로 완성도 높이기", imgName:"course_02", url:"#" },
+            { tag:"CapCut Pro", title:"CapCut Pro 마스터", price:"550,000원", desc: "고급 워크플로·수익형 숏폼·실무 수준 마스터", imgName:"course_03", url:"#" },
+            { tag:"CapCut Pro", title:"CapCut Pro 풀코스", price:"880,000원", desc: "초급~마스터 전 과정을 한 번에 — 최대 혜택 패키지", imgName:"course_04", url:"#" }
+        ];
+
+        const storeTrack = document.getElementById('storeTrack');
+        let storeHtml = '';
+        storeData.forEach(item => {
+            storeHtml += `
+                <div class="store-card">
+                    <div class="store-thumb-container">
+                        <img src="${item.imgName}.jpg" 
+                             onerror="this.onerror=null; this.src='${item.imgName}.png'; this.onerror=function(){this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRTJBQjJEIi8+PC9zdmc+';}"
+                             class="store-thumb" alt="${item.title}">
+                    </div>
+                    <div class="store-info">
+                        <span class="store-badge">${item.tag}</span>
+                        <h3 class="store-title">${item.title}</h3>
+                        <p class="store-desc">${item.desc}</p>
+                        <div class="store-footer">
+                            <div class="store-price">${item.price}</div>
+                            <a href="${item.url}" target="_blank" class="btn-store">신청하기</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        storeTrack.innerHTML = storeHtml;
+
+        function initSlider(containerId, trackId, speed = 60) {
+            const container = document.getElementById(containerId);
+            const track = document.getElementById(trackId);
+            track.innerHTML += track.innerHTML + track.innerHTML; 
+            track.style.animationDuration = speed + 's';
+            let isDown=false, startX, scrollLeft;
+            
+            const start = (x) => { isDown=true; startX=x-container.offsetLeft; scrollLeft=container.scrollLeft; track.style.animationPlayState='paused'; };
+            const end = () => { isDown=false; track.style.animationPlayState='running'; };
+            const move = (x) => { if(!isDown) return; const walk=(x-container.offsetLeft-startX)*2; container.scrollLeft = scrollLeft-walk; };
+
+            container.addEventListener('mousedown', e => start(e.pageX));
+            container.addEventListener('mouseleave', end);
+            container.addEventListener('mouseup', end);
+            container.addEventListener('mousemove', e => { e.preventDefault(); move(e.pageX); });
+            container.addEventListener('touchstart', e => start(e.touches[0].pageX));
+            container.addEventListener('touchend', end);
+            container.addEventListener('touchmove', e => move(e.touches[0].pageX));
+        }
+        
+        var editInquiryStep = 0;
+        var EIW_TITLES = ['기본 정보', '프로젝트 개요', '원본 소스 및 작업 범위', '일정 및 예산', '추가 요청 사항'];
+        var EIW_SUBS = [
+            '성함·연락처를 입력해 주세요.',
+            '용도·숏폼 길이를 선택해 주세요.',
+            '원본 분량·자막·레퍼런스를 적어 주세요.',
+            '마감일과 예산을 알려 주세요.',
+            '추가로 전달할 내용이 있으면 적어 주세요.'
+        ];
+
+        function editInquirySetStep(i) {
+            editInquiryStep = Math.max(0, Math.min(4, i));
+            document.querySelectorAll('#editInquiryForm .eiw-panel').forEach(function (el, idx) {
+                el.classList.toggle('is-active', idx === editInquiryStep);
+            });
+            var bar = document.getElementById('eiwProgressBar');
+            if (bar) {
+                bar.setAttribute('aria-valuenow', String(editInquiryStep + 1));
+                bar.querySelectorAll('.eiw-bar-seg').forEach(function (seg, idx) {
+                    seg.classList.toggle('is-filled', idx <= editInquiryStep);
+                    seg.classList.toggle('is-current', idx === editInquiryStep);
+                });
+            }
+            var badge = document.getElementById('eiwStepBadge');
+            var t = document.getElementById('eiwStepTitle');
+            var s = document.getElementById('eiwStepSub');
+            if (badge) badge.textContent = String(editInquiryStep + 1);
+            if (t) t.textContent = EIW_TITLES[editInquiryStep];
+            if (s) s.textContent = EIW_SUBS[editInquiryStep];
+            var prev = document.getElementById('eiwBtnPrev');
+            var next = document.getElementById('eiwBtnNext');
+            var sub = document.getElementById('eiwBtnSubmit');
+            if (prev) prev.disabled = editInquiryStep === 0;
+            if (next) next.style.display = editInquiryStep < 4 ? 'block' : 'none';
+            if (sub) sub.style.display = editInquiryStep === 4 ? 'block' : 'none';
+        }
+
+        function editInquiryValidate(step) {
+            function fail(msg) { alert(msg); return false; }
+            if (step === 0) {
+                if (!(document.getElementById('ew_client_name').value || '').trim()) return fail('의뢰인 성함 또는 기업/채널명을 입력해 주세요.');
+                if (!(document.getElementById('ew_contact').value || '').trim()) return fail('이메일 및 연락처를 입력해 주세요.');
+                return true;
+            }
+            if (step === 1) {
+                var st = document.getElementById('ew_use_store').checked;
+                var kn = document.getElementById('ew_use_knowledge').checked;
+                var mm = document.getElementById('ew_use_meme').checked;
+                var er = document.getElementById('ew_use_event_record').checked;
+                if (!st && !kn && !mm && !er) return fail('영상 용도를 하나 이상 선택해 주세요.');
+                if (!document.querySelector('#editInquiryForm input[name="ew_len"]:checked')) return fail('희망 길이(숏폼)를 선택해 주세요.');
+                return true;
+            }
+            if (step === 2) {
+                if (!(document.getElementById('ew_source_volume').value || '').trim()) return fail('원본 영상 분량을 입력해 주세요.');
+                if (!document.querySelector('#editInquiryForm input[name="ew_subtitle"]:checked')) return fail('자막 작업 수준을 선택해 주세요.');
+                if (!(document.getElementById('ew_reference').value || '').trim()) return fail('레퍼런스 링크를 입력해 주세요.');
+                return true;
+            }
+            if (step === 3) {
+                if (!(document.getElementById('ew_deadline').value || '').trim()) return fail('마감일을 선택해 주세요.');
+                if (!(document.getElementById('ew_budget').value || '').trim()) return fail('예산 범위를 입력해 주세요.');
+                return true;
+            }
+            return true;
+        }
+
+        function editInquiryValidateAll() {
+            for (var s = 0; s <= 3; s++) {
+                if (!editInquiryValidate(s)) {
+                    editInquirySetStep(s);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        var EIW_ATTACH_MAX_BYTES = 12 * 1024 * 1024;
+        var EIW_ATTACH_MAX_FILES = 6;
+
+        function ewFormatBytes(n) {
+            if (n < 1024) return n + ' B';
+            if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+            return (n / 1048576).toFixed(1) + ' MB';
+        }
+
+        function ewGetAttachFiles() {
+            var input = document.getElementById('ew_attach');
+            if (!input || !input.files || !input.files.length) return [];
+            return Array.prototype.slice.call(input.files);
+        }
+
+        function ewAttachSummaryLine() {
+            var files = ewGetAttachFiles();
+            if (!files.length) return '5-2. 첨부 파일: 없음';
+            var parts = files.map(function (f) { return f.name + ' (' + ewFormatBytes(f.size) + ')'; });
+            return '5-2. 첨부 파일: ' + parts.join(', ');
+        }
+
+        function ewUpdateAttachNames() {
+            var el = document.getElementById('ew_attach_names');
+            var input = document.getElementById('ew_attach');
+            if (!el || !input) return;
+            var files = ewGetAttachFiles();
+            if (!files.length) {
+                el.textContent = '선택된 파일 없음';
+                return;
+            }
+            el.textContent = files.map(function (f) { return f.name + ' (' + ewFormatBytes(f.size) + ')'; }).join(' · ');
+        }
+
+        function ewReadFileAsDataURL(file) {
+            return new Promise(function (resolve, reject) {
+                var fr = new FileReader();
+                fr.onload = function () { resolve(fr.result); };
+                fr.onerror = function () { reject(new Error('read')); };
+                fr.readAsDataURL(file);
+            });
+        }
+
+        function ewBuildAttachmentsPayload(files) {
+            var total = files.reduce(function (s, f) { return s + f.size; }, 0);
+            if (files.length > EIW_ATTACH_MAX_FILES) {
+                return Promise.reject(new Error('첨부는 최대 ' + EIW_ATTACH_MAX_FILES + '개까지 가능합니다.'));
+            }
+            if (total > EIW_ATTACH_MAX_BYTES) {
+                return Promise.reject(new Error('첨부 용량 합계가 12MB를 넘습니다. 압축하거나 나누어 주세요.'));
+            }
+            return Promise.all(files.map(function (f) {
+                return ewReadFileAsDataURL(f).then(function (dataUrl) {
+                    var comma = dataUrl.indexOf(',');
+                    var b64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+                    return {
+                        name: f.name,
+                        type: f.type || 'application/octet-stream',
+                        size: f.size,
+                        data: b64
+                    };
+                });
+            }));
+        }
+
+        function buildEditInquiryContent() {
+            var uses = [];
+            if (document.getElementById('ew_use_store').checked) uses.push('매장홍보');
+            if (document.getElementById('ew_use_knowledge').checked) uses.push('지식전달');
+            if (document.getElementById('ew_use_meme').checked) uses.push('밈 / 트랜드 콘텐츠');
+            if (document.getElementById('ew_use_event_record').checked) uses.push('행사기록');
+            var lenEl = document.querySelector('#editInquiryForm input[name="ew_len"]:checked');
+            var lenLine = lenEl ? ('숏폼 ' + lenEl.value) : '';
+            var subEl = document.querySelector('#editInquiryForm input[name="ew_subtitle"]:checked');
+            var lines = [
+                '【편집문의 접수】',
+                '',
+                '[1. 기본 정보]',
+                '1-1. 의뢰인/기업·채널명: ' + (document.getElementById('ew_client_name').value || '').trim(),
+                '1-2. 이메일·연락처: ' + (document.getElementById('ew_contact').value || '').trim(),
+                '',
+                '[2. 프로젝트 개요]',
+                '2-1. 용도: ' + uses.join(', '),
+                '2-2. 희망 길이(숏폼): ' + lenLine,
+                '',
+                '[3. 원본 소스 및 작업 범위]',
+                '3-1. 원본 분량: ' + (document.getElementById('ew_source_volume').value || '').trim(),
+                '3-2. 자막: ' + (subEl ? subEl.value : ''),
+                '3-3. 레퍼런스: ' + (document.getElementById('ew_reference').value || '').trim(),
+                '',
+                '[4. 일정 및 예산]',
+                '4-1. 마감일: ' + (document.getElementById('ew_deadline').value || '').trim(),
+                '4-2. 예산: ' + (document.getElementById('ew_budget').value || '').trim(),
+                '',
+                '[5. 추가 요청]',
+                '5-1. 내용: ' + ((document.getElementById('ew_extra').value || '').trim() || '(없음)'),
+                ewAttachSummaryLine()
+            ];
+            return lines.join('\n');
+        }
+
+        function submitEditInquiry() {
+            if (!editInquiryValidateAll()) return;
+            if (!confirm('편집문의를 접수하시겠습니까?')) return;
+            var subBtn = document.getElementById('eiwBtnSubmit');
+            var prevText = subBtn ? subBtn.textContent : '';
+            function setSubmitBusy(busy) {
+                if (!subBtn) return;
+                subBtn.disabled = busy;
+                subBtn.textContent = busy ? '처리 중…' : prevText;
+            }
+            var files = ewGetAttachFiles();
+            var send = function (attachJson) {
+                var form = new FormData();
+                var name = (document.getElementById('ew_client_name').value || '').trim();
+                var contact = (document.getElementById('ew_contact').value || '').trim();
+                form.append('qnaName', name);
+                form.append('qnaPhone', contact);
+                form.append('qnaTitle', '편집문의');
+                form.append('qnaContent', buildEditInquiryContent());
+                form.append('result_program', '편집문의');
+                if (attachJson) form.append('qnaAttachments', attachJson);
+                fetch(SCRIPT_URL, { method: 'POST', body: form, mode: 'no-cors' })
+                    .then(function () {
+                        alert('접수되었습니다.');
+                        document.getElementById('editInquiryForm').reset();
+                        ewUpdateAttachNames();
+                        editInquirySetStep(0);
+                    })
+                    .catch(function () { alert('오류가 발생했습니다.'); })
+                    .then(function () { setSubmitBusy(false); });
+            };
+            setSubmitBusy(true);
+            if (!files.length) {
+                send(null);
+                return;
+            }
+            ewBuildAttachmentsPayload(files)
+                .then(function (payload) { return send(JSON.stringify(payload)); })
+                .catch(function (err) {
+                    setSubmitBusy(false);
+                    alert(err && err.message ? err.message : '첨부 파일을 읽는 중 오류가 났습니다.');
+                });
+        }
+
+        (function initEditInquiryWizard() {
+            var prev = document.getElementById('eiwBtnPrev');
+            var next = document.getElementById('eiwBtnNext');
+            var sub = document.getElementById('eiwBtnSubmit');
+            var form = document.getElementById('editInquiryForm');
+            if (!prev || !next || !sub || !form) return;
+            prev.addEventListener('click', function () {
+                if (editInquiryStep > 0) editInquirySetStep(editInquiryStep - 1);
+            });
+            next.addEventListener('click', function () {
+                if (!editInquiryValidate(editInquiryStep)) return;
+                editInquirySetStep(editInquiryStep + 1);
+            });
+            sub.addEventListener('click', function () { submitEditInquiry(); });
+            var att = document.getElementById('ew_attach');
+            if (att) att.addEventListener('change', ewUpdateAttachNames);
+            editInquirySetStep(0);
+        })();
+    </script>
+</body>
+</html>

@@ -37,7 +37,7 @@
 
 | 할 일 | 설명 |
 |--------|------|
-| 로컬 미리보기 | 저장소 **루트**에서 `python3 serve_main_site.py` → 브라우저 `http://127.0.0.1:8080/` (포트 변경: `python3 serve_main_site.py 9000` 또는 `VCML_SITE_PORT`). |
+| 로컬 미리보기 | 저장소 **루트**에서 `python3 serve_main_site.py` 또는 **`npm run dev`** → `http://127.0.0.1:8080/` (포트: `python3 serve_main_site.py 9000` / `VCML_SITE_PORT`). |
 | 푸시 | 수정한 `index.html` 을 커밋 후 `vcml.kr` 이 바라보는 브랜치에 푸시. |
 | 반영 확인 | 시크릿 창에서 `https://vcml.kr` 열고, 페이지 소스에서 `vcml-subtitle-app` 의 `content` 가 최신 Run URL인지 확인. |
 

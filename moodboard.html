@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCML | Reel board</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="reelboard-fonts.css" />
+    <style>
+        /* 핀터레스트 홈: 상단(로고+홈·검색·우측), pill 필터, 본문 masonry, 핀 호버(저장/링크), FAB */
+        :root {
+            --p-red: #e60023;
+            --p-bg: #f0f0f0;
+            --p-text: #111;
+            --p-sub: #767676;
+            --pin-w: 220px;
+            --pin-gap: 8px;
+            --radius-p: 20px;
+            --radius-pill: 999px;
+            /* 꺾임(45°) 깊이 고정 → 상·하·좌·우 가운데는 직선이 길어지는 '늘어진' 팔각(챰퍼) */
+            --mb-oct-c: min(0.65rem, 10px, 2.1vmin);
+        }
+        .mb-p-logo, .mb-pill, .mb-tag-chip, .mb-preset-tags label,
+        .mb-header-search, .mb-fab, .mb-save, .mb-ext, .mb-del, .mb-vid-badge,
+        #mbSubmit, .mb-btn-google, .mb-btn-out, .mb-modal-close,
+        #mbUrl, #mbNote, #mbCustomTags {
+            -webkit-clip-path: polygon(
+                var(--mb-oct-c) 0,
+                calc(100% - var(--mb-oct-c)) 0,
+                100% var(--mb-oct-c),
+                100% calc(100% - var(--mb-oct-c)),
+                calc(100% - var(--mb-oct-c)) 100%,
+                var(--mb-oct-c) 100%,
+                0 calc(100% - var(--mb-oct-c)),
+                0 var(--mb-oct-c)
+            );
+            clip-path: polygon(
+                var(--mb-oct-c) 0,
+                calc(100% - var(--mb-oct-c)) 0,
+                100% var(--mb-oct-c),
+                100% calc(100% - var(--mb-oct-c)),
+                calc(100% - var(--mb-oct-c)) 100%,
+                var(--mb-oct-c) 100%,
+                0 calc(100% - var(--mb-oct-c)),
+                0 var(--mb-oct-c)
+            );
+        }
+        .mb-tag-chip, .mb-preset-tags label {
+            --mb-oct-c: max(3px, min(5px, 0.38rem));
+        }
+        .mb-vid-badge, .mb-ext, .mb-del {
+            --mb-oct-c: max(3px, min(4px, 0.32rem));
+        }
+        .mb-p-logo, .mb-header-search, .mb-save, .mb-pill, .mb-btn-google, .mb-btn-out, #mbSubmit, .mb-modal-close {
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+        }
+        .mb-fab {
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+        }
+        .mb-tag-chip, .mb-preset-tags label, #mbUrl, #mbNote, #mbCustomTags, .mb-del, .mb-vid-badge, .mb-ext {
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.06));
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'IBM Plex Sans KR', 'Montserrat', -apple-system, sans-serif;
+            background: var(--p-bg);
+            color: var(--p-text);
+            min-height: 100vh;
+            line-height: 1.4;
+            padding-bottom: 88px;
+        }
+        .mb-layout {
+            display: flex;
+            align-items: stretch;
+            min-height: 100vh;
+        }
+        .mb-main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .mb-rail {
+            flex-shrink: 0;
+            width: 72px;
+            min-height: 100vh;
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            z-index: 350;
+            background: #111;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0 16px;
+            gap: 4px;
+            box-shadow: 1px 0 0 rgba(255,255,255,0.06);
+        }
+        .mb-rail-top {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 8px;
+        }
+        .mb-rail-logo.mb-p-logo {
+            width: 48px;
+            height: 48px;
+            font-size: 1.25rem;
+        }
+        .mb-rail-mark {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.62rem;
+            font-weight: 600;
+            line-height: 1.15;
+            color: #fff;
+            letter-spacing: 0.02em;
+            text-decoration: none;
+            padding: 0 6px;
+            max-width: 100%;
+        }
+        .mb-rail-mark:hover { opacity: 0.9; }
+        .mb-rail-mark .mb-mark-reel {
+            font-weight: 800;
+            font-size: 0.68rem;
+            letter-spacing: 0.04em;
+        }
+        .mb-rail-mark .mb-mark-board {
+            font-weight: 500;
+            text-transform: lowercase;
+            opacity: 0.92;
+        }
+        .mb-rail-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            padding: 0;
+        }
+        .mb-rail-btn .mb-ico {
+            width: 26px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .mb-rail-btn .mb-ico .mb-ico-o {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.75;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .mb-rail-btn .mb-ico .mb-ico-f {
+            fill: currentColor;
+            stroke: none;
+        }
+        .mb-rail-btn:hover { background: rgba(255,255,255,0.1); }
+        .mb-rail-btn:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
+        .mb-rail-spacer { flex: 1; min-height: 12px; }
+        .mb-rail-bottom {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin-top: auto;
+            width: 100%;
+        }
+        #mbConfigWarn {
+            background: #fff3cd; color: #664d00; font-size: 0.86rem; padding: 8px 16px; text-align: center; border-bottom: 1px solid #e6d08c;
+        }
+        #mbConfigWarn code { font-size: 0.85em; }
+        .mb-header {
+            position: sticky; top: 0; z-index: 300;
+            background: #fff;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+        }
+        .mb-header-row {
+            max-width: 100%;
+            padding: 8px 12px 6px;
+            display: flex; align-items: center; gap: 8px 12px;
+        }
+        .mb-p-logo {
+            --mb-oct-c: min(0.5rem, 8px, 1.4vmin);
+            width: 40px; height: 40px;
+            background: var(--p-red);
+            color: #fff; font-weight: 800; font-size: 1.1rem; font-family: 'Montserrat', sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; flex-shrink: 0;
+        }
+        .mb-p-logo:hover { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1)) brightness(0.95); }
+        .mb-header-search {
+            flex: 1; min-width: 0; max-width: min(100%, 720px);
+            margin: 0 auto;
+            display: flex; align-items: center; gap: 10px;
+            background: #e9e9e9; padding: 10px 18px; min-height: 44px;
+        }
+        .mb-header-search:focus-within { background: #e0e0e0; }
+        .mb-search-ico { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.5; }
+        .mb-header-search input {
+            border: none; background: transparent; width: 100%; font: inherit; font-size: 0.95rem; min-width: 0;
+        }
+        .mb-header-search input::placeholder { color: #8e8e8e; }
+        .mb-header-search input:focus { outline: none; }
+        .mb-header-right {
+            display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+        }
+        .mb-header-right a.sub-link {
+            display: none; font-size: 0.8rem; color: var(--p-sub); text-decoration: none; padding: 4px 8px; border-radius: 8px; font-weight: 600;
+        }
+        @media (min-width: 640px) { .mb-header-right a.sub-link { display: inline; } }
+        .mb-header-right a.sub-link:hover { background: #f0f0f0; color: #111; }
+        #mbUserLabel {
+            font-size: 0.78rem; color: var(--p-sub); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .mb-btn { padding: 8px 12px; border-radius: var(--radius-pill); font-weight: 700; font-size: 0.82rem; border: none; cursor: pointer; font-family: inherit; }
+        .mb-btn-google { background: #fff; color: #111; border: 1px solid #d0d0d0; }
+        .mb-btn-out { background: #efefef; color: #111; }
+        .mb-pills-wrap {
+            width: 100%;
+            border-top: 1px solid #efefef;
+            padding: 6px 0 10px;
+        }
+        .mb-pills {
+            display: flex; gap: 8px; overflow-x: auto; padding: 0 12px 4px; scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        }
+        .mb-pills::-webkit-scrollbar { display: none; }
+        .mb-pill {
+            flex: 0 0 auto; scroll-snap-align: start;
+            padding: 8px 18px; border: none; cursor: pointer; font: inherit; font-size: 0.88rem; font-weight: 700;
+            background: #e9e9e9; color: #111; transition: background 0.15s, color 0.15s, filter 0.15s;
+        }
+        .mb-pill:hover { background: #e0e0e0; }
+        .mb-pill.is-active { background: #111; color: #fff; }
+        .mb-masonry-wrap { padding: 0 6px 40px; }
+        #mbGrid {
+            max-width: 2000px; margin: 0 auto;
+            column-width: var(--pin-w);
+            column-count: auto;
+            column-gap: var(--pin-gap);
+            column-fill: balance;
+        }
+        .mb-card {
+            break-inside: avoid; -webkit-column-break-inside: avoid; page-break-inside: avoid;
+            margin-bottom: var(--pin-gap);
+            border-radius: var(--radius-p);
+            position: relative;
+        }
+        .mb-card-inner {
+            background: #fff; border-radius: var(--radius-p);
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .mb-card:hover .mb-card-inner {
+            z-index: 2;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        }
+        .mb-pin-link {
+            text-decoration: none; color: inherit; display: block;
+        }
+        .mb-embed { position: relative; width: 100%; background: #0a0a0a; }
+        .mb-embed--1 { aspect-ratio: 9 / 16; }
+        .mb-embed--2 { aspect-ratio: 9 / 18; }
+        .mb-embed--3 { aspect-ratio: 2 / 3; }
+        .mb-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 1; }
+        .mb-pin-overlay {
+            position: absolute; inset: 0; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 10px; z-index: 3;
+        }
+        .mb-card:hover .mb-pin-overlay { pointer-events: auto; }
+        .mb-pin-ov-t { display: flex; justify-content: flex-end; }
+        .mb-save {
+            pointer-events: auto;
+            background: var(--p-red); color: #fff; border: none; font-weight: 800; font-size: 0.85rem;
+            padding: 10px 18px; cursor: pointer; font-family: inherit;
+            opacity: 0; transform: scale(0.9); transition: opacity 0.2s, transform 0.2s;
+        }
+        .mb-card:hover .mb-save { opacity: 1; transform: scale(1); }
+        .mb-save:hover { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2)) brightness(1.05); }
+        .mb-pin-ov-b { display: flex; justify-content: flex-end; align-items: flex-end; }
+        .mb-ext {
+            pointer-events: auto; width: 40px; height: 40px;
+            background: rgba(255,255,255,0.95); color: #111; display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 1.1rem;
+            opacity: 0; transition: opacity 0.2s; margin-top: auto;
+        }
+        .mb-card:hover .mb-ext { opacity: 1; }
+        .mb-vid-badge {
+            position: absolute; top: 10px; left: 10px; z-index: 4; pointer-events: none;
+            background: rgba(0,0,0,0.65); color: #fff; font-size: 0.65rem; font-weight: 800; padding: 5px 10px; text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .mb-title-line { padding: 8px 10px 6px; font-size: 0.8rem; font-weight: 600; line-height: 1.3; }
+        .mb-title-line:empty { display: none; }
+        .mb-sub-line { padding: 0 10px 10px; font-size: 0.72rem; color: var(--p-sub); }
+        .mb-del {
+            position: absolute; top: 8px; left: 8px; z-index: 4;
+            padding: 6px 10px; font-size: 0.7rem; font-weight: 700; border: none;
+            background: rgba(255,255,255,0.95); color: #111; cursor: pointer; font-family: inherit;
+        }
+        .mb-fab {
+            position: fixed; right: 20px; bottom: 20px; z-index: 400;
+            width: 56px; height: 56px;
+            background: #111; color: #fff; font-size: 1.6rem; font-weight: 300; line-height: 1;
+            border: none; cursor: pointer; font-family: inherit;
+        }
+        .mb-fab:hover { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)) brightness(1.1); }
+        .mb-fab:disabled { opacity: 0.4; cursor: not-allowed; }
+        .mb-modal { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .mb-modal[hidden] { display: none !important; }
+        .mb-modal-back { position: absolute; inset: 0; background: rgba(0,0,0,0.45); }
+        .mb-modal-box {
+            position: relative; width: 100%; max-width: 440px; max-height: 90vh; overflow: auto;
+            background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+        }
+        .mb-modal-box h2 { font-size: 1.1rem; margin-bottom: 16px; }
+        .mb-modal-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border: none; background: #f0f0f0; font-size: 1.2rem; cursor: pointer; line-height: 1; }
+        #mbForm { display: flex; flex-direction: column; gap: 12px; }
+        #mbForm label { font-size: 0.8rem; font-weight: 600; color: var(--p-sub); }
+        #mbForm input:not([type="checkbox"]) { width: 100%; padding: 11px 14px; border: 1px solid #ddd; font: inherit; }
+        #mbForm input:not([type="checkbox"]):focus { outline: 2px solid #ccc; outline-offset: 2px; }
+        #mbSubmit { background: var(--p-red) !important; color: #fff; padding: 12px 16px; border: none; font-weight: 800; cursor: pointer; font-family: inherit; }
+        #mbSubmit:disabled { opacity: 0.5; }
+        .mb-empty, .mb-err {
+            column-span: all; -webkit-column-span: all; text-align: center; padding: 40px 16px; color: var(--p-sub);
+        }
+        .mb-err { color: #b00020; }
+        #mbForm .mb-form-tags-label { display: block; font-size: 0.78rem; font-weight: 600; color: #767676; margin: 6px 0 6px; }
+        .mb-preset-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+        .mb-preset-tags label {
+            display: inline-flex; align-items: center; gap: 5px; font-size: 0.76rem; font-weight: 600; padding: 6px 11px; background: #f3f3f3;
+            cursor: pointer; user-select: none; color: #333;
+        }
+        @supports selector(:has(*)) {
+            .mb-preset-tags label:has(input:checked) { background: #111; color: #fff; }
+        }
+        .mb-preset-tags input { width: 14px; height: 14px; accent-color: #e60023; }
+        #mbForm .mb-custom-tags-hint { font-size: 0.75rem; color: #999; margin: 4px 0 0; }
+        .mb-card-tags { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 10px 6px; }
+        .mb-tag-chip {
+            display: inline-block; font-size: 0.64rem; font-weight: 600; color: #333; background: #e8e8e8; padding: 4px 10px; max-width: 100%;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9rem; line-height: 1.3;
+        }
+    </style>
+    <script src="firebase-config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div id="mbConfigWarn" hidden>
+        <strong>Firebase</strong> — <code>firebase-config.js</code> 를 넣고 Authentication(Google)·Firestore 를 켜 주세요.
+    </div>
+    <div class="mb-layout">
+    <aside class="mb-rail" aria-label="Reel board 메뉴">
+        <div class="mb-rail-top">
+            <a class="mb-p-logo mb-rail-logo" href="moodboard.html" title="Reel board" aria-label="Reel board 홈">R</a>
+            <a class="mb-rail-mark" href="moodboard.html" title="Reel board">
+                <span class="mb-mark-reel">Reel</span>
+                <span class="mb-mark-board">board</span>
+            </a>
+        </div>
+        <button type="button" class="mb-rail-btn" aria-label="홈" title="홈">
+            <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><path class="mb-ico-o" d="M3 10.5L12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>
+        </button>
+        <button type="button" class="mb-rail-btn" aria-label="탐색" title="탐색">
+            <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle class="mb-ico-o" cx="12" cy="12" r="9"/><path class="mb-ico-f" d="M12 7l4 8H8l4-8z"/></svg>
+        </button>
+        <button type="button" class="mb-rail-btn" aria-label="그리드" title="그리드">
+            <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect class="mb-ico-o" x="3" y="3" width="7" height="7" rx="1.5"/><rect class="mb-ico-o" x="14" y="3" width="7" height="7" rx="1.5"/><rect class="mb-ico-o" x="3" y="14" width="7" height="7" rx="1.5"/><rect class="mb-ico-o" x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </button>
+        <button type="button" class="mb-rail-btn" aria-label="만들기" title="만들기">
+            <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><rect class="mb-ico-o" x="4" y="4" width="16" height="16" rx="4"/><path class="mb-ico-o" d="M12 8v8M8 12h8"/></svg>
+        </button>
+        <div class="mb-rail-spacer" aria-hidden="true"></div>
+        <button type="button" class="mb-rail-btn" aria-label="알림" title="알림">
+            <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><path class="mb-ico-o" d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path class="mb-ico-o" d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </button>
+        <button type="button" class="mb-rail-btn" aria-label="메시지" title="메시지">
+            <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><path class="mb-ico-o" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8.5z"/><circle class="mb-ico-f" cx="9" cy="12" r="1"/><circle class="mb-ico-f" cx="12" cy="12" r="1"/><circle class="mb-ico-f" cx="15" cy="12" r="1"/></svg>
+        </button>
+        <div class="mb-rail-bottom">
+            <button type="button" class="mb-rail-btn" aria-label="설정" title="설정">
+                <svg class="mb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle class="mb-ico-o" cx="12" cy="12" r="3"/><path class="mb-ico-o" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </button>
+        </div>
+    </aside>
+    <div class="mb-main">
+    <header class="mb-header">
+        <div class="mb-header-row">
+            <div class="mb-header-search" role="search">
+                <svg class="mb-search-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="search" id="mbSearch" placeholder="보드에서 검색" autocomplete="off" enterkeyhint="search" />
+            </div>
+            <div class="mb-header-right" id="mbAuthBar">
+                <a class="sub-link" href="index.html">시작</a>
+                <a class="sub-link" href="main-site.html">VCML</a>
+                <span id="mbUserLabel" hidden></span>
+                <button type="button" class="mb-btn mb-btn-google" id="mbSignIn">로그인</button>
+                <button type="button" class="mb-btn mb-btn-out" id="mbSignOut" hidden>로그아웃</button>
+            </div>
+        </div>
+        <div class="mb-pills-wrap">
+            <div class="mb-pills" id="mbPills" role="tablist" aria-label="필터">
+                <button type="button" class="mb-pill is-active" data-filter="all" role="tab" aria-selected="true">전체</button>
+                <button type="button" class="mb-pill" data-filter="인기" role="tab" aria-selected="false">인기</button>
+                <button type="button" class="mb-pill" data-filter="reel" role="tab" aria-selected="false">릴스</button>
+                <button type="button" class="mb-pill" data-filter="shorts" role="tab" aria-selected="false">쇼츠</button>
+                <button type="button" class="mb-pill" data-filter="정보전달" role="tab" aria-selected="false">정보전달</button>
+                <button type="button" class="mb-pill" data-filter="유머" role="tab" aria-selected="false">유머</button>
+                <button type="button" class="mb-pill" data-filter="밈" role="tab" aria-selected="false">밈</button>
+                <button type="button" class="mb-pill" data-filter="시각적" role="tab" aria-selected="false">시각적</button>
+                <button type="button" class="mb-pill" data-filter="분위기" role="tab" aria-selected="false">분위기</button>
+                <button type="button" class="mb-pill" data-filter="사랑" role="tab" aria-selected="false">사랑</button>
+            </div>
+        </div>
+    </header>
+    <div class="mb-masonry-wrap">
+        <div id="mbGrid" aria-label="핀 그리드"></div>
+    </div>
+    </div>
+    </div>
+    <button type="button" class="mb-fab" id="mbFab" title="핀 추가" aria-label="핀 추가">+</button>
+    <div id="mbAddModal" class="mb-modal" hidden>
+        <div class="mb-modal-back" data-close="1"></div>
+        <div class="mb-modal-box" role="dialog" aria-modal="true" aria-labelledby="mbModalTitle">
+            <button type="button" class="mb-modal-close" data-close="1" aria-label="닫기">×</button>
+            <h2 id="mbModalTitle">핀 추가</h2>
+            <p style="font-size:0.82rem;color:#767676;margin:-8px 0 4px">릴스·쇼츠 URL만 등록됩니다.</p>
+            <form id="mbForm" hidden>
+                <div>
+                    <label for="mbUrl">URL</label>
+                    <input type="url" id="mbUrl" name="url" required placeholder="instagram.com/reel/… / youtube.com/shorts/…" autocomplete="off" />
+                </div>
+                <div>
+                    <label for="mbNote">제목 (선택)</label>
+                    <input type="text" id="mbNote" name="note" maxlength="200" placeholder="핀에 보일 한 줄" />
+                </div>
+                <span class="mb-form-tags-label">태그 (기본, 복수 선택)</span>
+                <div class="mb-preset-tags" id="mbPresetTags">
+                    <label><input type="checkbox" name="mbPreset" value="인기" /> 인기</label>
+                    <label><input type="checkbox" name="mbPreset" value="정보전달" /> 정보전달</label>
+                    <label><input type="checkbox" name="mbPreset" value="유머" /> 유머</label>
+                    <label><input type="checkbox" name="mbPreset" value="밈" /> 밈</label>
+                    <label><input type="checkbox" name="mbPreset" value="시각적" /> 시각적</label>
+                    <label><input type="checkbox" name="mbPreset" value="분위기" /> 분위기</label>
+                    <label><input type="checkbox" name="mbPreset" value="사랑" /> 사랑</label>
+                </div>
+                <div>
+                    <label for="mbCustomTags">태그 (직접 입력)</label>
+                    <input type="text" id="mbCustomTags" name="customTags" maxlength="300" placeholder="쉼표로 구분 · 예) 일상, 공부, vlog" autocomplete="off" />
+                    <p class="mb-custom-tags-hint">기본 태그 말고만 적어도 됩니다. 32자 이하, 쉼표로 최대 10개.</p>
+                </div>
+                <button type="submit" class="mb-btn" id="mbSubmit">보내기</button>
+            </form>
+        </div>
+    </div>
+    <script src="moodboard.js"></script>
+</body>
+</html>

@@ -283,10 +283,9 @@
             // 팝업 닫기 함수 (부모창 제어)
             const handleClose = () => {
                 if (window.parent && window.parent.closeModal) {
-                    window.parent.closeModal(); // 부모 창(index.html)의 closeModal 함수 실행
+                    window.parent.closeModal(); // 부모 창(main-site.html)의 closeModal
                 } else {
-                    // 혹시 팝업이 아니라 그냥 열렸을 경우를 대비
-                    window.location.href = 'index.html';
+                    window.location.href = 'main-site.html';
                 }
             };
 

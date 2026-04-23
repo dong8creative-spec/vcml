@@ -1,0 +1,9 @@
+{
+  "name": "vcml",
+  "private": true,
+  "description": "VCML 메인 사이트(정적). npm run dev → 로컬 미리보기 서버",
+  "scripts": {
+    "dev": "python3 serve_main_site.py",
+    "start": "python3 serve_main_site.py"
+  }
+}
