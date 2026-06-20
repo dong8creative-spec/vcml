@@ -1590,8 +1590,8 @@ const db = {
   async getAllEditorApplications(status = null) {
     let q = fs.collection('editor_applications')
     if (status) q = q.where('status', '==', status)
-    const snap = await q.orderBy('applied_at', 'desc').get()
-    return snapToArr(snap)
+    const snap = await q.get()
+    return snapToArr(snap).sort((a, b) => (b.applied_at || '').localeCompare(a.applied_at || ''))
   },
   async reviewEditorApplication(appId, status, rejectReason = null) {
     const doc = await fs.collection('editor_applications').doc(appId).get()
