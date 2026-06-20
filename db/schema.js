@@ -1,62 +1,46 @@
-const path = require('path')
-const fs = require('fs')
+const admin = require('firebase-admin')
 const bcrypt = require('bcryptjs')
 
-const DB_PATH = path.join(__dirname, 'tadak.db.json')
-
-// ── JSON 기반 in-memory DB ──
-const tables = {
-  users: [],
-  courses: [],
-  chapters: [],
-  orders: [],
-  enrollments: [],
-  progress: [],
-  reviews: [],
-  coupons: [],
-  consent_logs: [],
-}
-let _ids = {}
-
-function load() {
-  if (fs.existsSync(DB_PATH)) {
-    const data = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'))
-    Object.assign(tables, data.tables || {})
-    Object.assign(_ids, data._ids || {})
-  }
-}
-function save() {
-  fs.writeFileSync(DB_PATH, JSON.stringify({ tables, _ids }, null, 2))
+// ── Firebase Admin 초기화 ──
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId:   process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey:  (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+    }),
+  })
 }
 
-function nextId(table) {
-  _ids[table] = (_ids[table] || 0) + 1
-  return _ids[table]
+const fs = admin.firestore()
+
+function now() { return new Date().toISOString() }
+
+function nextId() {
+  return fs.collection('_').doc().id
 }
 
-load()
-
-// ── 시드 데이터 ──
-function seed() {
-  if (tables.courses.length > 0) return
+// ── 시드 데이터 (최초 1회) ──
+async function seed() {
+  const snap = await fs.collection('courses').limit(1).get()
+  if (!snap.empty) return
 
   const pw = bcrypt.hashSync('admin1234', 10)
-  tables.users.push({ id: nextId('users'), email: 'admin@tadakclass.com', password: pw, name: '관리자', role: 'admin', created_at: now() })
+  await fs.collection('users').add({ email: 'admin@tadakclass.com', password: pw, name: '관리자', role: 'admin', profile_complete: true, marketing_agreed: 0, phone: null, created_at: now() })
   const demoPw = bcrypt.hashSync('demo1234', 10)
-  tables.users.push({ id: nextId('users'), email: 'demo@tadakclass.com', password: demoPw, name: '데모 수강생', role: 'student', created_at: now() })
+  const demoRef = await fs.collection('users').add({ email: 'demo@tadakclass.com', password: demoPw, name: '데모 수강생', role: 'student', profile_complete: true, marketing_agreed: 0, phone: null, created_at: now() })
 
   const courses = [
-    { slug:'premiere-pro', title:'프리미어 프로 완전 정복 — 편집의 모든 것', category:'영상 편집', description:'타임라인 구성부터 색보정·오디오 믹싱까지, 현업 편집자의 실전 워크플로우를 그대로 배웁니다.', thumbnail_icon:'ti-cut', thumb_style:'dark', price:120000, sale_price:89000, badge:'BEST', rating:4.9, review_count:1240, student_count:1240, is_published:1 },
-    { slug:'after-effects', title:'After Effects 모션그래픽 실전 마스터', category:'모션그래픽', description:'키프레임부터 익스프레션, 3D 레이어까지 — 방송·광고 현장에서 쓰는 모션그래픽을 만듭니다.', thumbnail_icon:'ti-sparkles', thumb_style:'light', price:130000, sale_price:99000, badge:'BEST', rating:4.9, review_count:987, student_count:987, is_published:1 },
-    { slug:'davinci-color', title:'다빈치 리졸브 색보정 — 시네마틱 룩 완성', category:'색보정', description:'로그 영상 해석부터 커스텀 LUT 제작까지, 영화 같은 색감을 만드는 색보정 전 과정을 다룹니다.', thumbnail_icon:'ti-color-swatch', thumb_style:'dark', price:99000, sale_price:79000, badge:null, rating:4.8, review_count:763, student_count:763, is_published:1 },
-    { slug:'youtube-production', title:'유튜브 채널 영상 제작 A to Z', category:'유튜브·콘텐츠', description:'기획·촬영·편집·썸네일까지 구독자를 늘리는 유튜브 영상의 전 제작 과정을 익힙니다.', thumbnail_icon:'ti-brand-youtube', thumb_style:'light', price:89000, sale_price:69000, badge:'NEW', rating:4.8, review_count:521, student_count:521, is_published:1 },
-    { slug:'shortform', title:'숏폼 영상 제작 — 릴스·틱톡·쇼츠 완성', category:'유튜브·콘텐츠', description:'15~60초 안에 시선을 붙잡는 숏폼 편집 공식과 바이럴 전략을 배웁니다.', thumbnail_icon:'ti-device-mobile-vibration', thumb_style:'dark', price:79000, sale_price:59000, badge:'NEW', rating:4.7, review_count:412, student_count:412, is_published:1 },
-    { slug:'camera-lighting', title:'촬영 & 조명 기초 — 카메라를 제대로 다루는 법', category:'촬영·조명', description:'노출·화이트밸런스·심도부터 원포인트 조명 세팅까지 혼자서도 퀄리티 높은 영상을 찍는 법을 알려줍니다.', thumbnail_icon:'ti-camera', thumb_style:'light', price:99000, sale_price:79000, badge:null, rating:4.8, review_count:634, student_count:634, is_published:1 },
-    { slug:'commercial-video', title:'광고·상업 영상 제작 실전 클래스', category:'광고·상업', description:'브랜드 필름부터 제품 광고까지 — 클라이언트 납품 수준의 상업 영상을 처음부터 끝까지 만듭니다.', thumbnail_icon:'ti-movie', thumb_style:'dark', price:149000, sale_price:119000, badge:null, rating:4.9, review_count:389, student_count:389, is_published:1 },
-    { slug:'drone-video', title:'드론 영상 촬영·편집 완성', category:'드론·항공', description:'드론 조종 기초부터 항공 푸티지 편집, 시네마틱 드론 샷 연출법까지 한 번에 배웁니다.', thumbnail_icon:'ti-drone', thumb_style:'light', price:119000, sale_price:89000, badge:null, rating:4.7, review_count:298, student_count:298, is_published:1 },
-    { slug:'sound-design', title:'영상 사운드 디자인 — 음악·효과음·믹싱', category:'사운드', description:'BGM 선곡·편집부터 폴리 효과음 제작, 오디오 믹싱까지 영상의 완성도를 높이는 사운드 전 과정을 다룹니다.', thumbnail_icon:'ti-music', thumb_style:'dark', price:89000, sale_price:69000, badge:null, rating:4.8, review_count:276, student_count:276, is_published:1 },
+    { slug:'premiere-pro', title:'프리미어 프로 완전 정복 — 편집의 모든 것', category:'영상 편집', description:'타임라인 구성부터 색보정·오디오 믹싱까지, 현업 편집자의 실전 워크플로우를 그대로 배웁니다.', thumbnail_icon:'ti-cut', thumb_style:'dark', price:120000, sale_price:89000, badge:'BEST', rating:4.9, review_count:1240, student_count:1240, is_published:1, course_type:'recorded' },
+    { slug:'after-effects', title:'After Effects 모션그래픽 실전 마스터', category:'모션그래픽', description:'키프레임부터 익스프레션, 3D 레이어까지 — 방송·광고 현장에서 쓰는 모션그래픽을 만듭니다.', thumbnail_icon:'ti-sparkles', thumb_style:'light', price:130000, sale_price:99000, badge:'BEST', rating:4.9, review_count:987, student_count:987, is_published:1, course_type:'recorded' },
+    { slug:'davinci-color', title:'다빈치 리졸브 색보정 — 시네마틱 룩 완성', category:'색보정', description:'로그 영상 해석부터 커스텀 LUT 제작까지, 영화 같은 색감을 만드는 색보정 전 과정을 다룹니다.', thumbnail_icon:'ti-color-swatch', thumb_style:'dark', price:99000, sale_price:79000, badge:null, rating:4.8, review_count:763, student_count:763, is_published:1, course_type:'recorded' },
+    { slug:'youtube-production', title:'유튜브 채널 영상 제작 A to Z', category:'유튜브·콘텐츠', description:'기획·촬영·편집·썸네일까지 구독자를 늘리는 유튜브 영상의 전 제작 과정을 익힙니다.', thumbnail_icon:'ti-brand-youtube', thumb_style:'light', price:89000, sale_price:69000, badge:'NEW', rating:4.8, review_count:521, student_count:521, is_published:1, course_type:'recorded' },
+    { slug:'shortform', title:'숏폼 영상 제작 — 릴스·틱톡·쇼츠 완성', category:'유튜브·콘텐츠', description:'15~60초 안에 시선을 붙잡는 숏폼 편집 공식과 바이럴 전략을 배웁니다.', thumbnail_icon:'ti-device-mobile-vibration', thumb_style:'dark', price:79000, sale_price:59000, badge:'NEW', rating:4.7, review_count:412, student_count:412, is_published:1, course_type:'recorded' },
+    { slug:'camera-lighting', title:'촬영 & 조명 기초 — 카메라를 제대로 다루는 법', category:'촬영·조명', description:'노출·화이트밸런스·심도부터 원포인트 조명 세팅까지 혼자서도 퀄리티 높은 영상을 찍는 법을 알려줍니다.', thumbnail_icon:'ti-camera', thumb_style:'light', price:99000, sale_price:79000, badge:null, rating:4.8, review_count:634, student_count:634, is_published:1, course_type:'recorded' },
+    { slug:'commercial-video', title:'광고·상업 영상 제작 실전 클래스', category:'광고·상업', description:'브랜드 필름부터 제품 광고까지 — 클라이언트 납품 수준의 상업 영상을 처음부터 끝까지 만듭니다.', thumbnail_icon:'ti-movie', thumb_style:'dark', price:149000, sale_price:119000, badge:null, rating:4.9, review_count:389, student_count:389, is_published:1, course_type:'recorded' },
+    { slug:'drone-video', title:'드론 영상 촬영·편집 완성', category:'드론·항공', description:'드론 조종 기초부터 항공 푸티지 편집, 시네마틱 드론 샷 연출법까지 한 번에 배웁니다.', thumbnail_icon:'ti-drone', thumb_style:'light', price:119000, sale_price:89000, badge:null, rating:4.7, review_count:298, student_count:298, is_published:1, course_type:'recorded' },
+    { slug:'sound-design', title:'영상 사운드 디자인 — 음악·효과음·믹싱', category:'사운드', description:'BGM 선곡·편집부터 폴리 효과음 제작, 오디오 믹싱까지 영상의 완성도를 높이는 사운드 전 과정을 다룹니다.', thumbnail_icon:'ti-music', thumb_style:'dark', price:89000, sale_price:69000, badge:null, rating:4.8, review_count:276, student_count:276, is_published:1, course_type:'recorded' },
   ]
-  for (const c of courses) tables.courses.push({ id: nextId('courses'), ...c, created_at: now() })
 
   const chapterDefs = {
     'premiere-pro': [
@@ -87,201 +71,249 @@ function seed() {
     ],
   }
 
-  for (const [slug, chs] of Object.entries(chapterDefs)) {
-    const course = tables.courses.find(c => c.slug === slug)
-    if (!course) continue
-    chs.forEach((ch, i) => {
-      tables.chapters.push({ id: nextId('chapters'), course_id: course.id, order_num: i+1, title: ch.t, duration: ch.d, is_free: ch.free, video_url: null })
-    })
-  }
-
-  // 기본 챕터 없는 강의에 샘플 챕터 추가
-  for (const course of tables.courses) {
-    const existing = tables.chapters.filter(ch => ch.course_id === course.id)
-    if (existing.length === 0) {
-      tables.chapters.push({ id: nextId('chapters'), course_id: course.id, order_num: 1, title: '강의 소개', duration: '10분', is_free: 1, video_url: null })
-      tables.chapters.push({ id: nextId('chapters'), course_id: course.id, order_num: 2, title: '핵심 내용 1강', duration: '30분', is_free: 0, video_url: null })
-      tables.chapters.push({ id: nextId('chapters'), course_id: course.id, order_num: 3, title: '핵심 내용 2강', duration: '35분', is_free: 0, video_url: null })
+  for (const c of courses) {
+    const ref = await fs.collection('courses').add({ ...c, created_at: now() })
+    const chs = chapterDefs[c.slug] || [
+      { t:'강의 소개', d:'10분', free:1 },
+      { t:'핵심 내용 1강', d:'30분', free:0 },
+      { t:'핵심 내용 2강', d:'35분', free:0 },
+    ]
+    for (let i = 0; i < chs.length; i++) {
+      await fs.collection('chapters').add({ course_id: ref.id, order_num: i+1, title: chs[i].t, duration: chs[i].d, is_free: chs[i].free, video_url: null })
+    }
+    if (c.slug === 'premiere-pro') {
+      await fs.collection('enrollments').add({ user_id: demoRef.id, course_id: ref.id, enrolled_at: now() })
+      await fs.collection('orders').add({ user_id: demoRef.id, course_id: ref.id, amount: c.sale_price, discount: 0, method: '카카오페이', status: 'paid', paid_at: now() })
     }
   }
-
-  // 데모 수강생 등록
-  const demo = tables.users.find(u => u.email === 'demo@tadakclass.com')
-  const firstCourse = tables.courses.find(c => c.slug === 'premiere-pro')
-  if (demo && firstCourse) {
-    tables.enrollments.push({ id: nextId('enrollments'), user_id: demo.id, course_id: firstCourse.id, enrolled_at: now() })
-    tables.orders.push({ id: nextId('orders'), user_id: demo.id, course_id: firstCourse.id, amount: firstCourse.sale_price, method: '카카오페이', status: 'paid', paid_at: now() })
-  }
-
-  save()
+  console.log('✓ Firestore 시드 데이터 완료')
 }
 
-seed()
+// ── 헬퍼 ──
+function docToObj(doc) { return doc.exists ? { id: doc.id, ...doc.data() } : null }
+function snapToArr(snap) { return snap.docs.map(d => ({ id: d.id, ...d.data() })) }
 
-function now() { return new Date().toLocaleString('ko-KR') }
-
-// ── DB API (better-sqlite3 호환 인터페이스) ──
+// ── DB API ──
 const db = {
-  tables, save,
-
   // users
-  findUserByEmail(email) { return tables.users.find(u => u.email === email) },
-  findUserById(id) { return tables.users.find(u => u.id === id) },
-  findUserByKakaoId(kakaoId) { return tables.users.find(u => u.kakao_id === String(kakaoId)) },
-  createUser(email, password, name) {
-    const user = { id: nextId('users'), email, password, name, role: 'student', profile_complete: true, marketing_agreed: 0, marketing_agreed_at: null, phone: null, created_at: now() }
-    tables.users.push(user); save(); return user
+  async findUserByEmail(email) {
+    const snap = await fs.collection('users').where('email', '==', email).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
   },
-  createKakaoUser(kakaoId, email, name) {
-    const user = { id: nextId('users'), kakao_id: String(kakaoId), email: email || null, password: null, name, role: 'student', profile_complete: false, marketing_agreed: 0, marketing_agreed_at: null, phone: null, created_at: now() }
-    tables.users.push(user); save(); return user
+  async findUserById(id) {
+    const doc = await fs.collection('users').doc(id).get()
+    return docToObj(doc)
   },
-  linkKakaoId(userId, kakaoId) {
-    const u = tables.users.find(u => u.id === userId)
-    if (u) { u.kakao_id = String(kakaoId); save() }
+  async findUserByKakaoId(kakaoId) {
+    const snap = await fs.collection('users').where('kakao_id', '==', String(kakaoId)).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
   },
-  completeProfile(userId, { name, email, phone, marketing_agreed, ip }) {
-    const u = tables.users.find(u => u.id === userId)
-    if (!u) return null
-    if (name) u.name = name
-    if (email) u.email = email
-    if (phone) u.phone = phone
-    u.profile_complete = true
-    if (marketing_agreed && !u.marketing_agreed) {
-      u.marketing_agreed = 1
-      u.marketing_agreed_at = new Date().toISOString()
-      tables.consent_logs.push({
-        id: nextId('consent_logs'), user_id: userId,
-        type: 'marketing_sms', agreed: 1,
-        agreed_at: new Date().toISOString(), ip: ip || null,
-      })
+  async createUser(email, password, name) {
+    const data = { email, password, name, role: 'student', profile_complete: true, marketing_agreed: 0, marketing_agreed_at: null, phone: null, created_at: now() }
+    const ref = await fs.collection('users').add(data)
+    return { id: ref.id, ...data }
+  },
+  async createKakaoUser(kakaoId, email, name) {
+    const data = { kakao_id: String(kakaoId), email: email || null, password: null, name, role: 'student', profile_complete: false, marketing_agreed: 0, marketing_agreed_at: null, phone: null, created_at: now() }
+    const ref = await fs.collection('users').add(data)
+    return { id: ref.id, ...data }
+  },
+  async linkKakaoId(userId, kakaoId) {
+    await fs.collection('users').doc(userId).update({ kakao_id: String(kakaoId) })
+  },
+  async completeProfile(userId, { name, email, phone, marketing_agreed, ip }) {
+    const update = { profile_complete: true }
+    if (name) update.name = name
+    if (email) update.email = email
+    if (phone) update.phone = phone
+    if (marketing_agreed) {
+      update.marketing_agreed = 1
+      update.marketing_agreed_at = new Date().toISOString()
+      await fs.collection('consent_logs').add({ user_id: userId, type: 'marketing_sms', agreed: 1, agreed_at: new Date().toISOString(), ip: ip || null })
     }
-    save(); return u
+    await fs.collection('users').doc(userId).update(update)
+    return db.findUserById(userId)
   },
-  revokeMarketing(userId, ip) {
-    const u = tables.users.find(u => u.id === userId)
-    if (!u) return
-    u.marketing_agreed = 0
-    tables.consent_logs.push({
-      id: nextId('consent_logs'), user_id: userId,
-      type: 'marketing_sms', agreed: 0,
-      agreed_at: new Date().toISOString(), ip: ip || null,
-    })
-    save()
-  },
-
-  // coupons
-  createCoupon(userId, amount, reason) {
-    const code = 'TADAK' + String(Date.now()).slice(-7) + Math.random().toString(36).slice(2,5).toUpperCase()
-    const coupon = { id: nextId('coupons'), user_id: userId, code, amount, reason, status: 'available', created_at: now(), used_at: null }
-    tables.coupons.push(coupon); save(); return coupon
-  },
-  getCouponsByUser(userId) { return tables.coupons.filter(c => c.user_id === userId) },
-  getCouponByCode(code) { return tables.coupons.find(c => c.code === code) },
-  useCoupon(couponId, orderId) {
-    const c = tables.coupons.find(c => c.id === couponId)
-    if (!c || c.status !== 'available') return false
-    c.status = 'used'; c.used_at = now(); c.order_id = orderId; save(); return true
+  async revokeMarketing(userId, ip) {
+    await fs.collection('users').doc(userId).update({ marketing_agreed: 0 })
+    await fs.collection('consent_logs').add({ user_id: userId, type: 'marketing_sms', agreed: 0, agreed_at: new Date().toISOString(), ip: ip || null })
   },
 
   // courses
-  getCourses(publishedOnly = true) { return tables.courses.filter(c => !publishedOnly || c.is_published) },
-  getCourseBySlug(slug) { return tables.courses.find(c => c.slug === slug) },
-  getCourseById(id) { return tables.courses.find(c => c.id === id) },
-  updateCourse(id, data) {
-    const c = tables.courses.find(c => c.id === id); if (!c) return
-    Object.assign(c, data); save()
+  async getCourses(publishedOnly = true) {
+    let q = fs.collection('courses')
+    if (publishedOnly) q = q.where('is_published', '==', 1)
+    const snap = await q.get()
+    return snapToArr(snap)
   },
-  createLiveCourse({ title, description, category, thumbnail_icon, live_schedule, meet_code }) {
-    const course = {
-      id: nextId('courses'),
-      slug: 'live-' + Date.now(),
-      title, description, category,
-      thumbnail_icon: thumbnail_icon || 'ti-broadcast',
-      thumb_style: 'dark',
-      price: 0, sale_price: 0,
-      badge: 'LIVE',
-      rating: 0, review_count: 0, student_count: 0,
-      is_published: 1,
-      course_type: 'live',
-      live_schedule: live_schedule || null,
-      meet_code: meet_code || null,
-      live_status: 'upcoming',
-      created_at: now(),
-    }
-    tables.courses.push(course); save(); return course
+  async getCourseBySlug(slug) {
+    const snap = await fs.collection('courses').where('slug', '==', slug).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
   },
-  getEnrollmentsByCourse(courseId) { return tables.enrollments.filter(e => e.course_id === courseId) },
+  async getCourseById(id) {
+    const doc = await fs.collection('courses').doc(id).get()
+    return docToObj(doc)
+  },
+  async updateCourse(id, data) {
+    await fs.collection('courses').doc(id).update(data)
+  },
+  async createLiveCourse({ title, description, category, thumbnail_icon, live_schedule, meet_code }) {
+    const slug = 'live-' + Date.now()
+    const data = { slug, title, description: description || '', category, thumbnail_icon: thumbnail_icon || 'ti-broadcast', thumb_style: 'dark', price: 0, sale_price: 0, badge: 'LIVE', rating: 0, review_count: 0, student_count: 0, is_published: 1, course_type: 'live', live_schedule: live_schedule || null, meet_code: meet_code || null, live_status: 'upcoming', created_at: now() }
+    const ref = await fs.collection('courses').add(data)
+    return { id: ref.id, ...data }
+  },
 
   // chapters
-  getChaptersByCourse(courseId) { return tables.chapters.filter(ch => ch.course_id === courseId).sort((a,b) => a.order_num - b.order_num) },
-  getChapterById(id) { return tables.chapters.find(ch => ch.id === id) },
+  async getChaptersByCourse(courseId) {
+    const snap = await fs.collection('chapters').where('course_id', '==', courseId).orderBy('order_num').get()
+    return snapToArr(snap)
+  },
+  async getChapterById(id) {
+    const doc = await fs.collection('chapters').doc(id).get()
+    return docToObj(doc)
+  },
 
   // enrollments
-  isEnrolled(userId, courseId) { return !!tables.enrollments.find(e => e.user_id === userId && e.course_id === courseId) },
-  enroll(userId, courseId) {
-    if (db.isEnrolled(userId, courseId)) return
-    tables.enrollments.push({ id: nextId('enrollments'), user_id: userId, course_id: courseId, enrolled_at: now() }); save()
+  async isEnrolled(userId, courseId) {
+    const snap = await fs.collection('enrollments').where('user_id', '==', userId).where('course_id', '==', courseId).limit(1).get()
+    return !snap.empty
   },
-  getEnrollmentsByUser(userId) { return tables.enrollments.filter(e => e.user_id === userId) },
+  async enroll(userId, courseId) {
+    const already = await db.isEnrolled(userId, courseId)
+    if (already) return
+    await fs.collection('enrollments').add({ user_id: userId, course_id: courseId, enrolled_at: now() })
+  },
+  async getEnrollmentsByUser(userId) {
+    const snap = await fs.collection('enrollments').where('user_id', '==', userId).get()
+    return snapToArr(snap)
+  },
+  async getEnrollmentsByCourse(courseId) {
+    const snap = await fs.collection('enrollments').where('course_id', '==', courseId).get()
+    return snapToArr(snap)
+  },
 
   // orders
-  createOrder(userId, courseId, amount, method, discount = 0) {
-    const order = { id: nextId('orders'), user_id: userId, course_id: courseId, amount, discount, method, status: 'paid', paid_at: now() }
-    tables.orders.push(order); save(); return order
+  async createOrder(userId, courseId, amount, method, discount = 0) {
+    const data = { user_id: userId, course_id: courseId, amount, discount, method, status: 'paid', paid_at: now() }
+    const ref = await fs.collection('orders').add(data)
+    return { id: ref.id, ...data }
   },
-  getOrdersByUser(userId) { return tables.orders.filter(o => o.user_id === userId) },
-  getAllOrders() { return [...tables.orders].reverse() },
+  async getOrdersByUser(userId) {
+    const snap = await fs.collection('orders').where('user_id', '==', userId).get()
+    return snapToArr(snap)
+  },
+  async getAllOrders() {
+    const snap = await fs.collection('orders').orderBy('paid_at', 'desc').get()
+    return snapToArr(snap)
+  },
 
   // progress
-  getProgress(userId, chapterId) { return tables.progress.find(p => p.user_id === userId && p.chapter_id === chapterId) },
-  getProgressByCourse(userId, courseId) {
-    const chIds = tables.chapters.filter(ch => ch.course_id === courseId).map(ch => ch.id)
-    return tables.progress.filter(p => p.user_id === userId && chIds.includes(p.chapter_id))
+  async getProgress(userId, chapterId) {
+    const snap = await fs.collection('progress').where('user_id', '==', userId).where('chapter_id', '==', chapterId).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
   },
-  upsertProgress(userId, chapterId, completed, watchedSec) {
-    const existing = db.getProgress(userId, chapterId)
-    if (existing) { existing.completed = completed ? 1 : 0; existing.watched_sec = watchedSec; existing.updated_at = now() }
-    else tables.progress.push({ id: nextId('progress'), user_id: userId, chapter_id: chapterId, completed: completed?1:0, watched_sec: watchedSec, updated_at: now() })
-    save()
+  async getProgressByCourse(userId, courseId) {
+    const chapters = await db.getChaptersByCourse(courseId)
+    const chIds = chapters.map(c => c.id)
+    const snap = await fs.collection('progress').where('user_id', '==', userId).get()
+    return snapToArr(snap).filter(p => chIds.includes(p.chapter_id))
+  },
+  async upsertProgress(userId, chapterId, completed, watchedSec) {
+    const existing = await db.getProgress(userId, chapterId)
+    if (existing) {
+      await fs.collection('progress').doc(existing.id).update({ completed: completed ? 1 : 0, watched_sec: watchedSec, updated_at: now() })
+    } else {
+      await fs.collection('progress').add({ user_id: userId, chapter_id: chapterId, completed: completed ? 1 : 0, watched_sec: watchedSec, updated_at: now() })
+    }
   },
 
   // reviews
-  getReviews(courseId) { return tables.reviews.filter(r => r.course_id === courseId && r.is_public) },
-  getAllReviews() { return [...tables.reviews].reverse() },
-  upsertReview(userId, courseId, rating, content) {
-    const existing = tables.reviews.find(r => r.user_id === userId && r.course_id === courseId)
-    if (existing) { existing.rating = rating; existing.content = content }
-    else tables.reviews.push({ id: nextId('reviews'), user_id: userId, course_id: courseId, rating, content, is_public: 1, created_at: now() })
-    const pub = tables.reviews.filter(r => r.course_id === courseId && r.is_public)
-    const avg = pub.reduce((s,r) => s+r.rating, 0) / (pub.length||1)
-    const course = db.getCourseById(courseId)
-    if (course) { course.rating = Math.round(avg*10)/10; course.review_count = pub.length }
-    save()
+  async getReviews(courseId) {
+    const snap = await fs.collection('reviews').where('course_id', '==', courseId).where('is_public', '==', 1).get()
+    return snapToArr(snap)
   },
-  deleteReview(id) { const i = tables.reviews.findIndex(r => r.id === id); if (i>=0) { tables.reviews.splice(i,1); save() } },
-  updateReviewPublic(id, isPublic) { const r = tables.reviews.find(r => r.id === id); if (r) { r.is_public = isPublic?1:0; save() } },
+  async getAllReviews() {
+    const snap = await fs.collection('reviews').orderBy('created_at', 'desc').get()
+    return snapToArr(snap)
+  },
+  async upsertReview(userId, courseId, rating, content) {
+    const snap = await fs.collection('reviews').where('user_id', '==', userId).where('course_id', '==', courseId).limit(1).get()
+    if (!snap.empty) {
+      await fs.collection('reviews').doc(snap.docs[0].id).update({ rating, content })
+    } else {
+      await fs.collection('reviews').add({ user_id: userId, course_id: courseId, rating, content, is_public: 1, created_at: now() })
+    }
+    const pub = await db.getReviews(courseId)
+    const avg = pub.reduce((s, r) => s + r.rating, 0) / (pub.length || 1)
+    await db.updateCourse(courseId, { rating: Math.round(avg * 10) / 10, review_count: pub.length })
+  },
+  async deleteReview(id) {
+    await fs.collection('reviews').doc(id).delete()
+  },
+  async updateReviewPublic(id, isPublic) {
+    await fs.collection('reviews').doc(id).update({ is_public: isPublic ? 1 : 0 })
+  },
+
+  // coupons
+  async createCoupon(userId, amount, reason) {
+    const code = 'TADAK' + String(Date.now()).slice(-7) + Math.random().toString(36).slice(2,5).toUpperCase()
+    const data = { user_id: userId, code, amount, reason, status: 'available', created_at: now(), used_at: null }
+    const ref = await fs.collection('coupons').add(data)
+    return { id: ref.id, ...data }
+  },
+  async getCouponsByUser(userId) {
+    const snap = await fs.collection('coupons').where('user_id', '==', userId).get()
+    return snapToArr(snap)
+  },
+  async getCouponByCode(code) {
+    const snap = await fs.collection('coupons').where('code', '==', code).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+  },
+  async useCoupon(couponId, orderId) {
+    const doc = await fs.collection('coupons').doc(couponId).get()
+    if (!doc.exists || doc.data().status !== 'available') return false
+    await fs.collection('coupons').doc(couponId).update({ status: 'used', used_at: now(), order_id: orderId })
+    return true
+  },
 
   // admin stats
-  getStats() {
-    const now = new Date(); const m = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0')
-    const monthOrders = tables.orders.filter(o => o.status === 'paid' && o.paid_at && o.paid_at.startsWith(m.replace('-','년 ')+'월'))
-    const revenue = tables.orders.filter(o=>o.status==='paid').reduce((s,o)=>s+o.amount, 0)
+  async getStats() {
+    const [orders, enrollments, users] = await Promise.all([
+      fs.collection('orders').where('status', '==', 'paid').get(),
+      fs.collection('enrollments').get(),
+      fs.collection('users').where('role', '==', 'student').get(),
+    ])
+    const revenue = orders.docs.reduce((s, d) => s + (d.data().amount || 0), 0)
     return {
       revenue,
-      newStudents: tables.enrollments.length,
-      orderCount: tables.orders.filter(o=>o.status==='paid').length,
-      refundPending: tables.orders.filter(o=>o.status==='refund_pending').length,
-      totalStudents: tables.users.filter(u=>u.role==='student').length,
+      newStudents: enrollments.size,
+      orderCount: orders.size,
+      refundPending: 0,
+      totalStudents: users.size,
     }
   },
-  getAllStudents() {
-    return tables.users.filter(u=>u.role==='student').map(u => ({
-      ...u,
-      course_count: tables.enrollments.filter(e=>e.user_id===u.id).length,
-      total_paid: tables.orders.filter(o=>o.user_id===u.id&&o.status==='paid').reduce((s,o)=>s+o.amount,0),
+  async getAllStudents() {
+    const snap = await fs.collection('users').where('role', '==', 'student').get()
+    return Promise.all(snap.docs.map(async d => {
+      const u = { id: d.id, ...d.data() }
+      const [enr, ord] = await Promise.all([
+        fs.collection('enrollments').where('user_id', '==', u.id).get(),
+        fs.collection('orders').where('user_id', '==', u.id).where('status', '==', 'paid').get(),
+      ])
+      return { ...u, course_count: enr.size, total_paid: ord.docs.reduce((s, o) => s + (o.data().amount || 0), 0) }
+    }))
+  },
+  async getCourseStats() {
+    const courses = await db.getCourses(false)
+    return Promise.all(courses.map(async c => {
+      const snap = await fs.collection('orders').where('course_id', '==', c.id).where('status', '==', 'paid').get()
+      const revenue = snap.docs.reduce((s, d) => s + (d.data().amount || 0), 0)
+      return { id: c.id, title: c.title, sale_price: c.sale_price, student_count: c.student_count || 0, revenue }
     }))
   },
 }
+
+seed().catch(console.error)
 
 module.exports = db
