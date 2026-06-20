@@ -1,7 +1,43 @@
+/* ── COLOR TOKENS ── */
+:root {
+  --primary:        #468186;
+  --primary-dark:   #355f63;
+  --primary-light:  #9BC1BC;
+  --accent:         #ED6B5A;
+  --accent-dark:    #c9503f;
+  --sage:           #91A776;
+  --cream:          #F6F4CA;
+  --cream-dark:     #e8e5a8;
+
+  --bg:             #ffffff;
+  --bg-soft:        #f7f7f5;
+  --bg-muted:       #f0efec;
+  --surface:        #ffffff;
+
+  --text-primary:   #1a1a1a;
+  --text-secondary: #555555;
+  --text-muted:     #888888;
+  --text-hint:      #aaaaaa;
+
+  --border:         #e5e5e2;
+  --border-strong:  #cccccc;
+
+  --dark-bg:        #1a2a2b;
+  --dark-surface:   rgba(255,255,255,0.07);
+  --dark-border:    rgba(255,255,255,0.12);
+
+  --success:        #2e7d32;
+  --success-bg:     #e8f5e9;
+  --error:          #c62828;
+  --error-bg:       #fce8e8;
+  --warning:        #d4991a;
+  --warning-bg:     #fff8e1;
+}
+
 /* Toast */
 .toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
-  padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500;
+  padding: 12px 24px; border-radius: 8px; font-size: 18px; font-weight: 500;
   opacity: 0; transition: all 0.3s; z-index: 9999; pointer-events: none; white-space: nowrap;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -21,5 +57,5 @@
 .empty-state {
   text-align: center; padding: 60px 20px; color: #aaa;
 }
-.empty-state .ti { font-size: 40px; display: block; margin-bottom: 12px; }
-.empty-state p { font-size: 15px; }
+.empty-state .ti { font-size: 52px; display: block; margin-bottom: 12px; }
+.empty-state p { font-size: 20px; }

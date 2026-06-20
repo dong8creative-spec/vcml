@@ -1,52 +1,52 @@
-.legal-wrap { min-height: 100vh; background: #f8f9fb; padding: 40px 24px 80px; }
+.legal-wrap { min-height: 100vh; background: var(--bg-soft); padding: 40px 24px 80px; }
 .legal-inner { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 16px; padding: 48px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 
-.legal-title { font-size: 28px; font-weight: 900; color: #1a1a1a; margin-bottom: 8px; }
-.legal-updated { font-size: 13px; color: #888; margin-bottom: 32px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+.legal-title { font-size: 36px; font-weight: 900; color: var(--text-primary); margin-bottom: 8px; }
+.legal-updated { font-size: 17px; color: var(--text-muted); margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
 
 .legal-inner section { margin: 32px 0; }
-.legal-inner h2 { font-size: 17px; font-weight: 800; color: #1a1a1a; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #f0f0f0; }
-.legal-inner h3 { font-size: 14px; font-weight: 700; color: #333; margin: 16px 0 8px; }
-.legal-inner p { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 10px; }
+.legal-inner h2 { font-size: 22px; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--bg-muted); }
+.legal-inner h3 { font-size: 18px; font-weight: 700; color: var(--text-secondary); margin: 16px 0 8px; }
+.legal-inner p { font-size: 18px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 10px; }
 .legal-inner ul, .legal-inner ol { padding-left: 20px; }
-.legal-inner li { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 4px; }
+.legal-inner li { font-size: 18px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 4px; }
 .legal-inner ul > li { list-style: disc; }
 .legal-inner ol > li { list-style: decimal; }
 .legal-inner ul ul, .legal-inner ol ul { margin-top: 4px; }
-.legal-inner ul ul li { list-style: circle; font-size: 13px; color: #666; }
-.legal-inner a { color: #5c67f2; text-decoration: underline; }
+.legal-inner ul ul li { list-style: circle; font-size: 17px; color: var(--text-muted); }
+.legal-inner a { color: var(--primary); text-decoration: underline; }
 
-.legal-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
-.legal-table th { background: #f4f5ff; color: #333; font-weight: 700; padding: 10px 14px; text-align: left; border: 1px solid #e5e7ff; }
-.legal-table td { padding: 10px 14px; border: 1px solid #eee; color: #444; line-height: 1.6; vertical-align: top; }
-.legal-table tr.no-refund td { color: #e63946; background: #fff8f8; }
+.legal-table { width: 100%; border-collapse: collapse; font-size: 17px; margin: 12px 0; }
+.legal-table th { background: var(--cream); color: var(--text-secondary); font-weight: 700; padding: 10px 14px; text-align: left; border: 1px solid var(--cream); }
+.legal-table td { padding: 10px 14px; border: 1px solid var(--border); color: var(--text-secondary); line-height: 1.6; vertical-align: top; }
+.legal-table tr.no-refund td { color: var(--accent); background: #fff8f8; }
 
-.legal-box { background: #f4f5ff; border: 1px solid #dce0ff; border-radius: 10px; padding: 20px; font-size: 14px; color: #333; line-height: 1.8; margin: 16px 0; }
+.legal-box { background: var(--cream); border: 1px solid var(--cream); border-radius: 10px; padding: 20px; font-size: 18px; color: var(--text-secondary); line-height: 1.8; margin: 16px 0; }
 .legal-box.warn { background: #fffbf0; border-color: #ffe58f; }
 .legal-box.success { background: #f0fff4; border-color: #b7ebc8; }
-.small-note { font-size: 12px; color: #888; margin-top: 6px; }
+.small-note { font-size: 16px; color: var(--text-muted); margin-top: 6px; }
 
 /* Support page */
 .support-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
-.support-card { background: #f8f9fb; border: 1px solid #eee; border-radius: 12px; padding: 24px; text-align: center; }
-.support-icon { font-size: 32px; margin-bottom: 10px; }
-.support-label { font-size: 13px; color: #888; margin-bottom: 6px; }
-.support-value { font-size: 16px; font-weight: 700; color: #5c67f2; margin-bottom: 6px; }
-.support-value a { color: #5c67f2; }
-.support-desc { font-size: 12px; color: #aaa; }
+.support-card { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-align: center; }
+.support-icon { font-size: 42px; margin-bottom: 10px; }
+.support-label { font-size: 17px; color: var(--text-muted); margin-bottom: 6px; }
+.support-value { font-size: 21px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+.support-value a { color: var(--primary); }
+.support-desc { font-size: 16px; color: var(--text-hint); }
 
 /* FAQ */
 .faq-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-.faq-item { border: 1px solid #eee; border-radius: 10px; overflow: hidden; }
-.faq-item summary { padding: 16px 20px; font-size: 14px; font-weight: 600; color: #1a1a1a; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.faq-item { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.faq-item summary { padding: 16px 20px; font-size: 18px; font-weight: 600; color: var(--text-primary); cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
 .faq-item summary::-webkit-details-marker { display: none; }
-.faq-item summary::after { content: '+'; font-size: 20px; color: #5c67f2; font-weight: 300; }
+.faq-item summary::after { content: '+'; font-size: 26px; color: var(--primary); font-weight: 300; }
 .faq-item[open] summary::after { content: '−'; }
-.faq-item[open] summary { background: #f4f5ff; }
-.faq-item p { padding: 16px 20px; font-size: 14px; color: #555; line-height: 1.8; border-top: 1px solid #eee; background: #fafafa; }
+.faq-item[open] summary { background: var(--cream); }
+.faq-item p { padding: 16px 20px; font-size: 18px; color: var(--text-secondary); line-height: 1.8; border-top: 1px solid var(--border); background: var(--bg-soft); }
 
 @media (max-width: 600px) {
   .legal-inner { padding: 24px 20px; }
   .support-grid { grid-template-columns: 1fr; }
-  .legal-title { font-size: 22px; }
+  .legal-title { font-size: 29px; }
 }
