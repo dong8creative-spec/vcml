@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>편집자 인증 신청 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    .apply-wrap { max-width: 680px; margin: 48px auto; padding: 0 24px 80px; }
+    .apply-hero { background: linear-gradient(135deg,#1a1f3c,#3d4a8a); border-radius: 16px; padding: 36px; color:#fff; margin-bottom:32px; }
+    .apply-hero h1 { font-size:26px; font-weight:900; margin-bottom:8px; }
+    .apply-hero p { font-size:14px; color:rgba(255,255,255,.7); line-height:1.7; }
+    .badge-list { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+    .badge-list span { background:rgba(255,255,255,.15); color:#fff; font-size:12px; padding:4px 12px; border-radius:20px; }
+
+    .form-card { background:#fff; border-radius:16px; border:1px solid #eee; padding:32px; }
+    .form-group { margin-bottom:24px; }
+    .form-group label { display:block; font-size:13px; font-weight:700; color:#333; margin-bottom:8px; }
+    .form-group label .req { color:#e63946; margin-left:2px; }
+    .form-group input, .form-group textarea, .form-group select {
+      width:100%; padding:12px 14px; border:1.5px solid #e5e5e5; border-radius:8px;
+      font-size:14px; color:#1a1a1a; outline:none; transition:.15s;
+      font-family:inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color:#5c67f2; }
+    .form-group textarea { resize:vertical; min-height:120px; line-height:1.6; }
+    .form-hint { font-size:12px; color:#aaa; margin-top:6px; }
+
+    .skill-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .skill-chip { display:flex; align-items:center; gap:6px; background:#f4f5ff; border:1.5px solid #dce0ff; border-radius:20px; padding:6px 14px; font-size:13px; color:#5c67f2; cursor:pointer; user-select:none; transition:.15s; }
+    .skill-chip.active { background:#5c67f2; color:#fff; border-color:#5c67f2; }
+
+    .tool-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .tool-chip { display:flex; align-items:center; gap:6px; background:#f8f9fb; border:1.5px solid #eee; border-radius:20px; padding:6px 14px; font-size:13px; color:#444; cursor:pointer; user-select:none; transition:.15s; }
+    .tool-chip.active { background:#1a1f3c; color:#fff; border-color:#1a1f3c; }
+
+    .submit-btn { width:100%; padding:16px; background:#5c67f2; color:#fff; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; transition:.15s; margin-top:8px; }
+    .submit-btn:hover { background:#4a55e0; }
+    .submit-btn:disabled { background:#ccc; cursor:not-allowed; }
+
+    .status-card { border-radius:12px; padding:24px; text-align:center; margin-bottom:24px; }
+    .status-pending { background:#fffbf0; border:1px solid #ffe58f; }
+    .status-approved { background:#f0fff4; border:1px solid #b7ebc8; }
+    .status-rejected { background:#fff0f0; border:1px solid #ffc9c9; }
+    .status-icon { font-size:40px; margin-bottom:12px; }
+    .status-title { font-size:18px; font-weight:800; margin-bottom:8px; }
+    .status-desc { font-size:14px; color:#666; line-height:1.6; }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo">타닥<span>클래스</span></a>
+    <div class="header-right">
+      <a href="/editors.html" class="nav-btn">편집자 목록</a>
+      <a href="/" class="nav-btn">← 홈</a>
+    </div>
+  </div>
+</header>
+
+<div class="apply-wrap">
+  <div class="apply-hero">
+    <h1>🎬 공인 편집자 신청</h1>
+    <p>타닥클래스 수강생 중 실력이 검증된 편집자만 선발합니다.<br>승인 후 의뢰인과 직접 프로젝트를 진행할 수 있습니다.</p>
+    <div class="badge-list">
+      <span>✓ 의뢰 수주 가능</span>
+      <span>✓ 프로필 공개 노출</span>
+      <span>✓ 타닥클래스 인증 마크</span>
+    </div>
+  </div>
+
+  <!-- 신청 상태 표시 (JS로 조건 렌더링) -->
+  <div id="status-area"></div>
+
+  <!-- 신청 폼 -->
+  <div class="form-card" id="apply-form-wrap">
+    <form id="apply-form">
+      <div class="form-group">
+        <label>경력 연수 <span class="req">*</span></label>
+        <select name="experience_years" required>
+          <option value="">선택해주세요</option>
+          <option value="0">6개월~1년 미만</option>
+          <option value="1">1년 이상</option>
+          <option value="2">2년 이상</option>
+          <option value="3">3년 이상</option>
+          <option value="5">5년 이상</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>주요 사용 툴 <span class="req">*</span></label>
+        <div class="tool-chips" id="tool-chips">
+          <div class="tool-chip" data-val="Premiere Pro">Premiere Pro</div>
+          <div class="tool-chip" data-val="After Effects">After Effects</div>
+          <div class="tool-chip" data-val="DaVinci Resolve">DaVinci Resolve</div>
+          <div class="tool-chip" data-val="Final Cut Pro">Final Cut Pro</div>
+          <div class="tool-chip" data-val="Photoshop">Photoshop</div>
+          <div class="tool-chip" data-val="Illustrator">Illustrator</div>
+          <div class="tool-chip" data-val="Cinema 4D">Cinema 4D</div>
+          <div class="tool-chip" data-val="Blender">Blender</div>
+        </div>
+        <p class="form-hint">복수 선택 가능</p>
+      </div>
+
+      <div class="form-group">
+        <label>가능한 작업 유형 <span class="req">*</span></label>
+        <div class="skill-chips" id="skill-chips">
+          <div class="skill-chip" data-val="유튜브 편집">유튜브 편집</div>
+          <div class="skill-chip" data-val="숏폼/릴스">숏폼/릴스</div>
+          <div class="skill-chip" data-val="광고 영상">광고 영상</div>
+          <div class="skill-chip" data-val="모션그래픽">모션그래픽</div>
+          <div class="skill-chip" data-val="색보정">색보정</div>
+          <div class="skill-chip" data-val="브랜드 필름">브랜드 필름</div>
+          <div class="skill-chip" data-val="웨딩/행사">웨딩/행사</div>
+          <div class="skill-chip" data-val="드론 편집">드론 편집</div>
+          <div class="skill-chip" data-val="사운드 디자인">사운드 디자인</div>
+        </div>
+        <p class="form-hint">복수 선택 가능</p>
+      </div>
+
+      <div class="form-group">
+        <label>포트폴리오 링크</label>
+        <input type="url" name="portfolio_url" placeholder="https://youtube.com/... 또는 notion 링크 등" />
+        <p class="form-hint">유튜브, Vimeo, Notion, 구글 드라이브 등 자유롭게 입력</p>
+      </div>
+
+      <div class="form-group">
+        <label>자기소개 <span class="req">*</span></label>
+        <textarea name="intro" placeholder="경력, 강점, 주로 작업하는 분야, 클라이언트에게 전하고 싶은 말 등을 자유롭게 써주세요. (최소 50자)" minlength="50" required></textarea>
+        <p class="form-hint" id="intro-count">0자</p>
+      </div>
+
+      <div class="legal-box" style="margin-bottom:20px">
+        <strong>신청 전 확인사항</strong><br>
+        · 타닥클래스 강의를 1개 이상 수강 완료한 분만 신청 가능합니다.<br>
+        · 심사는 영업일 기준 3~5일 소요됩니다.<br>
+        · 승인 후 프로필이 공개되며, 의뢰 수수료 15%가 적용됩니다.<br>
+        · 허위 정보 기재 시 인증이 취소될 수 있습니다.
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">신청하기</button>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = API.user()
+if (!user) { alert('로그인이 필요합니다.'); location.href = '/login.html?next=/editor-apply.html' }
+
+// 툴 & 스킬 칩 토글
+const selectedTools = new Set()
+const selectedSkills = new Set()
+
+document.querySelectorAll('#tool-chips .tool-chip').forEach(el => {
+  el.addEventListener('click', () => {
+    el.classList.toggle('active')
+    selectedTools.has(el.dataset.val) ? selectedTools.delete(el.dataset.val) : selectedTools.add(el.dataset.val)
+  })
+})
+document.querySelectorAll('#skill-chips .skill-chip').forEach(el => {
+  el.addEventListener('click', () => {
+    el.classList.toggle('active')
+    selectedSkills.has(el.dataset.val) ? selectedSkills.delete(el.dataset.val) : selectedSkills.add(el.dataset.val)
+  })
+})
+
+// 자기소개 글자수
+const introTA = document.querySelector('[name="intro"]')
+introTA.addEventListener('input', () => {
+  document.getElementById('intro-count').textContent = introTA.value.length + '자'
+})
+
+// 기존 신청 상태 확인
+async function checkStatus() {
+  try {
+    const app = await API.get('/editor/my-application')
+    if (!app) return
+    const area = document.getElementById('status-area')
+    if (app.status === 'pending') {
+      area.innerHTML = `<div class="status-card status-pending"><div class="status-icon">⏳</div><div class="status-title">심사 중입니다</div><div class="status-desc">신청서를 검토하고 있습니다.<br>영업일 기준 3~5일 이내에 결과를 이메일로 안내드립니다.<br><br>신청일: ${app.applied_at?.slice(0,10)}</div></div>`
+      document.getElementById('apply-form-wrap').style.display = 'none'
+    } else if (app.status === 'approved') {
+      area.innerHTML = `<div class="status-card status-approved"><div class="status-icon">✅</div><div class="status-title">승인되었습니다!</div><div class="status-desc">타닥클래스 공인 편집자로 등록되었습니다.<br><a href="/editors.html" style="color:#5c67f2;font-weight:700">편집자 목록에서 내 프로필 보기 →</a></div></div>`
+      document.getElementById('apply-form-wrap').style.display = 'none'
+    } else if (app.status === 'rejected') {
+      area.innerHTML = `<div class="status-card status-rejected"><div class="status-icon">❌</div><div class="status-title">이번에는 승인되지 않았습니다</div><div class="status-desc">${app.reject_reason ? '사유: ' + app.reject_reason + '<br><br>' : ''}포트폴리오를 보강하신 후 재신청해 주세요.</div></div>`
+    }
+  } catch(e) { console.error(e) }
+}
+checkStatus()
+
+// 폼 제출
+document.getElementById('apply-form').addEventListener('submit', async e => {
+  e.preventDefault()
+  const fd = new FormData(e.target)
+  if (selectedSkills.size === 0) return alert('가능한 작업 유형을 1개 이상 선택해주세요.')
+  if (selectedTools.size === 0) return alert('주요 사용 툴을 1개 이상 선택해주세요.')
+
+  const btn = document.getElementById('submit-btn')
+  btn.disabled = true; btn.textContent = '신청 중...'
+
+  try {
+    await API.post('/editor/apply', {
+      intro: fd.get('intro'),
+      skills: [...selectedSkills].join(', '),
+      portfolio_url: fd.get('portfolio_url'),
+      experience_years: parseInt(fd.get('experience_years')) || 0,
+      tools: [...selectedTools],
+    })
+    alert('신청이 완료되었습니다! 영업일 기준 3~5일 이내에 결과를 안내드립니다.')
+    location.reload()
+  } catch(err) {
+    alert(err.message || '신청 중 오류가 발생했습니다.')
+    btn.disabled = false; btn.textContent = '신청하기'
+  }
+})
+</script>
+</body>
+</html>

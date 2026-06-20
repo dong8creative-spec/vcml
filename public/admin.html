@@ -44,6 +44,12 @@
         <span class="badge-dot">3</span>
       </a>
 
+      <div class="nav-group-label">편집자 마켓</div>
+      <a href="#editor-apps" class="nav-item" data-section="editor-apps">
+        <i class="ti ti-rosette"></i> 편집자 신청
+        <span class="badge-dot" id="editor-badge" style="display:none"></span>
+      </a>
+
       <div class="nav-group-label">콘텐츠</div>
       <a href="#reviews" class="nav-item" data-section="reviews">
         <i class="ti ti-star"></i> 수강 후기
@@ -391,6 +397,45 @@
       </div>
     </section>
 
+    <!-- ===== SECTION: EDITOR APPLICATIONS ===== -->
+    <section class="section" id="sec-editor-apps">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">편집자 신청 관리</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm active" onclick="loadEditorApps('pending')" id="tab-pending">대기중</button>
+            <button class="btn-sm" onclick="loadEditorApps('approved')" id="tab-approved">승인됨</button>
+            <button class="btn-sm" onclick="loadEditorApps('rejected')" id="tab-rejected">거절됨</button>
+            <button class="btn-sm" onclick="loadEditorApps(null)" id="tab-all">전체</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>신청자</th><th>이메일</th><th>툴</th><th>작업유형</th><th>경력</th><th>포트폴리오</th><th>신청일</th><th>상태</th><th>관리</th></tr>
+          </thead>
+          <tbody id="editor-apps-tbody">
+            <tr><td colspan="9" style="text-align:center;color:#aaa;padding:32px">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 신청 상세 모달 -->
+      <div class="modal-overlay" id="editor-detail-modal" style="display:none">
+        <div class="modal" style="max-width:560px">
+          <div class="modal-header">
+            <div class="modal-title" id="editor-modal-title">편집자 신청 상세</div>
+            <button class="modal-close" onclick="document.getElementById('editor-detail-modal').style.display='none'">✕</button>
+          </div>
+          <div id="editor-modal-body" style="padding:20px;font-size:14px;line-height:1.8;color:#333;max-height:60vh;overflow-y:auto"></div>
+          <div style="padding:16px 20px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:flex-end">
+            <input type="text" id="reject-reason-input" placeholder="거절 사유 (선택)" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px" />
+            <button class="btn-sm-danger" id="reject-btn" onclick="reviewApp('rejected')">거절</button>
+            <button class="btn-primary-sm" id="approve-btn" onclick="reviewApp('approved')">승인</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== SECTION: SETTINGS ===== -->
     <section class="section" id="sec-settings">
       <div class="two-col">
@@ -713,12 +758,92 @@
       settings: '사이트 설정'
     };
 
+    // ── 편집자 신청 관리 ──
+    const expLabel = { 0:'6개월~1년', 1:'1년↑', 2:'2년↑', 3:'3년↑', 5:'5년↑' }
+    let currentAppId = null
+
+    async function loadEditorApps(status) {
+      // 탭 활성화
+      ['pending','approved','rejected','all'].forEach(t => {
+        const el = document.getElementById('tab-'+t)
+        if (el) el.classList.toggle('active', (status||'all') === t)
+      })
+      const tbody = document.getElementById('editor-apps-tbody')
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr>'
+      try {
+        const qs = status ? `?status=${status}` : ''
+        const apps = await API.get('/api/admin/editor-applications' + qs)
+        // 뱃지 업데이트
+        const pending = apps.filter(a => a.status === 'pending').length
+        const badge = document.getElementById('editor-badge')
+        if (badge) { badge.textContent = pending; badge.style.display = pending ? '' : 'none' }
+
+        if (!apps.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">신청 내역이 없습니다.</td></tr>'; return }
+        tbody.innerHTML = apps.map(a => {
+          const statusMap = { pending:'<span class="status-tag pending">대기중</span>', approved:'<span class="status-tag done">승인</span>', rejected:'<span class="status-tag refund">거절</span>' }
+          const tools = Array.isArray(a.tools) ? a.tools.join(', ') : ''
+          return `<tr>
+            <td><strong>${a.user_name||'-'}</strong></td>
+            <td>${a.email||'-'}</td>
+            <td style="font-size:12px;color:#666">${tools||'-'}</td>
+            <td style="font-size:12px;color:#666">${a.skills||'-'}</td>
+            <td>${expLabel[a.experience_years]||'-'}</td>
+            <td>${a.portfolio_url ? `<a href="${a.portfolio_url}" target="_blank" style="color:#5c67f2;font-size:12px">보기 →</a>` : '-'}</td>
+            <td class="td-date">${(a.applied_at||'').slice(0,10)}</td>
+            <td>${statusMap[a.status]||a.status}</td>
+            <td class="td-actions"><button class="btn-sm" onclick="openEditorDetail('${a.id}')">상세</button></td>
+          </tr>`
+        }).join('')
+      } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#e00;padding:24px">오류: ' + (e.message||'불러오기 실패') + '</td></tr>'
+      }
+    }
+
+    async function openEditorDetail(appId) {
+      currentAppId = appId
+      const apps = await API.get('/api/admin/editor-applications')
+      const app = apps.find(a => a.id === appId)
+      if (!app) return
+      document.getElementById('editor-modal-title').textContent = `${app.user_name} 님의 편집자 신청`
+      const tools = Array.isArray(app.tools) ? app.tools.join(', ') : '-'
+      document.getElementById('editor-modal-body').innerHTML = `
+        <div style="display:grid;gap:12px">
+          <div><strong>이름:</strong> ${app.user_name} &nbsp;|&nbsp; <strong>이메일:</strong> ${app.email||'-'}</div>
+          <div><strong>경력:</strong> ${expLabel[app.experience_years]||'-'}</div>
+          <div><strong>사용 툴:</strong> ${tools}</div>
+          <div><strong>작업 유형:</strong> ${app.skills||'-'}</div>
+          ${app.portfolio_url ? `<div><strong>포트폴리오:</strong> <a href="${app.portfolio_url}" target="_blank" style="color:#5c67f2">${app.portfolio_url}</a></div>` : ''}
+          <div style="background:#f8f9fb;border-radius:8px;padding:14px;margin-top:4px">
+            <strong>자기소개</strong><br><br>${(app.intro||'').replace(/\n/g,'<br>')}
+          </div>
+          ${app.reject_reason ? `<div style="color:#e00"><strong>거절 사유:</strong> ${app.reject_reason}</div>` : ''}
+          <div style="color:#888;font-size:12px">신청일: ${(app.applied_at||'').slice(0,10)}</div>
+        </div>`
+      const isReviewed = app.status !== 'pending'
+      document.getElementById('approve-btn').disabled = isReviewed
+      document.getElementById('reject-btn').disabled = isReviewed
+      document.getElementById('editor-detail-modal').style.display = 'flex'
+    }
+
+    async function reviewApp(status) {
+      if (!currentAppId) return
+      const reason = document.getElementById('reject-reason-input').value.trim()
+      if (status === 'rejected' && !reason) { alert('거절 사유를 입력해주세요.'); return }
+      try {
+        await API.patch('/api/admin/editor-applications/' + currentAppId, { status, reject_reason: reason || null })
+        alert(status === 'approved' ? '✅ 승인되었습니다.' : '❌ 거절되었습니다.')
+        document.getElementById('editor-detail-modal').style.display = 'none'
+        loadEditorApps('pending')
+      } catch(e) { alert(e.message || '처리 중 오류가 발생했습니다.') }
+    }
+
     const sectionLoaders = {
       dashboard: loadDashboard,
       courses: loadCourses,
       students: loadStudents,
       orders: loadOrders,
       reviews: loadReviews,
+      'editor-apps': () => loadEditorApps('pending'),
     };
 
     function showSection(name) {

@@ -277,6 +277,56 @@ const db = {
     return true
   },
 
+  // ── 편집자 신청 ──
+  async applyEditor(userId, { intro, skills, portfolio_url, experience_years, tools }) {
+    const existing = await fs.collection('editor_applications').where('user_id', '==', userId).limit(1).get()
+    if (!existing.empty) {
+      const doc = existing.docs[0]
+      await doc.ref.update({ intro, skills, portfolio_url, experience_years, tools, status: 'pending', applied_at: now() })
+      return { id: doc.id, ...doc.data(), intro, skills, portfolio_url, experience_years, tools, status: 'pending' }
+    }
+    const data = { user_id: userId, intro, skills, portfolio_url: portfolio_url || null, experience_years: experience_years || 0, tools: tools || [], status: 'pending', applied_at: now(), reviewed_at: null, reject_reason: null }
+    const ref = await fs.collection('editor_applications').add(data)
+    return { id: ref.id, ...data }
+  },
+  async getEditorApplication(userId) {
+    const snap = await fs.collection('editor_applications').where('user_id', '==', userId).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+  },
+  async getAllEditorApplications(status = null) {
+    let q = fs.collection('editor_applications')
+    if (status) q = q.where('status', '==', status)
+    const snap = await q.orderBy('applied_at', 'desc').get()
+    return snapToArr(snap)
+  },
+  async reviewEditorApplication(appId, status, rejectReason = null) {
+    const doc = await fs.collection('editor_applications').doc(appId).get()
+    if (!doc.exists) return null
+    await doc.ref.update({ status, reviewed_at: now(), reject_reason: rejectReason || null })
+    if (status === 'approved') {
+      await fs.collection('users').doc(doc.data().user_id).update({ role: 'editor' })
+    } else if (status === 'rejected') {
+      await fs.collection('users').doc(doc.data().user_id).update({ role: 'student' })
+    }
+    return { id: doc.id, ...doc.data(), status }
+  },
+  async getEditorProfile(userId) {
+    const [user, app] = await Promise.all([
+      db.findUserById(userId),
+      fs.collection('editor_applications').where('user_id', '==', userId).where('status', '==', 'approved').limit(1).get(),
+    ])
+    if (!user || user.role !== 'editor' || app.empty) return null
+    return { ...user, password: undefined, ...app.docs[0].data(), app_id: app.docs[0].id }
+  },
+  async getApprovedEditors() {
+    const snap = await fs.collection('editor_applications').where('status', '==', 'approved').get()
+    return Promise.all(snap.docs.map(async d => {
+      const user = await db.findUserById(d.data().user_id)
+      if (!user) return null
+      return { ...d.data(), id: d.id, user_id: user.id, name: user.name, created_at: user.created_at }
+    })).then(arr => arr.filter(Boolean))
+  },
+
   // admin stats
   async getStats() {
     const [orders, enrollments, users] = await Promise.all([

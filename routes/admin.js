@@ -97,4 +97,23 @@ router.get('/course-stats', async (req, res) => {
   res.json(await db.getCourseStats())
 })
 
+// ── 편집자 신청 관리 ──
+router.get('/editor-applications', async (req, res) => {
+  const { status } = req.query
+  const apps = await db.getAllEditorApplications(status || null)
+  const result = await Promise.all(apps.map(async a => {
+    const u = await db.findUserById(a.user_id)
+    return { ...a, user_name: u?.name, email: u?.email }
+  }))
+  res.json(result)
+})
+
+router.patch('/editor-applications/:id', async (req, res) => {
+  const { status, reject_reason } = req.body
+  if (!['approved', 'rejected'].includes(status)) return res.status(400).json({ error: '유효하지 않은 상태입니다.' })
+  const result = await db.reviewEditorApplication(req.params.id, status, reject_reason)
+  if (!result) return res.status(404).json({ error: '신청을 찾을 수 없습니다.' })
+  res.json({ success: true })
+})
+
 module.exports = router
