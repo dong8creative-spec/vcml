@@ -3,16 +3,23 @@ const bcrypt = require('bcryptjs')
 
 // ── Firebase Admin 초기화 ──
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId:   process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey:  (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-    }),
-  })
+  const serviceAccountPath = require('path').join(__dirname, '../firebase-service-account.json')
+  const fs2 = require('fs')
+  if (fs2.existsSync(serviceAccountPath)) {
+    admin.initializeApp({ credential: admin.credential.cert(require(serviceAccountPath)) })
+  } else {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId:   process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey:  (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+      }),
+    })
+  }
 }
 
 const fs = admin.firestore()
+fs.settings({ databaseId: process.env.FIREBASE_DATABASE_ID || 'vcmlmembers' })
 
 function now() { return new Date().toISOString() }
 
@@ -375,6 +382,36 @@ const db = {
       if (!user) return null
       return { ...d.data(), id: d.id, user_id: user.id, name: user.name, created_at: user.created_at }
     })).then(arr => arr.filter(Boolean))
+  },
+
+  // ── 메시지 ──
+  async sendMessage(projectId, senderId, senderName, senderRole, content) {
+    const data = { project_id: projectId, sender_id: senderId, sender_name: senderName, sender_role: senderRole, content, created_at: now(), read: false }
+    const ref = await fs.collection('messages').add(data)
+    return { id: ref.id, ...data }
+  },
+  async getMessages(projectId, since = null) {
+    let q = fs.collection('messages').where('project_id', '==', projectId).orderBy('created_at', 'asc')
+    if (since) q = q.where('created_at', '>', since)
+    const snap = await q.get()
+    return snapToArr(snap)
+  },
+  async markMessagesRead(projectId, userId) {
+    const snap = await fs.collection('messages').where('project_id', '==', projectId).where('sender_id', '!=', userId).where('read', '==', false).get()
+    const batch = fs.batch()
+    snap.docs.forEach(d => batch.update(d.ref, { read: true }))
+    if (!snap.empty) await batch.commit()
+  },
+  async getUnreadCount(projectId, userId) {
+    const snap = await fs.collection('messages').where('project_id', '==', projectId).where('sender_id', '!=', userId).where('read', '==', false).get()
+    return snap.size
+  },
+
+  // ── 프로젝트 진행 단계 업데이트 ──
+  async updateProjectStage(projectId, stage) {
+    const stageMap = { contract: 'contract', working: 'in_progress', delivered: 'delivered', completed: 'completed' }
+    const status = stageMap[stage] || stage
+    await fs.collection('projects').doc(projectId).update({ status, stage_updated_at: now() })
   },
 
   // admin stats

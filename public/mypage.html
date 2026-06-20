@@ -2,165 +2,377 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>내 강의 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/mypage.css" />
+  <title>마이페이지 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    body { background:#f5f6fa; }
+    .mypage-wrap { max-width:1060px; margin:0 auto; padding:32px 20px 80px; display:grid; grid-template-columns:220px 1fr; gap:24px; align-items:start; }
+
+    /* 사이드바 */
+    .my-sidebar { background:#fff; border:1px solid #eee; border-radius:14px; padding:24px; position:sticky; top:80px; }
+    .my-avatar { width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#5c67f2,#7b84ff); color:#fff; font-size:22px; font-weight:800; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+    .my-name { font-size:16px; font-weight:800; margin-bottom:4px; }
+    .my-email { font-size:12px; color:#aaa; margin-bottom:6px; }
+    .my-role { font-size:11px; font-weight:700; padding:3px 8px; border-radius:10px; display:inline-block; margin-bottom:20px; }
+    .my-role.editor { background:#f0f2ff; color:#5c67f2; }
+    .my-role.student { background:#f0f0f0; color:#888; }
+    .my-role.admin { background:#fff0f0; color:#e63946; }
+    .my-nav { display:flex; flex-direction:column; gap:4px; }
+    .my-nav-item { display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:8px; font-size:13px; font-weight:600; color:#555; cursor:pointer; transition:.15s; text-decoration:none; }
+    .my-nav-item:hover { background:#f5f6fa; color:#1a1a1a; }
+    .my-nav-item.active { background:#f0f2ff; color:#5c67f2; }
+    .my-nav-item i { font-size:16px; }
+
+    /* 메인 */
+    .my-main { min-width:0; }
+    .my-section { display:none; }
+    .my-section.active { display:block; }
+    .section-title { font-size:20px; font-weight:900; margin-bottom:20px; }
+
+    /* 강의 카드 */
+    .my-course-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+    .my-course-card { background:#fff; border:1px solid #eee; border-radius:12px; overflow:hidden; text-decoration:none; transition:.2s; }
+    .my-course-card:hover { box-shadow:0 6px 20px rgba(0,0,0,.08); transform:translateY(-2px); }
+    .mc-thumb { height:100px; display:flex; align-items:center; justify-content:center; font-size:36px; position:relative; }
+    .mc-thumb.thumb-dark { background:linear-gradient(135deg,#111827,#1e2d4a); color:#fff; }
+    .mc-thumb.thumb-light { background:linear-gradient(135deg,#f0f2ff,#e8ebff); color:#5c67f2; }
+    .mc-done { position:absolute; bottom:8px; right:8px; background:#2cae6b; color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; display:flex; align-items:center; gap:4px; }
+    .mc-body { padding:12px; }
+    .mc-cat { font-size:11px; color:#5c67f2; font-weight:700; margin-bottom:4px; }
+    .mc-title { font-size:13px; font-weight:700; color:#1a1a1a; margin-bottom:10px; line-height:1.4; }
+    .mc-progress-row { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+    .mc-bar-wrap { flex:1; height:4px; background:#eee; border-radius:2px; }
+    .mc-bar { height:4px; background:#5c67f2; border-radius:2px; transition:.3s; }
+    .mc-pct { font-size:11px; font-weight:700; color:#5c67f2; }
+    .mc-meta { font-size:11px; color:#aaa; }
+
+    /* 프로젝트 카드 */
+    .proj-list { display:flex; flex-direction:column; gap:12px; }
+    .proj-card { background:#fff; border:1px solid #eee; border-radius:12px; padding:18px 20px; display:flex; justify-content:space-between; align-items:center; gap:12px; transition:.15s; }
+    .proj-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.07); }
+    .pc-left { flex:1; min-width:0; }
+    .pc-cat { font-size:11px; font-weight:700; color:#5c67f2; background:#f0f2ff; padding:2px 8px; border-radius:10px; display:inline-block; margin-bottom:6px; }
+    .pc-title { font-size:15px; font-weight:800; color:#1a1a1a; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pc-meta { font-size:12px; color:#aaa; }
+    .pc-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+    .status-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:10px; }
+    .status-badge.open { background:#f0fff4; color:#2cae6b; }
+    .status-badge.matched { background:#fff8e8; color:#d4991a; }
+    .status-badge.contract, .status-badge.in_progress { background:#f0f2ff; color:#5c67f2; }
+    .status-badge.delivered { background:#fff0e8; color:#e06030; }
+    .status-badge.completed { background:#f0f0f0; color:#888; }
+    .status-badge.cancelled { background:#fff0f0; color:#e63946; }
+    .pc-btn { font-size:12px; font-weight:700; padding:6px 14px; border-radius:7px; text-decoration:none; border:none; cursor:pointer; }
+    .pc-btn.primary { background:#5c67f2; color:#fff; }
+    .pc-btn.secondary { background:#f0f0f0; color:#555; }
+
+    /* 견적 카드 */
+    .quote-list { display:flex; flex-direction:column; gap:12px; }
+    .quote-card { background:#fff; border:1px solid #eee; border-radius:12px; padding:18px 20px; }
+    .qc-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+    .qc-project { font-size:13px; font-weight:700; color:#1a1a1a; }
+    .qc-amount { font-size:16px; font-weight:900; color:#5c67f2; }
+    .qc-msg { font-size:13px; color:#666; line-height:1.6; margin-bottom:10px; }
+    .qc-bottom { display:flex; justify-content:space-between; align-items:center; }
+    .qc-meta { font-size:12px; color:#aaa; }
+    .qs-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:10px; }
+    .qs-badge.pending { background:#f4f5ff; color:#5c67f2; }
+    .qs-badge.accepted { background:#f0fff4; color:#2cae6b; }
+    .qs-badge.rejected { background:#f0f0f0; color:#aaa; }
+
+    /* 쿠폰 */
+    .coupon-list { display:flex; flex-direction:column; gap:10px; }
+    .coupon-item { background:#fff; border:1px solid #eee; border-radius:10px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; }
+    .coupon-item.used { opacity:.5; }
+    .coupon-amount { font-size:18px; font-weight:900; color:#5c67f2; }
+    .coupon-reason { font-size:12px; color:#aaa; margin-top:2px; }
+    .coupon-code { font-size:13px; font-weight:700; font-family:monospace; color:#333; margin-bottom:4px; }
+    .coupon-status.available { color:#2cae6b; font-size:12px; font-weight:700; }
+    .coupon-status.used { color:#aaa; font-size:12px; font-weight:700; }
+
+    /* 설정 */
+    .settings-card { background:#fff; border:1px solid #eee; border-radius:12px; padding:20px; }
+    .settings-row { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+    .settings-label { font-size:14px; font-weight:700; margin-bottom:4px; }
+    .settings-desc { font-size:12px; color:#aaa; line-height:1.6; }
+    .btn-settings-action { padding:8px 16px; border:1.5px solid #5c67f2; color:#5c67f2; background:#fff; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
+    .btn-settings-action:hover { background:#f0f2ff; }
+
+    /* 공통 */
+    .empty-state { text-align:center; padding:48px 0; color:#bbb; }
+    .empty-state i { font-size:40px; display:block; margin-bottom:12px; }
+    .empty-state a { color:#5c67f2; font-weight:600; }
+    .spinner { width:28px; height:28px; border:3px solid #eee; border-top-color:#5c67f2; border-radius:50%; animation:spin .7s linear infinite; margin:40px auto; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    @media(max-width:700px) {
+      .mypage-wrap { grid-template-columns:1fr; }
+      .my-sidebar { position:static; }
+      .proj-card { flex-direction:column; align-items:flex-start; }
+    }
+  </style>
 </head>
 <body>
-  <header class="nav"><div class="nav-inner">
-    <a href="/" class="nav-logo">타닥클래스 <span>TADAK CLASS</span></a>
-    <nav class="nav-links"><a href="/">강의</a></nav>
-    <div class="nav-right" id="nav-right"></div>
-  </div></header>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo">타닥<span>클래스</span></a>
+    <nav class="gnb">
+      <a href="/">강의</a>
+      <a href="/editors.html">공인 편집자</a>
+      <a href="/projects.html">영상 의뢰</a>
+    </nav>
+    <div class="header-right">
+      <a href="/mypage.html" class="nav-btn nav-btn-primary">마이페이지</a>
+    </div>
+  </div>
+</header>
 
-  <div class="mypage-wrap">
-    <aside class="my-sidebar">
-      <div class="my-profile" id="my-profile"></div>
-      <nav class="my-nav">
-        <a class="my-nav-item active" href="/mypage.html"><i class="ti ti-book"></i> 내 강의</a>
-        <a class="my-nav-item" href="/orders.html"><i class="ti ti-receipt"></i> 결제 내역</a>
-        <a class="my-nav-item" href="#" onclick="showSection('coupons')"><i class="ti ti-ticket"></i> 내 쿠폰</a>
-        <a class="my-nav-item" href="#" onclick="showSection('settings')"><i class="ti ti-settings"></i> 계정 설정</a>
-        <a class="my-nav-item" href="#" onclick="API.logout()"><i class="ti ti-logout"></i> 로그아웃</a>
-      </nav>
-    </aside>
-
-    <main class="my-main">
-      <!-- 내 강의 섹션 -->
-      <div id="section-courses">
-        <h1 class="my-page-title">내 강의</h1>
-        <div id="my-courses"><div class="spinner"></div></div>
-      </div>
-
-      <!-- 내 쿠폰 섹션 -->
-      <div id="section-coupons" style="display:none">
-        <h1 class="my-page-title">내 쿠폰</h1>
-        <div id="my-coupons"><div class="spinner"></div></div>
-      </div>
-
-      <!-- 계정 설정 섹션 -->
-      <div id="section-settings" style="display:none">
-        <h1 class="my-page-title">계정 설정</h1>
-        <div class="settings-card">
-          <div class="settings-row">
-            <div>
-              <div class="settings-label">마케팅 정보 수신 동의 (SMS)</div>
-              <div class="settings-desc">신규 강의 오픈, 이벤트, 할인 정보를 카카오 알림톡으로 받습니다.</div>
-            </div>
-            <div>
-              <span id="marketing-status" style="font-size:13px;color:#aaa"></span>
-              <button id="btn-marketing-toggle" class="btn-settings-action" onclick="toggleMarketingConsent()"></button>
-            </div>
+<div class="mypage-wrap">
+  <aside class="my-sidebar">
+    <div id="my-profile"></div>
+    <nav class="my-nav" id="my-nav"></nav>
+  </aside>
+  <main class="my-main" id="my-main">
+    <!-- 내 강의 -->
+    <div class="my-section" id="sec-courses">
+      <div class="section-title">내 강의</div>
+      <div id="my-courses"><div class="spinner"></div></div>
+    </div>
+    <!-- 내 의뢰 (의뢰인) -->
+    <div class="my-section" id="sec-projects">
+      <div class="section-title">내 의뢰 목록</div>
+      <div id="my-projects"><div class="spinner"></div></div>
+    </div>
+    <!-- 내 견적 (편집자) -->
+    <div class="my-section" id="sec-quotes">
+      <div class="section-title">내 견적 현황</div>
+      <div id="my-quotes"><div class="spinner"></div></div>
+    </div>
+    <!-- 내 쿠폰 -->
+    <div class="my-section" id="sec-coupons">
+      <div class="section-title">내 쿠폰</div>
+      <div id="my-coupons"><div class="spinner"></div></div>
+    </div>
+    <!-- 계정 설정 -->
+    <div class="my-section" id="sec-settings">
+      <div class="section-title">계정 설정</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">마케팅 정보 수신 동의 (SMS)</div>
+            <div class="settings-desc">신규 강의 오픈, 이벤트, 할인 정보를 카카오 알림톡으로 받습니다.</div>
           </div>
-          <div style="font-size:12px;color:#bbb;margin-top:12px;line-height:1.6">
-            동의 철회 시 마케팅 문자 수신이 즉시 중단됩니다. 동의 기록은 법적 근거로 보관됩니다.
+          <div>
+            <span id="marketing-status" style="font-size:13px;color:#aaa"></span>
+            <button id="btn-marketing-toggle" class="btn-settings-action" onclick="withdrawMarketing()">마케팅 수신 철회</button>
           </div>
         </div>
+        <div style="font-size:12px;color:#bbb;margin-top:12px;line-height:1.6">
+          동의 철회 시 마케팅 문자 수신이 즉시 중단됩니다. 동의 기록은 법적 근거로 보관됩니다.
+        </div>
       </div>
-    </main>
-  </div>
+    </div>
+  </main>
+</div>
 
-  <script src="/js/api.js"></script>
-  <script>
-    if (!API.isLoggedIn()) { location.href = '/login.html?next=/mypage.html'; }
+<script src="/js/api.js"></script>
+<script>
+if (!API.isLoggedIn()) { location.href = '/login.html?next=/mypage.html' }
+const user = API.user()
 
-    const user = API.user()
-    document.getElementById('my-profile').innerHTML = `
-      <div class="my-avatar">${user.name[0]}</div>
-      <div class="my-name">${user.name}</div>
-      <div class="my-email">${user.email || '이메일 미등록'}</div>`
+const statusLabel = { open:'모집중', matched:'매칭완료', contract:'계약완료', in_progress:'작업중', delivered:'납품완료', completed:'완료', cancelled:'취소' }
+const roleLabel = { student:'수강생', editor:'공인 편집자', admin:'관리자' }
 
-    function showSection(name) {
-      ['courses','coupons','settings'].forEach(s => {
-        document.getElementById('section-'+s).style.display = s === name ? '' : 'none'
-      })
-      document.querySelectorAll('.my-nav-item').forEach(el => el.classList.remove('active'))
-      event.currentTarget && event.currentTarget.classList.add('active')
-      if (name === 'coupons') loadCoupons()
-      if (name === 'settings') loadSettings()
+// 프로필
+document.getElementById('my-profile').innerHTML = `
+  <div class="my-avatar">${user.name?.[0] || '?'}</div>
+  <div class="my-name">${user.name}</div>
+  <div class="my-email">${user.email || ''}</div>
+  <span class="my-role ${user.role}">${roleLabel[user.role] || user.role}</span>`
+
+// 탭 구성 (역할별)
+const tabs = [
+  { id:'courses',  icon:'ti-book',         label:'내 강의',    always:true },
+  { id:'projects', icon:'ti-clipboard',    label:'내 의뢰',    role:['student','admin'] },
+  { id:'quotes',   icon:'ti-file-invoice', label:'내 견적',    role:['editor','admin'] },
+  { id:'coupons',  icon:'ti-ticket',       label:'내 쿠폰',    always:true },
+  { id:'settings', icon:'ti-settings',     label:'계정 설정',  always:true },
+]
+
+const visibleTabs = tabs.filter(t => t.always || (t.role && t.role.includes(user.role)))
+
+document.getElementById('my-nav').innerHTML = visibleTabs.map(t => `
+  <a class="my-nav-item" data-sec="${t.id}" href="#" onclick="showSection('${t.id}');return false">
+    <i class="ti ${t.icon}"></i> ${t.label}
+  </a>`).join('') +
+  `<a class="my-nav-item" href="#" onclick="API.logout();return false" style="color:#e63946;margin-top:8px">
+    <i class="ti ti-logout"></i> 로그아웃
+  </a>`
+
+let currentSection = ''
+function showSection(id) {
+  document.querySelectorAll('.my-section').forEach(el => el.classList.remove('active'))
+  document.querySelectorAll('.my-nav-item[data-sec]').forEach(el => el.classList.remove('active'))
+  const sec = document.getElementById('sec-' + id)
+  if (sec) sec.classList.add('active')
+  const navItem = document.querySelector(`.my-nav-item[data-sec="${id}"]`)
+  if (navItem) navItem.classList.add('active')
+  currentSection = id
+  if (id === 'courses') loadCourses()
+  if (id === 'projects') loadProjects()
+  if (id === 'quotes') loadQuotes()
+  if (id === 'coupons') loadCoupons()
+}
+
+// 초기 탭
+const initTab = new URLSearchParams(location.search).get('tab') || visibleTabs[0]?.id
+showSection(typeof initTab === 'string' ? initTab : initTab.id)
+
+// ── 내 강의 ──
+async function loadCourses() {
+  const el = document.getElementById('my-courses')
+  if (el.dataset.loaded) return
+  try {
+    const courses = await API.get('/my/courses')
+    el.dataset.loaded = '1'
+    if (!courses.length) {
+      el.innerHTML = `<div class="empty-state"><i class="ti ti-book-off"></i><p>아직 수강 중인 강의가 없습니다.<br><a href="/">강의 둘러보기 →</a></p></div>`
+      return
     }
+    el.innerHTML = `<div class="my-course-grid">${courses.map(c => {
+      const pct = c.total_chapters > 0 ? Math.round((c.completed_chapters / c.total_chapters) * 100) : 0
+      return `<a href="/player.html?slug=${c.slug}&chapter=first" class="my-course-card">
+        <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
+          <i class="ti ${c.thumbnail_icon}"></i>
+          ${pct === 100 ? '<div class="mc-done"><i class="ti ti-check"></i> 완료</div>' : ''}
+        </div>
+        <div class="mc-body">
+          <div class="mc-cat">${c.category}</div>
+          <div class="mc-title">${c.title}</div>
+          <div class="mc-progress-row">
+            <div class="mc-bar-wrap"><div class="mc-bar" style="width:${pct}%"></div></div>
+            <span class="mc-pct">${pct}%</span>
+          </div>
+          <div class="mc-meta">${c.completed_chapters}/${c.total_chapters}강 완료</div>
+        </div>
+      </a>`
+    }).join('')}</div>`
+  } catch(e) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center">강의를 불러오지 못했습니다.</p>'
+  }
+}
 
-    async function load() {
-      try {
-        const courses = await API.get('/my/courses')
-        const el = document.getElementById('my-courses')
-        if (!courses.length) {
-          el.innerHTML = `<div class="empty-state"><i class="ti ti-book-off"></i><p>아직 수강 중인 강의가 없습니다.<br><a href="/" style="color:#111;font-weight:500">강의 둘러보기 →</a></p></div>`
-          return
-        }
-        el.innerHTML = `<div class="my-course-grid">${courses.map(c => {
-          const pct = c.total_chapters > 0 ? Math.round((c.completed_chapters / c.total_chapters) * 100) : 0
-          return `
-            <a href="/player.html?slug=${c.slug}&chapter=first" class="my-course-card">
-              <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
-                <i class="ti ${c.thumbnail_icon}"></i>
-                ${pct === 100 ? '<div class="mc-done"><i class="ti ti-check"></i> 완료</div>' : ''}
-              </div>
-              <div class="mc-body">
-                <div class="mc-cat">${c.category}</div>
-                <div class="mc-title">${c.title}</div>
-                <div class="mc-progress-row">
-                  <div class="mc-bar-wrap"><div class="mc-bar" style="width:${pct}%"></div></div>
-                  <span class="mc-pct">${pct}%</span>
-                </div>
-                <div class="mc-meta">${c.completed_chapters}/${c.total_chapters}강 완료</div>
-              </div>
-            </a>`
-        }).join('')}</div>`
-      } catch(e) {
-        document.getElementById('my-courses').innerHTML = '<p style="color:#aaa">강의를 불러오지 못했습니다.</p>'
-      }
+// ── 내 의뢰 (의뢰인) ──
+async function loadProjects() {
+  const el = document.getElementById('my-projects')
+  if (el.dataset.loaded) return
+  try {
+    const projects = await API.get('/projects/my/list')
+    el.dataset.loaded = '1'
+    if (!projects.length) {
+      el.innerHTML = `<div class="empty-state"><i class="ti ti-clipboard-off"></i><p>등록한 의뢰가 없습니다.<br><a href="/project-post.html">의뢰 등록하기 →</a></p></div>`
+      return
     }
+    const isActive = s => ['matched','contract','in_progress','delivered'].includes(s)
+    el.innerHTML = `<div style="margin-bottom:12px;display:flex;justify-content:flex-end"><a href="/project-post.html" class="pc-btn primary">+ 새 의뢰 등록</a></div>
+    <div class="proj-list">${projects.map(p => `
+      <div class="proj-card">
+        <div class="pc-left">
+          <span class="pc-cat">${p.category}</span>
+          <div class="pc-title">${p.title}</div>
+          <div class="pc-meta">등록일 ${(p.created_at||'').slice(0,10)} · 견적 ${p.quote_count||0}건</div>
+        </div>
+        <div class="pc-right">
+          <span class="status-badge ${p.status}">${statusLabel[p.status]||p.status}</span>
+          ${isActive(p.status)
+            ? `<a href="/chat.html?id=${p.id}" class="pc-btn primary">채팅방</a>`
+            : `<a href="/project-detail.html?id=${p.id}" class="pc-btn secondary">상세보기</a>`}
+        </div>
+      </div>`).join('')}</div>`
+  } catch(e) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center">의뢰 목록을 불러오지 못했습니다.</p>'
+  }
+}
 
-    async function loadCoupons() {
-      try {
-        const coupons = await API.get('/my/coupons')
-        const el = document.getElementById('my-coupons')
-        if (!coupons.length) {
-          el.innerHTML = `<div class="empty-state"><i class="ti ti-ticket-off"></i><p>보유한 쿠폰이 없습니다.</p></div>`
-          return
-        }
-        el.innerHTML = `<div class="coupon-list">${coupons.map(c => `
-          <div class="coupon-item ${c.status === 'used' ? 'used' : ''}">
-            <div class="coupon-left">
-              <div class="coupon-amount">${c.amount.toLocaleString()}원 할인</div>
-              <div class="coupon-reason">${c.reason === 'marketing_consent' ? '마케팅 동의 혜택' : c.reason}</div>
-            </div>
-            <div class="coupon-right">
-              <div class="coupon-code">${c.code}</div>
-              <div class="coupon-status ${c.status}">${c.status === 'available' ? '사용 가능' : '사용 완료'}</div>
-            </div>
-          </div>`).join('')}</div>`
-      } catch(e) {
-        document.getElementById('my-coupons').innerHTML = '<p style="color:#aaa">쿠폰 정보를 불러오지 못했습니다.</p>'
-      }
+// ── 내 견적 (편집자) ──
+async function loadQuotes() {
+  const el = document.getElementById('my-quotes')
+  if (el.dataset.loaded) return
+  try {
+    const quotes = await API.get('/projects/my/quotes')
+    el.dataset.loaded = '1'
+    if (!quotes.length) {
+      el.innerHTML = `<div class="empty-state"><i class="ti ti-file-off"></i><p>제출한 견적이 없습니다.<br><a href="/projects.html">의뢰 목록 보기 →</a></p></div>`
+      return
     }
+    const isActive = s => ['matched','contract','in_progress','delivered'].includes(s)
+    el.innerHTML = `<div class="quote-list">${quotes.map(q => {
+      const statusMap = { pending:'검토 대기', accepted:'수락됨 ✅', rejected:'미선택' }
+      return `<div class="quote-card">
+        <div class="qc-top">
+          <div>
+            <div class="qc-project">${q.project_title || '(삭제된 의뢰)'}</div>
+            <div style="font-size:12px;color:#aaa">${q.project_category || ''}</div>
+          </div>
+          <div class="qc-amount">₩${Number(q.amount).toLocaleString()}</div>
+        </div>
+        <div class="qc-msg">${q.message}</div>
+        <div class="qc-bottom">
+          <span class="qc-meta">${(q.created_at||'').slice(0,10)} 제출</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="qs-badge ${q.status}">${statusMap[q.status]||q.status}</span>
+            ${q.status === 'accepted' && isActive(q.project_status)
+              ? `<a href="/chat.html?id=${q.project_id}" class="pc-btn primary" style="font-size:12px;padding:5px 12px">채팅방</a>`
+              : `<a href="/project-detail.html?id=${q.project_id}" class="pc-btn secondary" style="font-size:12px;padding:5px 12px">의뢰 보기</a>`}
+          </div>
+        </div>
+      </div>`
+    }).join('')}</div>`
+  } catch(e) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center">견적 목록을 불러오지 못했습니다.</p>'
+  }
+}
 
-    let marketingAgreed = false
-    async function loadSettings() {
-      // JWT에서 최신 정보가 없으므로 로컬 스토리지 기반으로 표시
-      // 실제로는 GET /my/profile 엔드포인트에서 받아오는 것이 정확
-      const statusEl = document.getElementById('marketing-status')
-      const btnEl = document.getElementById('btn-marketing-toggle')
-      // 일단 페이지 진입 시 DB 상태를 가져올 수 없으므로 동의 여부를 알 수 없음 → 철회 버튼만 제공
-      statusEl.textContent = ''
-      btnEl.textContent = '마케팅 수신 철회'
-      btnEl.style.display = 'block'
+// ── 내 쿠폰 ──
+async function loadCoupons() {
+  const el = document.getElementById('my-coupons')
+  if (el.dataset.loaded) return
+  try {
+    const coupons = await API.get('/my/coupons')
+    el.dataset.loaded = '1'
+    if (!coupons.length) {
+      el.innerHTML = `<div class="empty-state"><i class="ti ti-ticket-off"></i><p>보유한 쿠폰이 없습니다.</p></div>`
+      return
     }
+    el.innerHTML = `<div class="coupon-list">${coupons.map(c => `
+      <div class="coupon-item ${c.status==='used'?'used':''}">
+        <div>
+          <div class="coupon-amount">${c.amount.toLocaleString()}원 할인</div>
+          <div class="coupon-reason">${c.reason === 'marketing_consent' ? '마케팅 동의 혜택' : c.reason}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="coupon-code">${c.code}</div>
+          <div class="coupon-status ${c.status}">${c.status === 'available' ? '사용 가능' : '사용 완료'}</div>
+        </div>
+      </div>`).join('')}</div>`
+  } catch(e) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center">쿠폰 정보를 불러오지 못했습니다.</p>'
+  }
+}
 
-    async function toggleMarketingConsent() {
-      if (!confirm('마케팅 정보 수신 동의를 철회하시겠습니까?\n철회 후 할인·이벤트 안내를 받지 못할 수 있습니다.')) return
-      try {
-        await API.del('/my/marketing-consent')
-        alert('마케팅 수신 동의가 철회되었습니다.')
-        document.getElementById('btn-marketing-toggle').style.display = 'none'
-        document.getElementById('marketing-status').textContent = '동의 철회 완료'
-      } catch(e) {
-        alert('처리 중 오류가 발생했습니다.')
-      }
-    }
-
-    load()
-  </script>
+// ── 마케팅 철회 ──
+async function withdrawMarketing() {
+  if (!confirm('마케팅 정보 수신 동의를 철회하시겠습니까?')) return
+  try {
+    await API.del('/my/marketing-consent')
+    alert('마케팅 수신 동의가 철회되었습니다.')
+    document.getElementById('btn-marketing-toggle').style.display = 'none'
+    document.getElementById('marketing-status').textContent = '철회 완료'
+  } catch(e) {
+    alert('처리 중 오류가 발생했습니다.')
+  }
+}
+</script>
 </body>
 </html>

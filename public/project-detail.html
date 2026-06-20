@@ -99,9 +99,49 @@ async function load() {
     const isEditor = user && user.role === 'editor'
     const myQuote = p.quotes?.find(q => q.editor_id === user?.id)
 
+    // 매칭 완료 이후 상태인지
+    const isMatched = ['matched','contract','in_progress','delivered','completed'].includes(p.status)
+    const isMatchedEditor = user && p.matched_editor_id === user.id
+    const canChat = isMatched && (isClient || isMatchedEditor)
+
+    // 진행 단계 바 (매칭 후)
+    const stageOrder = ['matched','contract','in_progress','delivered','completed']
+    const stageLabel = { matched:'매칭완료', contract:'계약완료', in_progress:'작업중', delivered:'납품완료', completed:'최종완료' }
+    let stageHTML = ''
+    if (isMatched) {
+      const curIdx = stageOrder.indexOf(p.status)
+      stageHTML = `
+        <div style="margin-bottom:20px;padding:16px;background:#f8f9fb;border-radius:10px;border:1px solid #eee">
+          <div style="font-size:12px;font-weight:700;color:#888;margin-bottom:10px">진행 단계</div>
+          <div style="display:flex;gap:0;align-items:center">
+            ${stageOrder.map((s,i) => {
+              const done = i < curIdx; const cur = i === curIdx
+              return `<div style="flex:1;text-align:center">
+                <div style="width:24px;height:24px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${done?'#2cae6b':cur?'#5c67f2':'#e5e5e5'};color:${done||cur?'#fff':'#aaa'}">${done?'✓':(i+1)}</div>
+                <div style="font-size:10px;color:${cur?'#5c67f2':done?'#2cae6b':'#bbb'};font-weight:${cur?700:500}">${stageLabel[s]}</div>
+              </div>
+              ${i < stageOrder.length-1 ? `<div style="flex:0 0 12px;height:2px;background:${i<curIdx?'#2cae6b':'#e5e5e5'};margin-bottom:18px"></div>` : ''}`
+            }).join('')}
+          </div>
+          ${canChat ? `<a href="/chat.html?id=${p.id}" style="display:block;margin-top:14px;text-align:center;padding:10px;background:#1a1f3c;color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none">💬 채팅 바로가기</a>` : ''}
+        </div>`
+    }
+
     // 사이드바: 견적 제출 (편집자이고 아직 제출 안 했고 모집중일 때)
     let sideHTML = ''
-    if (isEditor && !myQuote && p.status === 'open') {
+    if (canChat) {
+      // 매칭 후 — 채팅 카드
+      const acceptedQuote = p.quotes?.find(q => q.status === 'accepted')
+      sideHTML = `
+      <div class="quote-box">
+        <div class="qb-title">💬 작업 채팅</div>
+        <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.7">
+          ${isClient ? `<strong>${p.matched_editor_name || '편집자'}</strong>님과 작업을 진행하세요.` : `<strong>${p.client_name}</strong>님의 의뢰입니다.`}
+          ${acceptedQuote ? `<br>계약 금액: <strong style="color:#5c67f2">${fmt(acceptedQuote.amount)}</strong>` : ''}
+        </div>
+        <a href="/chat.html?id=${p.id}" style="display:block;text-align:center;padding:12px;background:#5c67f2;color:#fff;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none">채팅방 입장하기 →</a>
+      </div>`
+    } else if (isEditor && !myQuote && p.status === 'open') {
       sideHTML = `
       <div class="quote-box">
         <div class="qb-title">💼 견적 제출하기</div>
@@ -190,6 +230,7 @@ async function load() {
             ${p.deadline?`<span><i class="ti ti-calendar"></i> 납품 ${p.deadline}</span>`:''}
             <span><i class="ti ti-clock"></i> ${(p.created_at||'').slice(0,10)} 등록</span>
           </div>
+          ${stageHTML}
           <div class="section-label">의뢰 설명</div>
           <div class="dc-body">${p.description}</div>
           ${p.requirements ? `<div class="section-label">세부 요구사항</div><div class="dc-body">${p.requirements}</div>` : ''}

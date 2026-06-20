@@ -4,3 +4,4 @@ db/tadak.db.json
 *.log
 .DS_Store
 .claude/
+firebase-service-account.json

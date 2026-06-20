@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>채팅 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    body { background:#f5f6fa; }
+    .chat-wrap { max-width:860px; margin:0 auto; padding:24px 16px 0; display:grid; grid-template-columns:280px 1fr; gap:16px; height:calc(100vh - 72px); }
+    .chat-info { background:#fff; border:1px solid #eee; border-radius:14px; padding:20px; overflow-y:auto; }
+    .ci-title { font-size:15px; font-weight:800; margin-bottom:16px; }
+    .ci-row { font-size:13px; color:#555; margin-bottom:10px; line-height:1.6; }
+    .ci-row strong { color:#222; }
+    .stage-box { margin-top:20px; }
+    .stage-label { font-size:12px; font-weight:700; color:#888; margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px; }
+    .stage-list { display:flex; flex-direction:column; gap:6px; }
+    .stage-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; border:1.5px solid #eee; font-size:13px; font-weight:600; color:#999; cursor:default; }
+    .stage-item.done { background:#f0fff4; border-color:#b7f0cf; color:#2cae6b; }
+    .stage-item.current { background:#f0f2ff; border-color:#c4c9ff; color:#5c67f2; font-weight:700; }
+    .stage-item.active-btn { cursor:pointer; border-color:#5c67f2; color:#5c67f2; background:#fff; }
+    .stage-item.active-btn:hover { background:#f0f2ff; }
+    .stage-num { width:20px; height:20px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+    .stage-item.done .stage-num { background:#2cae6b; color:#fff; }
+    .stage-item.current .stage-num { background:#5c67f2; color:#fff; }
+
+    .chat-main { background:#fff; border:1px solid #eee; border-radius:14px; display:flex; flex-direction:column; overflow:hidden; }
+    .chat-header { padding:16px 20px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; }
+    .ch-title { font-size:15px; font-weight:800; }
+    .ch-back { font-size:13px; color:#888; text-decoration:none; }
+    .ch-back:hover { color:#5c67f2; }
+
+    .chat-messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:14px; }
+    .msg-row { display:flex; gap:10px; align-items:flex-end; }
+    .msg-row.mine { flex-direction:row-reverse; }
+    .msg-avatar { width:32px; height:32px; border-radius:50%; background:#5c67f2; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
+    .msg-row.mine .msg-avatar { background:#1a1f3c; }
+    .msg-bubble-wrap { max-width:60%; display:flex; flex-direction:column; gap:4px; }
+    .msg-row.mine .msg-bubble-wrap { align-items:flex-end; }
+    .msg-sender { font-size:11px; color:#aaa; }
+    .msg-bubble { padding:10px 14px; border-radius:14px; font-size:14px; line-height:1.6; word-break:break-all; }
+    .msg-row:not(.mine) .msg-bubble { background:#f4f5ff; color:#1a1a1a; border-bottom-left-radius:4px; }
+    .msg-row.mine .msg-bubble { background:#5c67f2; color:#fff; border-bottom-right-radius:4px; }
+    .msg-time { font-size:11px; color:#ccc; }
+
+    .chat-input { padding:16px; border-top:1px solid #f0f0f0; display:flex; gap:10px; align-items:flex-end; }
+    .chat-input textarea { flex:1; border:1.5px solid #e5e5e5; border-radius:10px; padding:10px 14px; font-size:14px; resize:none; min-height:44px; max-height:120px; font-family:inherit; line-height:1.5; outline:none; transition:.15s; }
+    .chat-input textarea:focus { border-color:#5c67f2; }
+    .chat-input button { padding:10px 18px; background:#5c67f2; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap; height:44px; }
+    .chat-input button:hover { background:#4a55e0; }
+    .chat-input button:disabled { background:#ccc; cursor:not-allowed; }
+
+    .empty-chat { text-align:center; color:#bbb; font-size:14px; padding:40px 0; }
+    .spinner { width:28px; height:28px; border:3px solid #eee; border-top-color:#5c67f2; border-radius:50%; animation:spin .7s linear infinite; margin:40px auto; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    @media(max-width:700px) {
+      .chat-wrap { grid-template-columns:1fr; height:auto; }
+      .chat-info { order:2; height:auto; }
+      .chat-main { height:70vh; }
+    }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo">타닥<span>클래스</span></a>
+    <div class="header-right">
+      <a href="/mypage.html" class="nav-btn">마이페이지</a>
+    </div>
+  </div>
+</header>
+
+<div class="chat-wrap">
+  <div class="chat-info" id="chat-info"><div class="spinner"></div></div>
+  <div class="chat-main">
+    <div class="chat-header">
+      <span class="ch-title" id="chat-project-title">채팅</span>
+      <a class="ch-back" id="back-link" href="/projects.html">← 의뢰로 돌아가기</a>
+    </div>
+    <div class="chat-messages" id="chat-messages"><div class="spinner"></div></div>
+    <div class="chat-input">
+      <textarea id="msg-input" placeholder="메시지를 입력하세요… (Enter: 전송, Shift+Enter: 줄바꿈)" rows="1"></textarea>
+      <button id="send-btn" onclick="sendMsg()">전송</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const params = new URLSearchParams(location.search)
+const projectId = params.get('id')
+if (!projectId) { alert('잘못된 접근입니다.'); location.href = '/projects.html' }
+if (!API.isLoggedIn()) { location.href = '/login.html?next=/chat.html?id=' + projectId }
+
+const user = API.user()
+let project = null
+let polling = null
+
+const statusLabel = { open:'모집중', matched:'매칭완료', contract:'계약완료', in_progress:'작업중', delivered:'납품완료', completed:'완료', cancelled:'취소' }
+const stages = [
+  { key:'matched',     label:'매칭 완료',  desc:'견적 수락' },
+  { key:'contract',    label:'계약 완료',  desc:'편집자 확정' },
+  { key:'in_progress', label:'작업 중',    desc:'편집 진행' },
+  { key:'delivered',   label:'납품 완료',  desc:'결과물 전달' },
+  { key:'completed',   label:'최종 완료',  desc:'의뢰 종료' },
+]
+const stageOrder = stages.map(s => s.key)
+
+function stageIndex(status) { return stageOrder.indexOf(status) }
+
+function fmt(n) { return n ? '₩' + Number(n).toLocaleString() : '협의' }
+function fmtTime(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const hh = String(d.getHours()).padStart(2,'0')
+  const mm = String(d.getMinutes()).padStart(2,'0')
+  return hh + ':' + mm
+}
+
+async function loadInfo() {
+  try {
+    project = await API.get('/projects/' + projectId)
+    document.getElementById('chat-project-title').textContent = project.title
+    document.getElementById('back-link').href = '/project-detail.html?id=' + projectId
+
+    const isClient = user.id === project.client_id
+    const isEditor = project.matched_editor_id === user.id
+    const curIdx = stageIndex(project.status)
+
+    let nextStageBtn = ''
+    if (isEditor && project.status === 'matched') {
+      nextStageBtn = `<div class="stage-item active-btn" onclick="updateStage('contract')"><span class="stage-num">→</span> 계약 완료 처리하기</div>`
+    } else if (isEditor && project.status === 'contract') {
+      nextStageBtn = `<div class="stage-item active-btn" onclick="updateStage('in_progress')"><span class="stage-num">→</span> 작업 시작 처리하기</div>`
+    } else if (isEditor && project.status === 'in_progress') {
+      nextStageBtn = `<div class="stage-item active-btn" onclick="updateStage('delivered')"><span class="stage-num">→</span> 납품 완료 처리하기</div>`
+    } else if (isClient && project.status === 'delivered') {
+      nextStageBtn = `<div class="stage-item active-btn" onclick="updateStage('completed')"><span class="stage-num">→</span> 최종 완료 처리하기</div>`
+    }
+
+    const acceptedQuote = project.quotes?.find(q => q.status === 'accepted')
+
+    document.getElementById('chat-info').innerHTML = `
+      <div class="ci-title">📋 의뢰 정보</div>
+      <div class="ci-row">카테고리: <strong>${project.category}</strong></div>
+      <div class="ci-row">의뢰인: <strong>${project.client_name}</strong></div>
+      <div class="ci-row">담당 편집자: <strong>${project.matched_editor_name || '-'}</strong></div>
+      <div class="ci-row">계약 금액: <strong>${acceptedQuote ? fmt(acceptedQuote.amount) : '-'}</strong></div>
+      <div class="ci-row">현재 상태: <strong style="color:#5c67f2">${statusLabel[project.status] || project.status}</strong></div>
+      <div class="stage-box">
+        <div class="stage-label">진행 단계</div>
+        <div class="stage-list">
+          ${stages.map((s, i) => {
+            const idx = i
+            const isDone = curIdx > idx
+            const isCurrent = curIdx === idx
+            return `<div class="stage-item ${isDone?'done':isCurrent?'current':''}">
+              <span class="stage-num">${isDone?'✓':(i+1)}</span>
+              <span>${s.label}</span>
+            </div>`
+          }).join('')}
+          ${nextStageBtn}
+        </div>
+      </div>`
+  } catch(e) {
+    document.getElementById('chat-info').innerHTML = '<div style="color:#aaa;font-size:13px">정보를 불러올 수 없습니다.</div>'
+  }
+}
+
+async function loadMessages(scroll = true) {
+  try {
+    const msgs = await API.get('/messages/' + projectId)
+    const el = document.getElementById('chat-messages')
+    if (!msgs.length) {
+      el.innerHTML = '<div class="empty-chat">아직 메시지가 없습니다.<br>먼저 인사를 건네보세요 👋</div>'
+      return
+    }
+    el.innerHTML = msgs.map(m => {
+      const mine = m.sender_id === user.id
+      return `<div class="msg-row ${mine?'mine':''}">
+        <div class="msg-avatar">${m.sender_name?.[0] || '?'}</div>
+        <div class="msg-bubble-wrap">
+          ${!mine ? `<div class="msg-sender">${m.sender_name}</div>` : ''}
+          <div class="msg-bubble">${m.content.replace(/\n/g,'<br>')}</div>
+          <div class="msg-time">${fmtTime(m.created_at)}</div>
+        </div>
+      </div>`
+    }).join('')
+    if (scroll) el.scrollTop = el.scrollHeight
+  } catch(e) {
+    // silent
+  }
+}
+
+async function sendMsg() {
+  const textarea = document.getElementById('msg-input')
+  const content = textarea.value.trim()
+  if (!content) return
+  const btn = document.getElementById('send-btn')
+  btn.disabled = true
+  try {
+    await API.post('/messages/' + projectId, { content })
+    textarea.value = ''
+    textarea.style.height = 'auto'
+    await loadMessages(true)
+  } catch(e) {
+    alert(e.message || '전송 실패')
+  } finally {
+    btn.disabled = false
+    textarea.focus()
+  }
+}
+
+async function updateStage(stage) {
+  const labels = { contract:'계약 완료', in_progress:'작업 시작', delivered:'납품 완료', completed:'최종 완료' }
+  if (!confirm(`"${labels[stage]}" 처리하시겠습니까?`)) return
+  try {
+    await API.patch('/projects/' + projectId + '/stage', { stage })
+    await loadInfo()
+    await API.post('/messages/' + projectId, { content: `[시스템] 진행 단계가 "${labels[stage]}"으로 업데이트되었습니다.` })
+    await loadMessages(true)
+  } catch(e) {
+    alert(e.message || '처리 실패')
+  }
+}
+
+// Enter 전송
+document.getElementById('msg-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg() }
+})
+// 자동 높이
+document.getElementById('msg-input').addEventListener('input', function() {
+  this.style.height = 'auto'
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px'
+})
+
+async function init() {
+  await Promise.all([loadInfo(), loadMessages(true)])
+  // 3초마다 메시지 폴링
+  polling = setInterval(() => loadMessages(false), 3000)
+}
+
+init()
+</script>
+</body>
+</html>
