@@ -12,9 +12,9 @@
 
     .detail-card { background:#fff; border:1px solid #eee; border-radius:14px; padding:28px; margin-bottom:20px; }
     .dc-cat-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
-    .dc-cat { font-size: 14.4px; font-weight:700; color:#5c67f2; background:#f0f2ff; padding:3px 10px; border-radius:12px; }
+    .dc-cat { font-size: 14.4px; font-weight:700; color:#111111; background:#f5f5f5; padding:3px 10px; border-radius:12px; }
     .dc-status { font-size: 14.4px; font-weight:700; padding:3px 10px; border-radius:12px; }
-    .dc-status.open { background:#f0fff4; color:#2cae6b; }
+    .dc-status.open { background:#f0fff4; color:#333333; }
     .dc-status.matched { background:#fff8e8; color:#d4991a; }
     .dc-status.completed { background:#f0f0f0; color:#888; }
     .dc-title { font-size: 26.4px; font-weight:900; color:#1a1a1a; margin-bottom:10px; line-height:1.35; }
@@ -32,9 +32,9 @@
       width:100%; padding:10px 12px; border:1.5px solid #e5e5e5; border-radius:8px;
       font-size: 15.6px; outline:none; transition:.15s; font-family:inherit;
     }
-    .qb-group input:focus, .qb-group textarea:focus { border-color:#5c67f2; }
+    .qb-group input:focus, .qb-group textarea:focus { border-color:#111111; }
     .qb-group textarea { resize:vertical; min-height:80px; line-height:1.6; }
-    .qb-submit { width:100%; padding:12px; background:#5c67f2; color:#fff; border:none; border-radius:8px; font-size: 16.8px; font-weight:700; cursor:pointer; transition:.15s; }
+    .qb-submit { width:100%; padding:12px; background:#111111; color:#fff; border:none; border-radius:8px; font-size: 16.8px; font-weight:700; cursor:pointer; transition:.15s; }
     .qb-submit:hover { background:#4a55e0; }
     .qb-submit:disabled { background:#ccc; cursor:not-allowed; }
     .qb-notice { font-size: 14.4px; color:#aaa; text-align:center; margin-top:10px; line-height:1.6; }
@@ -44,21 +44,21 @@
     .quote-item { background:#f8f9fb; border-radius:10px; padding:16px; border:1px solid #eee; }
     .qi-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
     .qi-editor { font-size: 16.8px; font-weight:700; color:#1a1a1a; display:flex; align-items:center; gap:6px; }
-    .qi-editor-badge { font-size: 13.2px; background:#5c67f2; color:#fff; padding:2px 7px; border-radius:4px; }
-    .qi-amount { font-size: 19.2px; font-weight:900; color:#5c67f2; }
+    .qi-editor-badge { font-size: 13.2px; background:#111111; color:#fff; padding:2px 7px; border-radius:4px; }
+    .qi-amount { font-size: 19.2px; font-weight:900; color:#111111; }
     .qi-msg { font-size: 15.6px; color:#555; line-height:1.6; margin-bottom:10px; }
     .qi-date { font-size: 14.4px; color:#aaa; }
     .qi-accept { padding:7px 16px; background:#1a1f3c; color:#fff; border:none; border-radius:7px; font-size: 15.6px; font-weight:700; cursor:pointer; transition:.15s; }
     .qi-accept:hover { background:#2d3561; }
     .qi-status { font-size: 14.4px; font-weight:700; padding:4px 10px; border-radius:6px; }
-    .qi-status.accepted { background:#f0fff4; color:#2cae6b; }
-    .qi-status.rejected { background:#fff0f0; color:#e63946; }
-    .qi-status.pending { background:#f4f5ff; color:#5c67f2; }
+    .qi-status.accepted { background:#f0fff4; color:#333333; }
+    .qi-status.rejected { background:#fff0f0; color:#111111; }
+    .qi-status.pending { background:#f5f5f5; color:#111111; }
 
     .info-box { background:#f8f9fb; border-radius:10px; padding:16px; font-size: 15.6px; color:#555; line-height:1.8; border:1px solid #eee; }
     .fee-box { background:#fff8e8; border:1px solid #ffe58f; border-radius:10px; padding:14px; font-size: 15.6px; color:#664d00; margin-top:12px; }
 
-    .spinner { width:32px; height:32px; border:3px solid #eee; border-top-color:#5c67f2; border-radius:50%; animation:spin .7s linear infinite; margin:48px auto; }
+    .spinner { width:32px; height:32px; border:3px solid #eee; border-top-color:#111111; border-radius:50%; animation:spin .7s linear infinite; margin:48px auto; }
     @keyframes spin { to{transform:rotate(360deg)} }
 
     @media(max-width:700px) {
@@ -122,10 +122,10 @@ async function load() {
             ${stageOrder.map((s,i) => {
               const done = i < curIdx; const cur = i === curIdx
               return `<div style="flex:1;text-align:center">
-                <div style="width:24px;height:24px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size: 13.2px;font-weight:700;background:${done?'#2cae6b':cur?'#5c67f2':'#e5e5e5'};color:${done||cur?'#fff':'#aaa'}">${done?'✓':(i+1)}</div>
-                <div style="font-size: 12px;color:${cur?'#5c67f2':done?'#2cae6b':'#bbb'};font-weight:${cur?700:500}">${stageLabel[s]}</div>
+                <div style="width:24px;height:24px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size: 13.2px;font-weight:700;background:${done?'#333333':cur?'#111111':'#e5e5e5'};color:${done||cur?'#fff':'#aaa'}">${done?'✓':(i+1)}</div>
+                <div style="font-size: 12px;color:${cur?'#111111':done?'#333333':'#bbb'};font-weight:${cur?700:500}">${stageLabel[s]}</div>
               </div>
-              ${i < stageOrder.length-1 ? `<div style="flex:0 0 12px;height:2px;background:${i<curIdx?'#2cae6b':'#e5e5e5'};margin-bottom:18px"></div>` : ''}`
+              ${i < stageOrder.length-1 ? `<div style="flex:0 0 12px;height:2px;background:${i<curIdx?'#333333':'#e5e5e5'};margin-bottom:18px"></div>` : ''}`
             }).join('')}
           </div>
           ${canChat ? `<a href="/chat.html?id=${p.id}" style="display:block;margin-top:14px;text-align:center;padding:10px;background:#1a1f3c;color:#fff;border-radius:8px;font-size: 15.6px;font-weight:700;text-decoration:none">💬 채팅 바로가기</a>` : ''}
@@ -142,10 +142,10 @@ async function load() {
         <div class="qb-title">💬 작업 채팅</div>
         <div style="font-size: 15.6px;color:#555;margin-bottom:14px;line-height:1.7">
           ${isClient ? `<strong>${p.matched_editor_name || '에디터'}</strong>님과 작업을 진행하세요.` : `<strong>${p.client_name}</strong>님의 클라이언츠입니다.`}
-          ${acceptedQuote ? `<br>계약 금액: <strong style="color:#5c67f2">${fmt(acceptedQuote.amount)}</strong>` : ''}
-          ${p.coupon_discount ? `<br>쿠폰 할인: <strong style="color:#2cae6b">-${fmt(p.coupon_discount)}</strong> · 최종 <strong>${fmt(p.final_contract_amount || acceptedQuote?.amount - p.coupon_discount)}</strong>` : ''}
+          ${acceptedQuote ? `<br>계약 금액: <strong style="color:#111111">${fmt(acceptedQuote.amount)}</strong>` : ''}
+          ${p.coupon_discount ? `<br>쿠폰 할인: <strong style="color:#333333">-${fmt(p.coupon_discount)}</strong> · 최종 <strong>${fmt(p.final_contract_amount || acceptedQuote?.amount - p.coupon_discount)}</strong>` : ''}
         </div>
-        <a href="/chat.html?id=${p.id}" style="display:block;text-align:center;padding:12px;background:#5c67f2;color:#fff;border-radius:8px;font-weight:700;font-size: 16.8px;text-decoration:none">채팅방 입장하기 →</a>
+        <a href="/chat.html?id=${p.id}" style="display:block;text-align:center;padding:12px;background:#111111;color:#fff;border-radius:8px;font-weight:700;font-size: 16.8px;text-decoration:none">채팅방 입장하기 →</a>
       </div>`
     } else if (isEditor && !myQuote && p.status === 'open') {
       sideHTML = `
@@ -167,7 +167,7 @@ async function load() {
       sideHTML = `
       <div class="quote-box">
         <div class="qb-title">내 견적 현황</div>
-        <div style="font-size: 18px;font-weight:800;color:#5c67f2;margin-bottom:8px">${fmt(myQuote.amount)}</div>
+        <div style="font-size: 18px;font-weight:800;color:#111111;margin-bottom:8px">${fmt(myQuote.amount)}</div>
         <div style="font-size: 15.6px;color:#666;margin-bottom:12px">${esc(myQuote.message)}</div>
         <div class="qi-status ${myQuote.status}">${statusMap[myQuote.status]||myQuote.status}</div>
       </div>`
@@ -176,7 +176,7 @@ async function load() {
       <div class="quote-box">
         <div class="qb-title">견적을 제출하려면?</div>
         <p style="font-size: 15.6px;color:#666;margin-bottom:16px;line-height:1.7">로그인 후 에디터즈로 신청하면 견적을 제출할 수 있습니다.</p>
-        <a href="/login.html" style="display:block;text-align:center;padding:10px;background:#5c67f2;color:#fff;border-radius:8px;font-weight:700;font-size: 16.8px">로그인하기</a>
+        <a href="/login.html" style="display:block;text-align:center;padding:10px;background:#111111;color:#fff;border-radius:8px;font-weight:700;font-size: 16.8px">로그인하기</a>
       </div>`
     }
 
@@ -218,7 +218,7 @@ async function load() {
                   ? `<div style="text-align:right">
                       <button class="qi-accept" onclick="acceptQuote('${q.id}', ${q.amount})">이 견적 수락하기</button>
                       ${q.amount >= 30000 && clientProjectCoupons.length
-                        ? `<div style="font-size:12px;color:#5c67f2;margin-top:6px">1만원 할인 쿠폰 사용 가능 (${clientProjectCoupons.length}장 보유)</div>`
+                        ? `<div style="font-size:12px;color:#111111;margin-top:6px">1만원 할인 쿠폰 사용 가능 (${clientProjectCoupons.length}장 보유)</div>`
                         : ''}
                     </div>`
                   : `<span class="qi-status ${q.status}">${{pending:'검토중',accepted:'수락됨 ✅',rejected:'미선택'}[q.status]||q.status}</span>`}

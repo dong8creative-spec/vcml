@@ -94,9 +94,22 @@ router.get('/live-sessions', authMiddleware, async (req, res) => {
     })
   }
   sessions.sort((a, b) => {
-    const ta = a.live_starts_at ? new Date(a.live_starts_at).getTime() : Infinity
-    const tb = b.live_starts_at ? new Date(b.live_starts_at).getTime() : Infinity
-    return ta - tb
+    const parseStart = (c) => {
+      if (c.live_starts_at) {
+        const t = new Date(c.live_starts_at).getTime()
+        if (!isNaN(t)) return t
+      }
+      const ko = String(c.live_schedule || '').match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*(오전|오후)\s*(\d{1,2}):(\d{2})/)
+      if (ko) {
+        let h = parseInt(ko[5], 10)
+        if (ko[4] === '오후' && h !== 12) h += 12
+        if (ko[4] === '오전' && h === 12) h = 0
+        return new Date(parseInt(ko[1], 10), parseInt(ko[2], 10) - 1, parseInt(ko[3], 10), h, parseInt(ko[6], 10)).getTime()
+      }
+      const t = new Date(c.live_schedule || '').getTime()
+      return isNaN(t) ? Infinity : t
+    }
+    return parseStart(a) - parseStart(b)
   })
   res.json(sessions)
 })
@@ -109,9 +122,64 @@ router.get('/courses', authMiddleware, async (req, res) => {
     const chapters = await db.getChaptersByCourse(c.id)
     const progress = await db.getProgressByCourse(req.user.id, c.id)
     const completed = progress.filter(p => p.completed).length
-    return { ...c, enrolled_at: e.enrolled_at, total_chapters: chapters.length, completed_chapters: completed, last_chapter_id: e.last_chapter_id || null }
+    const order = await db.getActiveOrderForCourse(req.user.id, c.id)
+    const cancelPlan = db.computeEnrollmentCancelPlan(c, order, progress, chapters)
+    return {
+      ...c,
+      enrolled_at: e.enrolled_at,
+      total_chapters: chapters.length,
+      completed_chapters: completed,
+      last_chapter_id: e.last_chapter_id || null,
+      paid_amount: order ? Number(order.amount || 0) : 0,
+      can_cancel: cancelPlan.allowed,
+      cancel_label: cancelPlan.label || (Number(order?.amount || 0) > 0 ? '환불 신청' : '신청 취소'),
+      cancel_hint: cancelPlan.error || null,
+      refund_preview: cancelPlan.refund_amount || 0,
+    }
   }))
   res.json(courses.filter(Boolean).reverse())
+})
+
+router.get('/courses/:courseId/cancel-preview', authMiddleware, async (req, res) => {
+  const courseId = req.params.courseId
+  if (!await db.isEnrolled(req.user.id, courseId)) {
+    return res.status(404).json({ error: '수강 중인 강의가 아닙니다.' })
+  }
+  const course = await db.getCourseById(courseId)
+  if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+  const chapters = await db.getChaptersByCourse(courseId)
+  const progress = await db.getProgressByCourse(req.user.id, courseId)
+  const order = await db.getActiveOrderForCourse(req.user.id, courseId)
+  const plan = db.computeEnrollmentCancelPlan(course, order, progress, chapters)
+  res.json({
+    allowed: plan.allowed,
+    type: plan.type || null,
+    label: plan.label || null,
+    refund_amount: plan.refund_amount || 0,
+    message: plan.error || null,
+    paid_amount: order ? Number(order.amount || 0) : 0,
+    watched_chapters: db.countWatchedChapters(progress),
+    total_chapters: chapters.length,
+    course_title: course.title,
+  })
+})
+
+router.post('/courses/:courseId/cancel', authMiddleware, async (req, res) => {
+  try {
+    const result = await db.cancelEnrollmentWithCleanup(req.user.id, req.params.courseId)
+    if (result.error === 'not_enrolled') {
+      return res.status(404).json({ error: '수강 중인 강의가 아닙니다.' })
+    }
+    if (result.error === 'course_not_found') {
+      return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    }
+    if (result.error === 'not_allowed') {
+      return res.status(400).json({ error: result.message || '취소·환불할 수 없습니다.' })
+    }
+    res.json(result)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
 })
 
 router.post('/progress', authMiddleware, async (req, res) => {
@@ -132,7 +200,7 @@ router.post('/reviews', authMiddleware, async (req, res) => {
 })
 
 router.get('/coupons', authMiddleware, async (req, res) => {
-  const coupons = await db.getCouponsByUser(req.user.id)
+  const coupons = await db.getCouponsByUserNormalized(req.user.id)
   res.json(coupons)
 })
 

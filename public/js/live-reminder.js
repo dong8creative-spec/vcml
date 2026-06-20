@@ -1,11 +1,39 @@
 /**
- * 라이브 강의 — 카운트다운 · Google Meet · 1시간 전 알림
+ * 라이브 강의 — 카운트다운 · Google Meet · 1시간 전 알림 · 30분 전 입장
  */
 ;(function () {
   const REMIND_BEFORE_MS = 60 * 60 * 1000
-  const MEET_OPEN_BEFORE_MS = 60 * 60 * 1000
+  const MEET_OPEN_BEFORE_MS = 30 * 60 * 1000
   const LIVE_WINDOW_AFTER_MS = 3 * 60 * 60 * 1000
   const POLL_MS = 30 * 1000
+  const MEET_WAIT_LABEL = '30분 전부터 입장 가능'
+
+  const GOOGLE_ICON_SVG = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" class="meet-google-icon"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>'
+
+  function googleMeetIcon() {
+    if (typeof window !== 'undefined' && window.GOOGLE_ICON_SVG) {
+      return String(window.GOOGLE_ICON_SVG).replace('<svg ', '<svg class="meet-google-icon" ')
+    }
+    return GOOGLE_ICON_SVG
+  }
+
+  /** ko-KR 예: 2026. 6. 27. 오후 2:00:00 */
+  function parseKoreanLocaleDate(str) {
+    const s = String(str || '').trim()
+    if (!s) return null
+    const m = s.match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*(오전|오후)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/)
+    if (!m) return null
+    const year = parseInt(m[1], 10)
+    const month = parseInt(m[2], 10) - 1
+    const day = parseInt(m[3], 10)
+    let hour = parseInt(m[5], 10)
+    const minute = parseInt(m[6], 10)
+    const second = parseInt(m[7] || '0', 10)
+    if (m[4] === '오후' && hour !== 12) hour += 12
+    if (m[4] === '오전' && hour === 12) hour = 0
+    const d = new Date(year, month, day, hour, minute, second)
+    return isNaN(d.getTime()) ? null : d
+  }
 
   function parseLiveStart(course) {
     if (course?.live_starts_at) {
@@ -13,6 +41,8 @@
       if (!isNaN(d.getTime())) return d
     }
     if (course?.live_schedule) {
+      const fromKo = parseKoreanLocaleDate(course.live_schedule)
+      if (fromKo) return fromKo
       const d = new Date(course.live_schedule)
       if (!isNaN(d.getTime())) return d
     }
@@ -63,11 +93,11 @@
     style.id = 'live-reminder-styles'
     style.textContent = `
       .live-countdown {
-        font-size: 13px; font-weight: 700; color: #e65100;
-        background: #fff3e0; border-radius: 8px; padding: 8px 10px;
+        font-size: 13px; font-weight: 700; color: #111;
+        background: #f5f5f5; border-radius: 8px; padding: 8px 10px;
         margin: 8px 0; text-align: center; font-variant-numeric: tabular-nums;
       }
-      .live-countdown.is-live { color: #2e7d32; background: #e8f5e9; }
+      .live-countdown.is-live { color: #111; background: #eee; }
       .live-countdown.is-ended { color: #888; background: #f5f5f5; }
       .btn-meet {
         display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -77,7 +107,12 @@
       }
       .btn-meet--active { background: #1a73e8; color: #fff; }
       .btn-meet--active:hover { background: #1557b0; }
-      .btn-meet--waiting { background: #eef2ff; color: #5c67f2; cursor: default; }
+      .btn-meet--waiting {
+        background: #e8f0fe; color: #1a73e8; border: 1px solid #c5d9f7;
+        cursor: default;
+      }
+      .btn-meet__icon { display: inline-flex; align-items: center; flex-shrink: 0; line-height: 0; }
+      .btn-meet .meet-google-icon { display: block; width: 18px; height: 18px; }
       .live-remind-overlay {
         position: fixed; inset: 0; z-index: 10000;
         background: rgba(0,0,0,.45); display: flex; align-items: center;
@@ -94,13 +129,13 @@
       }
       .live-remind-badge {
         display: inline-flex; align-items: center; gap: 6px;
-        background: #fce8e8; color: #c62828; font-size: 12px; font-weight: 800;
+        background: #f0f0f0; color: #111; font-size: 12px; font-weight: 800;
         padding: 4px 10px; border-radius: 20px; margin-bottom: 12px;
       }
       .live-remind-title { font-size: 20px; font-weight: 900; line-height: 1.35; margin-bottom: 8px; }
       .live-remind-schedule { font-size: 14px; color: #888; margin-bottom: 16px; }
       .live-remind-countdown {
-        font-size: 28px; font-weight: 900; color: #e65100;
+        font-size: 28px; font-weight: 900; color: #111;
         text-align: center; margin: 16px 0; font-variant-numeric: tabular-nums;
       }
       .live-remind-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
@@ -112,7 +147,7 @@
       .my-course-card--live { cursor: default; }
       .my-course-card--live:hover { transform: none; }
       .mc-live-badge {
-        position: absolute; top: 8px; left: 8px; background: #e53935; color: #fff;
+        position: absolute; top: 8px; left: 8px; background: var(--badge-live, #ED6B5A); color: #fff;
         font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;
       }
     `
@@ -163,14 +198,15 @@
   function meetButtonHtml(course, start, compact) {
     const url = meetUrl(course.meet_code)
     const join = canJoinMeet(course, start)
+    const icon = `<span class="btn-meet__icon">${googleMeetIcon()}</span>`
     if (!url) {
-      return `<span class="btn-meet btn-meet--waiting">Meet 링크 준비 중</span>`
+      return `<span class="btn-meet btn-meet--waiting">${icon} Meet 링크 준비 중</span>`
     }
     if (join) {
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="btn-meet btn-meet--active"><i class="ti ti-brand-google"></i> Google Meet 입장</a>`
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="btn-meet btn-meet--active">${icon} Google Meet 입장</a>`
     }
-    const label = compact ? '1시간 전부터 입장 가능' : 'Google Meet (1시간 전부터 입장 가능)'
-    return `<span class="btn-meet btn-meet--waiting"><i class="ti ti-brand-google"></i> ${label}</span>`
+    const label = compact ? MEET_WAIT_LABEL : `Google Meet (${MEET_WAIT_LABEL})`
+    return `<span class="btn-meet btn-meet--waiting">${icon} ${label}</span>`
   }
 
   function showReminderPopup(course, start) {
@@ -189,7 +225,7 @@
         <div class="live-remind-countdown" data-live-countdown data-live-starts-at="${startMs}"></div>
         <div class="live-remind-actions">
           ${join && url
-            ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="btn-meet btn-meet--active"><i class="ti ti-brand-google"></i> Google Meet 입장하기</a>`
+            ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="btn-meet btn-meet--active"><span class="btn-meet__icon">${googleMeetIcon()}</span> Google Meet 입장하기</a>`
             : `<a href="/mypage.html" class="btn-meet btn-meet--active"><i class="ti ti-book"></i> 내 강의에서 확인</a>`
           }
         </div>
@@ -235,6 +271,7 @@
 
   window.LiveSession = {
     parseLiveStart,
+    parseKoreanLocaleDate,
     meetUrl,
     formatCountdown,
     canJoinMeet,

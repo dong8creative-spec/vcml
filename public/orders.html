@@ -15,9 +15,13 @@
     .order-amount { font-size: 18px; font-weight: 600; color: #111; }
     .order-method { font-size: 15.6px; color: #666; }
     .order-date { font-size: 14.4px; color: #aaa; }
-    .order-status { display: inline-flex; align-items: center; gap: 4px; font-size: 14.4px; font-weight: 500; padding: 3px 9px; border-radius: 20px; background: #e8f5e9; color: #2e7d32; }
-    .order-go { font-size: 14.4px; color: #111; border: 0.5px solid #ddd; border-radius: 6px; padding: 5px 12px; background: #fff; transition: background 0.15s; white-space: nowrap; text-decoration: none; display: inline-block; }
-    .order-go:hover { background: #f5f5f5; }
+    .order-status { display: inline-flex; align-items: center; gap: 4px; font-size: 14.4px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+    .order-status.paid { background: #f0f0f0; color: #333333; }
+    .order-status.refunded { background: #f5f5f5; color: #555555; }
+    .order-status.cancelled { background: #f5f5f5; color: #888; }
+    .order-go, .order-refund { font-size: 14.4px; color: #111; border: 0.5px solid #ddd; border-radius: 6px; padding: 5px 12px; background: #fff; transition: background 0.15s; white-space: nowrap; text-decoration: none; display: inline-block; cursor: pointer; }
+    .order-go:hover, .order-refund:hover { background: #f5f5f5; }
+    .order-refund { color: #111111; border-color: #dddddd; }
     .orders-card { background: #fff; border: 0.5px solid #e8e8e8; border-radius: 12px; overflow: hidden; }
     .orders-empty { padding: 60px 20px; text-align: center; color: #aaa; font-size: 16.8px; line-height: 2; }
     .orders-empty i { font-size: 43.2px; display: block; margin-bottom: 12px; }
@@ -55,6 +59,27 @@
       <div class="my-name">${user.name}</div>
       <div class="my-email">${user.email}</div>`
 
+    function statusLabel(status) {
+      if (status === 'refunded') return '<span class="order-status refunded"><i class="ti ti-receipt-refund"></i> 환불완료</span>'
+      if (status === 'cancelled') return '<span class="order-status cancelled"><i class="ti ti-x"></i> 취소됨</span>'
+      return '<span class="order-status paid"><i class="ti ti-circle-check-filled"></i> 결제완료</span>'
+    }
+
+    async function refundOrder(courseId) {
+      try {
+        const preview = await API.get('/my/courses/' + courseId + '/cancel-preview')
+        if (!preview.allowed) { toast(preview.message || '환불할 수 없습니다.', 'error'); return }
+        const title = preview.course_title || '강의'
+        const refundLine = preview.refund_amount > 0 ? `\n예상 환불액: ₩${Number(preview.refund_amount).toLocaleString()}` : ''
+        if (!confirm(`${title}\n\n환불을 진행할까요?${refundLine}\n\n· 작성한 기대평이 삭제됩니다.\n· 발급된 기대평 20% 쿠폰이 회수됩니다.`)) return
+        const res = await API.post('/my/courses/' + courseId + '/cancel', {})
+        toast(`환불 처리되었습니다.${res.refund_amount ? ' ₩' + Number(res.refund_amount).toLocaleString() : ''}`, 'success')
+        load()
+      } catch (e) {
+        toast(e.message || '환불 처리 중 오류가 발생했습니다.', 'error')
+      }
+    }
+
     async function load() {
       const wrap = document.getElementById('orders-wrap')
       try {
@@ -68,18 +93,30 @@
             <thead><tr>
               <th>강의</th><th>금액</th><th>결제 수단</th><th>결제일</th><th>상태</th><th></th>
             </tr></thead>
-            <tbody>${orders.map(o => `
+            <tbody>${orders.map(o => {
+              const isPaid = (o.status || 'paid') === 'paid'
+              const isFree = Number(o.amount || 0) === 0
+              const action = isPaid && o.course_id
+                ? (isFree
+                    ? `<button type="button" class="order-refund" onclick="refundOrder('${o.course_id}')">신청 취소</button>`
+                    : `<button type="button" class="order-refund" onclick="refundOrder('${o.course_id}')">환불 신청</button>`)
+                : (isPaid ? '' : '')
+              const goBtn = isPaid && o.slug
+                ? `<a href="/player.html?slug=${o.slug}&chapter=first" class="order-go">수강하기 →</a>`
+                : ''
+              return `
               <tr>
                 <td>
                   <div class="order-course-title">${o.title || '-'}</div>
                   <div class="order-course-cat">${o.category || ''}</div>
                 </td>
-                <td><div class="order-amount">₩${(o.amount||0).toLocaleString()}</div></td>
+                <td><div class="order-amount">${isFree ? '무료' : '₩' + (o.amount||0).toLocaleString()}</div></td>
                 <td><div class="order-method">${o.method || '-'}</div></td>
-                <td><div class="order-date">${o.paid_at || '-'}</div></td>
-                <td><span class="order-status"><i class="ti ti-circle-check-filled"></i> 결제완료</span></td>
-                <td><a href="/player.html?slug=${o.slug}&chapter=first" class="order-go">수강하기 →</a></td>
-              </tr>`).join('')}
+                <td><div class="order-date">${(o.paid_at || '-').slice(0, 10)}</div></td>
+                <td>${statusLabel(o.status || 'paid')}</td>
+                <td style="display:flex;gap:6px;flex-wrap:wrap">${goBtn}${action}</td>
+              </tr>`
+            }).join('')}
             </tbody>
           </table>
         </div>`

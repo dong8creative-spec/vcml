@@ -19,11 +19,11 @@
   position: relative;
   width: 100%;
   max-width: 480px;
-  background: linear-gradient(165deg, #f0f7ff 0%, #fff 42%);
-  border: 1px solid #c5ddf8;
+  background: linear-gradient(165deg, var(--bg-soft) 0%, #fff 42%);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 28px 28px 24px;
-  box-shadow: 0 20px 60px rgba(13, 58, 102, 0.15);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
   animation: welcomeSlideUp 0.25s ease;
 }
 
@@ -40,20 +40,20 @@
   background: none;
   font-size: 28px;
   line-height: 1;
-  color: #8aa8c8;
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
 }
 
-.welcome-popup-close:hover { color: #0d3a66; }
+.welcome-popup-close:hover { color: var(--text-primary); }
 
 .welcome-popup-badge {
   display: inline-block;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
-  color: #0d3a66;
-  background: #dbeafe;
+  color: var(--text-primary);
+  background: var(--bg-muted);
   border-radius: 20px;
   padding: 4px 12px;
   margin-bottom: 14px;
@@ -62,7 +62,7 @@
 .welcome-popup h2 {
   font-size: 20px;
   font-weight: 800;
-  color: #0d3a66;
+  color: var(--text-primary);
   line-height: 1.4;
   margin: 0 0 12px;
   padding-right: 24px;
@@ -70,13 +70,13 @@
 
 .welcome-popup-body {
   font-size: 14.5px;
-  color: #1a4a7a;
+  color: var(--text-secondary);
   line-height: 1.7;
   margin: 0 0 16px;
 }
 
 .welcome-popup-body a {
-  color: #0d3a66;
+  color: var(--text-primary);
   font-weight: 700;
   text-decoration: underline;
 }
@@ -86,23 +86,23 @@
   gap: 12px;
   align-items: flex-start;
   background: #fff;
-  border: 1px solid #b8d4f0;
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 16px;
   margin-bottom: 20px;
   font-size: 14px;
-  color: #1a4a7a;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
 .welcome-popup-coupon i {
   font-size: 22px;
-  color: #5c67f2;
+  color: var(--text-primary);
   flex-shrink: 0;
   margin-top: 2px;
 }
 
-.welcome-popup-coupon strong { color: #0d3a66; }
+.welcome-popup-coupon strong { color: var(--text-primary); }
 
 .welcome-popup-actions {
   display: flex;
@@ -125,11 +125,11 @@
 }
 
 .welcome-popup-btn.primary {
-  background: #5c67f2;
+  background: var(--text-primary);
   color: #fff;
 }
 
-.welcome-popup-btn.primary:hover { background: #4a54d4; }
+.welcome-popup-btn.primary:hover { background: var(--text-secondary); }
 
 .welcome-popup-btn.secondary {
   background: #fff;

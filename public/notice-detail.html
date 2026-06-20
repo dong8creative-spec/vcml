@@ -54,7 +54,7 @@ async function load() {
         <a href="/notices.html"><i class="ti ti-list"></i> 목록으로</a>
       </div>`
   } catch (e) {
-    wrap.innerHTML = `<p style="text-align:center;padding:60px;color:#c62828">${e.message || '공지를 불러올 수 없습니다.'}<br><br><a href="/notices.html" style="color:var(--primary)">목록으로</a></p>`
+    wrap.innerHTML = `<p style="text-align:center;padding:60px;color:#111111">${e.message || '공지를 불러올 수 없습니다.'}<br><br><a href="/notices.html" style="color:var(--primary)">목록으로</a></p>`
   }
 }
 load()

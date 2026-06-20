@@ -61,15 +61,21 @@
     return ''
   }
 
+  function getApi() {
+    return window.API || (typeof API !== 'undefined' ? API : null)
+  }
+
   function renderChromeAuth() {
     const hr = document.getElementById('chrome-header-right')
-    if (!hr || !window.API) return
+    const api = getApi()
+    if (!hr || !api) return
     const next = encodeURIComponent(location.pathname + location.search)
-    const user = API.user()
-    if (user) {
-      hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${esc(user.name)}</a><a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>`
+    if (api.isLoggedIn()) {
+      const user = api.user()
+      const name = user?.name ? esc(user.name) : '마이페이지'
+      hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${name}</a><a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>`
     } else {
-      const icon = typeof GOOGLE_ICON_SVG !== 'undefined' ? GOOGLE_ICON_SVG : ''
+      const icon = typeof GOOGLE_ICON_SVG !== 'undefined' ? GOOGLE_ICON_SVG : (window.GOOGLE_ICON_SVG || '')
       hr.innerHTML = `<a href="/login.html?next=${next}" class="nav-btn">로그인</a><a href="/api/auth/google?next=${next}" class="nav-btn nav-btn-google">${icon} Google</a>`
     }
   }

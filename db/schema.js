@@ -30,8 +30,44 @@ const ANTICIPATION_COUPON_REASON = 'anticipation_review'
 const ANTICIPATION_DISCOUNT_PERCENT = 20
 const ANTICIPATION_MIN_LENGTH = 20
 const ANTICIPATION_MAX_LENGTH = 150
+
+function addOneMonthFrom(iso) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  d.setMonth(d.getMonth() + 1)
+  return d.toISOString()
+}
+
+function getAnticipationCouponExpiresAt(coupon) {
+  if (!coupon || coupon.reason !== ANTICIPATION_COUPON_REASON) return null
+  return coupon.expires_at || (coupon.created_at ? addOneMonthFrom(coupon.created_at) : null)
+}
+
+function isAnticipationCouponExpired(coupon, atMs = Date.now()) {
+  const exp = getAnticipationCouponExpiresAt(coupon)
+  if (!exp) return false
+  return atMs > new Date(exp).getTime()
+}
 const EDITOR_FEATURED_REASON = 'editor_featured'
 const EDITOR_FEATURED_DAYS = 7
+const COUPON_USED_CONTEXT = {
+  COURSE_ORDER: 'course_order',
+  CLIENT_PROJECT: 'client_project',
+  EDITOR_FEATURED: 'editor_featured',
+}
+const COUPON_USED_CONTEXT_LABELS = {
+  course_order: '강의 결제',
+  client_project: '클라이언츠 견적',
+  editor_featured: '에디터 상위노출',
+  unknown: '기타',
+}
+const COUPON_REASON_LABELS = {
+  anticipation_review: '강의 기대평',
+  marketing_consent: '마케팅 동의',
+  client_course_reward: '의뢰인 수강 혜택',
+  editor_featured: '에디터 승인 혜택',
+  editor_apply_featured: '에디터 승격 혜택',
+}
 const EDITOR_APPLY_FEATURED_REASON = 'editor_apply_featured'
 const EDITOR_APPLY_FEATURED_AMOUNT = 20000
 const EDITOR_APPLY_FEATURED_COUNT = 5
@@ -923,8 +959,155 @@ const db = {
     const ref = await fs.collection('orders').add(data)
     return { id: ref.id, ...data }
   },
+  async getOrderById(orderId) {
+    const doc = await fs.collection('orders').doc(orderId).get()
+    return docToObj(doc)
+  },
   async cancelOrder(orderId) {
-    await fs.collection('orders').doc(orderId).update({ status: 'cancelled' })
+    await fs.collection('orders').doc(orderId).update({ status: 'cancelled', cancelled_at: now() })
+  },
+  async refundOrder(orderId, refundAmount) {
+    await fs.collection('orders').doc(orderId).update({
+      status: 'refunded',
+      refunded_at: now(),
+      refund_amount: refundAmount,
+    })
+  },
+  async getActiveOrderForCourse(userId, courseId) {
+    const orders = await db.getOrdersByUser(userId)
+    return orders.find(o => o.course_id === courseId && o.status === 'paid') || null
+  },
+  async unenroll(userId, courseId) {
+    const snap = await fs.collection('enrollments').where('user_id', '==', userId).get()
+    const targets = snap.docs.filter(d => d.data().course_id === courseId)
+    for (const doc of targets) await doc.ref.delete()
+    return targets.length
+  },
+  async deleteProgressByCourse(userId, courseId) {
+    const chapters = await db.getChaptersByCourse(courseId)
+    const chIds = new Set(chapters.map(c => c.id))
+    const snap = await fs.collection('progress').where('user_id', '==', userId).get()
+    let removed = 0
+    for (const doc of snap.docs) {
+      if (chIds.has(doc.data().chapter_id)) {
+        await doc.ref.delete()
+        removed++
+      }
+    }
+    return removed
+  },
+  async deleteAnticipationReviewByUserAndCourse(userId, courseId) {
+    const snap = await fs.collection('anticipation_reviews').where('user_id', '==', userId).get()
+    for (const doc of snap.docs) {
+      if (doc.data().course_id === courseId) {
+        await doc.ref.delete()
+        return true
+      }
+    }
+    return false
+  },
+  async recallAnticipationCoupons(userId, { refundedOrderId } = {}) {
+    const coupons = (await db.getCouponsByUser(userId)).filter(c => c.reason === ANTICIPATION_COUPON_REASON)
+    let recalled = 0
+    for (const c of coupons) {
+      if (c.status === 'available') {
+        await fs.collection('coupons').doc(c.id).update({ status: 'revoked', revoked_at: now() })
+        recalled++
+      } else if (c.status === 'used' && refundedOrderId && c.order_id === refundedOrderId) {
+        await fs.collection('coupons').doc(c.id).update({
+          status: 'revoked',
+          revoked_at: now(),
+          used_at: null,
+          order_id: null,
+        })
+        recalled++
+      }
+    }
+    return recalled
+  },
+  countWatchedChapters(progress) {
+    return progress.filter(p => Number(p.watched_sec) > 0 || p.completed).length
+  },
+  computeEnrollmentCancelPlan(course, order, progress, chapters) {
+    const isLive = course.course_type === 'live'
+    const paidAmount = Number(order?.amount || 0)
+    const isFree = paidAmount === 0
+
+    if (isLive) {
+      if (course.live_status === 'ended') {
+        return { allowed: false, error: '종료된 라이브 강의는 취소할 수 없습니다.' }
+      }
+      if (course.live_status === 'live') {
+        return { allowed: false, error: '진행 중인 라이브는 취소할 수 없습니다.' }
+      }
+      return { allowed: true, type: 'cancel', refund_amount: 0, label: '신청 취소' }
+    }
+
+    if (isFree) {
+      return { allowed: true, type: 'cancel', refund_amount: 0, label: '수강 취소' }
+    }
+
+    const total = chapters.length || 1
+    const watched = db.countWatchedChapters(progress)
+    const ratio = watched / total
+    const paidAt = order?.paid_at ? new Date(order.paid_at) : null
+    const daysSince = paidAt ? (Date.now() - paidAt.getTime()) / (1000 * 60 * 60 * 24) : 999
+
+    if (daysSince <= 7 && watched === 0) {
+      return { allowed: true, type: 'refund', refund_amount: paidAmount, label: '전액 환불', full: true }
+    }
+    if (ratio >= 0.5) {
+      return { allowed: false, error: '전체 강의의 50% 이상 수강한 경우 환불할 수 없습니다.' }
+    }
+    if (daysSince > 7 && watched === 0) {
+      return { allowed: false, error: '결제일로부터 7일이 지난 미수강 건은 환불할 수 없습니다. 1:1 문의를 이용해주세요.' }
+    }
+    if (ratio < 1 / 3) {
+      return { allowed: true, type: 'refund', refund_amount: Math.floor(paidAmount * (2 / 3)), label: '부분 환불 (2/3)' }
+    }
+    return { allowed: true, type: 'refund', refund_amount: Math.floor(paidAmount / 2), label: '부분 환불 (1/2)' }
+  },
+  async cancelEnrollmentWithCleanup(userId, courseId) {
+    if (!await db.isEnrolled(userId, courseId)) {
+      return { error: 'not_enrolled' }
+    }
+
+    const course = await db.getCourseById(courseId)
+    if (!course) return { error: 'course_not_found' }
+
+    const chapters = await db.getChaptersByCourse(courseId)
+    const progress = await db.getProgressByCourse(userId, courseId)
+    const order = await db.getActiveOrderForCourse(userId, courseId)
+
+    const plan = db.computeEnrollmentCancelPlan(course, order, progress, chapters)
+    if (!plan.allowed) return { error: 'not_allowed', message: plan.error }
+
+    await db.unenroll(userId, courseId)
+    const nextCount = Math.max(0, (course.student_count || 0) - 1)
+    await db.updateCourse(courseId, { student_count: nextCount })
+
+    let refundedOrderId = null
+    if (order && plan.type === 'refund') {
+      await db.refundOrder(order.id, plan.refund_amount)
+      refundedOrderId = order.id
+    } else if (order && plan.type === 'cancel') {
+      await db.cancelOrder(order.id)
+      refundedOrderId = order.id
+    }
+
+    await db.deleteProgressByCourse(userId, courseId)
+    const anticipationDeleted = await db.deleteAnticipationReviewByUserAndCourse(userId, courseId)
+    const couponsRecalled = await db.recallAnticipationCoupons(userId, { refundedOrderId })
+
+    return {
+      success: true,
+      type: plan.type,
+      refund_amount: plan.refund_amount || 0,
+      label: plan.label,
+      anticipation_deleted: anticipationDeleted,
+      coupons_recalled: couponsRecalled,
+      course_slug: course.slug,
+    }
   },
   async getOrdersByUser(userId) {
     const snap = await fs.collection('orders').where('user_id', '==', userId).get()
@@ -1089,14 +1272,16 @@ const db = {
     }
 
     const existingCoupon = (await db.getCouponsByUser(userId)).find(
-      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available'
+      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available' && !isAnticipationCouponExpired(c)
     )
     let coupon = existingCoupon || null
     if (!coupon) {
+      const issuedAt = now()
       coupon = await db.createCoupon(userId, 0, ANTICIPATION_COUPON_REASON, {
         discount_percent: ANTICIPATION_DISCOUNT_PERCENT,
         coupon_type: 'percent',
         first_course_only: true,
+        expires_at: addOneMonthFrom(issuedAt),
       })
     }
 
@@ -1136,14 +1321,16 @@ const db = {
     const review = { id: ref.id, user_id: userId, author_display: authorDisplay, content: text, is_public: 1, created_at: now() }
 
     const existingCoupon = (await db.getCouponsByUser(userId)).find(
-      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available'
+      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available' && !isAnticipationCouponExpired(c)
     )
     let coupon = existingCoupon || null
     if (!coupon) {
+      const issuedAt = now()
       coupon = await db.createCoupon(userId, 0, ANTICIPATION_COUPON_REASON, {
         discount_percent: ANTICIPATION_DISCOUNT_PERCENT,
         coupon_type: 'percent',
         first_course_only: true,
+        expires_at: addOneMonthFrom(issuedAt),
       })
     }
 
@@ -1151,6 +1338,144 @@ const db = {
   },
 
   // coupons
+  isCouponExpired(coupon) {
+    if (!coupon || coupon.status !== 'available') return coupon?.status === 'expired'
+    if (coupon.reason === ANTICIPATION_COUPON_REASON) return isAnticipationCouponExpired(coupon)
+    return false
+  },
+  async expireCouponIfNeeded(coupon) {
+    if (!coupon?.id || coupon.status !== 'available') return coupon
+    if (!db.isCouponExpired(coupon)) return coupon
+    await fs.collection('coupons').doc(coupon.id).update({ status: 'expired', expired_at: now() })
+    return { ...coupon, status: 'expired', expired_at: now() }
+  },
+  enrichCoupon(coupon) {
+    if (!coupon) return coupon
+    const expires_at = coupon.reason === ANTICIPATION_COUPON_REASON
+      ? getAnticipationCouponExpiresAt(coupon)
+      : (coupon.expires_at || null)
+    return { ...coupon, expires_at }
+  },
+  inferCouponUsedContext(coupon) {
+    if (!coupon) return null
+    if (coupon.used_context) return coupon.used_context
+    if (coupon.order_id) return COUPON_USED_CONTEXT.COURSE_ORDER
+    if (coupon.project_id) return COUPON_USED_CONTEXT.CLIENT_PROJECT
+    if (coupon.featured_until || isEditorFeaturedCoupon(coupon)) return COUPON_USED_CONTEXT.EDITOR_FEATURED
+    return 'unknown'
+  },
+  async resolveCouponUsage(coupon) {
+    if (!coupon || coupon.status !== 'used') return null
+    const context = db.inferCouponUsedContext(coupon)
+    let targetTitle = coupon.used_target_title || null
+    let detail = null
+    const discount = coupon.used_discount ?? coupon.amount ?? 0
+
+    if (context === COUPON_USED_CONTEXT.COURSE_ORDER) {
+      if (!targetTitle) {
+        const order = coupon.order_id ? await db.getOrderById(coupon.order_id) : null
+        const courseId = coupon.used_target_id || coupon.used_course_id || order?.course_id
+        if (courseId) {
+          const course = await db.getCourseById(courseId)
+          targetTitle = course?.title || '강의'
+        }
+        if (order) detail = `결제 ${Number(order.amount || 0).toLocaleString('ko-KR')}원`
+      }
+    } else if (context === COUPON_USED_CONTEXT.CLIENT_PROJECT) {
+      if (!targetTitle) {
+        const projectId = coupon.used_target_id || coupon.project_id
+        if (projectId) {
+          const project = await db.getProjectById(projectId)
+          targetTitle = project?.title || '의뢰'
+        }
+      }
+      if (coupon.used_quote_amount) {
+        detail = `견적 ${Number(coupon.used_quote_amount).toLocaleString('ko-KR')}원`
+      }
+    } else if (context === COUPON_USED_CONTEXT.EDITOR_FEATURED) {
+      targetTitle = targetTitle || '에디터즈 상위노출 7일'
+    }
+
+    return {
+      context,
+      context_label: COUPON_USED_CONTEXT_LABELS[context] || COUPON_USED_CONTEXT_LABELS.unknown,
+      target_title: targetTitle,
+      detail,
+      used_at: coupon.used_at,
+      discount,
+    }
+  },
+  async getCouponsByUserNormalized(userId) {
+    const coupons = await db.getCouponsByUser(userId)
+    const result = []
+    for (const c of coupons) {
+      let item
+      if (c.status === 'available' && db.isCouponExpired(c)) {
+        await fs.collection('coupons').doc(c.id).update({ status: 'expired', expired_at: now() })
+        item = db.enrichCoupon({ ...c, status: 'expired', expired_at: now() })
+      } else {
+        item = db.enrichCoupon(c)
+      }
+      if (item.status === 'used') {
+        item.usage = await db.resolveCouponUsage(item)
+      }
+      result.push(item)
+    }
+    return result
+  },
+  async getAdminCouponReport() {
+    const snap = await fs.collection('coupons').get()
+    const coupons = snapToArr(snap).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    const userIds = [...new Set(coupons.map(c => c.user_id).filter(Boolean))]
+    const users = await Promise.all(userIds.map(id => db.findUserById(id)))
+    const userMap = Object.fromEntries(users.filter(Boolean).map(u => [u.id, u]))
+
+    const summary = {
+      total: coupons.length,
+      available: 0,
+      used: 0,
+      expired: 0,
+      revoked: 0,
+      by_reason: {},
+      usage_by_context: {},
+      total_discount_applied: 0,
+    }
+
+    for (const c of coupons) {
+      if (summary[c.status] !== undefined) summary[c.status]++
+      const reason = c.reason || 'unknown'
+      if (!summary.by_reason[reason]) {
+        summary.by_reason[reason] = { issued: 0, available: 0, used: 0, expired: 0, revoked: 0 }
+      }
+      summary.by_reason[reason].issued++
+      if (summary.by_reason[reason][c.status] !== undefined) summary.by_reason[reason][c.status]++
+
+      if (c.status === 'used') {
+        const ctx = db.inferCouponUsedContext(c)
+        if (!summary.usage_by_context[ctx]) {
+          summary.usage_by_context[ctx] = { count: 0, discount_total: 0, label: COUPON_USED_CONTEXT_LABELS[ctx] || ctx }
+        }
+        summary.usage_by_context[ctx].count++
+        const applied = Number(c.used_discount ?? c.amount ?? 0)
+        summary.usage_by_context[ctx].discount_total += applied
+        summary.total_discount_applied += applied
+      }
+    }
+
+    const list = await Promise.all(coupons.map(async c => {
+      const u = userMap[c.user_id]
+      const enriched = db.enrichCoupon(c)
+      return {
+        ...enriched,
+        user_name: u?.name || u?.email || '-',
+        user_email: u?.email || null,
+        reason_label: COUPON_REASON_LABELS[c.reason] || c.reason,
+        usage: c.status === 'used' ? await db.resolveCouponUsage(c) : null,
+      }
+    }))
+
+    return { summary, coupons: list }
+  },
   async createCoupon(userId, amount, reason, extra = {}) {
     const code = 'TADAK' + String(Date.now()).slice(-7) + Math.random().toString(36).slice(2,5).toUpperCase()
     const data = { user_id: userId, code, amount, reason, status: 'available', created_at: now(), used_at: null, ...extra }
@@ -1202,12 +1527,18 @@ const db = {
   async redeemClientProjectCoupon(userId, couponId, projectId, quoteAmount) {
     const coupon = await db.checkClientProjectCoupon(userId, couponId, quoteAmount)
     if (!coupon) return null
+    const project = await db.getProjectById(projectId)
     await fs.collection('coupons').doc(couponId).update({
       status: 'used',
       used_at: now(),
       project_id: projectId,
       used_quote_amount: Number(quoteAmount),
       order_id: null,
+      used_context: COUPON_USED_CONTEXT.CLIENT_PROJECT,
+      used_target_type: 'project',
+      used_target_id: projectId,
+      used_target_title: project?.title || null,
+      used_discount: coupon.amount,
     })
     return {
       discount: coupon.amount,
@@ -1221,12 +1552,26 @@ const db = {
   },
   async getCouponByCode(code) {
     const snap = await fs.collection('coupons').where('code', '==', code).limit(1).get()
-    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+    if (snap.empty) return null
+    const coupon = { id: snap.docs[0].id, ...snap.docs[0].data() }
+    return db.expireCouponIfNeeded(db.enrichCoupon(coupon))
   },
-  async useCoupon(couponId, orderId) {
+  async useCoupon(couponId, usage = {}) {
+    const meta = typeof usage === 'string' ? { order_id: usage } : usage
     const doc = await fs.collection('coupons').doc(couponId).get()
     if (!doc.exists || doc.data().status !== 'available') return false
-    await fs.collection('coupons').doc(couponId).update({ status: 'used', used_at: now(), order_id: orderId })
+    await fs.collection('coupons').doc(couponId).update({
+      status: 'used',
+      used_at: now(),
+      order_id: meta.order_id ?? null,
+      used_context: meta.used_context ?? (meta.order_id ? COUPON_USED_CONTEXT.COURSE_ORDER : null),
+      used_target_type: meta.used_target_type ?? null,
+      used_target_id: meta.used_target_id ?? meta.course_id ?? null,
+      used_target_title: meta.used_target_title ?? null,
+      used_discount: meta.used_discount ?? null,
+      ...(meta.course_id ? { used_course_id: meta.course_id } : {}),
+      ...(meta.project_id ? { project_id: meta.project_id } : {}),
+    })
     return true
   },
 
@@ -1767,7 +2112,17 @@ const db = {
       coupon_type: EDITOR_FEATURED_REASON,
       featured_until: until,
     })
-    await fs.collection('coupons').doc(coupon.id).update({ status: 'used', used_at: now(), order_id: null })
+    await fs.collection('coupons').doc(coupon.id).update({
+      status: 'used',
+      used_at: now(),
+      order_id: null,
+      used_context: COUPON_USED_CONTEXT.EDITOR_FEATURED,
+      used_target_type: 'editor_application',
+      used_target_id: app.id,
+      used_target_title: '에디터즈 상위노출 7일',
+      used_discount: 0,
+      featured_until: until,
+    })
     return { featured_until: until, coupon_id: coupon.id }
   },
   async redeemEditorFeaturedCoupon(userId, couponId) {
@@ -1789,6 +2144,11 @@ const db = {
       used_at: now(),
       order_id: null,
       featured_until: until,
+      used_context: COUPON_USED_CONTEXT.EDITOR_FEATURED,
+      used_target_type: 'editor_application',
+      used_target_id: app.id,
+      used_target_title: '에디터즈 상위노출 7일',
+      used_discount: coupon.amount || 0,
     })
     return { featured_until: until }
   },

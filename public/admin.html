@@ -41,6 +41,9 @@
         <i class="ti ti-arrow-back-up"></i> 환불 요청
         <span class="badge-dot">3</span>
       </a>
+      <a href="#coupons" class="nav-item" data-section="coupons">
+        <i class="ti ti-ticket"></i> 쿠폰 관리
+      </a>
 
       <div class="nav-group-label">에디터즈</div>
       <a href="#editor-apps" class="nav-item" data-section="editor-apps">
@@ -222,7 +225,7 @@
       <!-- 라이브 강의 설정 패널 -->
       <div class="card mt16" id="live-panel" style="display:none">
         <div class="card-header">
-          <div class="card-title"><i class="ti ti-broadcast" style="color:#e53935"></i> 라이브 강의 설정 — <span id="live-panel-title"></span></div>
+          <div class="card-title"><i class="ti ti-broadcast" style="color:#111111"></i> 라이브 강의 설정 — <span id="live-panel-title"></span></div>
         </div>
         <div class="two-col" style="gap:16px">
           <div>
@@ -264,8 +267,8 @@
             <button class="btn-save" onclick="saveLiveSettings()">설정 저장</button>
           </div>
           <div id="live-send-section" style="display:none">
-            <div style="background:#fff3e0;border:0.5px solid #ffcc80;border-radius:10px;padding:16px;margin-bottom:16px">
-              <div style="font-size: 15.6px;font-weight:600;color:#e65100;margin-bottom:8px">📣 알림톡 발송</div>
+            <div style="background:#f5f5f5;border:0.5px solid #ffcc80;border-radius:10px;padding:16px;margin-bottom:16px">
+              <div style="font-size: 15.6px;font-weight:600;color:#555555;margin-bottom:8px">📣 알림톡 발송</div>
               <div style="font-size: 15.6px;color:#bf360c;line-height:1.7">
                 수강 등록된 학생 전원에게<br>Google Meet 참여 코드를<br>카카오 알림톡으로 발송합니다.<br>
                 <span style="font-size: 13.2px;color:#aaa">(전화번호 미등록 수강생 제외)</span>
@@ -378,6 +381,90 @@
           </thead>
           <tbody id="orders-table-body">
             <tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: COUPONS ===== -->
+    <section class="section" id="sec-coupons">
+      <div class="metric-grid" id="coupon-summary-grid" style="margin-bottom:20px">
+        <div class="metric-card">
+          <div class="metric-icon purple"><i class="ti ti-ticket"></i></div>
+          <div class="metric-body">
+            <div class="metric-label">발급 총계</div>
+            <div class="metric-num" id="coupon-stat-total">-</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon blue"><i class="ti ti-circle-check"></i></div>
+          <div class="metric-body">
+            <div class="metric-label">사용 완료</div>
+            <div class="metric-num" id="coupon-stat-used">-</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon green"><i class="ti ti-clock"></i></div>
+          <div class="metric-body">
+            <div class="metric-label">사용 가능</div>
+            <div class="metric-num" id="coupon-stat-available">-</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon orange"><i class="ti ti-discount"></i></div>
+          <div class="metric-body">
+            <div class="metric-label">총 할인 적용액</div>
+            <div class="metric-num" id="coupon-stat-discount">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <div class="card-title">사용처별 집계</div>
+        </div>
+        <div style="padding:0 20px 20px" id="coupon-usage-breakdown">
+          <p style="color:#888;margin:0">로딩 중...</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <div class="card-title">발급 사유별 집계</div>
+        </div>
+        <div style="padding:0 20px 20px" id="coupon-reason-breakdown">
+          <p style="color:#888;margin:0">로딩 중...</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">쿠폰 목록</div>
+          <div class="filter-row">
+            <select id="coupon-filter-status" onchange="loadCouponsAdmin()">
+              <option value="all">전체 상태</option>
+              <option value="available">사용 가능</option>
+              <option value="used">사용 완료</option>
+              <option value="expired">만료</option>
+              <option value="revoked">회수</option>
+            </select>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>코드</th>
+              <th>회원</th>
+              <th>발급 사유</th>
+              <th>혜택</th>
+              <th>상태</th>
+              <th>사용처</th>
+              <th>사용일</th>
+              <th>발급일</th>
+            </tr>
+          </thead>
+          <tbody id="coupons-table-body">
+            <tr><td colspan="8" style="text-align:center;color:#888">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1052,18 +1139,18 @@
   <div id="live-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:16px;padding:28px;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-broadcast" style="color:#e53935"></i> 라이브 강의 등록</div>
+        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-broadcast" style="color:#111111"></i> 라이브 강의 등록</div>
         <button onclick="closeLiveCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
       </div>
-      <div style="background:#fff3e0;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#e65100;margin-bottom:20px;line-height:1.6">
+      <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#555555;margin-bottom:20px;line-height:1.6">
         라이브 강의는 <b>무료</b>로 제공됩니다.<br>수강 신청한 학생에게 카카오 알림톡으로 Google Meet 코드를 발송합니다.
       </div>
       <div class="form-group">
-        <label>강의 제목 <span style="color:#c62828">*</span></label>
+        <label>강의 제목 <span style="color:#111111">*</span></label>
         <input type="text" id="lc-title" placeholder="예: 프리미어 프로 라이브 Q&A" />
       </div>
       <div class="form-group">
-        <label>카테고리 <span style="color:#c62828">*</span></label>
+        <label>카테고리 <span style="color:#111111">*</span></label>
         <select id="lc-category">
           <option>영상 편집</option>
           <option>모션그래픽</option>
@@ -1081,7 +1168,7 @@
         <textarea id="lc-desc" rows="3" placeholder="라이브 강의 내용을 간략히 설명해주세요" style="width:100%;padding:10px 14px;border:0.5px solid #ddd;border-radius:8px;font-size: 16.8px;resize:vertical;font-family:inherit"></textarea>
       </div>
       <div class="form-group">
-        <label>라이브 일정 <span style="color:#c62828">*</span></label>
+        <label>라이브 일정 <span style="color:#111111">*</span></label>
         <input type="datetime-local" id="lc-schedule" />
       </div>
       <div class="form-group">
@@ -1212,7 +1299,7 @@
         const isLive = c.course_type === 'live'
         const isOffline = c.course_type === 'offline' || c.is_offline
         const typeBadge = isLive
-          ? `<span class="badge-status" style="background:#ffebee;color:#c62828">🔴 라이브</span>`
+          ? `<span class="badge-status" style="background:#f5f5f5;color:#111111">🔴 라이브</span>`
           : isOffline
             ? `<span class="badge-status" style="background:#e8eaf6;color:#3949ab">📍 오프라인</span>`
             : `<span class="badge-status" style="background:#f5f5f5;color:#555">📹 VOD</span>`
@@ -1316,9 +1403,20 @@
       document.getElementById('live-curriculum-image-url').value = (c.live_curriculum_image || '').startsWith('http') ? (c.live_curriculum_image || '') : ''
       _liveCurriculumImageData = (c.live_curriculum_image && !String(c.live_curriculum_image).startsWith('http')) ? c.live_curriculum_image : null
       renderLiveCurriculumPreview(c.live_curriculum_image || '')
-      if (c.live_schedule) {
-        const raw = c.live_starts_at || c.live_schedule
-        try { document.getElementById('live-schedule').value = new Date(raw).toISOString().slice(0,16) } catch {}
+      if (c.live_starts_at) {
+        try { document.getElementById('live-schedule').value = new Date(c.live_starts_at).toISOString().slice(0, 16) } catch {}
+      } else if (c.live_schedule && window.LiveSession?.parseKoreanLocaleDate) {
+        const parsed = LiveSession.parseKoreanLocaleDate(c.live_schedule)
+        if (parsed) {
+          try { document.getElementById('live-schedule').value = parsed.toISOString().slice(0, 16) } catch {}
+        }
+      } else if (c.live_schedule) {
+        try {
+          const parsed = new Date(c.live_schedule)
+          if (!isNaN(parsed.getTime())) {
+            document.getElementById('live-schedule').value = parsed.toISOString().slice(0, 16)
+          }
+        } catch {}
       }
       onLiveTypeChange()
       document.getElementById('live-panel').scrollIntoView({ behavior: 'smooth' })
@@ -1393,12 +1491,12 @@
       const el = document.getElementById('send-result')
       el.style.display = 'block'
       el.innerHTML = `
-        <div style="background:#e8f5e9;border-radius:8px;padding:12px;line-height:1.8">
+        <div style="background:#f0f0f0;border-radius:8px;padding:12px;line-height:1.8">
           ✅ 발송 완료<br>
           발송 성공: <b>${result.sent}명</b><br>
           전화번호 미등록(스킵): <b>${result.skipped}명</b>
           ${result.skipped_users?.length ? `<br><span style="font-size: 13.2px;color:#aaa">${result.skipped_users.join(', ')}</span>` : ''}
-          ${result.failed ? `<br>발송 실패: <b style="color:#c62828">${result.failed}명</b>` : ''}
+          ${result.failed ? `<br>발송 실패: <b style="color:#111111">${result.failed}명</b>` : ''}
         </div>`
     }
 
@@ -1431,6 +1529,96 @@
           <td><span class="badge-status ${o.status==='paid'?'paid':'refund'}">${o.status==='paid'?'결제완료':'환불'}</span></td>
           <td class="td-date">${o.paid_at||'-'}</td>
         </tr>`).join('');
+    }
+
+    let adminCouponsCache = []
+    const couponStatusLabel = { available: '사용 가능', used: '사용 완료', expired: '만료', revoked: '회수' }
+
+    function couponBenefitLabel(c) {
+      if (c.discount_percent) return `${c.discount_percent}% 할인`
+      if (c.reason === 'editor_featured' || c.reason === 'editor_apply_featured' || c.coupon_type === 'editor_featured') {
+        return c.amount > 0 ? `${Number(c.amount).toLocaleString()}원 · 상위노출 7일` : '상위노출 7일'
+      }
+      return `${Number(c.amount || 0).toLocaleString()}원 할인`
+    }
+
+    async function loadCouponsAdmin() {
+      const tbody = document.getElementById('coupons-table-body')
+      if (!tbody) return
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888">로딩 중...</td></tr>'
+      try {
+        const data = await API.get('/admin/coupons')
+        adminCouponsCache = data.coupons || []
+        const s = data.summary || {}
+
+        const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val }
+        setText('coupon-stat-total', `${s.total ?? 0}장`)
+        setText('coupon-stat-used', `${s.used ?? 0}장`)
+        setText('coupon-stat-available', `${s.available ?? 0}장`)
+        setText('coupon-stat-discount', `${Number(s.total_discount_applied || 0).toLocaleString()}원`)
+
+        const usageEl = document.getElementById('coupon-usage-breakdown')
+        const usageEntries = Object.entries(s.usage_by_context || {})
+        if (usageEl) {
+          usageEl.innerHTML = usageEntries.length
+            ? `<table class="data-table" style="margin:0"><thead><tr><th>사용처</th><th>건수</th><th>할인 합계</th></tr></thead><tbody>${
+              usageEntries.map(([key, row]) => `<tr>
+                <td>${row.label || key}</td>
+                <td>${row.count || 0}건</td>
+                <td>${Number(row.discount_total || 0).toLocaleString()}원</td>
+              </tr>`).join('')
+            }</tbody></table>`
+            : '<p style="color:#888;margin:0">아직 사용된 쿠폰이 없습니다.</p>'
+        }
+
+        const reasonEl = document.getElementById('coupon-reason-breakdown')
+        const reasonEntries = Object.entries(s.by_reason || {})
+        const reasonName = {
+          anticipation_review: '강의 기대평',
+          marketing_consent: '마케팅 동의',
+          client_course_reward: '의뢰인 수강 혜택',
+          editor_featured: '에디터 승인',
+          editor_apply_featured: '에디터 승격',
+        }
+        if (reasonEl) {
+          reasonEl.innerHTML = reasonEntries.length
+            ? `<table class="data-table" style="margin:0"><thead><tr><th>발급 사유</th><th>발급</th><th>사용</th><th>보유</th><th>만료</th><th>회수</th></tr></thead><tbody>${
+              reasonEntries.map(([key, row]) => `<tr>
+                <td>${reasonName[key] || key}</td>
+                <td>${row.issued || 0}</td>
+                <td>${row.used || 0}</td>
+                <td>${row.available || 0}</td>
+                <td>${row.expired || 0}</td>
+                <td>${row.revoked || 0}</td>
+              </tr>`).join('')
+            }</tbody></table>`
+            : '<p style="color:#888;margin:0">발급된 쿠폰이 없습니다.</p>'
+        }
+
+        const filter = document.getElementById('coupon-filter-status')?.value || 'all'
+        const filtered = filter === 'all' ? adminCouponsCache : adminCouponsCache.filter(c => c.status === filter)
+        if (!filtered.length) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888">표시할 쿠폰이 없습니다.</td></tr>'
+          return
+        }
+        tbody.innerHTML = filtered.map(c => {
+          const usageText = c.status === 'used' && c.usage
+            ? `${c.usage.context_label}${c.usage.target_title ? `<br><span class="td-sub">${c.usage.target_title}</span>` : ''}`
+            : '-'
+          return `<tr>
+            <td style="font-family:monospace;font-size:13px">${c.code}</td>
+            <td>${c.user_name || '-'}<br><span class="td-sub">${c.user_email || ''}</span></td>
+            <td>${c.reason_label || c.reason || '-'}</td>
+            <td>${couponBenefitLabel(c)}</td>
+            <td><span class="badge-status ${c.status === 'available' ? 'paid' : c.status === 'used' ? 'pending' : 'refund'}">${couponStatusLabel[c.status] || c.status}</span></td>
+            <td class="td-sub">${usageText}</td>
+            <td class="td-date">${c.used_at ? c.used_at.slice(0, 10) : '-'}</td>
+            <td class="td-date">${c.created_at ? c.created_at.slice(0, 10) : '-'}</td>
+          </tr>`
+        }).join('')
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#e00">${e.message || '불러오기 실패'}</td></tr>`
+      }
     }
 
     async function loadReviews() {
@@ -1469,6 +1657,7 @@
       curriculum: '커리큘럼 편집',
       students: '수강생 목록',
       orders: '결제 내역',
+      coupons: '쿠폰 관리',
       refunds: '환불 요청',
       instructors: '강사 관리',
       reviews: '수강 후기',
@@ -1513,7 +1702,7 @@
             <td style="font-size: 14.4px;color:#666">${tools||'-'}</td>
             <td style="font-size: 14.4px;color:#666">${a.skills||'-'}</td>
             <td>${expLabel[a.experience_years]||'-'}</td>
-            <td>${a.portfolio_url ? `<a href="${a.portfolio_url}" target="_blank" style="color:#5c67f2;font-size: 14.4px">보기 →</a>` : '-'}</td>
+            <td>${a.portfolio_url ? `<a href="${a.portfolio_url}" target="_blank" style="color:#111111;font-size: 14.4px">보기 →</a>` : '-'}</td>
             <td class="td-date">${(a.applied_at||'').slice(0,10)}</td>
             <td>${statusMap[a.status]||a.status}</td>
             <td class="td-actions"><button class="btn-sm" onclick="openEditorDetail('${a.id}')">상세</button></td>
@@ -1539,7 +1728,7 @@
           <div><strong>희망 근무 형태:</strong> ${({remote:'원격·재택',hybrid:'하이브리드',onsite:'현장 근무',project:'프로젝트 단위',fulltime:'풀타임·장기'})[app.work_type]||app.work_type||'-'}</div>
           <div><strong>사용 툴:</strong> ${tools}</div>
           <div><strong>작업 유형:</strong> ${app.skills||'-'}</div>
-          ${app.portfolio_url ? `<div><strong>포트폴리오:</strong> <a href="${app.portfolio_url}" target="_blank" style="color:#5c67f2">${app.portfolio_url}</a></div>` : ''}
+          ${app.portfolio_url ? `<div><strong>포트폴리오:</strong> <a href="${app.portfolio_url}" target="_blank" style="color:#111111">${app.portfolio_url}</a></div>` : ''}
           <div style="background:#f8f9fb;border-radius:8px;padding:14px;margin-top:4px">
             <strong>자기소개</strong><br><br>${(app.intro||'').replace(/\n/g,'<br>')}
           </div>
@@ -2275,6 +2464,7 @@
       courses: loadCourses,
       students: loadStudents,
       orders: loadOrders,
+      coupons: loadCouponsAdmin,
       reviews: loadReviews,
       instructors: loadInstructors,
       'editor-apps': () => loadEditorApps('pending'),
@@ -2304,7 +2494,7 @@
         tbody.innerHTML = projects.map(p => {
           const budget = p.budget_min||p.budget_max ? `${p.budget_min?'₩'+Number(p.budget_min).toLocaleString():''}${p.budget_max?'~₩'+Number(p.budget_max).toLocaleString():''}` : '협의'
           return `<tr>
-            <td><a href="/project-detail.html?id=${p.id}" target="_blank" style="color:#5c67f2">${p.title}</a></td>
+            <td><a href="/project-detail.html?id=${p.id}" target="_blank" style="color:#111111">${p.title}</a></td>
             <td>${p.category}</td>
             <td>${p.client_name||'-'}</td>
             <td style="font-size: 14.4px">${budget}</td>

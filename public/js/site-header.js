@@ -27,19 +27,25 @@
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }
 
+  function getApi() {
+    return window.API || (typeof API !== 'undefined' ? API : null)
+  }
+
   function renderHeaderAuth() {
     const hr = document.getElementById('header-right')
     if (!hr) return
-    if (!window.API) {
+    const api = getApi()
+    if (!api) {
       hr.innerHTML = DEFAULT_AUTH_HTML
       return
     }
     const next = encodeURIComponent(location.pathname + location.search)
-    const user = API.user()
-    if (user) {
-      hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${esc(user.name)}</a><a href="#" class="nav-btn nav-btn-outline" onclick="API.logout();return false">로그아웃</a>`
+    if (api.isLoggedIn()) {
+      const user = api.user()
+      const name = user?.name ? esc(user.name) : '마이페이지'
+      hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${name}</a><a href="#" class="nav-btn nav-btn-outline" onclick="API.logout();return false">로그아웃</a>`
     } else {
-      const icon = typeof GOOGLE_ICON_SVG !== 'undefined' ? GOOGLE_ICON_SVG : ''
+      const icon = typeof GOOGLE_ICON_SVG !== 'undefined' ? GOOGLE_ICON_SVG : (window.GOOGLE_ICON_SVG || '')
       hr.innerHTML = `<a href="/login.html?next=${next}" class="nav-btn">로그인</a><a href="/api/auth/google?next=${next}" class="nav-btn nav-btn-google">${icon} Google로 시작</a>`
     }
   }

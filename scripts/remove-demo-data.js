@@ -1,15 +1,17 @@
 #!/usr/bin/env node
-/** Firestore 데모·테스트 데이터 일괄 삭제 (가짜 후기, 테스트 계정, 샘플 의뢰 등) */
+/** Firestore 데모·테스트 데이터 일괄 삭제 (가짜 후기, 테스트 계정, 샘플 의뢰 등)
+ *  수강생 테스트 계정 demo@tadakclass.com 은 유지합니다. */
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') })
 const admin = require('firebase-admin')
 require('../db/schema')
 
 const fs = admin.firestore()
 
+/** 삭제 대상 테스트 계정 (수강생 demo@ 는 제외) */
 const DEMO_EMAILS = [
-  'demo@tadakclass.com',
   'client@tadakclass.com',
   'editor@tadakclass.com',
+  'admin@tadakclass.com',
 ]
 
 async function deleteDocs(docs) {

@@ -171,11 +171,11 @@ button, input, select, textarea { font-family: inherit; cursor: pointer; }
   font-size: 20px;
   flex-shrink: 0;
 }
-.metric-icon.purple { background: #ede9fb; color: #534AB7; }
-.metric-icon.blue   { background: #e3edfb; color: #185FA5; }
+.metric-icon.purple { background: var(--bg-muted); color: var(--text-primary); }
+.metric-icon.blue   { background: var(--bg-soft); color: var(--text-secondary); }
 .metric-icon.green  { background: var(--success-bg); color: var(--success); }
-.metric-icon.orange { background: var(--warning-bg); color: #854F0B; }
-.metric-icon.teal   { background: rgba(70,129,134,.12); color: var(--primary); }
+.metric-icon.orange { background: var(--warning-bg); color: var(--text-secondary); }
+.metric-icon.teal   { background: var(--bg-muted); color: var(--text-primary); }
 
 .metric-label { font-size: 12px; color: var(--text-hint); margin-bottom: 4px; }
 .metric-num { font-size: 24px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 4px; }
@@ -281,7 +281,7 @@ button, input, select, textarea { font-family: inherit; cursor: pointer; }
   white-space: nowrap;
 }
 .status-tag.done     { background: var(--success-bg); color: var(--success); }
-.status-tag.pending  { background: var(--warning-bg); color: #854F0B; }
+.status-tag.pending  { background: var(--warning-bg); color: var(--text-secondary); }
 .status-tag.refund   { background: var(--error-bg); color: var(--error); }
 .status-tag.draft    { background: var(--bg-muted); color: var(--text-muted); }
 .status-tag.answered { background: rgba(70,129,134,.12); color: var(--primary); }
@@ -306,7 +306,7 @@ button, input, select, textarea { font-family: inherit; cursor: pointer; }
   font-size: 12px;
   padding: 5px 11px;
   border-radius: 6px;
-  border: 1px solid #fcd0cc;
+  border: 1px solid var(--border);
   background: #fff;
   color: var(--error);
   transition: background 0.15s;
@@ -455,7 +455,7 @@ button, input, select, textarea { font-family: inherit; cursor: pointer; }
 .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
 .pill.open     { background: var(--success-bg); color: var(--success); }
 .pill.closed   { background: var(--bg-muted); color: var(--text-muted); }
-.pill.pending  { background: var(--warning-bg); color: #854F0B; }
+.pill.pending  { background: var(--warning-bg); color: var(--text-secondary); }
 .pill.rejected { background: var(--error-bg); color: var(--error); }
 .pill.approved { background: rgba(70,129,134,.12); color: var(--primary); }
 
@@ -496,7 +496,7 @@ button, input, select, textarea { font-family: inherit; cursor: pointer; }
 .sub-status { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
 .sub-status.passed   { background: rgba(70,129,134,.12); color: var(--primary); }
 .sub-status.failed   { background: var(--error-bg); color: var(--error); }
-.sub-status.pending  { background: var(--warning-bg); color: #854F0B; }
+.sub-status.pending  { background: var(--warning-bg); color: var(--text-secondary); }
 
 /* REVIEW PANEL */
 .review-panel {

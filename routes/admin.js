@@ -10,6 +10,10 @@ router.get('/stats', async (req, res) => {
   res.json(await db.getStats())
 })
 
+router.get('/coupons', async (req, res) => {
+  res.json(await db.getAdminCouponReport())
+})
+
 router.get('/orders', async (req, res) => {
   const orders = await db.getAllOrders()
   const result = await Promise.all(orders.map(async o => {

@@ -117,6 +117,7 @@ router.post('/:slug/apply-with-anticipation', authMiddleware, async (req, res) =
       coupon: result.coupon ? {
         code: result.coupon.code,
         discount_percent: result.coupon.discount_percent || ANTICIPATION_DISCOUNT_PERCENT,
+        expires_at: result.coupon.expires_at || null,
       } : null,
     }
 

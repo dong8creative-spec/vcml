@@ -1,37 +1,50 @@
-/* ── COLOR TOKENS ── */
+/* ── COLOR TOKENS (black & white) ── */
 :root {
-  --primary:        #468186;
-  --primary-dark:   #355f63;
-  --primary-light:  #9BC1BC;
-  --accent:         #ED6B5A;
-  --accent-dark:    #c9503f;
-  --sage:           #91A776;
-  --cream:          #F6F4CA;
-  --cream-dark:     #e8e5a8;
+  --primary:        #111111;
+  --primary-dark:   #000000;
+  --primary-light:  #888888;
+  --accent:         #333333;
+  --accent-dark:    #1a1a1a;
+  --sage:           #666666;
+  --cream:          #f5f5f5;
+  --cream-dark:     #e8e8e8;
 
   --bg:             #ffffff;
-  --bg-soft:        #f7f7f5;
-  --bg-muted:       #f0efec;
+  --bg-soft:        #f7f7f7;
+  --bg-muted:       #f0f0f0;
   --surface:        #ffffff;
 
-  --text-primary:   #1a1a1a;
+  --text-primary:   #111111;
   --text-secondary: #555555;
   --text-muted:     #888888;
   --text-hint:      #aaaaaa;
 
-  --border:         #e5e5e2;
+  --border:         #e5e5e5;
   --border-strong:  #cccccc;
 
-  --dark-bg:        #1a2a2b;
+  --dark-bg:        #111111;
   --dark-surface:   rgba(255,255,255,0.07);
   --dark-border:    rgba(255,255,255,0.12);
 
-  --success:        #2e7d32;
-  --success-bg:     #e8f5e9;
-  --error:          #c62828;
-  --error-bg:       #fce8e8;
-  --warning:        #d4991a;
-  --warning-bg:     #fff8e1;
+  --success:        #333333;
+  --success-bg:     #f0f0f0;
+  --error:          #111111;
+  --error-bg:       #f5f5f5;
+  --warning:        #666666;
+  --warning-bg:     #f5f5f5;
+
+  /* 강의·상품 딱지 전용 (사이트는 흑백, 딱지만 컬러) */
+  --badge-new:              #468186;
+  --badge-best:             #d4991a;
+  --badge-free:             #91A776;
+  --badge-live:             #ED6B5A;
+  --badge-offline:          #5c6bc0;
+  --badge-disc:             #ED6B5A;
+  --badge-disc-bg:          #fce8e8;
+  --badge-live-upcoming-bg: #F6F4CA;
+  --badge-live-upcoming-text: #355f63;
+  --badge-live-active-bg:   #fce8e8;
+  --badge-live-active-text: #ED6B5A;
 
   /* 전역 텍스트 배율 (150%) — html·font-size px 와 함께 사용 */
   --text-scale:     1.2;
@@ -45,8 +58,8 @@
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast-info    { background: #111; color: #fff; }
-.toast-success { background: #1D9E75; color: #fff; }
-.toast-error   { background: #E24B4A; color: #fff; }
+.toast-success { background: #111; color: #fff; }
+.toast-error   { background: #333; color: #fff; }
 
 /* Loading spinner */
 .spinner {

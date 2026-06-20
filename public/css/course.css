@@ -29,11 +29,11 @@
   line-height: 1.2;
   white-space: nowrap;
 }
-.ch-badge--new { background: var(--primary); color: #fff; }
-.ch-badge--best { background: var(--warning); color: #fff; }
-.ch-badge--free { background: var(--sage); color: #fff; }
-.ch-badge--offline { background: #5c6bc0; color: #fff; }
-.ch-badge--live { background: var(--accent); color: #fff; }
+.ch-badge--new { background: var(--badge-new); color: #fff; }
+.ch-badge--best { background: var(--badge-best); color: #fff; }
+.ch-badge--free { background: var(--badge-free); color: #fff; }
+.ch-badge--offline { background: var(--badge-offline); color: #fff; }
+.ch-badge--live { background: var(--badge-live); color: #fff; }
 .ch-badge:not([class*="ch-badge--"]) { background: #fff; color: var(--text-primary); }
 .course-hero-text h1 { font-size: 40.8px; font-weight: 600; line-height: 1.3; letter-spacing: -0.02em; margin-bottom: 12px; }
 .ch-desc { font-size: 24px; line-height: 1.7; margin-bottom: 16px; }
@@ -53,9 +53,9 @@
 .buy-price { font-size: 30px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 10px; }
 .buy-price--free { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
 .buy-live-head { text-align: center; padding: 6px 0 10px; }
-.buy-live-price { font-size: 30px; font-weight: 700; color: #e53935; }
+.buy-live-price { font-size: 30px; font-weight: 700; color: var(--text-primary); }
 .buy-live-sub { font-size: 14px; color: #888; margin-top: 3px; }
-.buy-live-schedule { background: #fff3e0; border-radius: 6px; padding: 6px 10px; font-size: 14px; color: #e65100; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+.buy-live-schedule { background: var(--bg-muted); border-radius: 6px; padding: 6px 10px; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
 .buy-live-enrolled { text-align: center; font-size: 15px; line-height: 1.45; }
 .buy-live-ended { background: #ccc; cursor: not-allowed; text-align: center; font-size: 15px; }
 .btn-enroll { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 10px; background: var(--text-primary); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: background 0.2s; margin-bottom: 10px; }
@@ -73,13 +73,13 @@
 }
 .buy-features .feat-icon .ti { font-size: 16px; line-height: 1; }
 .buy-features .feat-icon svg { display: block; width: 15px; height: 15px; }
-.buy-features .feat-icon--live .ti { color: #e53935; }
-.buy-features .feat-icon--chat .ti { color: #1a73e8; }
+.buy-features .feat-icon--live .ti { color: var(--text-primary); }
+.buy-features .feat-icon--chat .ti { color: var(--text-secondary); }
 .buy-features .feat-icon--kakao .ti { color: #fee500; -webkit-text-stroke: 0.35px #3c1e1e; }
-.buy-features .feat-icon--lifetime .ti { color: #8e24aa; }
-.buy-features .feat-icon--mobile .ti { color: #4285f4; }
-.buy-features .feat-icon--cert .ti { color: #f9a825; }
-.buy-features .feat-icon--refund .ti { color: #43a047; }
+.buy-features .feat-icon--lifetime .ti { color: var(--text-secondary); }
+.buy-features .feat-icon--mobile .ti { color: var(--text-secondary); }
+.buy-features .feat-icon--cert .ti { color: var(--text-secondary); }
+.buy-features .feat-icon--refund .ti { color: var(--text-secondary); }
 
 .course-body-wrap { padding: 40px 0 60px; }
 .course-main { max-width: 1100px; }
@@ -162,11 +162,11 @@
 .anticipation-coupon-note {
   margin-top: 12px;
   padding: 12px 14px;
-  background: #f0f7ff;
-  border: 1px solid #c5ddf8;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
   border-radius: 10px;
   font-size: 13px;
-  color: #1a4a7a;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -216,8 +216,8 @@
 .curriculum-item:hover { background: var(--bg-muted); }
 .ci-num { font-size: 19.2px; color: var(--text-hint); width: 22px; flex-shrink: 0; }
 .ci-title { flex: 1; font-size: 21.6px; color: var(--text-secondary); }
-.ci-free { font-size: 16.8px; background: var(--text-primary); color: #fff; padding: 3px 8px; border-radius: 4px; text-decoration: none; font-weight: 500; white-space: nowrap; }
-.ci-free:hover { background: var(--text-secondary); }
+.ci-free { font-size: 16.8px; background: var(--badge-free); color: #fff; padding: 3px 8px; border-radius: 4px; text-decoration: none; font-weight: 500; white-space: nowrap; }
+.ci-free:hover { background: #7a9263; }
 .ci-watch { font-size: 25.2px; color: var(--text-muted); text-decoration: none; }
 .ci-lock { font-size: 24px; color: var(--border-strong); }
 .ci-time { font-size: 19.2px; color: var(--text-hint); width: 36px; text-align: right; flex-shrink: 0; }

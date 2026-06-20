@@ -17,25 +17,25 @@
     .form-card { background:#fff; border-radius:16px; border:1px solid #eee; padding:32px; }
     .form-group { margin-bottom:24px; }
     .form-group label { display:block; font-size: 15.6px; font-weight:700; color:#333; margin-bottom:8px; }
-    .form-group label .req { color:#e63946; margin-left:2px; }
+    .form-group label .req { color:#111111; margin-left:2px; }
     .form-group input, .form-group textarea, .form-group select {
       width:100%; padding:12px 14px; border:1.5px solid #e5e5e5; border-radius:8px;
       font-size: 16.8px; color:#1a1a1a; outline:none; transition:.15s;
       font-family:inherit;
     }
-    .form-group input:focus, .form-group textarea:focus { border-color:#5c67f2; }
+    .form-group input:focus, .form-group textarea:focus { border-color:#111111; }
     .form-group textarea { resize:vertical; min-height:120px; line-height:1.6; }
     .form-hint { font-size: 14.4px; color:#aaa; margin-top:6px; }
 
     .skill-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-    .skill-chip { display:flex; align-items:center; gap:6px; background:#f4f5ff; border:1.5px solid #dce0ff; border-radius:20px; padding:6px 14px; font-size: 15.6px; color:#5c67f2; cursor:pointer; user-select:none; transition:.15s; }
-    .skill-chip.active { background:#5c67f2; color:#fff; border-color:#5c67f2; }
+    .skill-chip { display:flex; align-items:center; gap:6px; background:#f5f5f5; border:1.5px solid #dddddd; border-radius:20px; padding:6px 14px; font-size: 15.6px; color:#111111; cursor:pointer; user-select:none; transition:.15s; }
+    .skill-chip.active { background:#111111; color:#fff; border-color:#111111; }
 
     .tool-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
     .tool-chip { display:flex; align-items:center; gap:6px; background:#f8f9fb; border:1.5px solid #eee; border-radius:20px; padding:6px 14px; font-size: 15.6px; color:#444; cursor:pointer; user-select:none; transition:.15s; }
     .tool-chip.active { background:#1a1f3c; color:#fff; border-color:#1a1f3c; }
 
-    .submit-btn { width:100%; padding:16px; background:#5c67f2; color:#fff; border:none; border-radius:10px; font-size: 19.2px; font-weight:700; cursor:pointer; transition:.15s; margin-top:8px; }
+    .submit-btn { width:100%; padding:16px; background:#111111; color:#fff; border:none; border-radius:10px; font-size: 19.2px; font-weight:700; cursor:pointer; transition:.15s; margin-top:8px; }
     .submit-btn:hover { background:#4a55e0; }
     .submit-btn:disabled { background:#ccc; cursor:not-allowed; }
 
@@ -73,12 +73,12 @@
     .workbook-gate h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
     .workbook-gate p { font-size: 15px; color: #666; line-height: 1.6; margin-bottom: 14px; }
     .workbook-progress { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
-    .workbook-progress div { height: 100%; background: #5c67f2; border-radius: 4px; transition: width .3s; }
-    .workbook-gate.complete .workbook-progress div { background: #2cae6b; }
+    .workbook-progress div { height: 100%; background: #111111; border-radius: 4px; transition: width .3s; }
+    .workbook-gate.complete .workbook-progress div { background: #333333; }
     .workbook-gate-actions { display: flex; gap: 10px; flex-wrap: wrap; }
     .workbook-gate-actions a {
       padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 15px; text-decoration: none;
-      background: #5c67f2; color: #fff;
+      background: #111111; color: #fff;
     }
     .form-card.form-locked { opacity: .55; pointer-events: none; user-select: none; }
     @media (max-width: 560px) {
@@ -321,7 +321,7 @@ async function checkStatus() {
       document.getElementById('apply-form-wrap').style.display = 'none'
       document.getElementById('workbook-gate-area').style.display = 'none'
     } else if (app.status === 'approved') {
-      area.innerHTML = `<div class="status-card status-approved"><div class="status-icon">✅</div><div class="status-title">승인되었습니다!</div><div class="status-desc">타닥클래스 에디터즈로 등록되었습니다.<br><a href="/editors.html" style="color:#5c67f2;font-weight:700">에디터즈에서 내 프로필 보기 →</a></div></div>`
+      area.innerHTML = `<div class="status-card status-approved"><div class="status-icon">✅</div><div class="status-title">승인되었습니다!</div><div class="status-desc">타닥클래스 에디터즈로 등록되었습니다.<br><a href="/editors.html" style="color:#111111;font-weight:700">에디터즈에서 내 프로필 보기 →</a></div></div>`
       document.getElementById('apply-form-wrap').style.display = 'none'
       document.getElementById('workbook-gate-area').style.display = 'none'
     } else if (app.status === 'rejected') {

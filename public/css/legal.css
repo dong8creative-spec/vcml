@@ -11,7 +11,7 @@ html:has(.legal-page) { font-size: 16px; }
 html:has(.legal-page) .header,
 html:has(.legal-page) .footer { font-size: 25.2px; }
 
-.legal-page .legal-article a { color: #0066cc; transition: opacity .15s; }
+.legal-page .legal-article a { color: var(--text-primary); text-decoration: underline; transition: opacity .15s; }
 .legal-page .legal-article a:hover { opacity: .78; }
 .legal-page .legal-article a.support-page-cta-btn,
 .legal-page .legal-article a.support-page-cta-btn--ghost { color: #fff; opacity: 1; }
@@ -417,7 +417,7 @@ html:has(.legal-page) .footer { font-size: 25.2px; }
   letter-spacing: -.01em;
   margin-bottom: 6px;
 }
-.support-tile-value a { color: #0066cc; font-weight: 600; }
+.support-tile-value a { color: var(--text-primary); font-weight: 600; text-decoration: underline; }
 .support-tile-desc {
   font-size: 13px;
   color: #86868b;

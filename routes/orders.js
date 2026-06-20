@@ -21,6 +21,9 @@ router.post('/', authMiddleware, async (req, res) => {
     if (!coupon) return res.status(400).json({ error: '유효하지 않은 쿠폰입니다.' })
     if (coupon.user_id !== req.user.id) return res.status(403).json({ error: '본인 쿠폰만 사용 가능합니다.' })
     if (coupon.status !== 'available') return res.status(400).json({ error: '이미 사용했거나 만료된 쿠폰입니다.' })
+    if (coupon.status === 'expired' || db.isCouponExpired(coupon)) {
+      return res.status(400).json({ error: '만료된 쿠폰입니다. 유효기간은 발급일로부터 1개월입니다.' })
+    }
     if (coupon.reason === CLIENT_COURSE_REWARD_REASON) {
       return res.status(400).json({ error: '의뢰 할인 쿠폰은 클라이언츠 견적 수락 시 사용할 수 있습니다.' })
     }
@@ -42,7 +45,17 @@ router.post('/', authMiddleware, async (req, res) => {
   let rewardCoupon = null
   try {
     order = await db.createOrder(req.user.id, course_id, finalAmount, method, discount)
-    if (coupon) await db.useCoupon(coupon.id, order.id)
+    if (coupon) {
+      await db.useCoupon(coupon.id, {
+        order_id: order.id,
+        course_id: course_id,
+        used_context: 'course_order',
+        used_target_type: 'course',
+        used_target_id: course_id,
+        used_target_title: course.title,
+        used_discount: discount,
+      })
+    }
     await db.enroll(req.user.id, course_id)
     await db.updateCourse(course_id, { student_count: (course.student_count || 0) + 1 })
     rewardCoupon = await db.issueClientCourseRewardCoupons(req.user.id, course, order.id)

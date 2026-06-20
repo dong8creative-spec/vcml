@@ -18,6 +18,7 @@ const API = {
     localStorage.setItem('tc_token', token)
     localStorage.setItem('tc_user', JSON.stringify(user))
     if (typeof renderHeaderAuth === 'function') renderHeaderAuth()
+    if (typeof renderChromeAuth === 'function') renderChromeAuth()
   },
   logout() {
     localStorage.removeItem('tc_token')
@@ -50,6 +51,9 @@ const API = {
   del(path)         { return this.req('DELETE', path) },
 }
 
+window.API = API
+window.GOOGLE_ICON_SVG = GOOGLE_ICON_SVG
+
 function comingSoon(e) {
   if (e) e.preventDefault()
   toast('준비 중입니다. 곧 오픈할 예정이에요.', 'info')
@@ -64,9 +68,12 @@ function toast(msg, type = 'info') {
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300) }, 3000)
 }
 
+window.toast = toast
+window.comingSoon = comingSoon
+
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/live-reminder.js'
+  s.src = '/js/live-reminder.js?v=7'
   s.defer = true
   document.head.appendChild(s)
 })()
