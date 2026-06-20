@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>수강 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+</head>
+<body>
+  <header class="player-nav">
+    <a href="/" class="player-logo">타닥클래스</a>
+    <div class="player-course-title" id="player-course-title"></div>
+    <a href="/mypage.html" class="player-nav-link"><i class="ti ti-layout-dashboard"></i> 내 강의</a>
+  </header>
+
+  <div class="player-layout">
+    <!-- 영상/콘텐츠 영역 -->
+    <main class="player-main" id="player-main">
+      <div class="spinner"></div>
+    </main>
+
+    <!-- 사이드 커리큘럼 -->
+    <aside class="player-sidebar" id="player-sidebar">
+      <div class="sidebar-course-title" id="sidebar-title">커리큘럼</div>
+      <div class="chapter-list" id="chapter-list"></div>
+    </aside>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!API.isLoggedIn()) { location.href = '/login.html'; }
+
+    const params = new URLSearchParams(location.search)
+    const slug = params.get('slug')
+    const chapterParam = params.get('chapter')
+    let courseData = null
+    let currentChapterId = null
+    let progressTimer = null
+
+    async function load() {
+      try {
+        courseData = await API.get('/courses/' + slug)
+        document.getElementById('player-course-title').textContent = courseData.title
+        document.getElementById('sidebar-title').textContent = courseData.title
+
+        renderChapterList(courseData.chapters)
+
+        const firstId = chapterParam === 'first' || !chapterParam
+          ? courseData.chapters[0]?.id
+          : parseInt(chapterParam)
+        if (firstId) loadChapter(firstId)
+      } catch(e) {
+        document.getElementById('player-main').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`
+      }
+    }
+
+    function renderChapterList(chapters) {
+      document.getElementById('chapter-list').innerHTML = chapters.map((ch, i) => `
+        <div class="chapter-item ${ch.id==currentChapterId?'active':''}" id="ch-item-${ch.id}" onclick="loadChapter(${ch.id})">
+          <span class="ch-num">${String(i+1).padStart(2,'0')}</span>
+          <span class="ch-title">${ch.title}</span>
+          <span class="ch-dur">${ch.duration||''}</span>
+        </div>`).join('')
+    }
+
+    async function loadChapter(id) {
+      currentChapterId = id
+      document.querySelectorAll('.chapter-item').forEach(el => el.classList.toggle('active', el.id === 'ch-item-'+id))
+
+      document.getElementById('player-main').innerHTML = '<div class="spinner"></div>'
+      try {
+        const ch = await API.get(`/courses/${slug}/chapters/${id}`)
+        renderPlayer(ch)
+        history.replaceState(null,'',`?slug=${slug}&chapter=${id}`)
+      } catch(e) {
+        document.getElementById('player-main').innerHTML = `<div class="empty-state"><i class="ti ti-lock"></i><p>${e.message}</p><a href="/course.html?slug=${slug}" class="btn-back">강의 페이지로 →</a></div>`
+      }
+    }
+
+    function renderPlayer(ch) {
+      const isCompleted = ch.progress?.completed === 1
+      document.getElementById('player-main').innerHTML = `
+        <div class="video-area">
+          <div class="video-placeholder">
+            <div class="vp-icon"><i class="ti ti-player-play-filled"></i></div>
+            <div class="vp-title">${ch.title}</div>
+            <div class="vp-note">실제 서비스에서는 이 영역에 강의 영상이 재생됩니다.<br>영상 파일을 업로드하면 자동으로 연결됩니다.</div>
+            <button class="vp-play-btn" onclick="simulateWatch(${ch.id}, ${ch.next_id})">
+              <i class="ti ti-player-play-filled"></i> 수강 완료 처리하기 (데모)
+            </button>
+          </div>
+        </div>
+        <div class="chapter-info">
+          <div class="ci-header">
+            <h2>${ch.title}</h2>
+            <span class="ci-dur"><i class="ti ti-clock"></i> ${ch.duration||'-'}</span>
+          </div>
+          <div class="ci-nav">
+            ${ch.prev_id ? `<button onclick="loadChapter(${ch.prev_id})" class="ci-btn"><i class="ti ti-arrow-left"></i> 이전 강의</button>` : '<span></span>'}
+            <span class="ci-status ${isCompleted?'done':''}">
+              ${isCompleted ? '<i class="ti ti-circle-check-filled"></i> 수강 완료' : '<i class="ti ti-circle-dashed"></i> 미완료'}
+            </span>
+            ${ch.next_id ? `<button onclick="loadChapter(${ch.next_id})" class="ci-btn next"><i class="ti ti-arrow-right"></i> 다음 강의</button>` : ''}
+          </div>
+        </div>`
+    }
+
+    async function simulateWatch(chId, nextId) {
+      try {
+        await API.post('/my/progress', { chapter_id: chId, completed: true, watched_sec: 600 })
+
+        // 사이드 챕터 목록 새로 로드
+        const updated = await API.get('/courses/' + slug)
+        renderChapterList(updated.chapters)
+
+        toast('수강 완료! 🎉', 'success')
+        if (nextId) setTimeout(() => loadChapter(nextId), 1000)
+        else toast('강의를 모두 완료했습니다! 수료증을 확인하세요.', 'success')
+      } catch(e) { toast(e.message, 'error') }
+    }
+
+    load()
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+/* Toast */
+.toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+  padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500;
+  opacity: 0; transition: all 0.3s; z-index: 9999; pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast-info    { background: #111; color: #fff; }
+.toast-success { background: #1D9E75; color: #fff; }
+.toast-error   { background: #E24B4A; color: #fff; }
+
+/* Loading spinner */
+.spinner {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 3px solid #eee; border-top-color: #111;
+  animation: spin 0.7s linear infinite; margin: 48px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Empty state */
+.empty-state {
+  text-align: center; padding: 60px 20px; color: #aaa;
+}
+.empty-state .ti { font-size: 40px; display: block; margin-bottom: 12px; }
+.empty-state p { font-size: 15px; }

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>로그인 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+</head>
+<body class="login-body">
+  <a href="/" class="login-logo">타닥클래스</a>
+  <div class="login-card">
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">로그인</button>
+      <button class="tab-btn" id="tab-register" onclick="switchTab('register')">회원가입</button>
+    </div>
+
+    <!-- 로그인 폼 -->
+    <form id="form-login" onsubmit="doLogin(event)">
+      <div class="form-field">
+        <label>이메일</label>
+        <input type="email" id="login-email" placeholder="example@email.com" required />
+      </div>
+      <div class="form-field">
+        <label>비밀번호</label>
+        <div class="pw-wrap">
+          <input type="password" id="login-pw" placeholder="비밀번호 입력" required />
+          <button type="button" class="pw-toggle" onclick="togglePw('login-pw',this)"><i class="ti ti-eye"></i></button>
+        </div>
+      </div>
+      <button type="submit" class="btn-submit" id="btn-login">로그인</button>
+      <a href="/api/auth/kakao" class="btn-kakao">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M9 1C4.582 1 1 3.925 1 7.5c0 2.286 1.417 4.294 3.563 5.467L3.67 16.14a.25.25 0 0 0 .37.278L8.13 13.96c.288.027.58.04.87.04 4.418 0 8-2.925 8-6.5S13.418 1 9 1z" fill="#3A1D1D"/>
+        </svg>
+        카카오로 로그인
+      </a>
+      <div class="demo-hint">
+        <b>체험 계정</b><br>
+        이메일: demo@tadakclass.com<br>비밀번호: demo1234
+      </div>
+    </form>
+
+    <!-- 회원가입 — 3단계 -->
+    <div id="form-register" style="display:none">
+
+      <!-- 스텝 인디케이터 -->
+      <div class="step-indicator">
+        <div class="step-item active" id="si-1"><span class="step-num">1</span><span class="step-label">이메일 인증</span></div>
+        <div class="step-line"></div>
+        <div class="step-item" id="si-2"><span class="step-num">2</span><span class="step-label">계정 정보</span></div>
+        <div class="step-line"></div>
+        <div class="step-item" id="si-3"><span class="step-num">3</span><span class="step-label">약관 동의</span></div>
+      </div>
+
+      <!-- Step 1: 이메일 인증 -->
+      <div id="reg-step-1">
+        <div class="form-field">
+          <label>이메일</label>
+          <div class="code-row">
+            <input type="email" id="reg-email" placeholder="example@email.com" />
+            <button type="button" class="btn-send-code" id="btn-send-code" onclick="sendCode()">인증 발송</button>
+          </div>
+        </div>
+        <div id="code-field" style="display:none" class="form-field">
+          <label>인증 코드 <span class="hint" id="code-timer"></span></label>
+          <div class="code-row">
+            <input type="text" id="reg-code" placeholder="6자리 숫자 입력" maxlength="6" inputmode="numeric" />
+            <button type="button" class="btn-send-code verify" id="btn-verify-code" onclick="verifyCode()">확인</button>
+          </div>
+          <div class="code-hint">이메일로 발송된 6자리 코드를 입력하세요. (10분 유효)</div>
+        </div>
+        <div id="email-verified-msg" style="display:none" class="verified-msg"><i class="ti ti-circle-check-filled"></i> 이메일 인증 완료</div>
+        <button type="button" class="btn-submit" id="btn-step1" onclick="goStep(2)" disabled>다음 단계</button>
+      </div>
+
+      <!-- Step 2: 계정 정보 -->
+      <div id="reg-step-2" style="display:none">
+        <div class="form-field">
+          <label>이름</label>
+          <input type="text" id="reg-name" placeholder="홍길동" />
+        </div>
+        <div class="form-field">
+          <label>비밀번호</label>
+          <div class="pw-wrap">
+            <input type="password" id="reg-pw" placeholder="8자 이상, 영문+숫자+특수문자" oninput="checkPwStrength(this.value)" />
+            <button type="button" class="pw-toggle" onclick="togglePw('reg-pw',this)"><i class="ti ti-eye"></i></button>
+          </div>
+          <div class="pw-strength-wrap">
+            <div class="pw-strength-bar"><div id="pw-bar" class="pw-bar"></div></div>
+            <span id="pw-label" class="pw-label"></span>
+          </div>
+          <ul class="pw-rules" id="pw-rules">
+            <li id="rule-len"><i class="ti ti-x"></i> 8자 이상</li>
+            <li id="rule-upper"><i class="ti ti-x"></i> 영문 대문자 포함</li>
+            <li id="rule-num"><i class="ti ti-x"></i> 숫자 포함</li>
+            <li id="rule-special"><i class="ti ti-x"></i> 특수문자 포함 (!@#$% 등)</li>
+          </ul>
+        </div>
+        <div class="form-field">
+          <label>비밀번호 확인</label>
+          <div class="pw-wrap">
+            <input type="password" id="reg-pw2" placeholder="비밀번호 재입력" oninput="checkPwMatch()" />
+            <button type="button" class="pw-toggle" onclick="togglePw('reg-pw2',this)"><i class="ti ti-eye"></i></button>
+          </div>
+          <div id="pw-match-msg" class="pw-match-msg"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button type="button" class="btn-submit btn-outline-step" onclick="goStep(1)">이전</button>
+          <button type="button" class="btn-submit" id="btn-step2" onclick="goStep(3)">다음 단계</button>
+        </div>
+      </div>
+
+      <!-- Step 3: 약관 동의 -->
+      <div id="reg-step-3" style="display:none">
+        <div class="terms-all-row">
+          <label><input type="checkbox" id="agree-all" onchange="toggleAllAgree(this.checked)" /> <b>전체 동의</b></label>
+        </div>
+        <div class="terms-divider"></div>
+        <div class="terms-row required">
+          <label><input type="checkbox" class="agree-check" id="agree-terms" /> [필수] <a href="#" onclick="comingSoon(event)">이용약관</a> 동의</label>
+        </div>
+        <div class="terms-row required">
+          <label><input type="checkbox" class="agree-check" id="agree-privacy" /> [필수] <a href="#" onclick="comingSoon(event)">개인정보처리방침</a> 동의</label>
+        </div>
+        <div class="terms-row">
+          <label><input type="checkbox" class="agree-check" id="agree-marketing" /> [선택] 마케팅 정보 수신 동의 <span class="hint">(이벤트·할인 알림)</span></label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:20px">
+          <button type="button" class="btn-submit btn-outline-step" onclick="goStep(2)">이전</button>
+          <button type="button" class="btn-submit" id="btn-step3" onclick="doRegister()">가입 완료</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search)
+
+    // 카카오 콜백 처리
+    const kakaoToken = params.get('kakao_token')
+    const kakaoUser  = params.get('kakao_user')
+    const kakaoError = params.get('kakao_error')
+    if (kakaoToken && kakaoUser) {
+      try {
+        API.login(kakaoToken, JSON.parse(decodeURIComponent(kakaoUser)))
+        const next = decodeURIComponent(params.get('next') || '/')
+        location.replace(next)
+      } catch { toast('로그인 처리 중 오류가 발생했습니다.', 'error') }
+    }
+    if (kakaoError) {
+      toast(decodeURIComponent(kakaoError), 'error')
+    }
+
+    if (params.get('tab') === 'register') switchTab('register')
+
+    function switchTab(t) {
+      document.getElementById('tab-login').classList.toggle('active', t==='login')
+      document.getElementById('tab-register').classList.toggle('active', t==='register')
+      document.getElementById('form-login').style.display = t==='login'?'':'none'
+      document.getElementById('form-register').style.display = t==='register'?'':'none'
+    }
+
+    function togglePw(id, btn) {
+      const inp = document.getElementById(id)
+      const isText = inp.type === 'text'
+      inp.type = isText ? 'password' : 'text'
+      btn.querySelector('i').className = isText ? 'ti ti-eye' : 'ti ti-eye-off'
+    }
+
+    async function doLogin(e) {
+      e.preventDefault()
+      const btn = document.getElementById('btn-login')
+      btn.disabled = true; btn.textContent = '로그인 중...'
+      try {
+        const { token, user } = await API.post('/auth/login', { email: document.getElementById('login-email').value, password: document.getElementById('login-pw').value })
+        API.login(token, user)
+        const next = params.get('next') || (user.role === 'admin' ? '/admin.html' : '/')
+        location.href = next
+      } catch(err) {
+        toast(err.message, 'error')
+        btn.disabled = false; btn.textContent = '로그인'
+      }
+    }
+
+    // ── 회원가입 스텝 관리 ──
+    let emailVerified = false
+    let codeTimerInterval = null
+
+    function goStep(n) {
+      // 유효성 검사
+      if (n === 2) {
+        if (!emailVerified) { toast('이메일 인증을 먼저 완료해주세요.', 'error'); return }
+      }
+      if (n === 3) {
+        const name = document.getElementById('reg-name').value.trim()
+        const pw = document.getElementById('reg-pw').value
+        const pw2 = document.getElementById('reg-pw2').value
+        if (!name) { toast('이름을 입력해주세요.', 'error'); return }
+        if (!isPwStrong(pw)) { toast('비밀번호 조건을 모두 충족해주세요.', 'error'); return }
+        if (pw !== pw2) { toast('비밀번호가 일치하지 않습니다.', 'error'); return }
+      }
+
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById('reg-step-' + i).style.display = i === n ? '' : 'none'
+        const si = document.getElementById('si-' + i)
+        si.classList.toggle('active', i === n)
+        si.classList.toggle('done', i < n)
+      }
+    }
+
+    async function sendCode() {
+      const email = document.getElementById('reg-email').value.trim()
+      if (!email) { toast('이메일을 입력해주세요.', 'error'); return }
+      const btn = document.getElementById('btn-send-code')
+      btn.disabled = true; btn.textContent = '발송 중...'
+      try {
+        const res = await API.post('/auth/send-code', { email })
+        document.getElementById('code-field').style.display = ''
+        document.getElementById('reg-email').disabled = true
+        toast('인증 코드를 발송했습니다.', 'success')
+        // 개발 환경: 코드 자동 채우기
+        if (res.dev_code) {
+          document.getElementById('reg-code').value = res.dev_code
+          toast(`[개발] 코드: ${res.dev_code}`, 'info')
+        }
+        startCodeTimer(600)
+        btn.textContent = '재발송'
+        btn.disabled = false
+        btn.onclick = resendCode
+      } catch(err) {
+        toast(err.message, 'error')
+        btn.disabled = false; btn.textContent = '인증 발송'
+      }
+    }
+
+    async function resendCode() {
+      document.getElementById('reg-email').disabled = false
+      emailVerified = false
+      document.getElementById('btn-step1').disabled = true
+      document.getElementById('email-verified-msg').style.display = 'none'
+      clearInterval(codeTimerInterval)
+      document.getElementById('btn-send-code').onclick = sendCode
+      await sendCode()
+    }
+
+    function startCodeTimer(sec) {
+      clearInterval(codeTimerInterval)
+      const label = document.getElementById('code-timer')
+      const tick = () => {
+        const m = String(Math.floor(sec / 60)).padStart(2, '0')
+        const s = String(sec % 60).padStart(2, '0')
+        label.textContent = `(${m}:${s} 남음)`
+        if (sec-- <= 0) { clearInterval(codeTimerInterval); label.textContent = '(만료됨)' }
+      }
+      tick()
+      codeTimerInterval = setInterval(tick, 1000)
+    }
+
+    async function verifyCode() {
+      const email = document.getElementById('reg-email').value.trim()
+      const code = document.getElementById('reg-code').value.trim()
+      if (!code) { toast('인증 코드를 입력해주세요.', 'error'); return }
+      const btn = document.getElementById('btn-verify-code')
+      btn.disabled = true; btn.textContent = '확인 중...'
+      try {
+        await API.post('/auth/verify-code', { email, code })
+        emailVerified = true
+        clearInterval(codeTimerInterval)
+        document.getElementById('code-field').style.display = 'none'
+        document.getElementById('email-verified-msg').style.display = 'flex'
+        document.getElementById('btn-step1').disabled = false
+        toast('이메일 인증 완료!', 'success')
+      } catch(err) {
+        toast(err.message, 'error')
+        btn.disabled = false; btn.textContent = '확인'
+      }
+    }
+
+    function isPwStrong(pw) {
+      return pw.length >= 8 && /[A-Z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)
+    }
+
+    function checkPwStrength(pw) {
+      const rules = [
+        { id: 'rule-len',     ok: pw.length >= 8 },
+        { id: 'rule-upper',   ok: /[A-Z]/.test(pw) },
+        { id: 'rule-num',     ok: /[0-9]/.test(pw) },
+        { id: 'rule-special', ok: /[^A-Za-z0-9]/.test(pw) },
+      ]
+      let score = rules.filter(r => r.ok).length
+      rules.forEach(r => {
+        const el = document.getElementById(r.id)
+        el.querySelector('i').className = r.ok ? 'ti ti-check' : 'ti ti-x'
+        el.classList.toggle('ok', r.ok)
+      })
+      const bar = document.getElementById('pw-bar')
+      const label = document.getElementById('pw-label')
+      const levels = [
+        { w: '0%',   cls: '',        text: '' },
+        { w: '25%',  cls: 'weak',    text: '매우 약함' },
+        { w: '50%',  cls: 'fair',    text: '보통' },
+        { w: '75%',  cls: 'good',    text: '강함' },
+        { w: '100%', cls: 'strong',  text: '매우 강함' },
+      ]
+      const lv = levels[score]
+      bar.style.width = lv.w
+      bar.className = 'pw-bar ' + lv.cls
+      label.textContent = lv.text
+      label.className = 'pw-label ' + lv.cls
+      checkPwMatch()
+    }
+
+    function checkPwMatch() {
+      const pw = document.getElementById('reg-pw').value
+      const pw2 = document.getElementById('reg-pw2').value
+      const msg = document.getElementById('pw-match-msg')
+      if (!pw2) { msg.textContent = ''; return }
+      msg.textContent = pw === pw2 ? '비밀번호가 일치합니다.' : '비밀번호가 일치하지 않습니다.'
+      msg.className = 'pw-match-msg ' + (pw === pw2 ? 'ok' : 'err')
+    }
+
+    function toggleAllAgree(checked) {
+      document.querySelectorAll('.agree-check').forEach(el => el.checked = checked)
+    }
+
+    async function doRegister() {
+      const agreeTerms = document.getElementById('agree-terms').checked
+      const agreePrivacy = document.getElementById('agree-privacy').checked
+      if (!agreeTerms || !agreePrivacy) { toast('필수 약관에 동의해주세요.', 'error'); return }
+
+      const btn = document.getElementById('btn-step3')
+      btn.disabled = true; btn.textContent = '가입 중...'
+      try {
+        const { token, user } = await API.post('/auth/register', {
+          name: document.getElementById('reg-name').value.trim(),
+          email: document.getElementById('reg-email').value.trim(),
+          password: document.getElementById('reg-pw').value,
+        })
+        API.login(token, user)
+        toast('환영합니다! 가입이 완료됐습니다.', 'success')
+        setTimeout(() => location.href = params.get('next') || '/', 1000)
+      } catch(err) {
+        toast(err.message, 'error')
+        btn.disabled = false; btn.textContent = '가입 완료'
+      }
+    }
+  </script>
+</body>
+</html>

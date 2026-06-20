@@ -1,0 +1,283 @@
+body.login-body { background: #f5f5f3; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+.login-logo { font-size: 20px; font-weight: 600; color: #111; letter-spacing: 0.04em; margin-bottom: 28px; text-decoration: none; }
+.login-card { width: 100%; max-width: 400px; background: #fff; border: 0.5px solid #e0e0e0; border-radius: 16px; padding: 32px; }
+.tab-row { display: flex; border-bottom: 0.5px solid #eee; margin-bottom: 28px; }
+.tab-btn { flex: 1; background: none; border: none; padding: 10px; font-size: 15px; color: #aaa; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
+.tab-btn.active { color: #111; border-bottom-color: #111; font-weight: 500; }
+.form-field { margin-bottom: 18px; }
+.form-field label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 500; }
+.form-field .hint { font-size: 11px; color: #aaa; font-weight: 400; }
+.form-field input { width: 100%; padding: 11px 14px; border: 0.5px solid #ddd; border-radius: 8px; font-size: 15px; color: #222; outline: none; transition: border-color 0.2s; }
+.form-field input:focus { border-color: #999; }
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 44px; }
+.pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #bbb; font-size: 18px; padding: 0; cursor: pointer; }
+.btn-submit { width: 100%; padding: 13px; background: #111; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; margin-top: 8px; transition: background 0.2s; }
+.btn-submit:hover { background: #333; }
+.btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+.divider { text-align: center; margin: 20px 0; position: relative; }
+.divider::before { content:''; position:absolute; top:50%; left:0; right:0; border-top:0.5px solid #eee; }
+.divider span { background:#fff; padding: 0 12px; font-size:12px; color:#bbb; position:relative; }
+.demo-hint { background: #f9f9f9; border: 0.5px solid #eee; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #888; line-height: 1.7; }
+.demo-hint b { color: #555; }
+.agree-row { margin-bottom: 14px; font-size: 13px; color: #777; }
+.agree-row a { color: #333; text-decoration: underline; }
+.agree-row input[type=checkbox] { margin-right: 6px; accent-color: #111; }
+
+/* 카카오 로그인 */
+.btn-kakao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  padding: 13px;
+  background: #FEE500;
+  color: #3A1D1D;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, opacity 0.15s;
+  margin-top: 12px;
+  margin-bottom: 16px;
+}
+.btn-kakao:hover { background: #F5DC00; }
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 4px;
+  font-size: 12px;
+  color: #ccc;
+}
+.or-divider::before,
+.or-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 0.5px solid #eee;
+}
+
+/* ── 3단계 회원가입 ── */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #eee;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.step-item.active .step-num {
+  background: #111;
+  color: #fff;
+}
+.step-item.done .step-num {
+  background: #555;
+  color: #fff;
+}
+.step-label {
+  font-size: 11px;
+  color: #bbb;
+  white-space: nowrap;
+}
+.step-item.active .step-label { color: #111; font-weight: 500; }
+.step-item.done .step-label { color: #555; }
+.step-line {
+  width: 36px;
+  height: 1px;
+  background: #ddd;
+  margin: 0 6px;
+  margin-bottom: 14px;
+}
+
+/* 이메일 + 버튼 나란히 */
+.code-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.code-row input {
+  flex: 1;
+}
+.btn-send-code {
+  flex-shrink: 0;
+  padding: 11px 14px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.btn-send-code:hover { background: #333; }
+.btn-send-code:disabled { background: #ccc; cursor: not-allowed; }
+.btn-send-code.verify {
+  background: #fff;
+  color: #111;
+  border: 0.5px solid #ccc;
+}
+.btn-send-code.verify:hover { background: #f5f5f5; }
+
+.code-hint {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 5px;
+}
+.verified-msg {
+  font-size: 12px;
+  color: #2e7d32;
+  margin-top: 5px;
+  display: none;
+}
+
+/* 비밀번호 강도 */
+.pw-strength-wrap {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pw-strength-bar {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+.pw-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #eee;
+  transition: background 0.2s;
+}
+.pw-bar.weak   { background: #ef5350; }
+.pw-bar.fair   { background: #ffa726; }
+.pw-bar.good   { background: #66bb6a; }
+.pw-bar.strong { background: #42a5f5; }
+.pw-label {
+  font-size: 11px;
+  color: #bbb;
+  min-width: 28px;
+  text-align: right;
+}
+.pw-label.weak   { color: #ef5350; }
+.pw-label.fair   { color: #ffa726; }
+.pw-label.good   { color: #66bb6a; }
+.pw-label.strong { color: #42a5f5; }
+
+.pw-rules {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.pw-rules li {
+  font-size: 11px;
+  color: #bbb;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pw-rules li::before {
+  content: '○';
+  font-size: 10px;
+}
+.pw-rules li.ok {
+  color: #2e7d32;
+}
+.pw-rules li.ok::before {
+  content: '●';
+}
+
+.pw-match-msg {
+  font-size: 12px;
+  margin-top: 5px;
+  display: none;
+}
+.pw-match-msg.ok  { color: #2e7d32; display: block; }
+.pw-match-msg.err { color: #c62828; display: block; }
+
+/* 약관 동의 */
+.terms-all-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.terms-divider {
+  border: none;
+  border-top: 0.5px solid #eee;
+  margin: 0 0 8px;
+}
+.terms-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+  padding: 6px 2px;
+}
+.terms-row a {
+  color: #333;
+  text-decoration: underline;
+  margin-left: auto;
+  font-size: 12px;
+}
+.terms-row.required .req-badge {
+  font-size: 10px;
+  color: #fff;
+  background: #111;
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+.terms-row input[type=checkbox] {
+  accent-color: #111;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* 뒤로 버튼 */
+.btn-outline-step {
+  width: 100%;
+  padding: 12px;
+  background: #fff;
+  color: #555;
+  border: 0.5px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s;
+}
+.btn-outline-step:hover { background: #f5f5f5; }

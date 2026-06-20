@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 강의 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/mypage.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+</head>
+<body>
+  <header class="nav"><div class="nav-inner">
+    <a href="/" class="nav-logo">타닥클래스 <span>TADAK CLASS</span></a>
+    <nav class="nav-links"><a href="/">강의</a></nav>
+    <div class="nav-right" id="nav-right"></div>
+  </div></header>
+
+  <div class="mypage-wrap">
+    <aside class="my-sidebar">
+      <div class="my-profile" id="my-profile"></div>
+      <nav class="my-nav">
+        <a class="my-nav-item active" href="/mypage.html"><i class="ti ti-book"></i> 내 강의</a>
+        <a class="my-nav-item" href="/orders.html"><i class="ti ti-receipt"></i> 결제 내역</a>
+        <a class="my-nav-item" href="#" onclick="showSection('coupons')"><i class="ti ti-ticket"></i> 내 쿠폰</a>
+        <a class="my-nav-item" href="#" onclick="showSection('settings')"><i class="ti ti-settings"></i> 계정 설정</a>
+        <a class="my-nav-item" href="#" onclick="API.logout()"><i class="ti ti-logout"></i> 로그아웃</a>
+      </nav>
+    </aside>
+
+    <main class="my-main">
+      <!-- 내 강의 섹션 -->
+      <div id="section-courses">
+        <h1 class="my-page-title">내 강의</h1>
+        <div id="my-courses"><div class="spinner"></div></div>
+      </div>
+
+      <!-- 내 쿠폰 섹션 -->
+      <div id="section-coupons" style="display:none">
+        <h1 class="my-page-title">내 쿠폰</h1>
+        <div id="my-coupons"><div class="spinner"></div></div>
+      </div>
+
+      <!-- 계정 설정 섹션 -->
+      <div id="section-settings" style="display:none">
+        <h1 class="my-page-title">계정 설정</h1>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">마케팅 정보 수신 동의 (SMS)</div>
+              <div class="settings-desc">신규 강의 오픈, 이벤트, 할인 정보를 카카오 알림톡으로 받습니다.</div>
+            </div>
+            <div>
+              <span id="marketing-status" style="font-size:13px;color:#aaa"></span>
+              <button id="btn-marketing-toggle" class="btn-settings-action" onclick="toggleMarketingConsent()"></button>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#bbb;margin-top:12px;line-height:1.6">
+            동의 철회 시 마케팅 문자 수신이 즉시 중단됩니다. 동의 기록은 법적 근거로 보관됩니다.
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!API.isLoggedIn()) { location.href = '/login.html?next=/mypage.html'; }
+
+    const user = API.user()
+    document.getElementById('my-profile').innerHTML = `
+      <div class="my-avatar">${user.name[0]}</div>
+      <div class="my-name">${user.name}</div>
+      <div class="my-email">${user.email || '이메일 미등록'}</div>`
+
+    function showSection(name) {
+      ['courses','coupons','settings'].forEach(s => {
+        document.getElementById('section-'+s).style.display = s === name ? '' : 'none'
+      })
+      document.querySelectorAll('.my-nav-item').forEach(el => el.classList.remove('active'))
+      event.currentTarget && event.currentTarget.classList.add('active')
+      if (name === 'coupons') loadCoupons()
+      if (name === 'settings') loadSettings()
+    }
+
+    async function load() {
+      try {
+        const courses = await API.get('/my/courses')
+        const el = document.getElementById('my-courses')
+        if (!courses.length) {
+          el.innerHTML = `<div class="empty-state"><i class="ti ti-book-off"></i><p>아직 수강 중인 강의가 없습니다.<br><a href="/" style="color:#111;font-weight:500">강의 둘러보기 →</a></p></div>`
+          return
+        }
+        el.innerHTML = `<div class="my-course-grid">${courses.map(c => {
+          const pct = c.total_chapters > 0 ? Math.round((c.completed_chapters / c.total_chapters) * 100) : 0
+          return `
+            <a href="/player.html?slug=${c.slug}&chapter=first" class="my-course-card">
+              <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
+                <i class="ti ${c.thumbnail_icon}"></i>
+                ${pct === 100 ? '<div class="mc-done"><i class="ti ti-check"></i> 완료</div>' : ''}
+              </div>
+              <div class="mc-body">
+                <div class="mc-cat">${c.category}</div>
+                <div class="mc-title">${c.title}</div>
+                <div class="mc-progress-row">
+                  <div class="mc-bar-wrap"><div class="mc-bar" style="width:${pct}%"></div></div>
+                  <span class="mc-pct">${pct}%</span>
+                </div>
+                <div class="mc-meta">${c.completed_chapters}/${c.total_chapters}강 완료</div>
+              </div>
+            </a>`
+        }).join('')}</div>`
+      } catch(e) {
+        document.getElementById('my-courses').innerHTML = '<p style="color:#aaa">강의를 불러오지 못했습니다.</p>'
+      }
+    }
+
+    async function loadCoupons() {
+      try {
+        const coupons = await API.get('/my/coupons')
+        const el = document.getElementById('my-coupons')
+        if (!coupons.length) {
+          el.innerHTML = `<div class="empty-state"><i class="ti ti-ticket-off"></i><p>보유한 쿠폰이 없습니다.</p></div>`
+          return
+        }
+        el.innerHTML = `<div class="coupon-list">${coupons.map(c => `
+          <div class="coupon-item ${c.status === 'used' ? 'used' : ''}">
+            <div class="coupon-left">
+              <div class="coupon-amount">${c.amount.toLocaleString()}원 할인</div>
+              <div class="coupon-reason">${c.reason === 'marketing_consent' ? '마케팅 동의 혜택' : c.reason}</div>
+            </div>
+            <div class="coupon-right">
+              <div class="coupon-code">${c.code}</div>
+              <div class="coupon-status ${c.status}">${c.status === 'available' ? '사용 가능' : '사용 완료'}</div>
+            </div>
+          </div>`).join('')}</div>`
+      } catch(e) {
+        document.getElementById('my-coupons').innerHTML = '<p style="color:#aaa">쿠폰 정보를 불러오지 못했습니다.</p>'
+      }
+    }
+
+    let marketingAgreed = false
+    async function loadSettings() {
+      // JWT에서 최신 정보가 없으므로 로컬 스토리지 기반으로 표시
+      // 실제로는 GET /my/profile 엔드포인트에서 받아오는 것이 정확
+      const statusEl = document.getElementById('marketing-status')
+      const btnEl = document.getElementById('btn-marketing-toggle')
+      // 일단 페이지 진입 시 DB 상태를 가져올 수 없으므로 동의 여부를 알 수 없음 → 철회 버튼만 제공
+      statusEl.textContent = ''
+      btnEl.textContent = '마케팅 수신 철회'
+      btnEl.style.display = 'block'
+    }
+
+    async function toggleMarketingConsent() {
+      if (!confirm('마케팅 정보 수신 동의를 철회하시겠습니까?\n철회 후 할인·이벤트 안내를 받지 못할 수 있습니다.')) return
+      try {
+        await API.del('/my/marketing-consent')
+        alert('마케팅 수신 동의가 철회되었습니다.')
+        document.getElementById('btn-marketing-toggle').style.display = 'none'
+        document.getElementById('marketing-status').textContent = '동의 철회 완료'
+      } catch(e) {
+        alert('처리 중 오류가 발생했습니다.')
+      }
+    }
+
+    load()
+  </script>
+</body>
+</html>

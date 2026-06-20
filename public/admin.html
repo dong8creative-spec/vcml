@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>타닥클래스 관리자</title>
+  <link rel="stylesheet" href="css/admin.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+</head>
+<body>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-mark">타닥</span>
+      <span class="logo-sub">관리자</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">대시보드</div>
+      <a href="#dashboard" class="nav-item active" data-section="dashboard">
+        <i class="ti ti-layout-dashboard"></i> 개요
+      </a>
+      <a href="#revenue" class="nav-item" data-section="revenue">
+        <i class="ti ti-chart-line"></i> 매출 현황
+      </a>
+
+      <div class="nav-group-label">강의 관리</div>
+      <a href="#courses" class="nav-item" data-section="courses">
+        <i class="ti ti-video"></i> 강의 목록
+      </a>
+      <a href="#curriculum" class="nav-item" data-section="curriculum">
+        <i class="ti ti-list"></i> 커리큘럼 편집
+      </a>
+
+      <div class="nav-group-label">회원 관리</div>
+      <a href="#students" class="nav-item" data-section="students">
+        <i class="ti ti-users"></i> 수강생 목록
+      </a>
+      <a href="#orders" class="nav-item" data-section="orders">
+        <i class="ti ti-receipt"></i> 결제 내역
+      </a>
+      <a href="#refunds" class="nav-item" data-section="refunds">
+        <i class="ti ti-arrow-back-up"></i> 환불 요청
+        <span class="badge-dot">3</span>
+      </a>
+
+      <div class="nav-group-label">콘텐츠</div>
+      <a href="#reviews" class="nav-item" data-section="reviews">
+        <i class="ti ti-star"></i> 수강 후기
+      </a>
+      <a href="#notices" class="nav-item" data-section="notices">
+        <i class="ti ti-bell"></i> 공지사항
+      </a>
+
+      <div class="nav-group-label">설정</div>
+      <a href="#settings" class="nav-item" data-section="settings">
+        <i class="ti ti-settings"></i> 사이트 설정
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="index.html" target="_blank" class="site-link">
+        <i class="ti ti-external-link"></i> 사이트 보기
+      </a>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+
+    <!-- 상단 헤더 -->
+    <header class="topbar">
+      <div class="topbar-title" id="page-title">대시보드 개요</div>
+      <div class="topbar-right">
+        <div class="topbar-date"><i class="ti ti-calendar"></i> 2025년 6월 기준</div>
+        <div class="topbar-admin"><i class="ti ti-user-circle"></i> 관리자</div>
+      </div>
+    </header>
+
+    <!-- ===== SECTION: DASHBOARD ===== -->
+    <section class="section active" id="sec-dashboard">
+
+      <!-- 요약 카드 -->
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-icon purple"><i class="ti ti-currency-won"></i></div>
+          <div class="metric-body">
+            <div class="metric-label">이번 달 매출</div>
+            <div class="metric-num" id="stat-revenue">로딩 중...</div>
+            <div class="metric-change up"><i class="ti ti-trending-up"></i> 전월 대비 +12%</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon blue"><i class="ti ti-users"></i></div>
+          <div class="metric-body">
+            <div class="metric-label">이번 달 신규 수강생</div>
+            <div class="metric-num" id="stat-students">로딩 중...</div>
+            <div class="metric-change up"><i class="ti ti-trending-up"></i> 전월 대비 +8%</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon green"><i class="ti ti-shopping-cart"></i></div>
+          <div class="metric-body">
+            <div class="metric-label">이번 달 결제 건수</div>
+            <div class="metric-num" id="stat-orders">로딩 중...</div>
+            <div class="metric-change up"><i class="ti ti-trending-up"></i> 전월 대비 +5%</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon orange"><i class="ti ti-arrow-back-up"></i></div>
+          <div class="metric-body">
+            <div class="metric-label">환불 요청</div>
+            <div class="metric-num" id="stat-refunds">로딩 중...</div>
+            <div class="metric-change down"><i class="ti ti-alert-circle"></i> 처리 대기 중</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col">
+
+        <!-- 최근 결제 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">최근 결제 내역</div>
+            <button class="card-more" onclick="showSection('orders')">전체 보기 →</button>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>수강생</th>
+                <th>강의</th>
+                <th>결제 수단</th>
+                <th>금액</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody id="recent-orders-body">
+              <tr><td colspan="5" style="text-align:center;color:#888">로딩 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 강의별 매출 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">강의별 매출 비중</div>
+          </div>
+          <div class="course-stats" id="revenue-chart">
+            <div style="color:#888;padding:16px">로딩 중...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 최근 후기 -->
+      <div class="card mt16">
+        <div class="card-header">
+          <div class="card-title">최근 수강 후기</div>
+          <button class="card-more" onclick="showSection('reviews')">전체 보기 →</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>수강생</th><th>강의</th><th>별점</th><th>내용</th><th>작성일</th><th>관리</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="user-cell"><div class="avatar-sm">김</div> 김○○</div></td>
+              <td class="td-sub">파이썬 데이터 분석</td>
+              <td><span class="stars-sm">★★★★★</span></td>
+              <td class="td-review">실무에서 바로 쓸 수 있는 내용만 골라 가르쳐줘서 시간 낭비가 없었어요.</td>
+              <td class="td-date">2025.06.18</td>
+              <td><button class="btn-sm-danger">삭제</button></td>
+            </tr>
+            <tr>
+              <td><div class="user-cell"><div class="avatar-sm">이</div> 이○○</div></td>
+              <td class="td-sub">Next.js 풀스택</td>
+              <td><span class="stars-sm">★★★★★</span></td>
+              <td class="td-review">왜 이렇게 해야 하는지 이유를 항상 설명해줘서 좋았어요.</td>
+              <td class="td-date">2025.06.17</td>
+              <td><button class="btn-sm-danger">삭제</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+    <!-- ===== SECTION: COURSES ===== -->
+    <section class="section" id="sec-courses">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">강의 목록</div>
+          <button class="btn-primary-sm" onclick="openLiveCreateModal()"><i class="ti ti-broadcast"></i> 라이브 강의 등록</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>강의명</th><th>카테고리</th><th>유형</th><th>판매가</th><th>수강생</th><th>상태</th><th>관리</th></tr>
+          </thead>
+          <tbody id="courses-table-body">
+            <tr><td colspan="8" style="text-align:center;color:#888">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 라이브 강의 설정 패널 -->
+      <div class="card mt16" id="live-panel" style="display:none">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-broadcast" style="color:#e53935"></i> 라이브 강의 설정 — <span id="live-panel-title"></span></div>
+        </div>
+        <div class="two-col" style="gap:16px">
+          <div>
+            <div class="form-group">
+              <label>강의 유형</label>
+              <select id="live-type" onchange="onLiveTypeChange()">
+                <option value="recorded">녹화 강의 (VOD)</option>
+                <option value="live">라이브 강의</option>
+              </select>
+            </div>
+            <div id="live-fields" style="display:none">
+              <div class="form-group">
+                <label>라이브 일정</label>
+                <input type="datetime-local" id="live-schedule" />
+              </div>
+              <div class="form-group">
+                <label>Google Meet 코드 <span style="font-size:11px;color:#aaa">(예: abc-defg-hij)</span></label>
+                <input type="text" id="live-meet-code" placeholder="meet.google.com/ 뒤 코드 입력" />
+              </div>
+              <div class="form-group">
+                <label>라이브 상태</label>
+                <select id="live-status">
+                  <option value="upcoming">예정</option>
+                  <option value="live">진행 중</option>
+                  <option value="ended">종료</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn-save" onclick="saveLiveSettings()">설정 저장</button>
+          </div>
+          <div id="live-send-section" style="display:none">
+            <div style="background:#fff3e0;border:0.5px solid #ffcc80;border-radius:10px;padding:16px;margin-bottom:16px">
+              <div style="font-size:13px;font-weight:600;color:#e65100;margin-bottom:8px">📣 알림톡 발송</div>
+              <div style="font-size:13px;color:#bf360c;line-height:1.7">
+                수강 등록된 학생 전원에게<br>Google Meet 참여 코드를<br>카카오 알림톡으로 발송합니다.<br>
+                <span style="font-size:11px;color:#aaa">(전화번호 미등록 수강생 제외)</span>
+              </div>
+            </div>
+            <button class="btn-primary-sm" style="width:100%;padding:12px;font-size:14px" onclick="sendLiveInvite()">
+              <i class="ti ti-brand-kakao"></i> 수강생에게 Meet 코드 발송
+            </button>
+            <div id="send-result" style="margin-top:12px;font-size:13px;display:none"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: STUDENTS ===== -->
+    <section class="section" id="sec-students">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">수강생 목록</div>
+          <div class="search-wrap">
+            <i class="ti ti-search"></i>
+            <input type="text" placeholder="이름 또는 이메일 검색" />
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>이름</th><th>이메일</th><th>수강 강의</th><th>총 결제금액</th><th>가입일</th></tr>
+          </thead>
+          <tbody id="students-table-body">
+            <tr><td colspan="6" style="text-align:center;color:#888">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: ORDERS ===== -->
+    <section class="section" id="sec-orders">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">결제 내역</div>
+          <div class="filter-row">
+            <select><option>전체 기간</option><option>이번 달</option><option>지난 달</option></select>
+            <select><option>전체 수단</option><option>신용카드</option><option>네이버페이</option><option>카카오페이</option></select>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>수강생</th><th>강의</th><th>금액</th><th>결제 수단</th><th>상태</th><th>결제일</th></tr>
+          </thead>
+          <tbody id="orders-table-body">
+            <tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: REFUNDS ===== -->
+    <section class="section" id="sec-refunds">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">환불 요청 <span class="badge-count">3건</span></div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>수강생</th><th>강의</th><th>결제일</th><th>환불 요청일</th><th>사유</th><th>금액</th><th>처리</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="user-cell"><div class="avatar-sm">정</div> 정○○</div></td>
+              <td class="td-sub">React Native</td>
+              <td class="td-date">2025.06.16</td>
+              <td class="td-date">2025.06.17</td>
+              <td class="td-sub">단순 변심</td>
+              <td class="td-price bold">₩89,000</td>
+              <td class="td-actions">
+                <button class="btn-sm">승인</button>
+                <button class="btn-sm-danger">거절</button>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="user-cell"><div class="avatar-sm">오</div> 오○○</div></td>
+              <td class="td-sub">AWS 배포와 운영</td>
+              <td class="td-date">2025.06.10</td>
+              <td class="td-date">2025.06.18</td>
+              <td class="td-sub">영상 재생 오류</td>
+              <td class="td-price bold">₩59,000</td>
+              <td class="td-actions">
+                <button class="btn-sm">승인</button>
+                <button class="btn-sm-danger">거절</button>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="user-cell"><div class="avatar-sm">한</div> 한○○</div></td>
+              <td class="td-sub">파이썬 데이터 분석</td>
+              <td class="td-date">2025.06.05</td>
+              <td class="td-date">2025.06.19</td>
+              <td class="td-sub">기대와 다른 내용</td>
+              <td class="td-price bold">₩79,000</td>
+              <td class="td-actions">
+                <button class="btn-sm">승인</button>
+                <button class="btn-sm-danger">거절</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: REVIEWS ===== -->
+    <section class="section" id="sec-reviews">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">수강 후기 관리</div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>수강생</th><th>강의</th><th>별점</th><th>내용</th><th>상태</th><th>관리</th></tr>
+          </thead>
+          <tbody id="reviews-table-body">
+            <tr><td colspan="6" style="text-align:center;color:#888">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: NOTICES ===== -->
+    <section class="section" id="sec-notices">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">공지사항 관리</div>
+          <button class="btn-primary-sm"><i class="ti ti-plus"></i> 새 공지 작성</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>제목</th><th>작성일</th><th>공개</th><th>관리</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>6월 특가 프로모션 안내 — 전 강의 최대 40% 할인</td>
+              <td class="td-date">2025.06.01</td>
+              <td><span class="status-tag done">공개</span></td>
+              <td class="td-actions"><button class="btn-sm">편집</button> <button class="btn-sm-danger">삭제</button></td>
+            </tr>
+            <tr>
+              <td>서버 점검 안내 (6/10 새벽 2~4시)</td>
+              <td class="td-date">2025.06.09</td>
+              <td><span class="status-tag pending">비공개</span></td>
+              <td class="td-actions"><button class="btn-sm">편집</button> <button class="btn-sm-danger">삭제</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: SETTINGS ===== -->
+    <section class="section" id="sec-settings">
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">사이트 기본 정보</div></div>
+          <div class="form-group">
+            <label>사이트명</label>
+            <input type="text" value="타닥클래스" />
+          </div>
+          <div class="form-group">
+            <label>슬로건</label>
+            <input type="text" value="핵심만 배우고 바로 씁니다." />
+          </div>
+          <div class="form-group">
+            <label>대표 이메일</label>
+            <input type="text" value="hello@tadakclass.com" />
+          </div>
+          <div class="form-group">
+            <label>고객센터 전화</label>
+            <input type="text" value="02-0000-0000" />
+          </div>
+          <button class="btn-save">저장</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">결제 설정</div></div>
+          <div class="form-group">
+            <label>KG이니시스 상점 ID</label>
+            <input type="text" placeholder="INIpay 상점 ID 입력" />
+          </div>
+          <div class="form-group">
+            <label>네이버페이 파트너 ID</label>
+            <input type="text" placeholder="네이버페이 파트너 ID" />
+          </div>
+          <div class="form-group">
+            <label>카카오페이 CID</label>
+            <input type="text" placeholder="카카오페이 CID" />
+          </div>
+          <div class="form-group">
+            <label>운영 모드</label>
+            <select>
+              <option>테스트 (sandbox)</option>
+              <option>실운영 (production)</option>
+            </select>
+          </div>
+          <button class="btn-save">저장</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 라이브 강의 등록 모달 -->
+  <div id="live-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:28px;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size:17px;font-weight:600;color:#111"><i class="ti ti-broadcast" style="color:#e53935"></i> 라이브 강의 등록</div>
+        <button onclick="closeLiveCreateModal()" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
+      </div>
+      <div style="background:#fff3e0;border-radius:8px;padding:12px 14px;font-size:13px;color:#e65100;margin-bottom:20px;line-height:1.6">
+        라이브 강의는 <b>무료</b>로 제공됩니다.<br>수강 신청한 학생에게 카카오 알림톡으로 Google Meet 코드를 발송합니다.
+      </div>
+      <div class="form-group">
+        <label>강의 제목 <span style="color:#c62828">*</span></label>
+        <input type="text" id="lc-title" placeholder="예: 프리미어 프로 라이브 Q&A" />
+      </div>
+      <div class="form-group">
+        <label>카테고리 <span style="color:#c62828">*</span></label>
+        <select id="lc-category">
+          <option>영상 편집</option>
+          <option>모션그래픽</option>
+          <option>색보정</option>
+          <option>유튜브·콘텐츠</option>
+          <option>촬영·조명</option>
+          <option>광고·상업</option>
+          <option>드론·항공</option>
+          <option>사운드</option>
+          <option>기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>강의 설명</label>
+        <textarea id="lc-desc" rows="3" placeholder="라이브 강의 내용을 간략히 설명해주세요" style="width:100%;padding:10px 14px;border:0.5px solid #ddd;border-radius:8px;font-size:14px;resize:vertical;font-family:inherit"></textarea>
+      </div>
+      <div class="form-group">
+        <label>라이브 일정 <span style="color:#c62828">*</span></label>
+        <input type="datetime-local" id="lc-schedule" />
+      </div>
+      <div class="form-group">
+        <label>Google Meet 코드</label>
+        <input type="text" id="lc-meet-code" placeholder="abc-defg-hij (나중에 입력 가능)" />
+        <div style="font-size:11px;color:#aaa;margin-top:4px">Google Meet 생성 후 URL에서 코드 부분만 입력 (meet.google.com/ 뒤)</div>
+      </div>
+      <div class="form-group">
+        <label>썸네일 아이콘</label>
+        <select id="lc-icon">
+          <option value="ti-broadcast">📡 방송 (기본)</option>
+          <option value="ti-video">🎬 카메라</option>
+          <option value="ti-microphone">🎤 마이크</option>
+          <option value="ti-presentation">📊 프레젠테이션</option>
+          <option value="ti-sparkles">✨ 스파클</option>
+        </select>
+      </div>
+      <button class="btn-save" style="width:100%;margin-top:8px" onclick="createLiveCourse()">라이브 강의 등록</button>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // ── 어드민 인증 체크 ──
+    (function() {
+      const u = API.user();
+      if (!u || u.role !== 'admin') { location.href = '/login.html?next=/admin.html'; }
+    })();
+
+    // ── 데이터 로드 함수들 ──
+    async function loadDashboard() {
+      try {
+        const stats = await API.get('/api/admin/stats');
+        document.getElementById('stat-revenue').textContent = stats.revenue.toLocaleString() + '원';
+        document.getElementById('stat-students').textContent = stats.totalStudents.toLocaleString() + '명';
+        document.getElementById('stat-orders').textContent = stats.orderCount.toLocaleString() + '건';
+        document.getElementById('stat-refunds').textContent = stats.refundPending.toLocaleString() + '건';
+
+        const orders = await API.get('/api/admin/orders');
+        const tbody = document.getElementById('recent-orders-body');
+        if (tbody) {
+          tbody.innerHTML = orders.slice(0, 5).map(o => `
+            <tr>
+              <td>${o.user_name || '-'}</td>
+              <td class="td-sub">${o.course_title || '-'}</td>
+              <td>${(o.amount||0).toLocaleString()}원</td>
+              <td>${o.method || '-'}</td>
+              <td><span class="badge-status paid">결제완료</span></td>
+              <td class="td-date">${o.paid_at || '-'}</td>
+            </tr>`).join('');
+        }
+
+        const courseStats = await API.get('/api/admin/course-stats');
+        const chartEl = document.getElementById('revenue-chart');
+        if (chartEl) {
+          const max = Math.max(...courseStats.map(c => c.revenue), 1);
+          chartEl.innerHTML = courseStats.map(c => `
+            <div class="bar-item">
+              <div class="bar-label">${c.title.slice(0,10)}</div>
+              <div class="bar-track"><div class="bar-fill" style="width:${Math.round(c.revenue/max*100)}%"></div></div>
+              <div class="bar-value">${(c.revenue||0).toLocaleString()}원</div>
+            </div>`).join('');
+        }
+      } catch(e) { console.error('dashboard load error', e); }
+    }
+
+    let _courses = []
+    let _selectedCourseId = null
+
+    async function loadCourses() {
+      _courses = await API.get('/api/courses');
+      const tbody = document.getElementById('courses-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = _courses.map(c => {
+        const isLive = c.course_type === 'live'
+        const typeBadge = isLive
+          ? `<span class="badge-status" style="background:#ffebee;color:#c62828">🔴 라이브</span>`
+          : `<span class="badge-status" style="background:#f5f5f5;color:#555">📹 VOD</span>`
+        return `
+        <tr>
+          <td>${c.id}</td>
+          <td>${c.title}</td>
+          <td>${c.category}</td>
+          <td>${typeBadge}</td>
+          <td>${(c.sale_price||0).toLocaleString()}원</td>
+          <td>${c.student_count||0}</td>
+          <td><span class="badge-status ${c.is_published?'paid':'refund'}">${c.is_published?'공개':'비공개'}</span></td>
+          <td style="display:flex;gap:4px">
+            <button class="btn-sm" onclick="togglePublish(${c.id}, ${c.is_published})">${c.is_published?'비공개':'공개'}</button>
+            <button class="btn-sm" onclick="openLivePanel(${c.id})">라이브 설정</button>
+          </td>
+        </tr>`
+      }).join('');
+    }
+
+    async function togglePublish(id, current) {
+      await API.patch(`/api/admin/courses/${id}`, { is_published: current ? 0 : 1 });
+      loadCourses();
+    }
+
+    function openLivePanel(courseId) {
+      _selectedCourseId = courseId
+      const c = _courses.find(c => c.id === courseId)
+      if (!c) return
+      document.getElementById('live-panel').style.display = 'block'
+      document.getElementById('live-panel-title').textContent = c.title
+      document.getElementById('live-type').value = c.course_type || 'recorded'
+      document.getElementById('live-meet-code').value = c.meet_code || ''
+      document.getElementById('live-status').value = c.live_status || 'upcoming'
+      if (c.live_schedule) {
+        // datetime-local 형식으로 변환
+        try { document.getElementById('live-schedule').value = new Date(c.live_schedule).toISOString().slice(0,16) } catch {}
+      }
+      onLiveTypeChange()
+      document.getElementById('live-panel').scrollIntoView({ behavior: 'smooth' })
+    }
+
+    function onLiveTypeChange() {
+      const isLive = document.getElementById('live-type').value === 'live'
+      document.getElementById('live-fields').style.display = isLive ? '' : 'none'
+      document.getElementById('live-send-section').style.display = isLive ? '' : 'none'
+      document.getElementById('send-result').style.display = 'none'
+    }
+
+    async function saveLiveSettings() {
+      if (!_selectedCourseId) return
+      const course_type = document.getElementById('live-type').value
+      const scheduleVal = document.getElementById('live-schedule').value
+      const meet_code = document.getElementById('live-meet-code').value.trim()
+      const live_status = document.getElementById('live-status').value
+      await API.patch(`/api/admin/courses/${_selectedCourseId}`, {
+        course_type,
+        live_schedule: scheduleVal ? new Date(scheduleVal).toLocaleString('ko-KR') : null,
+        meet_code: meet_code || null,
+        live_status,
+      })
+      alert('설정이 저장되었습니다.')
+      loadCourses()
+    }
+
+    async function sendLiveInvite() {
+      if (!_selectedCourseId) return
+      const meetCode = document.getElementById('live-meet-code').value.trim()
+      const schedule = document.getElementById('live-schedule').value
+      if (!meetCode) { alert('Google Meet 코드를 입력해주세요.'); return }
+      if (!schedule) { alert('라이브 일정을 입력해주세요.'); return }
+      if (!confirm('수강생 전원에게 카카오 알림톡을 발송할까요?')) return
+
+      // 저장 후 발송
+      await saveLiveSettings()
+      const result = await API.post(`/api/admin/courses/${_selectedCourseId}/send-live-invite`, {})
+      const el = document.getElementById('send-result')
+      el.style.display = 'block'
+      el.innerHTML = `
+        <div style="background:#e8f5e9;border-radius:8px;padding:12px;line-height:1.8">
+          ✅ 발송 완료<br>
+          발송 성공: <b>${result.sent}명</b><br>
+          전화번호 미등록(스킵): <b>${result.skipped}명</b>
+          ${result.skipped_users?.length ? `<br><span style="font-size:11px;color:#aaa">${result.skipped_users.join(', ')}</span>` : ''}
+          ${result.failed ? `<br>발송 실패: <b style="color:#c62828">${result.failed}명</b>` : ''}
+        </div>`
+    }
+
+    async function loadStudents() {
+      const students = await API.get('/api/admin/students');
+      const tbody = document.getElementById('students-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = students.map(s => `
+        <tr>
+          <td>${s.id}</td>
+          <td>${s.name}</td>
+          <td>${s.email}</td>
+          <td>${s.course_count}</td>
+          <td>${(s.total_paid||0).toLocaleString()}원</td>
+          <td class="td-date">${s.created_at}</td>
+        </tr>`).join('');
+    }
+
+    async function loadOrders() {
+      const orders = await API.get('/api/admin/orders');
+      const tbody = document.getElementById('orders-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td>${o.id}</td>
+          <td>${o.user_name||'-'}</td>
+          <td class="td-sub">${o.course_title||'-'}</td>
+          <td>${(o.amount||0).toLocaleString()}원</td>
+          <td>${o.method||'-'}</td>
+          <td><span class="badge-status ${o.status==='paid'?'paid':'refund'}">${o.status==='paid'?'결제완료':'환불'}</span></td>
+          <td class="td-date">${o.paid_at||'-'}</td>
+        </tr>`).join('');
+    }
+
+    async function loadReviews() {
+      const reviews = await API.get('/api/admin/reviews');
+      const tbody = document.getElementById('reviews-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = reviews.map(r => `
+        <tr>
+          <td>${r.user_name||'-'}</td>
+          <td class="td-sub">${r.course_title||'-'}</td>
+          <td>${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</td>
+          <td>${r.content||''}</td>
+          <td><span class="badge-status ${r.is_public?'paid':'refund'}">${r.is_public?'공개':'비공개'}</span></td>
+          <td>
+            <button class="btn-sm" onclick="toggleReview(${r.id}, ${r.is_public})">${r.is_public?'비공개':'공개'}</button>
+            <button class="btn-sm danger" onclick="deleteReview(${r.id})">삭제</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    async function toggleReview(id, current) {
+      await API.patch(`/api/admin/reviews/${id}`, { is_public: current ? 0 : 1 });
+      loadReviews();
+    }
+
+    async function deleteReview(id) {
+      if (!confirm('후기를 삭제할까요?')) return;
+      await API.del(`/api/admin/reviews/${id}`);
+      loadReviews();
+    }
+
+    const titles = {
+      dashboard: '대시보드 개요',
+      revenue: '매출 현황',
+      courses: '강의 목록',
+      curriculum: '커리큘럼 편집',
+      students: '수강생 목록',
+      orders: '결제 내역',
+      refunds: '환불 요청',
+      reviews: '수강 후기',
+      notices: '공지사항',
+      settings: '사이트 설정'
+    };
+
+    const sectionLoaders = {
+      dashboard: loadDashboard,
+      courses: loadCourses,
+      students: loadStudents,
+      orders: loadOrders,
+      reviews: loadReviews,
+    };
+
+    function showSection(name) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+
+      const navEl = document.querySelector(`[data-section="${name}"]`);
+      const secEl = document.getElementById(`sec-${name}`);
+      if (navEl) navEl.classList.add('active');
+      if (secEl) secEl.classList.add('active');
+      document.getElementById('page-title').textContent = titles[name] || name;
+
+      if (sectionLoaders[name]) sectionLoaders[name]();
+    }
+
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.addEventListener('click', e => {
+        e.preventDefault();
+        showSection(el.dataset.section);
+      });
+    });
+
+    function openLiveCreateModal() {
+      document.getElementById('live-create-overlay').style.display = 'flex'
+    }
+    function closeLiveCreateModal() {
+      document.getElementById('live-create-overlay').style.display = 'none'
+    }
+
+    async function createLiveCourse() {
+      const title = document.getElementById('lc-title').value.trim()
+      const category = document.getElementById('lc-category').value
+      const description = document.getElementById('lc-desc').value.trim()
+      const scheduleVal = document.getElementById('lc-schedule').value
+      const meet_code = document.getElementById('lc-meet-code').value.trim()
+      const thumbnail_icon = document.getElementById('lc-icon').value
+      if (!title) { alert('강의 제목을 입력해주세요.'); return }
+      if (!scheduleVal) { alert('라이브 일정을 선택해주세요.'); return }
+      try {
+        await API.post('/api/admin/live-courses', {
+          title, category, description, thumbnail_icon,
+          live_schedule: new Date(scheduleVal).toLocaleString('ko-KR'),
+          meet_code: meet_code || null,
+        })
+        alert('라이브 강의가 등록되었습니다.')
+        closeLiveCreateModal()
+        loadCourses()
+        ;['lc-title','lc-desc','lc-meet-code'].forEach(id => document.getElementById(id).value = '')
+        document.getElementById('lc-schedule').value = ''
+      } catch(e) {
+        alert(e.message || '등록 중 오류가 발생했습니다.')
+      }
+    }
+
+    // 초기 로드
+    loadDashboard();
+  </script>
+
+</body>
+</html>
