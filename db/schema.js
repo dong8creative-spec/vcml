@@ -1,17 +1,10 @@
 const path = require('path')
 const fs = require('fs')
-const initSqlJs = require('sql.js')
 const bcrypt = require('bcryptjs')
 
 const DB_PATH = path.join(__dirname, 'tadak.db.json')
 
-let _db = null
-
-// sql.js는 async init이 필요하므로 동기 래퍼로 감싸서 사용
-// 대신 JSON 파일로 영속화하는 sqlite 호환 레이어 제공
-// 실제 sql.js 대신, 더 간단한 lowdb 스타일로 전환
-
-// ── 직접 JSON 기반 in-memory DB 구현 ──
+// ── JSON 기반 in-memory DB ──
 const tables = {
   users: [],
   courses: [],
