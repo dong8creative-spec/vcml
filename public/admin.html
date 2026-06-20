@@ -49,6 +49,9 @@
         <i class="ti ti-rosette"></i> 편집자 신청
         <span class="badge-dot" id="editor-badge" style="display:none"></span>
       </a>
+      <a href="#projects" class="nav-item" data-section="projects">
+        <i class="ti ti-briefcase"></i> 의뢰 현황
+      </a>
 
       <div class="nav-group-label">콘텐츠</div>
       <a href="#reviews" class="nav-item" data-section="reviews">
@@ -433,6 +436,29 @@
             <button class="btn-primary-sm" id="approve-btn" onclick="reviewApp('approved')">승인</button>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: PROJECTS ===== -->
+    <section class="section" id="sec-projects">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">의뢰 현황</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm active" onclick="loadProjects('open')" id="ptab-open">모집중</button>
+            <button class="btn-sm" onclick="loadProjects('matched')" id="ptab-matched">매칭완료</button>
+            <button class="btn-sm" onclick="loadProjects('completed')" id="ptab-completed">완료</button>
+            <button class="btn-sm" onclick="loadProjects(null)" id="ptab-all">전체</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>제목</th><th>카테고리</th><th>의뢰인</th><th>예산</th><th>견적수</th><th>납품일</th><th>등록일</th><th>상태</th><th>관리</th></tr>
+          </thead>
+          <tbody id="projects-tbody">
+            <tr><td colspan="9" style="text-align:center;color:#aaa;padding:32px">로딩 중...</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -844,7 +870,51 @@
       orders: loadOrders,
       reviews: loadReviews,
       'editor-apps': () => loadEditorApps('pending'),
+      'projects': () => loadProjects('open'),
     };
+
+    // ── 의뢰 현황 ──
+    const projStatusLabel = { open:'모집중', matched:'매칭완료', in_progress:'진행중', completed:'완료', cancelled:'취소' }
+    async function loadProjects(status) {
+      ['open','matched','completed','all'].forEach(t => {
+        const el = document.getElementById('ptab-'+t)
+        if (el) el.classList.toggle('active', (status||'all') === t)
+      })
+      const tbody = document.getElementById('projects-tbody')
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr>'
+      try {
+        const qs = status ? `?status=${status}` : ''
+        const projects = await API.get('/api/projects' + qs)
+        if (!projects.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">의뢰가 없습니다.</td></tr>'; return }
+        const statusMap = { open:'<span class="status-tag done">모집중</span>', matched:'<span class="status-tag pending">매칭완료</span>', completed:'<span class="status-tag">완료</span>', cancelled:'<span class="status-tag refund">취소</span>' }
+        tbody.innerHTML = projects.map(p => {
+          const budget = p.budget_min||p.budget_max ? `${p.budget_min?'₩'+Number(p.budget_min).toLocaleString():''}${p.budget_max?'~₩'+Number(p.budget_max).toLocaleString():''}` : '협의'
+          return `<tr>
+            <td><a href="/project-detail.html?id=${p.id}" target="_blank" style="color:#5c67f2">${p.title}</a></td>
+            <td>${p.category}</td>
+            <td>${p.client_name||'-'}</td>
+            <td style="font-size:12px">${budget}</td>
+            <td style="text-align:center">${p.quote_count||0}</td>
+            <td class="td-date">${p.deadline||'-'}</td>
+            <td class="td-date">${(p.created_at||'').slice(0,10)}</td>
+            <td>${statusMap[p.status]||p.status}</td>
+            <td class="td-actions">
+              ${p.status==='open'?`<button class="btn-sm-danger" onclick="cancelProject('${p.id}')">취소</button>`:''}
+            </td>
+          </tr>`
+        }).join('')
+      } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="9" style="color:#e00;text-align:center;padding:24px">오류: ' + (e.message||'불러오기 실패') + '</td></tr>'
+      }
+    }
+
+    async function cancelProject(id) {
+      if (!confirm('이 의뢰를 취소하시겠습니까?')) return
+      try {
+        await API.patch('/api/projects/' + id + '/status', { status: 'cancelled' })
+        loadProjects('open')
+      } catch(e) { alert(e.message||'처리 중 오류') }
+    }
 
     function showSection(name) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));

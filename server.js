@@ -14,6 +14,7 @@ app.use('/api/orders',  require('./routes/orders'))
 app.use('/api/my',      require('./routes/my'))
 app.use('/api/admin',   require('./routes/admin'))
 app.use('/api/editor',  require('./routes/editor'))
+app.use('/api/projects', require('./routes/project'))
 
 // SPA fallback — 없는 경로는 index.html로
 app.get('*', (req, res) => {

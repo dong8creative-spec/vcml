@@ -277,6 +277,56 @@ const db = {
     return true
   },
 
+  // ── 의뢰(프로젝트) ──
+  async createProject(clientId, { title, description, category, budget_min, budget_max, deadline, requirements }) {
+    const data = { client_id: clientId, title, description, category, budget_min: budget_min||0, budget_max: budget_max||0, deadline: deadline||null, requirements: requirements||'', status: 'open', created_at: now() }
+    const ref = await fs.collection('projects').add(data)
+    return { id: ref.id, ...data }
+  },
+  async getProjects(status = null) {
+    let q = fs.collection('projects').orderBy('created_at', 'desc')
+    if (status) q = q.where('status', '==', status)
+    const snap = await q.get()
+    return snapToArr(snap)
+  },
+  async getProjectById(id) {
+    const doc = await fs.collection('projects').doc(id).get()
+    return docToObj(doc)
+  },
+  async getProjectsByClient(clientId) {
+    const snap = await fs.collection('projects').where('client_id', '==', clientId).orderBy('created_at', 'desc').get()
+    return snapToArr(snap)
+  },
+  async updateProject(id, data) {
+    await fs.collection('projects').doc(id).update(data)
+  },
+
+  // ── 견적(Quote) ──
+  async submitQuote(editorId, projectId, { amount, message }) {
+    const existing = await fs.collection('quotes').where('editor_id', '==', editorId).where('project_id', '==', projectId).limit(1).get()
+    if (!existing.empty) throw new Error('이미 견적을 제출했습니다.')
+    const data = { editor_id: editorId, project_id: projectId, amount, message, status: 'pending', created_at: now() }
+    const ref = await fs.collection('quotes').add(data)
+    return { id: ref.id, ...data }
+  },
+  async getQuotesByProject(projectId) {
+    const snap = await fs.collection('quotes').where('project_id', '==', projectId).orderBy('created_at', 'asc').get()
+    return snapToArr(snap)
+  },
+  async getQuotesByEditor(editorId) {
+    const snap = await fs.collection('quotes').where('editor_id', '==', editorId).orderBy('created_at', 'desc').get()
+    return snapToArr(snap)
+  },
+  async acceptQuote(quoteId, projectId) {
+    // 해당 견적 승인, 나머지 거절, 프로젝트 상태 변경
+    await fs.collection('quotes').doc(quoteId).update({ status: 'accepted' })
+    const others = await fs.collection('quotes').where('project_id', '==', projectId).get()
+    for (const d of others.docs) {
+      if (d.id !== quoteId) await d.ref.update({ status: 'rejected' })
+    }
+    await fs.collection('projects').doc(projectId).update({ status: 'matched', matched_quote_id: quoteId })
+  },
+
   // ── 편집자 신청 ──
   async applyEditor(userId, { intro, skills, portfolio_url, experience_years, tools }) {
     const existing = await fs.collection('editor_applications').where('user_id', '==', userId).limit(1).get()

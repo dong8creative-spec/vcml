@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>의뢰 등록 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    .post-wrap { max-width:700px; margin:48px auto; padding:0 24px 80px; }
+    .post-title { font-size:24px; font-weight:900; margin-bottom:6px; }
+    .post-sub { font-size:14px; color:#888; margin-bottom:32px; }
+    .form-card { background:#fff; border-radius:16px; border:1px solid #eee; padding:32px; }
+    .form-group { margin-bottom:22px; }
+    .form-group label { display:block; font-size:13px; font-weight:700; color:#333; margin-bottom:8px; }
+    .req { color:#e63946; margin-left:2px; }
+    .form-group input, .form-group textarea, .form-group select {
+      width:100%; padding:12px 14px; border:1.5px solid #e5e5e5; border-radius:8px;
+      font-size:14px; color:#1a1a1a; outline:none; transition:.15s; font-family:inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color:#5c67f2; }
+    .form-group textarea { resize:vertical; min-height:110px; line-height:1.6; }
+    .form-hint { font-size:12px; color:#aaa; margin-top:6px; }
+    .budget-row { display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; }
+    .budget-sep { text-align:center; color:#aaa; font-size:14px; }
+    .submit-btn { width:100%; padding:16px; background:#5c67f2; color:#fff; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; transition:.15s; margin-top:8px; }
+    .submit-btn:hover { background:#4a55e0; }
+    .submit-btn:disabled { background:#ccc; cursor:not-allowed; }
+
+    .cat-chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .cat-chip { padding:7px 16px; border-radius:20px; border:1.5px solid #eee; background:#fff; font-size:13px; font-weight:600; color:#555; cursor:pointer; transition:.15s; }
+    .cat-chip.active { background:#5c67f2; color:#fff; border-color:#5c67f2; }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo">타닥<span>클래스</span></a>
+    <div class="header-right">
+      <a href="/projects.html" class="nav-btn">← 의뢰 목록</a>
+    </div>
+  </div>
+</header>
+
+<div class="post-wrap">
+  <h1 class="post-title">영상 의뢰 등록</h1>
+  <p class="post-sub">의뢰 내용을 구체적으로 작성할수록 좋은 견적을 받을 수 있습니다.</p>
+
+  <div class="form-card">
+    <form id="post-form">
+      <div class="form-group">
+        <label>작업 유형 <span class="req">*</span></label>
+        <div class="cat-chips" id="cat-chips">
+          <div class="cat-chip" data-val="유튜브 편집">유튜브 편집</div>
+          <div class="cat-chip" data-val="숏폼/릴스">숏폼/릴스</div>
+          <div class="cat-chip" data-val="광고 영상">광고 영상</div>
+          <div class="cat-chip" data-val="모션그래픽">모션그래픽</div>
+          <div class="cat-chip" data-val="색보정">색보정</div>
+          <div class="cat-chip" data-val="브랜드 필름">브랜드 필름</div>
+          <div class="cat-chip" data-val="웨딩/행사">웨딩/행사</div>
+          <div class="cat-chip" data-val="드론 편집">드론 편집</div>
+          <div class="cat-chip" data-val="기타">기타</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>의뢰 제목 <span class="req">*</span></label>
+        <input type="text" name="title" placeholder="예: 유튜브 브이로그 5분 편집 (주 2회)" required maxlength="80" />
+        <p class="form-hint">간결하고 명확하게 작성해주세요. (최대 80자)</p>
+      </div>
+
+      <div class="form-group">
+        <label>의뢰 상세 설명 <span class="req">*</span></label>
+        <textarea name="description" placeholder="어떤 영상인지, 분량, 스타일, 참고 레퍼런스 링크, 제공 소스(원본 파일) 등을 적어주세요." required minlength="30"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>세부 요구사항</label>
+        <textarea name="requirements" placeholder="자막 스타일, 색보정 톤, 배경음악 유형, 납품 포맷(해상도·파일형식) 등 추가 요구사항을 적어주세요." style="min-height:80px"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>예산 범위</label>
+        <div class="budget-row">
+          <input type="number" name="budget_min" placeholder="최소 금액" min="0" step="10000" />
+          <span class="budget-sep">~</span>
+          <input type="number" name="budget_max" placeholder="최대 금액" min="0" step="10000" />
+        </div>
+        <p class="form-hint">비워두면 '예산 협의'로 표시됩니다. (단위: 원)</p>
+      </div>
+
+      <div class="form-group">
+        <label>납품 희망일</label>
+        <input type="date" name="deadline" />
+        <p class="form-hint">확정 날짜가 없으면 비워두세요.</p>
+      </div>
+
+      <div class="legal-box" style="margin-bottom:20px">
+        <strong>안내사항</strong><br>
+        · 의뢰 등록 후 편집자들이 견적을 제출합니다. (편집자 직접 선택 가능)<br>
+        · 타닥클래스는 중개 수수료 15%를 적용합니다.<br>
+        · 허위 의뢰 등록 및 플랫폼 외부 직접 거래는 금지됩니다.
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">의뢰 등록하기</button>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = API.user ? API.user() : null
+if (!user) { alert('로그인이 필요합니다.'); location.href = '/login.html?next=/project-post.html' }
+
+let selectedCat = null
+document.querySelectorAll('.cat-chip').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'))
+    el.classList.add('active')
+    selectedCat = el.dataset.val
+  })
+})
+
+document.getElementById('post-form').addEventListener('submit', async e => {
+  e.preventDefault()
+  if (!selectedCat) return alert('작업 유형을 선택해주세요.')
+  const fd = new FormData(e.target)
+  const btn = document.getElementById('submit-btn')
+  btn.disabled = true; btn.textContent = '등록 중...'
+  try {
+    const res = await API.post('/projects', {
+      title: fd.get('title'),
+      description: fd.get('description'),
+      category: selectedCat,
+      requirements: fd.get('requirements'),
+      budget_min: parseInt(fd.get('budget_min')) || 0,
+      budget_max: parseInt(fd.get('budget_max')) || 0,
+      deadline: fd.get('deadline') || null,
+    })
+    alert('의뢰가 등록되었습니다!')
+    location.href = '/project-detail.html?id=' + res.project.id
+  } catch(err) {
+    alert(err.message || '등록 중 오류가 발생했습니다.')
+    btn.disabled = false; btn.textContent = '의뢰 등록하기'
+  }
+})
+</script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>의뢰 상세 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    .detail-wrap { max-width:860px; margin:40px auto; padding:0 24px 80px; display:grid; grid-template-columns:1fr 320px; gap:24px; align-items:start; }
+    .main-col {}
+    .side-col {}
+
+    .detail-card { background:#fff; border:1px solid #eee; border-radius:14px; padding:28px; margin-bottom:20px; }
+    .dc-cat-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+    .dc-cat { font-size:12px; font-weight:700; color:#5c67f2; background:#f0f2ff; padding:3px 10px; border-radius:12px; }
+    .dc-status { font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px; }
+    .dc-status.open { background:#f0fff4; color:#2cae6b; }
+    .dc-status.matched { background:#fff8e8; color:#d4991a; }
+    .dc-status.completed { background:#f0f0f0; color:#888; }
+    .dc-title { font-size:22px; font-weight:900; color:#1a1a1a; margin-bottom:10px; line-height:1.35; }
+    .dc-meta { display:flex; gap:16px; font-size:13px; color:#888; flex-wrap:wrap; margin-bottom:20px; }
+    .dc-meta span { display:flex; align-items:center; gap:5px; }
+    .dc-body { font-size:14px; color:#444; line-height:1.8; white-space:pre-wrap; }
+    .section-label { font-size:13px; font-weight:800; color:#333; margin:20px 0 10px; border-bottom:1px solid #f0f0f0; padding-bottom:8px; }
+
+    /* 견적 제출 카드 */
+    .quote-box { background:#fff; border:1px solid #eee; border-radius:14px; padding:24px; margin-bottom:20px; position:sticky; top:72px; }
+    .qb-title { font-size:15px; font-weight:800; margin-bottom:16px; }
+    .qb-group { margin-bottom:14px; }
+    .qb-label { font-size:12px; font-weight:700; color:#555; margin-bottom:6px; }
+    .qb-group input, .qb-group textarea {
+      width:100%; padding:10px 12px; border:1.5px solid #e5e5e5; border-radius:8px;
+      font-size:13px; outline:none; transition:.15s; font-family:inherit;
+    }
+    .qb-group input:focus, .qb-group textarea:focus { border-color:#5c67f2; }
+    .qb-group textarea { resize:vertical; min-height:80px; line-height:1.6; }
+    .qb-submit { width:100%; padding:12px; background:#5c67f2; color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; transition:.15s; }
+    .qb-submit:hover { background:#4a55e0; }
+    .qb-submit:disabled { background:#ccc; cursor:not-allowed; }
+    .qb-notice { font-size:12px; color:#aaa; text-align:center; margin-top:10px; line-height:1.6; }
+
+    /* 견적 목록 */
+    .quote-list { display:flex; flex-direction:column; gap:12px; }
+    .quote-item { background:#f8f9fb; border-radius:10px; padding:16px; border:1px solid #eee; }
+    .qi-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .qi-editor { font-size:14px; font-weight:700; color:#1a1a1a; display:flex; align-items:center; gap:6px; }
+    .qi-editor-badge { font-size:11px; background:#5c67f2; color:#fff; padding:2px 7px; border-radius:4px; }
+    .qi-amount { font-size:16px; font-weight:900; color:#5c67f2; }
+    .qi-msg { font-size:13px; color:#555; line-height:1.6; margin-bottom:10px; }
+    .qi-date { font-size:12px; color:#aaa; }
+    .qi-accept { padding:7px 16px; background:#1a1f3c; color:#fff; border:none; border-radius:7px; font-size:13px; font-weight:700; cursor:pointer; transition:.15s; }
+    .qi-accept:hover { background:#2d3561; }
+    .qi-status { font-size:12px; font-weight:700; padding:4px 10px; border-radius:6px; }
+    .qi-status.accepted { background:#f0fff4; color:#2cae6b; }
+    .qi-status.rejected { background:#fff0f0; color:#e63946; }
+    .qi-status.pending { background:#f4f5ff; color:#5c67f2; }
+
+    .info-box { background:#f8f9fb; border-radius:10px; padding:16px; font-size:13px; color:#555; line-height:1.8; border:1px solid #eee; }
+    .fee-box { background:#fff8e8; border:1px solid #ffe58f; border-radius:10px; padding:14px; font-size:13px; color:#664d00; margin-top:12px; }
+
+    .spinner { width:32px; height:32px; border:3px solid #eee; border-top-color:#5c67f2; border-radius:50%; animation:spin .7s linear infinite; margin:48px auto; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    @media(max-width:700px) {
+      .detail-wrap { grid-template-columns:1fr; }
+      .side-col { order:-1; }
+      .quote-box { position:static; }
+    }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo">타닥<span>클래스</span></a>
+    <div class="header-right">
+      <a href="/projects.html" class="nav-btn">← 의뢰 목록</a>
+    </div>
+  </div>
+</header>
+
+<div class="detail-wrap" id="detail-wrap">
+  <div class="spinner" style="grid-column:1/-1;margin:60px auto"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const params = new URLSearchParams(location.search)
+const projectId = params.get('id')
+if (!projectId) { alert('잘못된 접근입니다.'); location.href = '/projects.html' }
+
+const user = API.user ? API.user() : null
+const statusLabel = { open:'모집중', matched:'매칭완료', in_progress:'진행중', completed:'완료', cancelled:'취소' }
+function fmt(n) { return n ? '₩' + Number(n).toLocaleString() : null }
+
+async function load() {
+  try {
+    const p = await API.get('/projects/' + projectId)
+    const isClient = user && p.client_id === user.id
+    const isEditor = user && user.role === 'editor'
+    const myQuote = p.quotes?.find(q => q.editor_id === user?.id)
+
+    // 사이드바: 견적 제출 (편집자이고 아직 제출 안 했고 모집중일 때)
+    let sideHTML = ''
+    if (isEditor && !myQuote && p.status === 'open') {
+      sideHTML = `
+      <div class="quote-box">
+        <div class="qb-title">💼 견적 제출하기</div>
+        <div class="qb-group">
+          <div class="qb-label">제안 금액 (원) *</div>
+          <input type="number" id="q-amount" placeholder="예: 150000" min="0" step="10000" />
+        </div>
+        <div class="qb-group">
+          <div class="qb-label">제안 메시지 *</div>
+          <textarea id="q-msg" placeholder="의뢰인에게 어필할 내용, 작업 방식, 예상 일정 등을 작성해주세요."></textarea>
+        </div>
+        <button class="qb-submit" id="quote-btn" onclick="submitQuote()">견적 제출</button>
+        <div class="qb-notice">※ 수락 시 최종 금액의 15%가<br>타닥클래스 중개 수수료로 적용됩니다.</div>
+      </div>`
+    } else if (isEditor && myQuote) {
+      const statusMap = { pending:'검토 대기', accepted:'수락됨 ✅', rejected:'미선택' }
+      sideHTML = `
+      <div class="quote-box">
+        <div class="qb-title">내 견적 현황</div>
+        <div style="font-size:15px;font-weight:800;color:#5c67f2;margin-bottom:8px">${fmt(myQuote.amount)}</div>
+        <div style="font-size:13px;color:#666;margin-bottom:12px">${myQuote.message}</div>
+        <div class="qi-status ${myQuote.status}">${statusMap[myQuote.status]||myQuote.status}</div>
+      </div>`
+    } else if (!user) {
+      sideHTML = `
+      <div class="quote-box">
+        <div class="qb-title">견적을 제출하려면?</div>
+        <p style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.7">로그인 후 공인 편집자로 신청하면 견적을 제출할 수 있습니다.</p>
+        <a href="/login.html" style="display:block;text-align:center;padding:10px;background:#5c67f2;color:#fff;border-radius:8px;font-weight:700;font-size:14px">로그인하기</a>
+      </div>`
+    }
+
+    // 정보 박스
+    sideHTML += `
+      <div class="info-box">
+        <strong>의뢰 정보</strong><br><br>
+        <div>카테고리: <strong>${p.category}</strong></div>
+        <div>예산: <strong>${p.budget_min||p.budget_max ? (fmt(p.budget_min)||'')+(p.budget_max?` ~ ${fmt(p.budget_max)}`:'') : '협의'}</strong></div>
+        ${p.deadline ? `<div>납품 희망일: <strong>${p.deadline}</strong></div>` : ''}
+        <div>등록일: ${(p.created_at||'').slice(0,10)}</div>
+        <div>받은 견적: <strong>${p.quotes?.length||0}건</strong></div>
+      </div>
+      <div class="fee-box">
+        💡 중개 수수료 안내<br>
+        매칭 성사 시 최종 계약금의 <strong>15%</strong>가 타닥클래스 수수료로 적용됩니다.
+      </div>`
+
+    // 견적 목록 (의뢰인에게만 전부 표시, 편집자에게는 자기 것만)
+    let quotesHTML = ''
+    const visibleQuotes = isClient ? p.quotes : (myQuote ? [myQuote] : [])
+    if (isClient || myQuote) {
+      quotesHTML = `
+        <div class="section-label">견적 목록 (${p.quotes?.length||0}건)</div>
+        <div class="quote-list">
+          ${visibleQuotes.length ? visibleQuotes.map(q => `
+            <div class="quote-item">
+              <div class="qi-top">
+                <div class="qi-editor">
+                  <span>${q.editor_name}</span>
+                  <span class="qi-editor-badge">공인 편집자</span>
+                </div>
+                <div class="qi-amount">${fmt(q.amount)}</div>
+              </div>
+              <div class="qi-msg">${q.message}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="qi-date">${(q.created_at||'').slice(0,10)}</span>
+                ${isClient && p.status === 'open' && q.status === 'pending'
+                  ? `<button class="qi-accept" onclick="acceptQuote('${q.id}')">이 견적 수락하기</button>`
+                  : `<span class="qi-status ${q.status}">${{pending:'검토중',accepted:'수락됨 ✅',rejected:'미선택'}[q.status]||q.status}</span>`}
+              </div>
+            </div>`).join('')
+          : '<div style="color:#aaa;font-size:14px;padding:16px 0">아직 견적이 없습니다.</div>'}
+        </div>`
+    }
+
+    document.getElementById('detail-wrap').innerHTML = `
+      <div class="main-col">
+        <div class="detail-card">
+          <div class="dc-cat-row">
+            <span class="dc-cat">${p.category}</span>
+            <span class="dc-status ${p.status}">${statusLabel[p.status]||p.status}</span>
+          </div>
+          <div class="dc-title">${p.title}</div>
+          <div class="dc-meta">
+            <span><i class="ti ti-user"></i> ${p.client_name}</span>
+            ${p.deadline?`<span><i class="ti ti-calendar"></i> 납품 ${p.deadline}</span>`:''}
+            <span><i class="ti ti-clock"></i> ${(p.created_at||'').slice(0,10)} 등록</span>
+          </div>
+          <div class="section-label">의뢰 설명</div>
+          <div class="dc-body">${p.description}</div>
+          ${p.requirements ? `<div class="section-label">세부 요구사항</div><div class="dc-body">${p.requirements}</div>` : ''}
+          ${quotesHTML}
+        </div>
+      </div>
+      <div class="side-col">${sideHTML}</div>`
+  } catch(e) {
+    document.getElementById('detail-wrap').innerHTML = '<div style="text-align:center;padding:60px;color:#aaa">의뢰를 불러올 수 없습니다.</div>'
+  }
+}
+
+async function submitQuote() {
+  const amount = parseInt(document.getElementById('q-amount')?.value)
+  const message = document.getElementById('q-msg')?.value?.trim()
+  if (!amount || amount <= 0) return alert('견적 금액을 입력해주세요.')
+  if (!message || message.length < 10) return alert('제안 메시지를 10자 이상 작성해주세요.')
+  const btn = document.getElementById('quote-btn')
+  btn.disabled = true; btn.textContent = '제출 중...'
+  try {
+    await API.post(`/projects/${projectId}/quotes`, { amount, message })
+    alert('견적이 제출되었습니다! 의뢰인의 검토를 기다려주세요.')
+    load()
+  } catch(e) {
+    alert(e.message || '제출 중 오류가 발생했습니다.')
+    btn.disabled = false; btn.textContent = '견적 제출'
+  }
+}
+
+async function acceptQuote(quoteId) {
+  if (!confirm('이 견적을 수락하시겠습니까?\n수락 후에는 변경할 수 없습니다.')) return
+  try {
+    await API.post(`/projects/${projectId}/quotes/${quoteId}/accept`, {})
+    alert('견적이 수락되었습니다! 편집자에게 직접 연락해 작업을 진행해주세요.')
+    load()
+  } catch(e) {
+    alert(e.message || '처리 중 오류가 발생했습니다.')
+  }
+}
+
+load()
+</script>
+</body>
+</html>
