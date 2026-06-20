@@ -32,13 +32,14 @@
   --badge-best:             #d4991a;
   --badge-free:             #91A776;
   --badge-live:             #ED6B5A;
+  --price-free:             #E53935;
   --badge-offline:          #5c6bc0;
   --badge-disc:             #ED6B5A;
   --badge-disc-bg:          #fce8e8;
-  --badge-live-upcoming-bg: #F6F4CA;
-  --badge-live-upcoming-text: #355f63;
-  --badge-live-active-bg:   #fce8e8;
-  --badge-live-active-text: #ED6B5A;
+  --badge-live-upcoming-bg: #FFEBEE;
+  --badge-live-upcoming-text: #E53935;
+  --badge-live-active-bg:   #FFEBEE;
+  --badge-live-active-text: #E53935;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -130,8 +131,8 @@ img { display: block; max-width: 100%; }
   justify-content: flex-start;
 }
 .hero-text { flex: 1; color: #fff; }
-.hero-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border-radius: 20px; padding: 6px 14px; font-size: 20.4px; color: rgba(255,255,255,.85); margin-bottom: 20px; }
-.hero-badge i { color: rgba(255,255,255,.9); font-size: 20.4px; }
+.hero-badge { display: inline-flex; align-items: center; gap: 6px; background: #fff; border-radius: 20px; padding: 6px 14px; font-size: 20.4px; color: #555555; margin-bottom: 20px; }
+.hero-badge i { color: #555555; font-size: 20.4px; }
 .hero-text h1 { font-size: 62.4px; font-weight: 800; line-height: 1.25; margin-bottom: 16px; color: #fff; }
 .hero-text h1 em { font-style: normal; color: #fff; }
 .hero-text p { font-size: 26.4px; color: rgba(255,255,255,.7); line-height: 1.7; margin-bottom: 32px; }
@@ -339,22 +340,52 @@ img { display: block; max-width: 100%; }
 .ccard-price-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .price-ori { font-size: 19.2px; color: var(--text-hint); text-decoration: line-through; }
 .price-sale { font-size: 24px; font-weight: 800; color: var(--text-primary); }
-.price-free { font-size: 24px; font-weight: 800; color: var(--badge-free); }
+.price-free { font-size: 24px; font-weight: 800; color: var(--price-free); }
 .disc-badge { font-size: 19.2px; font-weight: 700; color: var(--badge-disc); background: var(--badge-disc-bg); padding: 2px 6px; border-radius: 4px; }
-.badge-live { position: absolute; top: 8px; left: 8px; background: var(--badge-live); color: #fff; font-size: 16.8px; font-weight: 700; padding: 3px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; }
+.badge-live,
+.mc-live-badge,
+.ch-badge--meet {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 24px;
+  font-weight: 700;
+  padding: 8px 18px 8px 12px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  border: 1px solid rgba(0,0,0,.08);
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+.ch-badge--meet {
+  position: static;
+  margin-bottom: 12px;
+  font-size: 24px;
+  padding: 10px 20px 10px 14px;
+}
+.badge-live .meet-google-icon,
+.mc-live-badge .meet-google-icon,
+.ch-badge--meet .meet-google-icon {
+  display: block;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.badge-meet-label { font-size: 22px; font-weight: 700; }
 .badge-best { position: absolute; top: 8px; left: 8px; background: var(--badge-best); color: #fff; font-size: 16.8px; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
 .badge-new { position: absolute; top: 8px; left: 8px; background: var(--badge-new); color: #fff; font-size: 16.8px; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
 .badge-free { position: absolute; top: 8px; left: 8px; background: var(--badge-free); color: #fff; font-size: 16.8px; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
 .badge-offline { position: absolute; top: 8px; left: 8px; background: var(--badge-offline); color: #fff; font-size: 16.8px; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
 .live-badge { font-size: 16.8px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
-.live-badge.upcoming { background: var(--badge-live-upcoming-bg); color: var(--badge-live-upcoming-text); }
-.live-badge.live { background: var(--badge-live-active-bg); color: var(--badge-live-active-text); }
+.live-badge.upcoming { background: var(--badge-live-upcoming-bg); color: var(--price-free); font-weight: 700; }
+.live-badge.live { background: var(--badge-live-active-bg); color: var(--price-free); font-weight: 700; }
 .live-badge.ended { background: var(--bg-muted); color: var(--text-muted); }
-.mc-live-badge {
-  position: absolute; top: 8px; left: 8px;
-  background: var(--badge-live); color: #fff;
-  font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;
-}
 
 /* ── FREE COURSE SHELF (640×360 썸네일) ── */
 .shelf--free { gap: 20px; align-items: stretch; }

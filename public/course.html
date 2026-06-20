@@ -194,7 +194,9 @@
         <div class="course-hero ${thumbClass === 'thumb-dark' ? 'hero-dark' : 'hero-light'}">
           <div class="container course-hero-inner">
             <div class="course-hero-text">
-              ${c.badge ? `<span class="ch-badge ch-badge--${String(c.badge).toLowerCase()}">${c.badge}</span>` : ''}
+              ${c.course_type === 'live'
+                ? googleMeetBadgeHtml('ch-badge ch-badge--meet')
+                : (c.badge ? `<span class="ch-badge ch-badge--${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
               <h1>${c.title}</h1>
               <p class="ch-desc">${c.description||''}</p>
               <div class="ch-meta">

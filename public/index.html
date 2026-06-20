@@ -156,7 +156,7 @@ function courseCard(c) {
   return `
   <a href="/course.html?slug=${c.slug}" class="ccard">
     <div class="ccard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
-      ${isLive ? '<span class="badge-live"><i class="ti ti-broadcast"></i> LIVE</span>' : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
+      ${isLive ? googleMeetBadgeHtml('badge-live') : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
       <i class="ti ${c.thumbnail_icon || 'ti-video'}"></i>
     </div>
     <div class="ccard-body">
@@ -196,7 +196,7 @@ function freeCourseCard(c) {
   return `
   <a href="/course.html?slug=${c.slug}" class="fcard">
     <div class="fcard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
-      ${isLive ? '<span class="badge-live"><i class="ti ti-broadcast"></i> LIVE</span>' : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
+      ${isLive ? googleMeetBadgeHtml('badge-live') : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
       ${thumbInner}
     </div>
     <div class="fcard-body">

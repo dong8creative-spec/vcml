@@ -38,13 +38,14 @@
   --badge-best:             #d4991a;
   --badge-free:             #91A776;
   --badge-live:             #ED6B5A;
+  --price-free:             #E53935;
   --badge-offline:          #5c6bc0;
   --badge-disc:             #ED6B5A;
   --badge-disc-bg:          #fce8e8;
-  --badge-live-upcoming-bg: #F6F4CA;
-  --badge-live-upcoming-text: #355f63;
-  --badge-live-active-bg:   #fce8e8;
-  --badge-live-active-text: #ED6B5A;
+  --badge-live-upcoming-bg: #FFEBEE;
+  --badge-live-upcoming-text: #E53935;
+  --badge-live-active-bg:   #FFEBEE;
+  --badge-live-active-text: #E53935;
 
   /* 전역 텍스트 배율 (150%) — html·font-size px 와 함께 사용 */
   --text-scale:     1.2;

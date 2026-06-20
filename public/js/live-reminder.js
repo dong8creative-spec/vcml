@@ -147,9 +147,17 @@
       .my-course-card--live { cursor: default; }
       .my-course-card--live:hover { transform: none; }
       .mc-live-badge {
-        position: absolute; top: 8px; left: 8px; background: var(--badge-live, #ED6B5A); color: #fff;
-        font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;
+        position: absolute; top: 8px; left: 8px;
+        background: #fff; color: #1a1a1a;
+        font-size: 24px; font-weight: 700;
+        padding: 8px 18px 8px 12px; border-radius: 12px;
+        display: inline-flex; align-items: center; gap: 10px;
+        box-shadow: 0 4px 16px rgba(0,0,0,.12);
+        border: 1px solid rgba(0,0,0,.08);
+        line-height: 1; white-space: nowrap;
       }
+      .mc-live-badge .meet-google-icon { display: block; width: 28px; height: 28px; flex-shrink: 0; }
+      .mc-live-badge .badge-meet-label { font-size: 22px; font-weight: 700; }
     `
     document.head.appendChild(style)
   }

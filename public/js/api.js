@@ -54,6 +54,19 @@ const API = {
 window.API = API
 window.GOOGLE_ICON_SVG = GOOGLE_ICON_SVG
 
+function googleMeetIconHtml(size = 28) {
+  return GOOGLE_ICON_SVG
+    .replace('<svg ', `<svg class="meet-google-icon" width="${size}" height="${size}" `)
+}
+
+/** 라이브 강의 썸네일·히어로용 Google Meet 딱지 */
+function googleMeetBadgeHtml(className = 'badge-live') {
+  return `<span class="${className}">${googleMeetIconHtml()}<span class="badge-meet-label">Google Meet</span></span>`
+}
+
+window.googleMeetBadgeHtml = googleMeetBadgeHtml
+window.googleMeetIconHtml = googleMeetIconHtml
+
 function comingSoon(e) {
   if (e) e.preventDefault()
   toast('준비 중입니다. 곧 오픈할 예정이에요.', 'info')
