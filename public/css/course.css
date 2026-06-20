@@ -1,72 +1,105 @@
 .course-hero { padding: 48px 0 40px; }
 .hero-dark { background: linear-gradient(150deg, var(--text-primary) 0%, #1e1e1e 60%, #2a2a2a 100%); }
 .hero-light { background: linear-gradient(150deg, var(--bg-muted) 0%, var(--border) 100%); }
-.course-hero-inner { display: flex; gap: 32px; align-items: flex-start; }
-.course-hero-text { flex: 1; }
+.course-hero-inner { display: flex; gap: 32px; align-items: stretch; }
+.course-hero-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+}
 .hero-dark .course-hero-text h1 { color: #fff; }
 .hero-dark .course-hero-text { color: rgba(255,255,255,0.7); }
 .hero-light .course-hero-text h1 { color: var(--text-primary); }
 .hero-light .course-hero-text { color: var(--text-secondary); }
-.ch-badge { display: inline-block; background: #fff; color: var(--text-primary); font-size: 14px; font-weight: 600; padding: 3px 8px; border-radius: 4px; margin-bottom: 12px; }
-.course-hero-text h1 { font-size: 34px; font-weight: 600; line-height: 1.3; letter-spacing: -0.02em; margin-bottom: 12px; }
-.ch-desc { font-size: 20px; line-height: 1.7; margin-bottom: 16px; }
-.ch-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 17px; }
+.ch-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  width: auto;
+  max-width: max-content;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 5px;
+  margin-bottom: 12px;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.ch-badge--new { background: var(--primary); color: #fff; }
+.ch-badge--best { background: var(--warning); color: #fff; }
+.ch-badge--free { background: var(--sage); color: #fff; }
+.ch-badge--offline { background: #5c6bc0; color: #fff; }
+.ch-badge--live { background: var(--accent); color: #fff; }
+.ch-badge:not([class*="ch-badge--"]) { background: #fff; color: var(--text-primary); }
+.course-hero-text h1 { font-size: 40.8px; font-weight: 600; line-height: 1.3; letter-spacing: -0.02em; margin-bottom: 12px; }
+.ch-desc { font-size: 24px; line-height: 1.7; margin-bottom: 16px; }
+.ch-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 20.4px; }
 .ch-meta span { display: flex; align-items: center; gap: 5px; }
 .hero-dark .ch-meta { color: rgba(255,255,255,0.5); }
 
-.course-buy-card { width: 280px; flex-shrink: 0; background: #fff; border-radius: 14px; overflow: hidden; border: 0.5px solid var(--border); }
-.buy-thumb { height: 140px; display: flex; align-items: center; justify-content: center; }
+.course-buy-card { width: 280px; flex-shrink: 0; align-self: flex-start; background: #fff; border-radius: 14px; overflow: hidden; border: 0.5px solid var(--border); }
 .buy-thumb .ti { color: var(--text-hint); }
 .thumb-dark.buy-thumb { background: linear-gradient(135deg,var(--text-primary) 0%,#2a2a2a 100%); }
 .thumb-dark.buy-thumb .ti { color: rgba(255,255,255,0.25); }
 .thumb-light.buy-thumb { background: linear-gradient(135deg,var(--bg-muted) 0%,var(--border) 100%); }
 .buy-body { padding: 18px; }
 .buy-price-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.buy-original { font-size: 17px; color: var(--text-hint); text-decoration: line-through; }
-.buy-disc { font-size: 16px; background: var(--bg-muted); color: var(--text-secondary); padding: 2px 6px; border-radius: 4px; }
-.buy-price { font-size: 34px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 14px; }
-.btn-enroll { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 13px; background: var(--text-primary); color: #fff; border: none; border-radius: 8px; font-size: 20px; font-weight: 500; cursor: pointer; text-decoration: none; transition: background 0.2s; margin-bottom: 16px; }
+.buy-original { font-size: 20.4px; color: var(--text-hint); text-decoration: line-through; }
+.buy-disc { font-size: 19.2px; background: var(--bg-muted); color: var(--text-secondary); padding: 2px 6px; border-radius: 4px; }
+.buy-price { font-size: 40.8px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 14px; }
+.buy-price--free { font-size: 31.2px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
+.btn-enroll { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 13px; background: var(--text-primary); color: #fff; border: none; border-radius: 8px; font-size: 24px; font-weight: 500; cursor: pointer; text-decoration: none; transition: background 0.2s; margin-bottom: 16px; }
 .btn-enroll:hover { background: var(--text-secondary); }
 .btn-enroll.enrolled { background: var(--success); }
 .buy-features { list-style: none; display: flex; flex-direction: column; gap: 7px; }
-.buy-features li { font-size: 17px; color: var(--text-muted); display: flex; align-items: center; gap: 7px; }
-.buy-features .ti { font-size: 20px; color: var(--text-hint); }
+.buy-features li { font-size: 20.4px; color: var(--text-muted); display: flex; align-items: center; gap: 7px; }
+.buy-features .ti { font-size: 24px; color: var(--text-hint); }
 
 .course-body-wrap { padding: 40px 0 60px; }
 .course-main { max-width: 720px; }
 .course-section { margin-bottom: 40px; }
-.course-section h2 { font-size: 26px; font-weight: 600; color: var(--text-primary); margin-bottom: 18px; padding-bottom: 12px; border-bottom: 0.5px solid var(--border); }
+.course-section h2 { font-size: 31.2px; font-weight: 600; color: var(--text-primary); margin-bottom: 18px; padding-bottom: 12px; border-bottom: 0.5px solid var(--border); }
 
 .curriculum-list { display: flex; flex-direction: column; gap: 2px; }
 .curriculum-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--bg-soft); border-radius: 6px; }
 .curriculum-item:hover { background: var(--bg-muted); }
-.ci-num { font-size: 16px; color: var(--text-hint); width: 22px; flex-shrink: 0; }
-.ci-title { flex: 1; font-size: 18px; color: var(--text-secondary); }
-.ci-free { font-size: 14px; background: var(--text-primary); color: #fff; padding: 3px 8px; border-radius: 4px; text-decoration: none; font-weight: 500; white-space: nowrap; }
+.ci-num { font-size: 19.2px; color: var(--text-hint); width: 22px; flex-shrink: 0; }
+.ci-title { flex: 1; font-size: 21.6px; color: var(--text-secondary); }
+.ci-free { font-size: 16.8px; background: var(--text-primary); color: #fff; padding: 3px 8px; border-radius: 4px; text-decoration: none; font-weight: 500; white-space: nowrap; }
 .ci-free:hover { background: var(--text-secondary); }
-.ci-watch { font-size: 21px; color: var(--text-muted); text-decoration: none; }
-.ci-lock { font-size: 20px; color: var(--border-strong); }
-.ci-time { font-size: 16px; color: var(--text-hint); width: 36px; text-align: right; flex-shrink: 0; }
+.ci-watch { font-size: 25.2px; color: var(--text-muted); text-decoration: none; }
+.ci-lock { font-size: 24px; color: var(--border-strong); }
+.ci-time { font-size: 19.2px; color: var(--text-hint); width: 36px; text-align: right; flex-shrink: 0; }
 
 /* Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
 .modal-overlay.hidden { display: none; }
 .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 440px; overflow: hidden; }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 22px 16px; border-bottom: 0.5px solid var(--bg-muted); }
-.modal-title { font-size: 21px; font-weight: 600; color: var(--text-primary); }
-.modal-close { background: none; border: none; font-size: 26px; color: var(--text-hint); cursor: pointer; padding: 0; }
+.modal-title { font-size: 25.2px; font-weight: 600; color: var(--text-primary); }
+.modal-close { background: none; border: none; font-size: 31.2px; color: var(--text-hint); cursor: pointer; padding: 0; }
 .modal-course-info { padding: 14px 22px; background: var(--bg-soft); }
-.mci-title { font-size: 18px; color: var(--text-secondary); font-weight: 500; }
-.modal-section-title { font-size: 17px; font-weight: 600; color: var(--text-secondary); padding: 16px 22px 8px; }
+.mci-title { font-size: 21.6px; color: var(--text-secondary); font-weight: 500; }
+.modal-section-title { font-size: 20.4px; font-weight: 600; color: var(--text-secondary); padding: 16px 22px 8px; }
 .pay-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 22px 16px; }
 .pay-option { cursor: pointer; }
 .pay-option input { display: none; }
-.pay-label { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border: 0.5px solid var(--border); border-radius: 8px; font-size: 18px; color: var(--text-secondary); transition: all 0.15s; }
+.pay-label { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border: 0.5px solid var(--border); border-radius: 8px; font-size: 21.6px; color: var(--text-secondary); transition: all 0.15s; }
 .pay-option input:checked + .pay-label { border-color: var(--text-primary); background: var(--bg-soft); color: var(--text-primary); font-weight: 500; }
-.pay-label .ti { font-size: 23px; }
-.modal-total { padding: 14px 22px; border-top: 0.5px solid var(--bg-muted); font-size: 18px; color: var(--text-muted); text-align: right; }
-.modal-total b { font-size: 26px; color: var(--text-primary); margin-left: 8px; }
-.btn-pay { display: block; width: calc(100% - 44px); margin: 0 22px 12px; padding: 14px; background: var(--text-primary); color: #fff; border: none; border-radius: 8px; font-size: 21px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+.pay-label .ti { font-size: 27.6px; }
+.modal-total { padding: 14px 22px; border-top: 0.5px solid var(--bg-muted); font-size: 21.6px; color: var(--text-muted); text-align: right; }
+.modal-total b { font-size: 31.2px; color: var(--text-primary); margin-left: 8px; }
+.btn-pay { display: block; width: calc(100% - 44px); margin: 0 22px 12px; padding: 14px; background: var(--text-primary); color: #fff; border: none; border-radius: 8px; font-size: 25.2px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
 .btn-pay:hover { background: var(--text-secondary); }
 .btn-pay:disabled { background: var(--border-strong); cursor: not-allowed; }
-.modal-notice { text-align: center; font-size: 16px; color: var(--text-hint); padding: 0 22px 18px; }
+.modal-notice { text-align: center; font-size: 19.2px; color: var(--text-hint); padding: 0 22px 18px; }
+
+@media (max-width: 900px) {
+  .course-hero-inner { flex-direction: column; align-items: stretch; }
+  .course-hero-text { justify-content: flex-start; }
+  .course-buy-card { width: 100% !important; }
+}

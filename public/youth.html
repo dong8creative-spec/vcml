@@ -5,20 +5,33 @@
   <title>청소년보호정책 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
-<body>
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥<span>클래스</span></a>
-    <div class="header-right"><a href="/" class="nav-btn">← 홈으로</a></div>
-  </div>
-</header>
+<body class="legal-page" data-legal-page="youth">
 
-<div class="legal-wrap">
-  <div class="legal-inner">
-    <h1 class="legal-title">청소년보호정책</h1>
-    <p class="legal-updated">시행일: 2025년 1월 1일 · 최종 개정: 2025년 6월 20일</p>
-    <p>블루필드매뉴얼픽쳐스(이하 "회사")는 「청소년보호법」에 따라 청소년이 유해한 환경으로부터 보호받을 수 있도록 다음과 같이 청소년보호정책을 수립합니다.</p>
+<div data-chrome="header"></div>
+
+<main class="legal-main">
+  <header class="legal-hero">
+    <p class="legal-hero-eyebrow">Legal</p>
+    <h1 class="legal-hero-title">청소년보호정책</h1>
+    <p class="legal-hero-meta">시행일: 2025년 1월 1일 · 최종 개정: 2025년 6월 20일</p>
+    <p class="legal-hero-lead">블루필드매뉴얼픽쳐스(이하 "회사")는 「청소년보호법」에 따라 청소년이 유해한 환경으로부터 보호받을 수 있도록 다음과 같이 청소년보호정책을 수립합니다.</p>
+  </header>
+
+  <div class="legal-layout">
+    <aside class="legal-aside" aria-label="목차">
+      <div class="legal-toc-wrap">
+        <p class="legal-toc-label">목차</p>
+        <nav class="legal-toc" id="legal-toc"></nav>
+      </div>
+    </aside>
+    <div class="legal-body">
+      <div class="legal-toc-mobile">
+        <button type="button" class="legal-toc-mobile-btn" id="legal-toc-mobile-btn" aria-expanded="false">목차 보기</button>
+        <div class="legal-toc-mobile-panel" id="legal-toc-mobile-panel"></div>
+      </div>
+      <article class="legal-article" id="legal-article">
 
     <section>
       <h2>1. 청소년 유해 정보 차단</h2>
@@ -51,10 +64,8 @@
       <h2>4. 청소년보호 담당자</h2>
       <div class="legal-box">
         <strong>청소년보호책임자</strong><br>
-        성명: 이동헌<br>
-        직책: 대표<br>
-        이메일: dong8creative@gmail.com<br>
-        전화: 010-4850-6946<br><br>
+        성명: 이동헌 · 직책: 대표<br>
+        이메일: dong8creative@gmail.com · 전화: 010-4850-6946<br><br>
         청소년 유해 정보 신고, 미성년자 결제 취소 등의 문의를 처리합니다.<br>
         평일 10:00~18:00 (주말·공휴일 제외)
       </div>
@@ -68,21 +79,14 @@
         <li>경찰청 사이버안전국: 182</li>
       </ul>
     </section>
-  </div>
-</div>
 
-<footer class="footer" style="margin-top:0">
-  <div class="container">
-    <div class="footer-bottom">
-      <span>© 2025 타닥클래스. All rights reserved.</span>
-      <div class="footer-policy">
-        <a href="/terms.html">이용약관</a>
-        <a href="/privacy.html">개인정보처리방침</a>
-        <a href="/refund.html">환불정책</a>
-        <a href="/youth.html" style="color:#fff">청소년보호정책</a>
-      </div>
+      </article>
     </div>
   </div>
-</footer>
+</main>
+
+<div data-chrome="footer"></div>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/legal-page.js"></script>
 </body>
 </html>

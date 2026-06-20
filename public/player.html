@@ -3,12 +3,19 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>수강 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css" />
+  <link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
+  <header class="header">
+    <div class="header-inner">
+      <a href="/" class="logo">타닥클래스</a>
+      <div class="header-right">
+        <a href="/mypage.html" class="nav-btn">내 강의</a>
+      </div>
+    </div>
+  </header>
   <header class="player-nav">
-    <a href="/" class="player-logo">타닥클래스</a>
     <div class="player-course-title" id="player-course-title"></div>
     <a href="/mypage.html" class="player-nav-link"><i class="ti ti-layout-dashboard"></i> 내 강의</a>
   </header>
@@ -27,11 +34,13 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/auth-redirect.js"></script>
   <script>
-    if (!API.isLoggedIn()) { location.href = '/login.html'; }
+    if (!requireLogin()) { /* 리다이렉트 중 */ }
 
     const params = new URLSearchParams(location.search)
     const slug = params.get('slug')
+    if (!slug) { location.href = '/'; }
     const chapterParam = params.get('chapter')
     let courseData = null
     let currentChapterId = null
@@ -86,7 +95,7 @@
             <div class="vp-title">${ch.title}</div>
             <div class="vp-note">실제 서비스에서는 이 영역에 강의 영상이 재생됩니다.<br>영상 파일을 업로드하면 자동으로 연결됩니다.</div>
             <button class="vp-play-btn" onclick="simulateWatch(${ch.id}, ${ch.next_id})">
-              <i class="ti ti-player-play-filled"></i> 수강 완료 처리하기 (데모)
+              <i class="ti ti-player-play-filled"></i> 수강 완료 처리하기
             </button>
           </div>
         </div>

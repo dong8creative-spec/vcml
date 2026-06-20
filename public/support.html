@@ -5,94 +5,64 @@
   <title>고객지원 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
-<body>
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥<span>클래스</span></a>
-    <div class="header-right"><a href="/" class="nav-btn">← 홈으로</a></div>
+<body class="legal-page" data-legal-page="support">
+
+<div data-chrome="header"></div>
+
+<main class="legal-main">
+  <header class="legal-hero">
+    <p class="legal-hero-eyebrow">Support</p>
+    <h1 class="legal-hero-title">고객지원</h1>
+    <p class="legal-hero-meta">운영 시간: 평일 10:00~18:00 (주말·공휴일 제외)</p>
+    <p class="legal-hero-lead">강의 수강, 결제, 환불, 계정 관련 문의를 도와드립니다.</p>
+  </header>
+
+  <div class="support-link-grid">
+    <a href="/faq.html" class="support-link-card">
+      <div class="support-link-card-icon"><i class="ti ti-help"></i></div>
+      <h2 class="support-link-card-title">자주 묻는 질문</h2>
+      <p class="support-link-card-desc">수강·결제·환불·계정 등 자주 묻는 질문과 답변을 확인하세요.</p>
+      <span class="support-link-card-arrow"><i class="ti ti-arrow-right"></i></span>
+    </a>
+    <a href="/inquiry.html" class="support-link-card">
+      <div class="support-link-card-icon"><i class="ti ti-message-circle"></i></div>
+      <h2 class="support-link-card-title">1:1 문의</h2>
+      <p class="support-link-card-desc">FAQ에서 해결되지 않은 내용은 직접 문의해 주세요. 영업일 1~2일 내 답변드립니다.</p>
+      <span class="support-link-card-arrow"><i class="ti ti-arrow-right"></i></span>
+    </a>
   </div>
-</header>
 
-<div class="legal-wrap">
-  <div class="legal-inner">
-    <h1 class="legal-title">고객지원</h1>
-    <p class="legal-updated">운영 시간: 평일 10:00~18:00 (주말·공휴일 제외)</p>
-
-    <!-- 문의 수단 -->
-    <div class="support-grid">
-      <div class="support-card">
-        <div class="support-icon">✉️</div>
-        <div class="support-label">이메일 문의</div>
-        <div class="support-value"><a href="mailto:dong8creative@gmail.com">dong8creative@gmail.com</a></div>
-        <div class="support-desc">24시간 접수, 영업일 기준 1~2일 내 답변</div>
-      </div>
-      <div class="support-card">
-        <div class="support-icon">📞</div>
-        <div class="support-label">전화 문의</div>
-        <div class="support-value"><a href="tel:01048506946">010-4850-6946</a></div>
-        <div class="support-desc">평일 10:00~18:00 (주말·공휴일 제외)</div>
-      </div>
+  <div class="support-hero-grid">
+    <div class="support-tile">
+      <div class="support-tile-icon">✉️</div>
+      <p class="support-tile-label">Email</p>
+      <p class="support-tile-value"><a href="mailto:dong8creative@gmail.com">dong8creative@gmail.com</a></p>
+      <p class="support-tile-desc">24시간 접수 · 영업일 기준 1~2일 내 답변</p>
     </div>
+    <div class="support-tile">
+      <div class="support-tile-icon">📞</div>
+      <p class="support-tile-label">Phone</p>
+      <p class="support-tile-value"><a href="tel:01048506946">010-4850-6946</a></p>
+      <p class="support-tile-desc">평일 10:00~18:00 (주말·공휴일 제외)</p>
+    </div>
+  </div>
 
-    <!-- FAQ -->
-    <section>
-      <h2>자주 묻는 질문 (FAQ)</h2>
-
-      <div class="faq-list">
-        <details class="faq-item">
-          <summary>강의를 구매했는데 어디서 볼 수 있나요?</summary>
-          <p>로그인 후 상단 메뉴 또는 마이페이지 → <a href="/mypage.html">내 강의</a>에서 구매한 강의를 확인하고 수강할 수 있습니다.</p>
-        </details>
-
-        <details class="faq-item">
-          <summary>환불은 어떻게 받나요?</summary>
-          <p>결제일로부터 7일 이내, 수강하지 않은 경우 전액 환불이 가능합니다. 수강 시작 후에는 수강률에 따라 부분 환불됩니다.<br>자세한 내용은 <a href="/refund.html">환불정책</a>을 확인해주세요.<br>환불 신청: dong8creative@gmail.com으로 [환불 신청] 제목으로 이메일 발송</p>
-        </details>
-
-        <details class="faq-item">
-          <summary>강의는 언제까지 볼 수 있나요?</summary>
-          <p>결제 후 영구 소장입니다. 서비스가 운영되는 기간 동안 제한 없이 반복 수강하실 수 있습니다.</p>
-        </details>
-
-        <details class="faq-item">
-          <summary>모바일에서도 수강할 수 있나요?</summary>
-          <p>네, 모바일 브라우저를 통해 수강 가능합니다. 별도 앱 설치 없이 스마트폰·태블릿에서 접속하시면 됩니다.</p>
-        </details>
-
-        <details class="faq-item">
-          <summary>쿠폰은 어디에서 사용하나요?</summary>
-          <p>강의 결제 시 결제 화면에서 쿠폰 코드를 입력하시면 할인이 적용됩니다. 보유 쿠폰 목록은 마이페이지 → 쿠폰에서 확인하실 수 있습니다.</p>
-        </details>
-
-        <details class="faq-item">
-          <summary>비밀번호를 잊어버렸어요.</summary>
-          <p>현재 비밀번호 찾기 기능은 준비 중입니다. 이메일(dong8creative@gmail.com)로 가입하신 이메일 주소와 이름을 보내주시면 임시 처리해 드립니다.</p>
-        </details>
-
-        <details class="faq-item">
-          <summary>카카오 로그인이 안 돼요.</summary>
-          <p>카카오 계정의 이메일 제공 동의가 필요할 수 있습니다. 카카오 로그인 → 동의 화면에서 이메일 항목을 체크해주세요. 계속 문제가 발생하면 고객센터로 연락해주세요.</p>
-        </details>
-
-        <details class="faq-item">
-          <summary>라이브 강의는 어떻게 신청하나요?</summary>
-          <p>라이브 강의는 무료로 제공됩니다. 강의 페이지에서 [무료 신청] 버튼을 클릭하시면 신청이 완료됩니다. 강의 일정에 맞춰 카카오 알림톡으로 Google Meet 링크를 보내드립니다.</p>
-        </details>
-
-        <details class="faq-item">
-          <summary>회원 탈퇴는 어떻게 하나요?</summary>
-          <p>현재 탈퇴 기능은 고객센터를 통해 처리됩니다. 이메일(dong8creative@gmail.com)로 탈퇴 요청을 주시면 영업일 기준 3일 이내 처리해 드립니다. 탈퇴 후에도 전자상거래법에 따라 거래 기록은 5년간 보관됩니다.</p>
-        </details>
-
-        <details class="faq-item">
-          <summary>영수증(결제 확인서)이 필요해요.</summary>
-          <p>마이페이지 → 결제 내역에서 결제 내역을 확인하실 수 있습니다. 별도 영수증이 필요하신 경우 이메일로 요청해 주세요.</p>
-        </details>
+  <div class="legal-layout">
+    <aside class="legal-aside" aria-label="목차">
+      <div class="legal-toc-wrap">
+        <p class="legal-toc-label">목차</p>
+        <nav class="legal-toc" id="legal-toc"></nav>
       </div>
-    </section>
+    </aside>
+    <div class="legal-body">
+      <div class="legal-toc-mobile">
+        <button type="button" class="legal-toc-mobile-btn" id="legal-toc-mobile-btn" aria-expanded="false">목차 보기</button>
+        <div class="legal-toc-mobile-panel" id="legal-toc-mobile-panel"></div>
+      </div>
+      <article class="legal-article" id="legal-article">
 
-    <!-- 소비자 권리 안내 -->
     <section>
       <h2>소비자 권리 안내</h2>
       <div class="legal-box">
@@ -104,34 +74,26 @@
       </div>
     </section>
 
-    <!-- 외부 분쟁 기관 -->
     <section>
       <h2>소비자 분쟁 해결 기관</h2>
       <table class="legal-table">
         <thead><tr><th>기관</th><th>연락처</th><th>웹사이트</th></tr></thead>
         <tbody>
-          <tr><td>한국소비자원</td><td>1372</td><td>www.kca.go.kr</td></tr>
-          <tr><td>전자상거래분쟁조정위원회</td><td>1661-5714</td><td>ecmc.go.kr</td></tr>
-          <tr><td>공정거래위원회</td><td>1398</td><td>www.ftc.go.kr</td></tr>
-          <tr><td>개인정보침해신고센터</td><td>118</td><td>privacy.kisa.or.kr</td></tr>
+          <tr><td>한국소비자원</td><td>1372</td><td><a href="https://www.kca.go.kr" target="_blank" rel="noopener">www.kca.go.kr</a></td></tr>
+          <tr><td>전자상거래분쟁조정위원회</td><td>1661-5714</td><td><a href="https://ecmc.go.kr" target="_blank" rel="noopener">ecmc.go.kr</a></td></tr>
+          <tr><td>공정거래위원회</td><td>1398</td><td><a href="https://www.ftc.go.kr" target="_blank" rel="noopener">www.ftc.go.kr</a></td></tr>
+          <tr><td>개인정보침해신고센터</td><td>118</td><td><a href="https://privacy.kisa.or.kr" target="_blank" rel="noopener">privacy.kisa.or.kr</a></td></tr>
         </tbody>
       </table>
     </section>
-  </div>
-</div>
 
-<footer class="footer" style="margin-top:0">
-  <div class="container">
-    <div class="footer-bottom">
-      <span>© 2025 타닥클래스. All rights reserved.</span>
-      <div class="footer-policy">
-        <a href="/terms.html">이용약관</a>
-        <a href="/privacy.html">개인정보처리방침</a>
-        <a href="/refund.html">환불정책</a>
-        <a href="/youth.html">청소년보호정책</a>
-      </div>
+      </article>
     </div>
   </div>
-</footer>
+</main>
+
+<div data-chrome="footer"></div>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/legal-page.js"></script>
 </body>
 </html>

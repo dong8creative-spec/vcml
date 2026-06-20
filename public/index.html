@@ -4,6 +4,7 @@
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타닥클래스 — 영상제작 전문 온라인 강의</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/common.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
@@ -11,19 +12,18 @@
 <!-- HEADER -->
 <header class="header">
   <div class="header-inner">
-    <a href="/" class="logo">타닥<span>클래스</span></a>
-    <div class="search-bar">
+    <a href="/" class="logo">타닥클래스</a>
+    <div class="search-bar" data-nav-key="search">
       <i class="ti ti-search"></i>
       <input type="text" placeholder="강의를 검색해보세요" id="search-input" />
     </div>
     <nav class="gnb">
-      <a href="#all">전체강의</a>
-      <a href="#edit">영상편집</a>
-      <a href="#motion">모션그래픽</a>
-      <a href="#color">색보정</a>
-      <a href="#shoot">촬영</a>
-      <a href="/editors.html">공인 편집자</a>
-      <a href="/projects.html">영상 의뢰</a>
+      <a href="#all" data-gnb-all data-nav-key="all">전체강의</a>
+      <a href="/?cat=capcut" data-gnb-cat="capcut" data-nav-key="capcut">캡컷 PRO</a>
+      <a href="/?cat=premiere" data-gnb-cat="premiere" data-nav-key="premiere">프리미어 PRO</a>
+      <a href="/?cat=ai" data-gnb-cat="ai" data-nav-key="ai">AI 콘텐츠 제작</a>
+      <a href="/editors.html" data-nav-key="editors">에디터즈</a>
+      <a href="/projects.html" data-nav-key="projects">클라이언츠</a>
     </nav>
     <div class="header-right" id="header-right"></div>
   </div>
@@ -31,79 +31,78 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-inner">
-    <div class="hero-text">
-      <div class="hero-badge"><i class="ti ti-star-filled"></i> 누적 수강생 3,360+명</div>
-      <h1>현업 20년 전문가에게 배우는<br><em>영상 제작 실전 강의</em></h1>
-      <p>편집·모션·촬영·색보정 — 유튜브부터 방송까지<br>현장에서 실제로 쓰는 방식을 알려드립니다.</p>
-      <div class="hero-btns">
-        <a href="#all" class="btn-hero-primary">전체 강의 보기</a>
-        <a href="/course.html?slug=premiere-pro" class="btn-hero-ghost"><i class="ti ti-player-play-filled"></i> 무료 맛보기</a>
-      </div>
-    </div>
-    <div class="hero-card">
-      <div class="hero-avatar"><i class="ti ti-user-filled"></i></div>
-      <div class="hero-card-info">
-        <div class="hero-card-name">동 강사</div>
-        <div class="hero-card-role">영상 제작 20년차 · 방송·광고 현장 출신</div>
-        <div class="hero-tags">
-          <span>프리미어 프로</span><span>에프터 이펙트</span><span>다빈치 리졸브</span>
-        </div>
-        <div class="hero-stats">
-          <div><strong>3,360+</strong><span>수강생</span></div>
-          <div><strong>4.8★</strong><span>평균 평점</span></div>
-          <div><strong>9개</strong><span>강의</span></div>
-        </div>
+  <div class="hero-inner hero-inner--solo">
+    <div class="hero-text" id="hero-content">
+      <div class="hero-badge" id="hero-badge"><i class="ti ti-star-filled"></i> 실무 중심 영상 강의</div>
+      <h1 id="hero-title">현업 20년 전문가에게 배우는<br><em id="hero-title-em">영상 제작 실전 강의</em></h1>
+      <p id="hero-subtitle">편집·모션·촬영·색보정 — 유튜브부터 방송까지<br>현장에서 실제로 쓰는 방식을 알려드립니다.</p>
+      <div class="hero-btns" id="hero-btns">
+        <a href="#all" class="btn-hero-primary" id="hero-primary-btn">전체 강의 보기</a>
+        <a href="/course.html?slug=capcut-beginner-free" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-player-play-filled"></i> 무료 맛보기</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CATEGORIES -->
-<section class="categories">
-  <div class="container">
-    <div class="cat-list">
-      <a href="#" class="cat-item"><div class="cat-icon cat-c1"><i class="ti ti-video"></i></div><span>영상 편집</span></a>
-      <a href="#" class="cat-item"><div class="cat-icon cat-c2"><i class="ti ti-sparkles"></i></div><span>모션그래픽</span></a>
-      <a href="#" class="cat-item"><div class="cat-icon cat-c3"><i class="ti ti-palette"></i></div><span>색보정</span></a>
-      <a href="#" class="cat-item"><div class="cat-icon cat-c4"><i class="ti ti-camera"></i></div><span>촬영</span></a>
-      <a href="#" class="cat-item"><div class="cat-icon cat-c5"><i class="ti ti-brand-youtube"></i></div><span>유튜브</span></a>
-      <a href="#" class="cat-item"><div class="cat-icon cat-c6"><i class="ti ti-microphone"></i></div><span>음향</span></a>
-      <a href="#" class="cat-item"><div class="cat-icon cat-c7"><i class="ti ti-3d-cube-sphere"></i></div><span>3D/VFX</span></a>
-      <a href="#" class="cat-item"><div class="cat-icon cat-c8"><i class="ti ti-broadcast"></i></div><span>무료 라이브</span></a>
-    </div>
-  </div>
-</section>
-
-<!-- 실시간 베스트 -->
-<section class="shelf-section" id="all">
+<!-- 강사 소개 -->
+<section class="instructors-section shelf-section" id="instructors" data-home-section="instructors">
   <div class="container">
     <div class="shelf-header">
       <div>
-        <h2 class="shelf-title">실시간 베스트</h2>
-        <p class="shelf-sub">지금 가장 많이 수강하는 강의</p>
+        <h2 class="shelf-title" id="instructors-section-title">강사 소개</h2>
+        <p class="shelf-sub" id="instructors-section-sub">현업에서 검증된 전문가가 직접 알려드립니다.</p>
       </div>
-      <a href="#" class="shelf-more">전부보기 <i class="ti ti-chevron-right"></i></a>
+      <a href="/instructors.html" class="shelf-more">전체보기 <i class="ti ti-chevron-right"></i></a>
     </div>
-    <div class="shelf-wrap">
-      <button class="shelf-arrow left" onclick="scroll_shelf('best',-1)"><i class="ti ti-chevron-left"></i></button>
-      <div class="shelf" id="shelf-best">
-        <div class="spinner"></div>
+    <div class="instructors-grid" id="instructors-grid">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</section>
+
+<!-- CATEGORIES — 3등분 · 3:1 이미지 타일 -->
+<section class="categories" aria-label="강의 카테고리" data-home-section="categories">
+  <div class="container">
+    <div class="cat-grid">
+      <div class="cat-grid-row">
+        <button type="button" class="cat-tile cat-tile--capcut" data-cat="capcut">
+          <span class="cat-tile-label">캡컷 PRO</span>
+        </button>
+        <button type="button" class="cat-tile cat-tile--premiere" data-cat="premiere">
+          <span class="cat-tile-label">프리미어 PRO</span>
+        </button>
+        <button type="button" class="cat-tile cat-tile--ai" data-cat="ai">
+          <span class="cat-tile-label">AI 콘텐츠 제작</span>
+        </button>
       </div>
-      <button class="shelf-arrow right" onclick="scroll_shelf('best',1)"><i class="ti ti-chevron-right"></i></button>
+    </div>
+  </div>
+</section>
+
+<!-- 전체 강의 (3 / 3 / 2) -->
+<section class="shelf-section" id="all" data-home-section="all_courses">
+  <div class="container">
+    <div class="shelf-header">
+      <div>
+        <h2 class="shelf-title">전체 강의</h2>
+        <p class="shelf-sub" id="course-grid-sub">불러오는 중...</p>
+      </div>
+    </div>
+    <div class="course-grid-332" id="course-grid-332">
+      <div class="spinner"></div>
     </div>
   </div>
 </section>
 
 <!-- 무료 베스트 -->
-<section class="shelf-section shelf-section-gray">
+<section class="shelf-section shelf-section-gray" data-home-section="free_courses">
   <div class="container">
     <div class="shelf-header">
       <div>
         <h2 class="shelf-title">무료 강의</h2>
         <p class="shelf-sub">부담 없이 시작해보세요</p>
       </div>
-      <a href="#" class="shelf-more">전부보기 <i class="ti ti-chevron-right"></i></a>
+      <a href="#" class="shelf-more" onclick="shelfShowAll('free');return false">전부보기 <i class="ti ti-chevron-right"></i></a>
     </div>
     <div class="shelf-wrap">
       <button class="shelf-arrow left" onclick="scroll_shelf('free',-1)"><i class="ti ti-chevron-left"></i></button>
@@ -113,42 +112,14 @@
   </div>
 </section>
 
-<!-- 수강생 성공 사례 -->
-<section class="success-section">
-  <div class="container">
-    <div class="shelf-header">
-      <div>
-        <h2 class="shelf-title" style="color:#fff">수강생 성공 사례</h2>
-        <p class="shelf-sub" style="color:rgba(255,255,255,.6)">타닥클래스 수강생들의 실제 변화</p>
-      </div>
-      <a href="#" class="shelf-more" style="color:rgba(255,255,255,.7)">전체보기 <i class="ti ti-chevron-right"></i></a>
-    </div>
-    <div class="success-grid">
-      <div class="success-card">
-        <div class="success-thumb"><i class="ti ti-brand-youtube"></i><div class="play-btn"><i class="ti ti-player-play-filled"></i></div></div>
-        <div class="success-info">유튜브 개설 3개월 만에 구독자 1만 돌파 — 채널 A to Z 수강생</div>
-      </div>
-      <div class="success-card">
-        <div class="success-thumb t2"><i class="ti ti-brand-youtube"></i><div class="play-btn"><i class="ti ti-player-play-filled"></i></div></div>
-        <div class="success-info">광고 편집 단가 3배 상승 — 프리미어 프로 수강생</div>
-      </div>
-      <div class="success-card">
-        <div class="success-thumb t3"><i class="ti ti-brand-youtube"></i><div class="play-btn"><i class="ti ti-player-play-filled"></i></div></div>
-        <div class="success-info">색보정 독학 1년을 2달로 — 다빈치 수강생</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 최신 강의 -->
-<section class="shelf-section">
+<section class="shelf-section" data-home-section="new_courses">
   <div class="container">
     <div class="shelf-header">
       <div>
         <h2 class="shelf-title">최신 강의</h2>
         <p class="shelf-sub">새롭게 업데이트된 강의</p>
       </div>
-      <a href="#" class="shelf-more">전부보기 <i class="ti ti-chevron-right"></i></a>
+      <a href="#" class="shelf-more" onclick="shelfShowAll(null);return false">전부보기 <i class="ti ti-chevron-right"></i></a>
     </div>
     <div class="shelf-wrap">
       <button class="shelf-arrow left" onclick="scroll_shelf('new',-1)"><i class="ti ti-chevron-left"></i></button>
@@ -159,111 +130,50 @@
 </section>
 
 <!-- 실시간 후기 -->
-<section class="review-section">
+<section class="review-section" data-home-section="reviews">
   <div class="container">
     <div class="shelf-header">
       <div>
         <h2 class="shelf-title">실시간 후기</h2>
-        <p class="shelf-sub">100% 실제 구매 후기, 조작 없이 원본 그대로입니다</p>
+        <p class="shelf-sub" id="review-sub">실제 회원 후기를 실시간으로 확인하세요</p>
       </div>
     </div>
     <div class="review-grid" id="review-grid">
-      <div class="review-card">
-        <div class="rc-stars">★★★★★</div>
-        <div class="rc-text">유튜브 채널 개설 3개월 만에 구독자 1만 명을 넘겼어요. 편집 공식이 확실히 다릅니다.</div>
-        <div class="rc-footer"><div class="rc-dot">김</div><div><div class="rc-name">김○○</div><div class="rc-course">유튜브 채널 영상 제작 A to Z</div></div></div>
-      </div>
-      <div class="review-card">
-        <div class="rc-stars">★★★★★</div>
-        <div class="rc-text">After Effects 강의 찾다가 여기서 끝났습니다. 왜 이렇게 하는지 이유까지 설명해줘서 응용이 됩니다.</div>
-        <div class="rc-footer"><div class="rc-dot">이</div><div><div class="rc-name">이○○</div><div class="rc-course">After Effects 모션그래픽</div></div></div>
-      </div>
-      <div class="review-card">
-        <div class="rc-stars">★★★★★</div>
-        <div class="rc-text">색보정 독학으로 1년 넘게 헤맸는데, 이 강의 두 달 듣고 클라이언트 납품까지 했습니다.</div>
-        <div class="rc-footer"><div class="rc-dot">박</div><div><div class="rc-name">박○○</div><div class="rc-course">다빈치 리졸브 색보정</div></div></div>
-      </div>
-      <div class="review-card">
-        <div class="rc-stars">★★★★★</div>
-        <div class="rc-text">프리미어 처음 배우는 사람도 따라갈 수 있을 만큼 체계적입니다. 강추합니다.</div>
-        <div class="rc-footer"><div class="rc-dot">최</div><div><div class="rc-name">최○○</div><div class="rc-course">프리미어 프로 완전정복</div></div></div>
-      </div>
-      <div class="review-card">
-        <div class="rc-stars">★★★★★</div>
-        <div class="rc-text">실무 현장 얘기가 섞여 있어서 단순 튜토리얼이랑 차원이 달랐어요.</div>
-        <div class="rc-footer"><div class="rc-dot">정</div><div><div class="rc-name">정○○</div><div class="rc-course">촬영 기초 마스터</div></div></div>
-      </div>
+      <div class="spinner"></div>
     </div>
   </div>
 </section>
 
 <!-- 실시간 구매현황 -->
-<section class="ticker-section">
-  <div class="ticker-label"><i class="ti ti-bolt"></i> 구매현황 <span class="live-dot"></span>LIVE</div>
+<section class="ticker-section" id="ticker-section" data-home-section="purchase_ticker" style="display:none">
+  <div class="ticker-label">⚡ 구매현황 <span class="live-text">LIVE</span></div>
   <div class="ticker-track">
     <div class="ticker-inner" id="ticker-inner"></div>
   </div>
 </section>
 
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <div class="footer-logo">타닥클래스</div>
-        <div class="footer-tagline">현업 전문가에게 배우는 실무 중심 영상 강의</div>
-        <div class="footer-social">
-          <a href="#"><i class="ti ti-brand-instagram"></i></a>
-          <a href="#"><i class="ti ti-brand-youtube"></i></a>
-          <a href="#"><i class="ti ti-brand-kakao"></i></a>
-        </div>
-      </div>
-      <div>
-        <div class="footer-col-title">강의</div>
-        <ul><li><a href="#all">전체 강의</a></li><li><a href="#">영상 편집</a></li><li><a href="#">모션그래픽</a></li><li><a href="#">색보정</a></li></ul>
-      </div>
-      <div>
-        <div class="footer-col-title">고객지원</div>
-        <ul><li><a href="/support.html">1:1 문의하기</a></li><li><a href="/support.html#faq">자주 묻는 질문</a></li><li><a href="/refund.html">환불 및 취소 정책</a></li></ul>
-      </div>
-      <div>
-        <div class="footer-col-title">안내</div>
-        <ul><li><a href="#">공지사항</a></li><li><a href="/privacy.html" style="font-weight:700">개인정보처리방침</a></li><li><a href="/youth.html">청소년보호정책</a></li></ul>
-      </div>
-    </div>
-    <div class="biz-info">
-      <button class="biz-toggle" onclick="this.closest('.biz-info').classList.toggle('open')">
-        사업자 정보 <i class="ti ti-chevron-down"></i>
-      </button>
-      <p class="biz-detail">
-        상호명 블루필드매뉴얼픽쳐스 · 대표자 이동헌 · 사업자등록번호 640-50-00860 · 통신판매업신고 제 0000-부산OO-0000 호 · 사업장 부산광역시 부산진구 가야대로 707-2(당감동) · 고객센터 010-4850-6946 (평일 10:00~18:00) · 이메일 dong8creative@gmail.com · 호스팅 Amazon Web Services (AWS) · 개인정보보호책임자 이동헌
-      </p>
-    </div>
-    <div class="footer-bottom">
-      <span>© 2025 타닥클래스. All rights reserved.</span>
-      <div class="footer-policy">
-        <a href="/privacy.html">개인정보처리방침</a>
-        <a href="/terms.html">이용약관</a>
-        <a href="/youth.html">청소년보호정책</a>
-        <a href="/refund.html">환불정책</a>
-      </div>
-    </div>
-  </div>
-</footer>
+<div data-chrome="footer"></div>
 
 <script src="/js/api.js"></script>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/auth-redirect.js"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/home-nav.js"></script>
 <script>
 // 강의 카드 HTML 생성
 function courseCard(c) {
   const isLive = c.course_type === 'live'
   const isFree = isLive || c.sale_price === 0
-  const rating = parseFloat(c.rating) || 4.8
-  const stars = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating))
+  const rating = parseFloat(c.rating) || 0
+  const reviewCount = Number(c.review_count) || 0
+  const stars = reviewCount > 0
+    ? '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating))
+    : ''
   const liveStatusMap = { upcoming: '신청 가능', live: '진행 중', ended: '종료' }
   return `
   <a href="/course.html?slug=${c.slug}" class="ccard">
     <div class="ccard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
-      ${isLive ? '<span class="badge-live"><i class="ti ti-broadcast"></i> LIVE</span>' : (c.badge ? `<span class="badge-${c.badge.toLowerCase()}">${c.badge}</span>` : '')}
+      ${isLive ? '<span class="badge-live"><i class="ti ti-broadcast"></i> LIVE</span>' : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
       <i class="ti ${c.thumbnail_icon || 'ti-video'}"></i>
     </div>
     <div class="ccard-body">
@@ -271,7 +181,9 @@ function courseCard(c) {
       <div class="ccard-title">${c.title}</div>
       ${isLive
         ? `<div class="ccard-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule || '일정 공지 예정'}</div>`
-        : `<div class="ccard-rating"><span class="ccard-stars">${stars}</span><span class="ccard-rnum">${rating} (${Number(c.review_count || 0).toLocaleString()})</span></div>`}
+        : (reviewCount > 0
+            ? `<div class="ccard-rating"><span class="ccard-stars">${stars}</span><span class="ccard-rnum">${rating} (${reviewCount.toLocaleString()})</span></div>`
+            : `<div class="ccard-rating"><span class="ccard-rnum" style="color:#aaa;font-size:13px">후기 없음</span></div>`)}
       <div class="ccard-price-row">
         ${isLive
           ? `<span class="price-free">무료</span><span class="live-badge ${c.live_status || 'upcoming'}">${liveStatusMap[c.live_status] || '신청 가능'}</span>`
@@ -285,36 +197,197 @@ function courseCard(c) {
   </a>`
 }
 
+// 강의 정렬 · 카테고리 필터 — home-nav.js에서 로드됨
+
+function renderCourseGrid332(courses) {
+  const ordered = orderCourses(courses)
+  if (!ordered.length) {
+    return '<p class="empty">해당 카테고리 강의가 없습니다.</p>'
+  }
+  const rows = []
+  for (let i = 0; i < ordered.length; i += 3) {
+    rows.push(ordered.slice(i, i + 3))
+  }
+  return rows.map((row, i) => {
+    const isLast = i === rows.length - 1 && row.length === 2
+    return `<div class="course-grid-row${isLast ? ' course-grid-row-last' : ''}">${row.map(courseCard).join('')}</div>`
+  }).join('')
+}
+
 async function loadAll() {
   try {
     const courses = await API.get('/courses')
     const published = courses.filter(c => c.is_published !== false)
+    allPublishedCourses = published
     const live = published.filter(c => c.course_type === 'live')
-    const paid = published.filter(c => c.course_type !== 'live' && c.sale_price > 0)
     const free = published.filter(c => c.course_type !== 'live' && c.sale_price === 0)
-    const all = [...paid, ...live]
+    const all = orderCourses(published)
 
-    document.getElementById('shelf-best').innerHTML = all.slice(0, 8).map(courseCard).join('') || '<p class="empty">강의를 불러오는 중...</p>'
-    document.getElementById('shelf-free').innerHTML = [...free, ...live].slice(0, 8).map(courseCard).join('') || '<p class="empty">무료 강의가 없습니다.</p>'
-    document.getElementById('shelf-new').innerHTML = published.slice().reverse().slice(0, 8).map(courseCard).join('') || '<p class="empty">강의가 없습니다.</p>'
-
-    // ticker
-    const tickerItems = published.slice(0, 10).map(c =>
-      `<span class="ticker-item"><span class="ticker-user">${randomName()}</span>님이 <strong>${c.title}</strong>을(를) 구매했습니다.</span>`
-    )
-    const inner = document.getElementById('ticker-inner')
-    if (inner) {
-      const html = [...tickerItems, ...tickerItems].join('')
-      inner.innerHTML = html
+    if (isHomeSectionEnabled('all_courses')) {
+      updateCourseGrid(filterCourses())
     }
+    if (isHomeSectionEnabled('free_courses')) {
+      document.getElementById('shelf-free').innerHTML = [...free, ...live].slice(0, 8).map(courseCard).join('') || '<p class="empty">무료 강의가 없습니다.</p>'
+    }
+    if (isHomeSectionEnabled('new_courses')) {
+      document.getElementById('shelf-new').innerHTML = all.slice().reverse().map(courseCard).join('') || '<p class="empty">강의가 없습니다.</p>'
+    }
+
+    if (isHomeSectionEnabled('purchase_ticker')) loadPurchaseTicker()
+    if (isHomeSectionEnabled('reviews')) loadLiveReviews()
+    if (isHomeSectionEnabled('instructors')) loadInstructors()
   } catch(e) {
     console.error(e)
   }
 }
 
-function randomName() {
-  const names = ['김**','이**','박**','최**','정**','강**','조**','윤**','장**','임**']
-  return names[Math.floor(Math.random() * names.length)]
+function escHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+async function loadHero() {
+  try {
+    const h = await API.get('/hero')
+    const badge = document.getElementById('hero-badge')
+    if (badge) badge.innerHTML = `<i class="ti ti-star-filled"></i> ${escHtml(h.badge_text)}`
+    const title = document.getElementById('hero-title')
+    if (title) title.innerHTML = `${escHtml(h.title)}<br><em id="hero-title-em">${escHtml(h.title_emphasis)}</em>`
+    const sub = document.getElementById('hero-subtitle')
+    if (sub) sub.innerHTML = escHtml(h.subtitle).replace(/\n/g, '<br>')
+    const primary = document.getElementById('hero-primary-btn')
+    if (primary && h.primary_btn) {
+      primary.textContent = h.primary_btn.label
+      primary.href = h.primary_btn.href || '#all'
+    }
+    const secondary = document.getElementById('hero-secondary-btn')
+    if (secondary && h.secondary_btn) {
+      secondary.href = h.secondary_btn.href || '#'
+      secondary.innerHTML = `${h.secondary_btn.show_icon !== false ? '<i class="ti ti-player-play-filled"></i> ' : ''}${escHtml(h.secondary_btn.label)}`
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+function instructorCard(i) {
+  const initial = (i.name || '?')[0]
+  const avatar = i.profile_image
+    ? `<div class="instructor-avatar"><img src="${escHtml(i.profile_image)}" alt="" /></div>`
+    : `<div class="instructor-avatar instructor-avatar--placeholder">${escHtml(initial)}</div>`
+  const tags = (i.tags || []).map(t => `<span>${escHtml(t)}</span>`).join('')
+  return `<article class="instructor-card">
+    ${avatar}
+    <div class="instructor-body">
+      <h3 class="instructor-name">${escHtml(i.name)}</h3>
+      ${i.role_title ? `<p class="instructor-role">${escHtml(i.role_title)}</p>` : ''}
+      ${tags ? `<div class="instructor-tags">${tags}</div>` : ''}
+      ${i.bio ? `<p class="instructor-bio">${escHtml(i.bio)}</p>` : ''}
+    </div>
+  </article>`
+}
+
+async function loadInstructors() {
+  const grid = document.getElementById('instructors-grid')
+  const titleEl = document.getElementById('instructors-section-title')
+  const subEl = document.getElementById('instructors-section-sub')
+  if (!grid) return
+  try {
+    const data = await API.get('/instructors')
+    if (titleEl && data.intro?.section_title) titleEl.textContent = data.intro.section_title
+    if (subEl && data.intro?.section_subtitle) subEl.textContent = data.intro.section_subtitle
+    const list = data.instructors || []
+    if (!list.length) {
+      grid.innerHTML = '<p class="empty">등록된 강사가 없습니다.</p>'
+      return
+    }
+    grid.innerHTML = list.slice(0, 3).map(instructorCard).join('')
+  } catch (e) {
+    console.error(e)
+    grid.innerHTML = '<p class="empty">강사 정보를 불러오지 못했습니다.</p>'
+  }
+}
+
+async function loadPurchaseTicker() {
+  const section = document.getElementById('ticker-section')
+  const inner = document.getElementById('ticker-inner')
+  if (!section || !inner || !isHomeSectionEnabled('purchase_ticker')) {
+    if (section) section.style.display = 'none'
+    return
+  }
+  try {
+    const data = await API.get('/recent-orders')
+    const orders = data.orders || []
+    if (!orders.length) {
+      section.style.display = 'none'
+      return
+    }
+    const tickerItems = orders.map(o =>
+      `<span class="ticker-item"><span class="ticker-user">${o.user_name}</span>님이 <strong>${o.course_title}</strong>을(를) 구매했습니다.</span>`
+    )
+    inner.innerHTML = [...tickerItems, ...tickerItems].join('')
+    section.style.display = ''
+  } catch (e) {
+    console.error(e)
+    section.style.display = 'none'
+  }
+}
+
+function interleaveReviews(reviews) {
+  const buckets = { student: [], client: [], editor: [] }
+  reviews.forEach(r => { if (buckets[r.review_type]) buckets[r.review_type].push(r) })
+  const order = ['student', 'client', 'editor'].filter(t => buckets[t].length)
+  const out = []
+  let i = 0
+  while (out.length < reviews.length) {
+    const t = order[i % order.length]
+    const item = buckets[t].shift()
+    if (item) out.push(item)
+    i++
+  }
+  return out
+}
+
+function renderReviewCard(r) {
+  const stars = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5))
+  return `<div class="review-card">
+    <span class="rc-type ${r.review_type}">${r.type_label}</span>
+    <div class="rc-stars">${stars}</div>
+    <div class="rc-text">${r.content}</div>
+    <div class="rc-footer">
+      <div class="rc-dot ${r.review_type === 'student' ? '' : r.review_type}">${r.author_initial || '?'}</div>
+      <div>
+        <div class="rc-name">${r.author_name}</div>
+        <div class="rc-course">${r.context_label}</div>
+      </div>
+    </div>
+  </div>`
+}
+
+function reviewSubtitle(visibleTypes, isLoggedIn) {
+  const labels = visibleTypes.map(t => t.label)
+  if (labels.length >= 3) return labels.join(' · ') + ' — 회원 유형별 후기가 함께 표시됩니다'
+  if (labels.length === 2) return labels.join(' · ') + ' — 로그인 회원에게 맞춰 표시됩니다'
+  if (!isLoggedIn) return '수강생 후기가 공개됩니다 · 의뢰인·에디터즈 후기는 해당 회원 로그인 시 확인 가능'
+  return '수강생 후기 — 의뢰인·에디터즈 후기는 해당 회원 유형 로그인 시 표시됩니다'
+}
+
+async function loadLiveReviews() {
+  const grid = document.getElementById('review-grid')
+  const sub = document.getElementById('review-sub')
+  if (!grid) return
+  try {
+    const data = await API.get('/reviews/live')
+    const mixed = interleaveReviews(data.reviews || [])
+    if (sub) sub.textContent = reviewSubtitle(data.visible_types || [], API.isLoggedIn())
+    if (!mixed.length) {
+      grid.innerHTML = '<p class="empty">표시할 후기가 없습니다.</p>'
+      return
+    }
+    grid.innerHTML = mixed.map(renderReviewCard).join('')
+  } catch (e) {
+    console.error(e)
+    grid.innerHTML = '<p class="empty">후기를 불러오지 못했습니다.</p>'
+  }
 }
 
 function scroll_shelf(id, dir) {
@@ -327,13 +400,20 @@ const user = API.user ? API.user() : null
 const hr = document.getElementById('header-right')
 if (hr) {
   if (user) {
-    hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${user.name}</a><a href="#" class="nav-btn nav-btn-outline" onclick="API.logout();location.reload()">로그아웃</a>`
+    hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${user.name}</a><a href="#" class="nav-btn nav-btn-outline" onclick="API.logout()">로그아웃</a>`
   } else {
-    hr.innerHTML = `<a href="/login.html" class="nav-btn">로그인</a><a href="/login.html?tab=register" class="nav-btn nav-btn-primary">무료 가입</a>`
+    hr.innerHTML = `<a href="/api/auth/google?next=${encodeURIComponent(location.pathname + location.search)}" class="nav-btn nav-btn-primary"><i class="ti ti-brand-google"></i> Google로 시작</a>`
   }
 }
 
-loadAll()
+initFromUrl()
+applyHomepageLayout().then(() => {
+  loadHero()
+  loadAll()
+  initCategoryTiles()
+  initGnbCatLinks()
+  initSearch()
+})
 </script>
 </body>
 </html>

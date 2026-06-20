@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>의뢰 메일 — 에디터즈 준비</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    .mail-detail { max-width: 760px; margin: 32px auto; padding: 0 20px 80px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; color: #5c67f2; font-weight: 600; text-decoration: none; margin-bottom: 20px; }
+
+    .email-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 14px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,.04); }
+    .email-header { padding: 24px 28px; border-bottom: 1px solid #f0f0f0; }
+    .email-subject { font-size: 22px; font-weight: 800; color: #111; margin-bottom: 16px; line-height: 1.35; }
+    .email-meta { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 14px; }
+    .email-meta dt { color: #999; font-weight: 600; }
+    .email-meta dd { color: #333; margin: 0; }
+    .email-body {
+      padding: 28px; font-size: 16px; line-height: 1.85; color: #333; white-space: pre-wrap;
+      background: #fafafa; border-top: 1px solid #f0f0f0;
+    }
+
+    .mission-card {
+      background: linear-gradient(135deg, #fff8e8, #fff); border: 1px solid #ffe58f;
+      border-radius: 14px; padding: 24px 28px; margin-bottom: 20px;
+    }
+    .mission-card h2 { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: #664d00; }
+    .mission-card p { font-size: 15px; color: #555; line-height: 1.7; margin-bottom: 12px; }
+    .mission-checklist { font-size: 14px; color: #666; line-height: 1.8; padding-left: 0; list-style: none; }
+    .mission-checklist li::before { content: '✓ '; color: #d4991a; font-weight: 700; }
+
+    .youtube-notice {
+      background: #fff5f5; border: 1px solid #ffcdd2; border-radius: 12px;
+      padding: 16px 20px; margin-bottom: 20px; font-size: 14px; line-height: 1.75; color: #444;
+    }
+    .youtube-notice strong {
+      display: flex; align-items: center; gap: 8px; color: #c62828;
+      font-size: 15px; margin-bottom: 8px;
+    }
+
+    .gold-badge-hero {
+      width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(145deg, #ffe566 0%, #ffc107 45%, #e6a800 100%);
+      border: 3px solid #fff8dc; box-shadow: 0 6px 20px rgba(230,168,0,.45);
+    }
+    .gold-badge-hero i { font-size: 36px; color: #6b4e00; filter: drop-shadow(0 1px 2px rgba(0,0,0,.12)); }
+    .result-card.pass { text-align: center; }
+
+    .submit-card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 28px; }
+    .submit-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; color: #333; }
+    .form-group input, .form-group textarea {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #e5e5e5; border-radius: 8px;
+      font-size: 16px; font-family: inherit; outline: none;
+    }
+    .form-group textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
+    .form-hint { font-size: 13px; color: #aaa; margin-top: 6px; }
+    .submit-btn {
+      width: 100%; padding: 14px; background: #5c67f2; color: #fff; border: none; border-radius: 10px;
+      font-size: 17px; font-weight: 700; cursor: pointer;
+    }
+    .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .result-card { border-radius: 14px; padding: 24px; margin-bottom: 20px; display: none; }
+    .result-card.pass { display: block; background: #f0fff4; border: 1px solid #b7ebc8; }
+    .result-card.fail { display: block; background: #fff5f5; border: 1px solid #ffc9c9; }
+    .result-card.cooldown { display: block; background: #fff8e8; border: 1px solid #ffe58f; }
+    .result-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .result-card p { font-size: 15px; line-height: 1.7; color: #444; }
+    .result-actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .result-actions a, .result-actions button {
+      padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 14px; text-decoration: none; border: none; cursor: pointer;
+    }
+    .btn-next { background: #1a1f3c; color: #fff; }
+    .btn-inbox { background: #f0f0f0; color: #333; }
+
+    .stage-timer {
+      background: linear-gradient(135deg, #1a1f3c, #3d4a8a); color: #fff;
+      border-radius: 12px; padding: 16px 22px; margin-bottom: 20px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    }
+    .stage-timer .time { font-size: 32px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .stage-timer.warn { background: linear-gradient(135deg, #b71c1c, #e53935); }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo">타닥클래스</a>
+    <div class="header-right">
+      <a href="/editor-workbooks.html" class="nav-btn">← 메일함</a>
+    </div>
+  </div>
+</header>
+
+<div class="mail-detail">
+  <a href="/editor-workbooks.html" class="back-link"><i class="ti ti-arrow-left"></i> 받은편지함</a>
+  <div id="content"><div style="text-align:center;padding:60px;color:#aaa">불러오는 중...</div></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = API.user()
+if (!user) { alert('로그인이 필요합니다.'); location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.search) }
+
+const workbookId = new URLSearchParams(location.search).get('id')
+if (!workbookId) { alert('잘못된 접근입니다.'); location.href = '/editor-workbooks.html' }
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+function formatDate(iso) {
+  if (!iso) return '-'
+  const d = new Date(iso)
+  return d.toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+let workbookData = null
+let timerInterval = null
+
+function handleProgramError(e) {
+  const msg = e.message || '오류가 발생했습니다.'
+  if (e.timed_out || msg.includes('처음부터')) {
+    alert(msg)
+    location.href = '/editor-program.html'
+    return true
+  }
+  if (msg.includes('동의')) {
+    location.href = '/editor-program.html'
+    return true
+  }
+  return false
+}
+
+function startStageTimer(deadlineAt) {
+  const el = document.getElementById('stage-timer')
+  if (!el || !deadlineAt || workbookData?.view_only) return
+  el.style.display = 'flex'
+  function tick() {
+    const left = new Date(deadlineAt).getTime() - Date.now()
+    if (left <= 0) {
+      clearInterval(timerInterval)
+      alert('제한 시간이 초과되어 프로그램이 초기화됩니다.')
+      location.href = '/editor-program.html'
+      return
+    }
+    el.className = 'stage-timer' + (left < 5 * 60 * 1000 ? ' warn' : '')
+    document.getElementById('stage-time').textContent =
+      `${String(Math.floor(left/60000)).padStart(2,'0')}:${String(Math.floor((left%60000)/1000)).padStart(2,'0')}`
+  }
+  tick()
+  clearInterval(timerInterval)
+  timerInterval = setInterval(tick, 1000)
+}
+
+async function load() {
+  try {
+    workbookData = await API.get('/editor/workbooks/' + workbookId)
+    render()
+  } catch (e) {
+    if (handleProgramError(e)) return
+    document.getElementById('content').innerHTML = `<div style="text-align:center;padding:60px;color:#c62828">${esc(e.message)}<br><br><a href="/editor-workbooks.html">메일함으로</a></div>`
+  }
+}
+
+function render() {
+  const w = workbookData
+  const passed = w.status === 'passed'
+  const cooldown = w.status === 'cooldown'
+  const canSubmit = w.can_submit !== false && !passed && !cooldown
+  const keywords = (w.required_keywords || []).map(k => `<li>작업 설명에 「${esc(k)}」 포함</li>`).join('')
+
+  document.getElementById('content').innerHTML = `
+    <div class="stage-timer" id="stage-timer" style="display:none">
+      <div>
+        <div style="font-size:13px;opacity:.85">단계 ${w.order_num} · 제한 ${w.stage?.stage_minutes || 40}분</div>
+        <div style="font-size:14px;margin-top:4px">유튜브 일부공개 업로드 후 통과하세요</div>
+      </div>
+      <div class="time" id="stage-time">40:00</div>
+    </div>
+
+    <div class="youtube-notice">
+      <strong><i class="ti ti-brand-youtube"></i> 납품 안내 (필수)</strong>
+      모든 과제는 <b>유튜브에 업로드</b>한 링크만 제출할 수 있습니다.<br>
+      업로드한 영상의 공개 설정은 반드시 <b>일부공개</b>로 설정해주세요.<br>
+      작업 설명에 「일부공개」로 업로드했음을 꼭 적어주세요.
+    </div>
+
+    <div class="email-card">
+      <div class="email-header">
+        <div class="email-subject">${esc(w.subject)}</div>
+        <dl class="email-meta">
+          <dt>보낸 사람</dt><dd>${esc(w.from_name)} &lt;${esc(w.from_email)}&gt;</dd>
+          <dt>회사</dt><dd>${esc(w.from_company)}</dd>
+          <dt>받은 날짜</dt><dd>${formatDate(w.received_at)}</dd>
+        </dl>
+      </div>
+      <div class="email-body">${esc(w.body)}</div>
+    </div>
+
+    <div class="mission-card">
+      <h2>📋 ${esc(w.mission_title)}</h2>
+      <p>${esc(w.mission_brief)}</p>
+      <ul class="mission-checklist">
+        <li>유튜브 업로드 + 공개 설정 「일부공개」</li>
+        <li>단계당 <strong>40분</strong> 내 유튜브(일부공개) 제출 · 통과</li>
+        <li>시간 초과 시 <strong>처음부터</strong> 다시 시작</li>
+        <li>유튜브 링크(youtube.com / youtu.be) 제출</li>
+        <li>작업 설명 ${w.min_note_length || 50}자 이상 + 「일부공개」 명시</li>
+        ${keywords}
+      </ul>
+    </div>
+
+    <div class="result-card ${passed ? 'pass' : ''}" id="result-pass" style="${passed ? '' : 'display:none'}">
+      <div class="gold-badge-hero"><i class="ti ti-medal"></i></div>
+      <h3>🏅 금장 배지 획득 · 미션 통과</h3>
+      <p>${esc(w.submission?.feedback || w.pass_message || '통과되었습니다.')}</p>
+      <div class="result-actions">
+        <a href="/editor-workbooks.html" class="btn-inbox">메일함으로</a>
+        <a href="#" class="btn-next" id="next-mail" style="display:none">다음 의뢰 메일 →</a>
+        ${w.progress?.can_apply ? '<a href="/editor-apply.html" class="btn-next">에디터즈 신청하기</a>' : ''}
+      </div>
+    </div>
+
+    <div class="result-card cooldown" id="result-cooldown" style="${cooldown ? '' : 'display:none'}">
+      <h3>⏳ 재도전 대기 중 (5일)</h3>
+      <p id="cooldown-msg">${esc(w.submission?.feedback || '미션에 통과하지 못했습니다.')}<br><br>
+        <strong>${formatDate(w.locked_until || w.submission?.locked_until)}</strong> 이후에 다시 도전할 수 있습니다.</p>
+      <div class="result-actions">
+        <a href="/editor-workbooks.html" class="btn-inbox">메일함으로</a>
+      </div>
+    </div>
+
+    <div class="result-card fail" id="result-fail" style="display:none">
+      <h3>❌ 미션 미통과</h3>
+      <p id="fail-feedback"></p>
+      <p id="fail-cooldown-note" style="margin-top:10px;font-size:14px;color:#e65100"></p>
+      <div class="result-actions">
+        <a href="/editor-workbooks.html" class="btn-inbox">메일함으로</a>
+      </div>
+    </div>
+
+    ${canSubmit ? `
+    <div class="submit-card" id="submit-card">
+      <h3>📤 유튜브 링크로 납품하기</h3>
+      <form id="submit-form">
+        <div class="form-group">
+          <label>유튜브 링크 *</label>
+          <input type="url" name="deliverable_url" placeholder="https://www.youtube.com/watch?v=... 또는 https://youtu.be/..." required
+            value="${esc(w.submission?.deliverable_url || '')}" />
+          <p class="form-hint">유튜브에 업로드 후, 공개 설정을 「일부공개」로 변경한 링크를 입력하세요.</p>
+        </div>
+        <div class="form-group">
+          <label>작업 설명 *</label>
+          <textarea name="work_notes" placeholder="예: 30초 쇼츠 편집 완료. 유튜브 일부공개로 업로드했습니다. CapCut Pro 사용, 9:16 세로, 첫 3초 훅은 질문형 자막으로 처리했습니다." required minlength="${w.min_note_length || 50}">${esc(w.submission?.work_notes || '')}</textarea>
+          <p class="form-hint" id="note-count">0자 · ${w.min_note_length || 50}자 이상 · 「일부공개」 포함 필수</p>
+        </div>
+        <button type="submit" class="submit-btn" id="submit-btn">미션 제출 · 검수 받기</button>
+      </form>
+    </div>` : ''}
+  `
+
+  if (passed) setupNextLink()
+  else if (w.stage?.deadline_at && canSubmit) startStageTimer(w.stage.deadline_at)
+
+  const ta = document.querySelector('[name="work_notes"]')
+  if (ta) {
+    const upd = () => { document.getElementById('note-count').textContent = ta.value.length + '자 · ' + (w.min_note_length || 50) + '자 이상 · 「일부공개」 포함 필수' }
+    ta.addEventListener('input', upd)
+    upd()
+    document.getElementById('submit-form').addEventListener('submit', onSubmit)
+  }
+}
+
+async function setupNextLink() {
+  try {
+    const inbox = await API.get('/editor/workbooks')
+    const cur = inbox.workbooks.find(x => x.id === workbookId)
+    const next = inbox.workbooks.find(x => x.order_num === (cur?.order_num || 0) + 1 && x.unlocked)
+    const el = document.getElementById('next-mail')
+    if (next && el) {
+      el.style.display = 'inline-block'
+      el.href = '/editor-workbook.html?id=' + next.id
+    }
+  } catch (_) {}
+}
+
+async function onSubmit(e) {
+  e.preventDefault()
+  const fd = new FormData(e.target)
+  const btn = document.getElementById('submit-btn')
+  btn.disabled = true
+  btn.textContent = '검수 중...'
+  try {
+    const res = await API.post('/editor/workbooks/' + workbookId + '/submit', {
+      deliverable_url: fd.get('deliverable_url'),
+      work_notes: fd.get('work_notes'),
+    })
+    if (res.passed) {
+      workbookData.status = 'passed'
+      workbookData.submission = { feedback: res.feedback }
+      workbookData.progress = res.progress
+      document.getElementById('submit-card')?.remove()
+      const passEl = document.getElementById('result-pass')
+      passEl.classList.add('pass')
+      passEl.style.display = 'block'
+      passEl.innerHTML = `
+        <div class="gold-badge-hero"><i class="ti ti-medal"></i></div>
+        <h3>🏅 금장 배지 획득 · 미션 통과</h3>
+        <p>${esc(res.feedback)}</p>
+        <div class="result-actions">
+          <a href="/editor-workbooks.html" class="btn-inbox">메일함으로</a>
+          <a href="#" class="btn-next" id="next-mail" style="display:none">다음 의뢰 메일 →</a>
+          ${res.progress?.can_apply ? '<a href="/editor-apply.html" class="btn-next">에디터즈 신청하기</a>' : ''}
+        </div>`
+      setupNextLink()
+    } else {
+      document.getElementById('submit-card')?.remove()
+      if (res.locked_until) {
+        workbookData.status = 'cooldown'
+        workbookData.locked_until = res.locked_until
+        workbookData.can_submit = false
+        document.getElementById('result-fail').style.display = 'block'
+        document.getElementById('fail-feedback').textContent = res.feedback
+        document.getElementById('fail-cooldown-note').textContent =
+          `${formatDate(res.locked_until)} 이후에 다시 도전할 수 있습니다. (5일 대기)`
+        setTimeout(() => load(), 2500)
+      } else {
+        document.getElementById('result-fail').style.display = 'block'
+        document.getElementById('fail-feedback').textContent = res.feedback
+        btn.disabled = false
+        btn.textContent = '미션 제출 · 검수 받기'
+      }
+    }
+  } catch (err) {
+    if (handleProgramError(err)) return
+    alert(err.message || '제출 중 오류가 발생했습니다.')
+    btn.disabled = false
+    btn.textContent = '미션 제출 · 검수 받기'
+  }
+}
+
+load()
+</script>
+</body>
+</html>

@@ -45,7 +45,7 @@ router.get('/my/quotes', authMiddleware, async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const project = await db.getProjectById(req.params.id)
-    if (!project) return res.status(404).json({ error: '의뢰를 찾을 수 없습니다.' })
+    if (!project) return res.status(404).json({ error: '클라이언츠를 찾을 수 없습니다.' })
     const client = await db.findUserById(project.client_id)
     const quotes = await db.getQuotesByProject(project.id)
     const quotesWithEditor = await Promise.all(quotes.map(async q => {
@@ -62,9 +62,13 @@ router.get('/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 
-// 의뢰 등록
+// 의뢰 등록 (의뢰인·관리자)
 router.post('/', authMiddleware, async (req, res) => {
   try {
+    const user = await db.findUserById(req.user.id)
+    if (user?.member_type !== 'client' && req.user.role !== 'admin') {
+      return res.status(403).json({ error: '클라이언츠 등록은 의뢰인으로 가입한 회원만 가능합니다.' })
+    }
     const { title, description, category, budget_min, budget_max, deadline, requirements } = req.body
     if (!title || !description || !category) return res.status(400).json({ error: '제목, 설명, 카테고리는 필수입니다.' })
     const project = await db.createProject(req.user.id, { title, description, category, budget_min, budget_max, deadline, requirements })
@@ -76,11 +80,11 @@ router.post('/', authMiddleware, async (req, res) => {
 router.post('/:id/quotes', authMiddleware, async (req, res) => {
   try {
     const user = await db.findUserById(req.user.id)
-    if (user?.role !== 'editor') return res.status(403).json({ error: '승인된 편집자만 견적을 제출할 수 있습니다.' })
+    if (user?.role !== 'editor') return res.status(403).json({ error: '승인된 에디터즈만 견적을 제출할 수 있습니다.' })
     const project = await db.getProjectById(req.params.id)
-    if (!project) return res.status(404).json({ error: '의뢰를 찾을 수 없습니다.' })
-    if (project.status !== 'open') return res.status(400).json({ error: '이미 마감된 의뢰입니다.' })
-    if (project.client_id === req.user.id) return res.status(400).json({ error: '본인 의뢰에는 견적을 제출할 수 없습니다.' })
+    if (!project) return res.status(404).json({ error: '클라이언츠를 찾을 수 없습니다.' })
+    if (project.status !== 'open') return res.status(400).json({ error: '이미 마감된 클라이언츠입니다.' })
+    if (project.client_id === req.user.id) return res.status(400).json({ error: '본인 클라이언츠에는 견적을 제출할 수 없습니다.' })
     const { amount, message } = req.body
     if (!amount || !message) return res.status(400).json({ error: '금액과 메시지는 필수입니다.' })
     const quote = await db.submitQuote(req.user.id, req.params.id, { amount, message })
@@ -92,15 +96,31 @@ router.post('/:id/quotes', authMiddleware, async (req, res) => {
 router.post('/:id/quotes/:quoteId/accept', authMiddleware, async (req, res) => {
   try {
     const project = await db.getProjectById(req.params.id)
-    if (!project) return res.status(404).json({ error: '의뢰를 찾을 수 없습니다.' })
+    if (!project) return res.status(404).json({ error: '클라이언츠를 찾을 수 없습니다.' })
     if (project.client_id !== req.user.id) return res.status(403).json({ error: '의뢰인만 견적을 수락할 수 있습니다.' })
-    if (project.status !== 'open') return res.status(400).json({ error: '이미 처리된 의뢰입니다.' })
+    if (project.status !== 'open') return res.status(400).json({ error: '이미 처리된 클라이언츠입니다.' })
+    const { coupon_id } = req.body
     const quote = await db.getQuotesByProject(req.params.id).then(qs => qs.find(q => q.id === req.params.quoteId))
     if (!quote) return res.status(404).json({ error: '견적을 찾을 수 없습니다.' })
+    if (coupon_id) {
+      const valid = await db.checkClientProjectCoupon(req.user.id, coupon_id, quote.amount)
+      if (!valid) {
+        return res.status(400).json({ error: '쿠폰을 사용할 수 없습니다. 3만원 이상 견적이며, 본인의 사용 가능한 의뢰 할인 쿠폰인지 확인해주세요.' })
+      }
+    }
     await db.acceptQuote(req.params.quoteId, req.params.id)
-    // matched_editor_id 저장
-    await db.updateProject(req.params.id, { matched_editor_id: quote.editor_id })
-    res.json({ success: true })
+    let discount = null
+    if (coupon_id) {
+      discount = await db.redeemClientProjectCoupon(req.user.id, coupon_id, req.params.id, quote.amount)
+    }
+    await db.updateProject(req.params.id, {
+      matched_editor_id: quote.editor_id,
+      contract_amount: quote.amount,
+      coupon_id: discount?.coupon_id || null,
+      coupon_discount: discount?.discount || 0,
+      final_contract_amount: discount ? discount.final_amount : quote.amount,
+    })
+    res.json({ success: true, discount: discount?.discount || 0, final_amount: discount ? discount.final_amount : quote.amount })
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 
@@ -108,14 +128,14 @@ router.post('/:id/quotes/:quoteId/accept', authMiddleware, async (req, res) => {
 router.patch('/:id/stage', authMiddleware, async (req, res) => {
   try {
     const project = await db.getProjectById(req.params.id)
-    if (!project) return res.status(404).json({ error: '의뢰를 찾을 수 없습니다.' })
+    if (!project) return res.status(404).json({ error: '클라이언츠를 찾을 수 없습니다.' })
     const { stage } = req.body
     const isClient = project.client_id === req.user.id
     const isMatchedEditor = project.matched_editor_id === req.user.id
 
     // 권한 체크
     if (stage === 'completed' && !isClient) return res.status(403).json({ error: '의뢰인만 완료 처리할 수 있습니다.' })
-    if (['contract', 'in_progress', 'delivered'].includes(stage) && !isMatchedEditor && req.user.role !== 'admin') return res.status(403).json({ error: '편집자만 상태를 변경할 수 있습니다.' })
+    if (['contract', 'in_progress', 'delivered'].includes(stage) && !isMatchedEditor && req.user.role !== 'admin') return res.status(403).json({ error: '담당 에디터만 상태를 변경할 수 있습니다.' })
 
     await db.updateProjectStage(req.params.id, stage)
     res.json({ success: true })
@@ -126,7 +146,7 @@ router.patch('/:id/stage', authMiddleware, async (req, res) => {
 router.patch('/:id/status', authMiddleware, async (req, res) => {
   try {
     const project = await db.getProjectById(req.params.id)
-    if (!project) return res.status(404).json({ error: '의뢰를 찾을 수 없습니다.' })
+    if (!project) return res.status(404).json({ error: '클라이언츠를 찾을 수 없습니다.' })
     if (project.client_id !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: '권한이 없습니다.' })
     await db.updateProject(req.params.id, { status: req.body.status })
     res.json({ success: true })

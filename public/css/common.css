@@ -32,12 +32,15 @@
   --error-bg:       #fce8e8;
   --warning:        #d4991a;
   --warning-bg:     #fff8e1;
+
+  /* 전역 텍스트 배율 (150%) — html·font-size px 와 함께 사용 */
+  --text-scale:     1.2;
 }
 
 /* Toast */
 .toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
-  padding: 12px 24px; border-radius: 8px; font-size: 18px; font-weight: 500;
+  padding: 12px 24px; border-radius: 8px; font-size: 21.6px; font-weight: 500;
   opacity: 0; transition: all 0.3s; z-index: 9999; pointer-events: none; white-space: nowrap;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -53,9 +56,36 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* 강의 썸네일 — 16:9 (카드·상세·마이페이지 공통) */
+.course-thumb,
+.ccard-thumb,
+.buy-thumb,
+.mc-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.course-thumb > img,
+.ccard-thumb > img,
+.buy-thumb > img,
+.mc-thumb > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* Empty state */
 .empty-state {
   text-align: center; padding: 60px 20px; color: #aaa;
 }
-.empty-state .ti { font-size: 52px; display: block; margin-bottom: 12px; }
-.empty-state p { font-size: 20px; }
+.empty-state .ti { font-size: 62.4px; display: block; margin-bottom: 12px; }
+.empty-state p { font-size: 24px; }

@@ -7,11 +7,16 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
-  <header class="nav"><div class="nav-inner">
-    <a href="/" class="nav-logo">타닥클래스 <span>TADAK CLASS</span></a>
-    <nav class="nav-links"><a href="/">강의</a><a href="/#about">강사 소개</a></nav>
-    <div class="nav-right" id="nav-right"></div>
-  </div></header>
+  <header class="header">
+    <div class="header-inner">
+      <a href="/" class="logo">타닥클래스</a>
+      <nav class="gnb">
+        <a href="/">강의</a>
+        <a href="/instructors.html">강사 소개</a>
+      </nav>
+      <div class="header-right" id="nav-right"></div>
+    </div>
+  </header>
 
   <div id="course-wrap"><div class="spinner"></div></div>
 
@@ -37,6 +42,7 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/auth-redirect.js"></script>
   <script>
     const slug = new URLSearchParams(location.search).get('slug')
     let courseData = null
@@ -49,35 +55,47 @@
       } catch { document.getElementById('course-wrap').innerHTML = '<p style="text-align:center;padding:60px;color:#aaa">강의를 찾을 수 없습니다.</p>' }
     }
 
+    function isFreeVod(c) {
+      return c.course_type !== 'live' && Number(c.sale_price) === 0
+    }
+
+    function formatSalePrice(c) {
+      if (c.course_type === 'live') return ''
+      if (isFreeVod(c)) return 'Free / 무료'
+      return `₩${Number(c.sale_price).toLocaleString()}`
+    }
+
     function render(c) {
       const totalChapters = c.chapters?.length || 0
       const freeChapters = c.chapters?.filter(ch=>ch.is_free).length || 0
       const thumbClass = c.thumb_style==='dark'?'thumb-dark':'thumb-light'
+      const freeVod = isFreeVod(c)
+      const salePriceLabel = formatSalePrice(c)
 
       document.title = c.title + ' — 타닥클래스'
       document.getElementById('course-wrap').innerHTML = `
         <div class="course-hero ${thumbClass === 'thumb-dark' ? 'hero-dark' : 'hero-light'}">
           <div class="container course-hero-inner">
             <div class="course-hero-text">
-              ${c.badge?`<span class="ch-badge">${c.badge}</span>`:''}
+              ${c.badge ? `<span class="ch-badge ch-badge--${String(c.badge).toLowerCase()}">${c.badge}</span>` : ''}
               <h1>${c.title}</h1>
               <p class="ch-desc">${c.description||''}</p>
               <div class="ch-meta">
-                <span><i class="ti ti-star-filled"></i> ${c.rating} (${Number(c.review_count).toLocaleString()}개 후기)</span>
+                <span><i class="ti ti-star-filled"></i> ${Number(c.review_count) > 0 ? `${c.rating} (${Number(c.review_count).toLocaleString()}개 후기)` : '후기 없음'}</span>
                 <span><i class="ti ti-users"></i> ${Number(c.student_count).toLocaleString()}명 수강 중</span>
                 <span><i class="ti ti-list"></i> 총 ${totalChapters}강</span>
                 <span><i class="ti ti-player-play"></i> 무료 ${freeChapters}강 제공</span>
               </div>
             </div>
             <div class="course-buy-card">
-              <div class="buy-thumb ${thumbClass}"><i class="ti ${c.thumbnail_icon}" style="font-size:48px"></i></div>
+              <div class="buy-thumb ${thumbClass}"><i class="ti ${c.thumbnail_icon}" style="font-size: 57.6px"></i></div>
               <div class="buy-body">
                 ${c.course_type === 'live' ? `
                 <div style="text-align:center;padding:8px 0 16px">
-                  <div style="font-size:28px;font-weight:700;color:#e53935">무료</div>
-                  <div style="font-size:13px;color:#888;margin-top:4px">라이브 강의 · 무료 참여</div>
+                  <div style="font-size: 33.6px;font-weight:700;color:#e53935">무료</div>
+                  <div style="font-size: 15.6px;color:#888;margin-top:4px">라이브 강의 · 무료 참여</div>
                 </div>
-                ${c.live_schedule ? `<div style="background:#fff3e0;border-radius:8px;padding:10px 14px;font-size:13px;color:#e65100;margin-bottom:12px"><i class="ti ti-calendar"></i> ${c.live_schedule}</div>` : ''}
+                ${c.live_schedule ? `<div style="background:#fff3e0;border-radius:8px;padding:10px 14px;font-size: 15.6px;color:#e65100;margin-bottom:12px"><i class="ti ti-calendar"></i> ${c.live_schedule}</div>` : ''}
                 ${c.enrolled
                   ? `<div class="btn-enroll enrolled" style="text-align:center"><i class="ti ti-check"></i> 신청 완료 — 알림톡으로 안내 예정</div>`
                   : c.live_status === 'ended'
@@ -92,12 +110,14 @@
                 </ul>
               ` : `
                 <div class="buy-price-row">
-                  ${c.price!==c.sale_price?`<span class="buy-original">₩${Number(c.price).toLocaleString()}</span><span class="buy-disc">${Math.round((1-c.sale_price/c.price)*100)}%</span>`:''}
+                  ${!freeVod && c.price!==c.sale_price ? `<span class="buy-original">₩${Number(c.price).toLocaleString()}</span><span class="buy-disc">${Math.round((1-c.sale_price/c.price)*100)}%</span>` : ''}
                 </div>
-                <div class="buy-price">₩${Number(c.sale_price).toLocaleString()}</div>
+                <div class="buy-price${freeVod ? ' buy-price--free' : ''}">${salePriceLabel}</div>
                 ${c.enrolled
-                  ? `<a href="/player.html?slug=${c.slug}&chapter=${c.chapters[0]?.id}" class="btn-enroll enrolled"><i class="ti ti-player-play"></i> 이어서 수강하기</a>`
-                  : `<button class="btn-enroll" onclick="openModal()"><i class="ti ti-shopping-cart"></i> 수강 신청하기</button>`
+                  ? `<a href="/player.html?slug=${c.slug}&chapter=first" class="btn-enroll enrolled"><i class="ti ti-player-play"></i> 이어서 수강하기</a>`
+                  : freeVod
+                    ? `<button class="btn-enroll" onclick="enrollFreeVod()"><i class="ti ti-play"></i> 무료로 시작하기</button>`
+                    : `<button class="btn-enroll" onclick="openModal()"><i class="ti ti-shopping-cart"></i> 수강 신청하기</button>`
                 }
                 <ul class="buy-features">
                   <li><i class="ti ti-infinity"></i> 평생 소장</li>
@@ -121,7 +141,7 @@
                     <span class="ci-num">${String(i+1).padStart(2,'0')}</span>
                     <span class="ci-title">${ch.title}</span>
                     ${ch.is_free
-                      ? `<a href="/player.html?slug=${c.slug}&chapter=${ch.id}" class="ci-free">무료 보기</a>`
+                      ? `<a href="/player.html?slug=${c.slug}&chapter=${ch.id}" class="ci-free" onclick="return checkLoginForFree(event,'${c.slug}','${ch.id}')">무료 보기</a>`
                       : c.enrolled
                         ? `<a href="/player.html?slug=${c.slug}&chapter=${ch.id}" class="ci-watch"><i class="ti ti-player-play"></i></a>`
                         : `<span class="ci-lock"><i class="ti ti-lock"></i></span>`
@@ -135,7 +155,7 @@
     }
 
     async function enrollFree() {
-      if (!API.isLoggedIn()) { location.href = '/login.html?next=/course.html?slug=' + slug; return }
+      if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
       try {
         await API.post('/courses/' + slug + '/enroll-free', {})
         toast('수강 신청 완료! 라이브 당일 카카오 알림톡으로 안내드립니다. 🎉', 'success')
@@ -145,8 +165,19 @@
       }
     }
 
+    async function enrollFreeVod() {
+      if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
+      try {
+        await API.post('/courses/' + slug + '/enroll-free-vod', {})
+        toast('수강 신청 완료! 🎉', 'success')
+        setTimeout(() => location.href = '/player.html?slug=' + slug + '&chapter=first', 1000)
+      } catch(err) {
+        toast(err.message, 'error')
+      }
+    }
+
     function openModal() {
-      if (!API.isLoggedIn()) { location.href = '/login.html?next=/course.html?slug=' + slug; return }
+      if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
       document.getElementById('modal-course-info').innerHTML = `<div class="mci-title">${courseData.title}</div>`
       document.getElementById('modal-total').innerHTML = `총 결제금액 <b>₩${Number(courseData.sale_price).toLocaleString()}</b>`
       document.getElementById('modal-overlay').classList.remove('hidden')
@@ -158,14 +189,27 @@
       const btn = document.getElementById('btn-pay')
       btn.disabled = true; btn.textContent = '처리 중...'
       try {
-        await API.post('/orders', { course_id: courseData.id, method })
-        toast('수강 신청이 완료되었습니다! 🎉', 'success')
+        const res = await API.post('/orders', { course_id: courseData.id, method })
+        let msg = '수강 신청이 완료되었습니다! 🎉'
+        if (res.reward_coupon) {
+          msg += ` 의뢰인 혜택: 1만원 할인쿠폰 ${res.reward_coupon.count}장(총 ${res.reward_coupon.total_amount.toLocaleString()}원)이 발급되었습니다.`
+        }
+        toast(msg, 'success')
         closeModal()
-        setTimeout(() => location.href = '/player.html?slug=' + slug + '&chapter=' + courseData.chapters[0]?.id, 1200)
+        setTimeout(() => location.href = '/player.html?slug=' + slug + '&chapter=first', 1200)
       } catch(err) {
         toast(err.message, 'error')
         btn.disabled = false; btn.textContent = '결제하기'
       }
+    }
+
+    function checkLoginForFree(e, s, chId) {
+      if (!API.isLoggedIn()) {
+        e.preventDefault()
+        location.href = loginUrl('/player.html?slug=' + s + '&chapter=' + chId)
+        return false
+      }
+      return true
     }
 
     load()

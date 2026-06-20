@@ -5,37 +5,45 @@
   <title>환불정책 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
-<body>
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥<span>클래스</span></a>
-    <div class="header-right"><a href="/" class="nav-btn">← 홈으로</a></div>
-  </div>
-</header>
+<body class="legal-page" data-legal-page="refund">
 
-<div class="legal-wrap">
-  <div class="legal-inner">
-    <h1 class="legal-title">환불정책</h1>
-    <p class="legal-updated">시행일: 2025년 1월 1일 · 최종 개정: 2025년 6월 20일</p>
-    <p>타닥클래스는 「전자상거래 등에서의 소비자보호에 관한 법률」 및 「콘텐츠산업 진흥법」에 따라 아래와 같이 환불정책을 운영합니다.</p>
+<div data-chrome="header"></div>
+
+<main class="legal-main">
+  <header class="legal-hero">
+    <p class="legal-hero-eyebrow">Legal</p>
+    <h1 class="legal-hero-title">환불정책</h1>
+    <p class="legal-hero-meta">시행일: 2025년 1월 1일 · 최종 개정: 2025년 6월 20일</p>
+    <p class="legal-hero-lead">타닥클래스는 「전자상거래 등에서의 소비자보호에 관한 법률」 및 「콘텐츠산업 진흥법」에 따라 아래와 같이 환불정책을 운영합니다.</p>
+  </header>
+
+  <div class="legal-layout">
+    <aside class="legal-aside" aria-label="목차">
+      <div class="legal-toc-wrap">
+        <p class="legal-toc-label">목차</p>
+        <nav class="legal-toc" id="legal-toc"></nav>
+      </div>
+    </aside>
+    <div class="legal-body">
+      <div class="legal-toc-mobile">
+        <button type="button" class="legal-toc-mobile-btn" id="legal-toc-mobile-btn" aria-expanded="false">목차 보기</button>
+        <div class="legal-toc-mobile-panel" id="legal-toc-mobile-panel"></div>
+      </div>
+      <article class="legal-article" id="legal-article">
 
     <section>
       <h2>1. VOD 강의 (녹화 영상)</h2>
-
       <h3>청약철회 (전액 환불)</h3>
       <div class="legal-box success">
         <strong>결제일로부터 7일 이내 + 강의를 1강도 수강하지 않은 경우 → 전액 환불</strong><br>
         「전자상거래 등에서의 소비자보호에 관한 법률」 제17조에 따른 청약철회권입니다.
       </div>
-
       <h3>수강 시작 후 부분 환불</h3>
       <p>강의를 수강 개시한 경우 아래 기준에 따라 환불됩니다. (콘텐츠산업 진흥법 제28조 콘텐츠 이용자보호지침 준거)</p>
-
       <table class="legal-table">
-        <thead>
-          <tr><th>수강률</th><th>환불 금액</th></tr>
-        </thead>
+        <thead><tr><th>수강률</th><th>환불 금액</th></tr></thead>
         <tbody>
           <tr><td>수강 개시 전 (0%) · 결제 후 7일 이내</td><td>결제금액 전액</td></tr>
           <tr><td>1강 이상 수강, 전체 강의의 1/3 미만</td><td>결제금액의 2/3</td></tr>
@@ -44,7 +52,6 @@
           <tr class="no-refund"><td>결제일로부터 7일 초과 + 미수강</td><td>환불 불가 (별도 협의 가능)</td></tr>
         </tbody>
       </table>
-
       <div class="legal-box warn">
         <strong>수강률 계산 기준</strong><br>
         강의 영상을 1초 이상 재생한 경우 해당 강의를 "수강"한 것으로 간주합니다. 수강률은 전체 강의 수 대비 재생한 강의 수 기준으로 산정합니다.
@@ -102,33 +109,25 @@
 
     <section>
       <h2>7. 소비자 분쟁 해결 기준</h2>
-      <p>본 환불정책은 공정거래위원회 고시 「소비자분쟁해결기준」 및 「콘텐츠이용자보호지침」을 준수합니다. 분쟁이 해결되지 않을 경우 아래 기관에 도움을 요청하실 수 있습니다.</p>
+      <p>본 환불정책은 공정거래위원회 고시 「소비자분쟁해결기준」 및 「콘텐츠이용자보호지침」을 준수합니다.</p>
       <ul>
-        <li>한국소비자원: 1372 / <a href="https://www.kca.go.kr" target="_blank">www.kca.go.kr</a></li>
+        <li>한국소비자원: 1372 / <a href="https://www.kca.go.kr" target="_blank" rel="noopener">www.kca.go.kr</a></li>
         <li>전자상거래분쟁조정위원회: 1661-5714</li>
         <li>공정거래위원회 신고센터: 1398</li>
       </ul>
+      <div class="legal-box">
+        <strong>문의처</strong><br>
+        이메일: dong8creative@gmail.com · 전화: 010-4850-6946 (평일 10:00~18:00)
+      </div>
     </section>
 
-    <div class="legal-box">
-      <strong>문의처</strong><br>
-      이메일: dong8creative@gmail.com · 전화: 010-4850-6946 (평일 10:00~18:00)
+      </article>
     </div>
   </div>
-</div>
+</main>
 
-<footer class="footer" style="margin-top:0">
-  <div class="container">
-    <div class="footer-bottom">
-      <span>© 2025 타닥클래스. All rights reserved.</span>
-      <div class="footer-policy">
-        <a href="/terms.html">이용약관</a>
-        <a href="/privacy.html">개인정보처리방침</a>
-        <a href="/refund.html" style="color:#fff">환불정책</a>
-        <a href="/youth.html">청소년보호정책</a>
-      </div>
-    </div>
-  </div>
-</footer>
+<div data-chrome="footer"></div>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/legal-page.js"></script>
 </body>
 </html>

@@ -2,44 +2,44 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>영상 의뢰 — 타닥클래스</title>
+  <title>클라이언츠 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     .proj-hero { background:linear-gradient(135deg,#111827,#1e2d4a); padding:52px 24px; text-align:center; color:#fff; }
-    .proj-hero h1 { font-size:30px; font-weight:900; margin-bottom:10px; }
-    .proj-hero p { font-size:15px; color:rgba(255,255,255,.65); margin-bottom:24px; line-height:1.7; }
+    .proj-hero h1 { font-size: 36px; font-weight:900; margin-bottom:10px; }
+    .proj-hero p { font-size: 18px; color:rgba(255,255,255,.65); margin-bottom:24px; line-height:1.7; }
     .hero-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-    .btn-post { background:#5c67f2; color:#fff; padding:12px 28px; border-radius:10px; font-size:15px; font-weight:700; transition:.15s; }
+    .btn-post { background:#5c67f2; color:#fff; padding:12px 28px; border-radius:10px; font-size: 18px; font-weight:700; transition:.15s; }
     .btn-post:hover { background:#4a55e0; }
-    .btn-editor { border:2px solid rgba(255,255,255,.3); color:#fff; padding:12px 24px; border-radius:10px; font-size:15px; font-weight:600; transition:.15s; }
+    .btn-editor { border:2px solid rgba(255,255,255,.3); color:#fff; padding:12px 24px; border-radius:10px; font-size: 18px; font-weight:600; transition:.15s; }
     .btn-editor:hover { background:rgba(255,255,255,.1); }
 
     .proj-body { max-width:1100px; margin:0 auto; padding:40px 24px; }
 
     .filter-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:28px; align-items:center; }
-    .filter-chip { padding:7px 16px; border-radius:20px; border:1.5px solid #eee; background:#fff; font-size:13px; font-weight:600; color:#555; cursor:pointer; transition:.15s; }
+    .filter-chip { padding:7px 16px; border-radius:20px; border:1.5px solid #eee; background:#fff; font-size: 15.6px; font-weight:600; color:#555; cursor:pointer; transition:.15s; }
     .filter-chip.active { background:#5c67f2; color:#fff; border-color:#5c67f2; }
-    .proj-count { font-size:14px; color:#888; margin-left:auto; }
+    .proj-count { font-size: 16.8px; color:#888; margin-left:auto; }
 
     .proj-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:20px; }
     .proj-card { background:#fff; border:1px solid #eee; border-radius:14px; padding:24px; transition:.2s; cursor:pointer; }
     .proj-card:hover { box-shadow:0 8px 24px rgba(0,0,0,.1); transform:translateY(-2px); }
     .pc-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
-    .pc-cat { font-size:12px; font-weight:700; color:#5c67f2; background:#f0f2ff; padding:3px 10px; border-radius:12px; }
-    .pc-status { font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px; }
+    .pc-cat { font-size: 14.4px; font-weight:700; color:#5c67f2; background:#f0f2ff; padding:3px 10px; border-radius:12px; }
+    .pc-status { font-size: 14.4px; font-weight:700; padding:3px 10px; border-radius:12px; }
     .pc-status.open { background:#f0fff4; color:#2cae6b; }
     .pc-status.matched { background:#fff8e8; color:#d4991a; }
     .pc-status.completed { background:#f0f0f0; color:#888; }
-    .pc-title { font-size:16px; font-weight:800; color:#1a1a1a; margin-bottom:8px; line-height:1.4; }
-    .pc-desc { font-size:13px; color:#666; line-height:1.6; margin-bottom:14px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-    .pc-meta { display:flex; gap:16px; font-size:12px; color:#888; flex-wrap:wrap; }
+    .pc-title { font-size: 19.2px; font-weight:800; color:#1a1a1a; margin-bottom:8px; line-height:1.4; }
+    .pc-desc { font-size: 15.6px; color:#666; line-height:1.6; margin-bottom:14px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .pc-meta { display:flex; gap:16px; font-size: 14.4px; color:#888; flex-wrap:wrap; }
     .pc-meta span { display:flex; align-items:center; gap:4px; }
     .pc-bottom { border-top:1px solid #f0f0f0; margin-top:14px; padding-top:14px; display:flex; justify-content:space-between; align-items:center; }
-    .pc-budget { font-size:15px; font-weight:800; color:#1a1a1a; }
-    .pc-quotes { font-size:12px; color:#5c67f2; font-weight:600; }
+    .pc-budget { font-size: 18px; font-weight:800; color:#1a1a1a; }
+    .pc-quotes { font-size: 14.4px; color:#5c67f2; font-weight:600; }
 
-    .empty-msg { text-align:center; padding:60px 0; color:#aaa; font-size:15px; }
+    .empty-msg { text-align:center; padding:60px 0; color:#aaa; font-size: 18px; }
     .spinner { width:32px; height:32px; border:3px solid #eee; border-top-color:#5c67f2; border-radius:50%; animation:spin .7s linear infinite; margin:48px auto; }
     @keyframes spin { to{transform:rotate(360deg)} }
   </style>
@@ -47,34 +47,34 @@
 <body>
 <header class="header">
   <div class="header-inner">
-    <a href="/" class="logo">타닥<span>클래스</span></a>
+    <a href="/" class="logo">타닥클래스</a>
     <nav class="gnb">
       <a href="/">강의</a>
-      <a href="/editors.html">공인 편집자</a>
-      <a href="/projects.html" style="color:#5c67f2;font-weight:700">영상 의뢰</a>
+      <a href="/editors.html">에디터즈</a>
+      <a href="/projects.html" style="color:#5c67f2;font-weight:700">클라이언츠</a>
     </nav>
     <div class="header-right" id="header-right"></div>
   </div>
 </header>
 
 <div class="proj-hero">
-  <h1>🎬 영상 의뢰 마켓</h1>
-  <p>타닥클래스 공인 편집자에게 영상 제작을 맡겨보세요.<br>검증된 실력의 편집자가 빠르게 견적을 제출합니다.</p>
+  <h1>🎬 클라이언츠</h1>
+  <p>타닥클래스 에디터즈에게 영상 제작을 맡겨보세요.<br>검증된 실력의 에디터가 빠르게 견적을 제출합니다.</p>
   <div class="hero-btns">
-    <a href="/project-post.html" class="btn-post">+ 의뢰 등록하기</a>
-    <a href="/editors.html" class="btn-editor">편집자 목록 보기</a>
+    <a href="/project-post.html" class="btn-post">+ 클라이언츠 등록하기</a>
+    <a href="/editors.html" class="btn-editor">에디터즈 보기</a>
   </div>
 </div>
 
 <div class="proj-body">
   <div class="filter-row">
     <button class="filter-chip active" data-cat="전체">전체</button>
-    <button class="filter-chip" data-cat="유튜브 편집">유튜브 편집</button>
-    <button class="filter-chip" data-cat="숏폼/릴스">숏폼/릴스</button>
-    <button class="filter-chip" data-cat="광고 영상">광고 영상</button>
-    <button class="filter-chip" data-cat="모션그래픽">모션그래픽</button>
-    <button class="filter-chip" data-cat="브랜드 필름">브랜드 필름</button>
-    <button class="filter-chip" data-cat="웨딩/행사">웨딩/행사</button>
+    <button class="filter-chip" data-cat="유튜브 쇼츠">유튜브 쇼츠</button>
+    <button class="filter-chip" data-cat="인스타그램 릴스">인스타그램 릴스</button>
+    <button class="filter-chip" data-cat="틱톡">틱톡</button>
+    <button class="filter-chip" data-cat="AI영상">AI영상</button>
+    <button class="filter-chip" data-cat="색보정">색보정</button>
+    <button class="filter-chip" data-cat="세로 브랜드필름">세로 브랜드필름</button>
     <span class="proj-count" id="proj-count"></span>
   </div>
   <div class="proj-grid" id="proj-grid"><div class="spinner"></div></div>
@@ -90,7 +90,7 @@ function fmt(n) { return n ? '₩' + Number(n).toLocaleString() : '-' }
 function renderProjects(list) {
   const grid = document.getElementById('proj-grid')
   document.getElementById('proj-count').textContent = `총 ${list.length}건`
-  if (!list.length) { grid.innerHTML = '<div class="empty-msg">등록된 의뢰가 없습니다.</div>'; return }
+  if (!list.length) { grid.innerHTML = '<div class="empty-msg">등록된 클라이언츠가 없습니다.</div>'; return }
   grid.innerHTML = list.map(p => `
     <div class="proj-card" onclick="location.href='/project-detail.html?id=${p.id}'">
       <div class="pc-top">
@@ -116,7 +116,7 @@ async function load() {
     allProjects = await API.get('/projects')
     renderProjects(allProjects)
   } catch(e) {
-    document.getElementById('proj-grid').innerHTML = '<div class="empty-msg">의뢰 목록을 불러올 수 없습니다.</div>'
+    document.getElementById('proj-grid').innerHTML = '<div class="empty-msg">클라이언츠 목록을 불러올 수 없습니다.</div>'
   }
 }
 
@@ -130,11 +130,16 @@ document.querySelector('.filter-row').addEventListener('click', e => {
 })
 
 const user = API.user ? API.user() : null
+const canPostProject = user && (user.member_type === 'client' || user.role === 'admin')
 const hr = document.getElementById('header-right')
 if (hr) {
   hr.innerHTML = user
-    ? `<a href="/mypage.html" class="nav-btn">${user.name}</a><a href="/project-post.html" class="nav-btn nav-btn-primary">+ 의뢰 등록</a>`
-    : `<a href="/login.html" class="nav-btn">로그인</a><a href="/project-post.html" class="nav-btn nav-btn-primary">+ 의뢰 등록</a>`
+    ? `<a href="/mypage.html" class="nav-btn">${user.name}</a>${canPostProject ? '<a href="/project-post.html" class="nav-btn nav-btn-primary">+ 클라이언츠 등록</a>' : ''}`
+    : `<a href="/login.html" class="nav-btn">로그인</a><a href="/login.html?tab=register" class="nav-btn nav-btn-primary">의뢰인 가입</a>`
+}
+if (user && !canPostProject) {
+  const postBtn = document.querySelector('.btn-post')
+  if (postBtn) postBtn.style.display = 'none'
 }
 
 load()

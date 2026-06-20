@@ -2,43 +2,50 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>공인 편집자 — 타닥클래스</title>
+  <title>에디터즈 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     .editors-hero { background:linear-gradient(135deg,#1a1f3c,#3d4a8a); padding:56px 24px; text-align:center; color:#fff; }
-    .editors-hero h1 { font-size:32px; font-weight:900; margin-bottom:12px; }
-    .editors-hero p { font-size:16px; color:rgba(255,255,255,.7); margin-bottom:24px; }
-    .hero-cta { display:inline-block; background:#5c67f2; color:#fff; padding:12px 28px; border-radius:10px; font-size:15px; font-weight:700; transition:.15s; }
+    .editors-hero h1 { font-size: 38.4px; font-weight:900; margin-bottom:12px; }
+    .editors-hero p { font-size: 19.2px; color:rgba(255,255,255,.7); margin-bottom:24px; }
+    .hero-cta { display:inline-block; background:#5c67f2; color:#fff; padding:12px 28px; border-radius:10px; font-size: 18px; font-weight:700; transition:.15s; }
     .hero-cta:hover { background:#4a55e0; }
 
     .editors-section { max-width:1100px; margin:0 auto; padding:48px 24px; }
     .filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:32px; }
-    .filter-btn { padding:8px 18px; border-radius:20px; border:1.5px solid #eee; background:#fff; font-size:13px; font-weight:600; color:#555; cursor:pointer; transition:.15s; }
+    .filter-btn { padding:8px 18px; border-radius:20px; border:1.5px solid #eee; background:#fff; font-size: 15.6px; font-weight:600; color:#555; cursor:pointer; transition:.15s; }
     .filter-btn.active { background:#5c67f2; color:#fff; border-color:#5c67f2; }
 
     .editor-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px; }
     .editor-card { background:#fff; border-radius:16px; border:1px solid #eee; padding:24px; transition:.2s; }
+    .editor-card.featured { border-color:#5c67f2; box-shadow:0 4px 20px rgba(92,103,242,.15); }
     .editor-card:hover { box-shadow:0 8px 24px rgba(0,0,0,.1); transform:translateY(-2px); }
 
     .ec-top { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
-    .ec-avatar { width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,#5c67f2,#8b96ff); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:#fff; flex-shrink:0; }
-    .ec-name { font-size:17px; font-weight:800; color:#1a1a1a; }
-    .ec-badge { display:inline-flex; align-items:center; gap:4px; background:#f0f2ff; color:#5c67f2; font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px; margin-top:4px; }
+    .ec-avatar { width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,#5c67f2,#8b96ff); display:flex; align-items:center; justify-content:center; font-size: 24px; font-weight:800; color:#fff; flex-shrink:0; }
+    .ec-name { font-size: 20.4px; font-weight:800; color:#1a1a1a; }
+    .ec-badge { display:inline-flex; align-items:center; gap:4px; background:#f0f2ff; color:#5c67f2; font-size: 13.2px; font-weight:700; padding:3px 8px; border-radius:4px; margin-top:4px; margin-right:4px; }
+    .ec-badge.top { background:linear-gradient(135deg,#ff6b35,#ff8c42); color:#fff; }
+    .ec-loc { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .ec-loc span { background:#f8f9fb; color:#666; font-size: 13.2px; padding:4px 10px; border-radius:12px; }
 
     .ec-tools { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
-    .ec-tool { background:#f4f5f7; color:#555; font-size:12px; padding:3px 10px; border-radius:12px; }
+    .ec-tool { background:#f4f5f7; color:#555; font-size: 14.4px; padding:3px 10px; border-radius:12px; }
 
     .ec-skills { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
-    .ec-skill { background:#f0f2ff; color:#5c67f2; font-size:12px; padding:3px 10px; border-radius:12px; }
+    .ec-skill { background:#f0f2ff; color:#5c67f2; font-size: 14.4px; padding:3px 10px; border-radius:12px; }
 
-    .ec-intro { font-size:13px; color:#666; line-height:1.6; margin-bottom:16px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .ec-intro { font-size: 15.6px; color:#666; line-height:1.6; margin-bottom:16px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .ec-links { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+    .ec-link { font-size:13.2px; font-weight:600; color:#5c67f2; background:#f0f2ff; padding:4px 10px; border-radius:12px; text-decoration:none; }
+    .ec-link:hover { background:#e4e8ff; }
 
     .ec-meta { display:flex; justify-content:space-between; align-items:center; border-top:1px solid #f0f0f0; padding-top:14px; }
-    .ec-exp { font-size:12px; color:#888; }
-    .ec-contact { font-size:13px; font-weight:700; color:#5c67f2; }
+    .ec-exp { font-size: 14.4px; color:#888; }
+    .ec-contact { font-size: 15.6px; font-weight:700; color:#5c67f2; }
 
-    .empty-msg { text-align:center; padding:60px 20px; color:#aaa; font-size:15px; }
+    .empty-msg { text-align:center; padding:60px 20px; color:#aaa; font-size: 18px; }
     .spinner { width:32px; height:32px; border:3px solid #eee; border-top-color:#5c67f2; border-radius:50%; animation:spin .7s linear infinite; margin:48px auto; }
     @keyframes spin { to{transform:rotate(360deg)} }
   </style>
@@ -46,28 +53,28 @@
 <body>
 <header class="header">
   <div class="header-inner">
-    <a href="/" class="logo">타닥<span>클래스</span></a>
+    <a href="/" class="logo">타닥클래스</a>
     <div class="header-right" id="header-right"></div>
   </div>
 </header>
 
 <!-- 히어로 -->
 <div class="editors-hero">
-  <h1>🎬 타닥클래스 공인 편집자</h1>
-  <p>타닥클래스가 직접 검증한 실력 있는 편집자들을 만나보세요.<br>의뢰부터 납품까지 안심하고 맡길 수 있습니다.</p>
-  <a href="/editor-apply.html" class="hero-cta">편집자로 신청하기 →</a>
+  <h1>🎬 타닥클래스 에디터즈</h1>
+  <p>타닥클래스가 직접 검증한 실력 있는 에디터들을 만나보세요.<br>클라이언츠부터 납품까지 안심하고 맡길 수 있습니다.</p>
+  <a href="/editor-program.html" class="hero-cta">에디터즈 신청하기 →</a>
 </div>
 
 <div class="editors-section">
   <!-- 필터 -->
   <div class="filter-bar" id="filter-bar">
     <button class="filter-btn active" data-skill="전체">전체</button>
-    <button class="filter-btn" data-skill="유튜브 편집">유튜브 편집</button>
-    <button class="filter-btn" data-skill="숏폼/릴스">숏폼/릴스</button>
-    <button class="filter-btn" data-skill="광고 영상">광고 영상</button>
-    <button class="filter-btn" data-skill="모션그래픽">모션그래픽</button>
+    <button class="filter-btn" data-skill="유튜브 쇼츠">유튜브 쇼츠</button>
+    <button class="filter-btn" data-skill="인스타그램 릴스">인스타그램 릴스</button>
+    <button class="filter-btn" data-skill="틱톡">틱톡</button>
+    <button class="filter-btn" data-skill="AI영상">AI영상</button>
     <button class="filter-btn" data-skill="색보정">색보정</button>
-    <button class="filter-btn" data-skill="브랜드 필름">브랜드 필름</button>
+    <button class="filter-btn" data-skill="세로 브랜드필름">세로 브랜드필름</button>
   </div>
 
   <!-- 편집자 목록 -->
@@ -84,23 +91,37 @@ const expLabel = { 0:'6개월~1년', 1:'1년 이상', 2:'2년 이상', 3:'3년 �
 
 function renderEditors(list) {
   const grid = document.getElementById('editor-grid')
-  if (!list.length) { grid.innerHTML = '<div class="empty-msg">해당 분야의 편집자가 없습니다.</div>'; return }
+  if (!list.length) { grid.innerHTML = '<div class="empty-msg">해당 분야의 에디터가 없습니다.</div>'; return }
   grid.innerHTML = list.map(e => {
     const tools = Array.isArray(e.tools) ? e.tools : []
-    const skills = (e.skills || '').split(',').map(s => s.trim()).filter(Boolean)
+    const skills = Array.isArray(e.skills) ? e.skills : (e.skills || '').split(',').map(s => s.trim()).filter(Boolean)
     const initial = (e.name || '편')[0]
+    const avatar = e.profile_image
+      ? `<div class="ec-avatar" style="padding:0;overflow:hidden;background:#eee"><img src="${e.profile_image.replace(/"/g,'&quot;')}" alt="" style="width:100%;height:100%;object-fit:cover" /></div>`
+      : `<div class="ec-avatar">${initial}</div>`
+    const intro = e.bio || e.intro || ''
+    const links = (e.social_links || []).slice(0, 3)
+    const linksHtml = links.length
+      ? `<div class="ec-links">${links.map(l => `<a href="${l.url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="ec-link">${l.label}</a>`).join('')}</div>`
+      : ''
+    const locHtml = (e.location || e.work_type_label)
+      ? `<div class="ec-loc">${e.location ? `<span><i class="ti ti-map-pin"></i> ${e.location}</span>` : ''}${e.work_type_label ? `<span><i class="ti ti-briefcase"></i> ${e.work_type_label}</span>` : ''}</div>`
+      : ''
+    const topBadge = e.is_featured ? `<div class="ec-badge top"><i class="ti ti-star"></i> TOP 노출</div>` : ''
     return `
-    <div class="editor-card">
+    <div class="editor-card${e.is_featured ? ' featured' : ''}">
       <div class="ec-top">
-        <div class="ec-avatar">${initial}</div>
+        ${avatar}
         <div>
           <div class="ec-name">${e.name}</div>
-          <div class="ec-badge"><i class="ti ti-rosette"></i> 타닥클래스 인증</div>
+          ${topBadge}<div class="ec-badge"><i class="ti ti-rosette"></i> 타닥클래스 인증</div>
         </div>
       </div>
+      ${locHtml}
       ${tools.length ? `<div class="ec-tools">${tools.map(t => `<span class="ec-tool">${t}</span>`).join('')}</div>` : ''}
       ${skills.length ? `<div class="ec-skills">${skills.map(s => `<span class="ec-skill">${s}</span>`).join('')}</div>` : ''}
-      <div class="ec-intro">${e.intro || ''}</div>
+      <div class="ec-intro">${intro}</div>
+      ${linksHtml}
       <div class="ec-meta">
         <span class="ec-exp">경력 ${expLabel[e.experience_years] || '1년 이상'}</span>
         ${e.portfolio_url ? `<a href="${e.portfolio_url}" target="_blank" class="ec-contact">포트폴리오 보기 →</a>` : '<span class="ec-contact" style="color:#aaa">포트폴리오 미등록</span>'}
@@ -114,7 +135,7 @@ async function load() {
     allEditors = await API.get('/editor/list')
     renderEditors(allEditors)
   } catch(e) {
-    document.getElementById('editor-grid').innerHTML = '<div class="empty-msg">편집자 목록을 불러올 수 없습니다.</div>'
+    document.getElementById('editor-grid').innerHTML = '<div class="empty-msg">에디터즈 목록을 불러올 수 없습니다.</div>'
   }
 }
 
@@ -126,7 +147,11 @@ document.getElementById('filter-bar').addEventListener('click', e => {
   btn.classList.add('active')
   const skill = btn.dataset.skill
   if (skill === '전체') { renderEditors(allEditors); return }
-  renderEditors(allEditors.filter(ed => (ed.skills || '').includes(skill)))
+  renderEditors(allEditors.filter(ed => {
+    const s = ed.skills
+    if (Array.isArray(s)) return s.includes(skill)
+    return String(s || '').split(',').map(x => x.trim()).includes(skill)
+  }))
 })
 
 // 헤더 인증
@@ -134,8 +159,8 @@ const user = API.user ? API.user() : null
 const hr = document.getElementById('header-right')
 if (hr) {
   hr.innerHTML = user
-    ? `<a href="/mypage.html" class="nav-btn">${user.name}</a><a href="/editor-apply.html" class="nav-btn nav-btn-primary">편집자 신청</a>`
-    : `<a href="/login.html" class="nav-btn">로그인</a><a href="/editor-apply.html" class="nav-btn nav-btn-primary">편집자 신청</a>`
+    ? `<a href="/mypage.html" class="nav-btn">${user.name}</a><a href="/editor-program.html" class="nav-btn nav-btn-primary">에디터즈 신청</a>`
+    : `<a href="/login.html" class="nav-btn">로그인</a><a href="/editor-program.html" class="nav-btn nav-btn-primary">에디터즈 신청</a>`
 }
 
 load()

@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>의뢰 상세 — 타닥클래스</title>
+  <title>클라이언츠 상세 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
@@ -12,51 +12,51 @@
 
     .detail-card { background:#fff; border:1px solid #eee; border-radius:14px; padding:28px; margin-bottom:20px; }
     .dc-cat-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
-    .dc-cat { font-size:12px; font-weight:700; color:#5c67f2; background:#f0f2ff; padding:3px 10px; border-radius:12px; }
-    .dc-status { font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px; }
+    .dc-cat { font-size: 14.4px; font-weight:700; color:#5c67f2; background:#f0f2ff; padding:3px 10px; border-radius:12px; }
+    .dc-status { font-size: 14.4px; font-weight:700; padding:3px 10px; border-radius:12px; }
     .dc-status.open { background:#f0fff4; color:#2cae6b; }
     .dc-status.matched { background:#fff8e8; color:#d4991a; }
     .dc-status.completed { background:#f0f0f0; color:#888; }
-    .dc-title { font-size:22px; font-weight:900; color:#1a1a1a; margin-bottom:10px; line-height:1.35; }
-    .dc-meta { display:flex; gap:16px; font-size:13px; color:#888; flex-wrap:wrap; margin-bottom:20px; }
+    .dc-title { font-size: 26.4px; font-weight:900; color:#1a1a1a; margin-bottom:10px; line-height:1.35; }
+    .dc-meta { display:flex; gap:16px; font-size: 15.6px; color:#888; flex-wrap:wrap; margin-bottom:20px; }
     .dc-meta span { display:flex; align-items:center; gap:5px; }
-    .dc-body { font-size:14px; color:#444; line-height:1.8; white-space:pre-wrap; }
-    .section-label { font-size:13px; font-weight:800; color:#333; margin:20px 0 10px; border-bottom:1px solid #f0f0f0; padding-bottom:8px; }
+    .dc-body { font-size: 16.8px; color:#444; line-height:1.8; white-space:pre-wrap; }
+    .section-label { font-size: 15.6px; font-weight:800; color:#333; margin:20px 0 10px; border-bottom:1px solid #f0f0f0; padding-bottom:8px; }
 
     /* 견적 제출 카드 */
     .quote-box { background:#fff; border:1px solid #eee; border-radius:14px; padding:24px; margin-bottom:20px; position:sticky; top:72px; }
-    .qb-title { font-size:15px; font-weight:800; margin-bottom:16px; }
+    .qb-title { font-size: 18px; font-weight:800; margin-bottom:16px; }
     .qb-group { margin-bottom:14px; }
-    .qb-label { font-size:12px; font-weight:700; color:#555; margin-bottom:6px; }
+    .qb-label { font-size: 14.4px; font-weight:700; color:#555; margin-bottom:6px; }
     .qb-group input, .qb-group textarea {
       width:100%; padding:10px 12px; border:1.5px solid #e5e5e5; border-radius:8px;
-      font-size:13px; outline:none; transition:.15s; font-family:inherit;
+      font-size: 15.6px; outline:none; transition:.15s; font-family:inherit;
     }
     .qb-group input:focus, .qb-group textarea:focus { border-color:#5c67f2; }
     .qb-group textarea { resize:vertical; min-height:80px; line-height:1.6; }
-    .qb-submit { width:100%; padding:12px; background:#5c67f2; color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; transition:.15s; }
+    .qb-submit { width:100%; padding:12px; background:#5c67f2; color:#fff; border:none; border-radius:8px; font-size: 16.8px; font-weight:700; cursor:pointer; transition:.15s; }
     .qb-submit:hover { background:#4a55e0; }
     .qb-submit:disabled { background:#ccc; cursor:not-allowed; }
-    .qb-notice { font-size:12px; color:#aaa; text-align:center; margin-top:10px; line-height:1.6; }
+    .qb-notice { font-size: 14.4px; color:#aaa; text-align:center; margin-top:10px; line-height:1.6; }
 
     /* 견적 목록 */
     .quote-list { display:flex; flex-direction:column; gap:12px; }
     .quote-item { background:#f8f9fb; border-radius:10px; padding:16px; border:1px solid #eee; }
     .qi-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-    .qi-editor { font-size:14px; font-weight:700; color:#1a1a1a; display:flex; align-items:center; gap:6px; }
-    .qi-editor-badge { font-size:11px; background:#5c67f2; color:#fff; padding:2px 7px; border-radius:4px; }
-    .qi-amount { font-size:16px; font-weight:900; color:#5c67f2; }
-    .qi-msg { font-size:13px; color:#555; line-height:1.6; margin-bottom:10px; }
-    .qi-date { font-size:12px; color:#aaa; }
-    .qi-accept { padding:7px 16px; background:#1a1f3c; color:#fff; border:none; border-radius:7px; font-size:13px; font-weight:700; cursor:pointer; transition:.15s; }
+    .qi-editor { font-size: 16.8px; font-weight:700; color:#1a1a1a; display:flex; align-items:center; gap:6px; }
+    .qi-editor-badge { font-size: 13.2px; background:#5c67f2; color:#fff; padding:2px 7px; border-radius:4px; }
+    .qi-amount { font-size: 19.2px; font-weight:900; color:#5c67f2; }
+    .qi-msg { font-size: 15.6px; color:#555; line-height:1.6; margin-bottom:10px; }
+    .qi-date { font-size: 14.4px; color:#aaa; }
+    .qi-accept { padding:7px 16px; background:#1a1f3c; color:#fff; border:none; border-radius:7px; font-size: 15.6px; font-weight:700; cursor:pointer; transition:.15s; }
     .qi-accept:hover { background:#2d3561; }
-    .qi-status { font-size:12px; font-weight:700; padding:4px 10px; border-radius:6px; }
+    .qi-status { font-size: 14.4px; font-weight:700; padding:4px 10px; border-radius:6px; }
     .qi-status.accepted { background:#f0fff4; color:#2cae6b; }
     .qi-status.rejected { background:#fff0f0; color:#e63946; }
     .qi-status.pending { background:#f4f5ff; color:#5c67f2; }
 
-    .info-box { background:#f8f9fb; border-radius:10px; padding:16px; font-size:13px; color:#555; line-height:1.8; border:1px solid #eee; }
-    .fee-box { background:#fff8e8; border:1px solid #ffe58f; border-radius:10px; padding:14px; font-size:13px; color:#664d00; margin-top:12px; }
+    .info-box { background:#f8f9fb; border-radius:10px; padding:16px; font-size: 15.6px; color:#555; line-height:1.8; border:1px solid #eee; }
+    .fee-box { background:#fff8e8; border:1px solid #ffe58f; border-radius:10px; padding:14px; font-size: 15.6px; color:#664d00; margin-top:12px; }
 
     .spinner { width:32px; height:32px; border:3px solid #eee; border-top-color:#5c67f2; border-radius:50%; animation:spin .7s linear infinite; margin:48px auto; }
     @keyframes spin { to{transform:rotate(360deg)} }
@@ -71,9 +71,9 @@
 <body>
 <header class="header">
   <div class="header-inner">
-    <a href="/" class="logo">타닥<span>클래스</span></a>
+    <a href="/" class="logo">타닥클래스</a>
     <div class="header-right">
-      <a href="/projects.html" class="nav-btn">← 의뢰 목록</a>
+      <a href="/projects.html" class="nav-btn">← 클라이언츠</a>
     </div>
   </div>
 </header>
@@ -90,6 +90,7 @@ if (!projectId) { alert('잘못된 접근입니다.'); location.href = '/project
 
 const user = API.user ? API.user() : null
 const statusLabel = { open:'모집중', matched:'매칭완료', in_progress:'진행중', completed:'완료', cancelled:'취소' }
+let clientProjectCoupons = []
 function fmt(n) { return n ? '₩' + Number(n).toLocaleString() : null }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
 
@@ -99,6 +100,14 @@ async function load() {
     const isClient = user && p.client_id === user.id
     const isEditor = user && user.role === 'editor'
     const myQuote = p.quotes?.find(q => q.editor_id === user?.id)
+
+    clientProjectCoupons = []
+    if (isClient) {
+      try {
+        const all = await API.get('/my/coupons')
+        clientProjectCoupons = all.filter(c => c.reason === 'client_course_reward' && c.status === 'available')
+      } catch (_) {}
+    }
 
     // 매칭 완료 이후 상태인지
     const isMatched = ['matched','contract','in_progress','delivered','completed'].includes(p.status)
@@ -113,18 +122,18 @@ async function load() {
       const curIdx = stageOrder.indexOf(p.status)
       stageHTML = `
         <div style="margin-bottom:20px;padding:16px;background:#f8f9fb;border-radius:10px;border:1px solid #eee">
-          <div style="font-size:12px;font-weight:700;color:#888;margin-bottom:10px">진행 단계</div>
+          <div style="font-size: 14.4px;font-weight:700;color:#888;margin-bottom:10px">진행 단계</div>
           <div style="display:flex;gap:0;align-items:center">
             ${stageOrder.map((s,i) => {
               const done = i < curIdx; const cur = i === curIdx
               return `<div style="flex:1;text-align:center">
-                <div style="width:24px;height:24px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${done?'#2cae6b':cur?'#5c67f2':'#e5e5e5'};color:${done||cur?'#fff':'#aaa'}">${done?'✓':(i+1)}</div>
-                <div style="font-size:10px;color:${cur?'#5c67f2':done?'#2cae6b':'#bbb'};font-weight:${cur?700:500}">${stageLabel[s]}</div>
+                <div style="width:24px;height:24px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size: 13.2px;font-weight:700;background:${done?'#2cae6b':cur?'#5c67f2':'#e5e5e5'};color:${done||cur?'#fff':'#aaa'}">${done?'✓':(i+1)}</div>
+                <div style="font-size: 12px;color:${cur?'#5c67f2':done?'#2cae6b':'#bbb'};font-weight:${cur?700:500}">${stageLabel[s]}</div>
               </div>
               ${i < stageOrder.length-1 ? `<div style="flex:0 0 12px;height:2px;background:${i<curIdx?'#2cae6b':'#e5e5e5'};margin-bottom:18px"></div>` : ''}`
             }).join('')}
           </div>
-          ${canChat ? `<a href="/chat.html?id=${p.id}" style="display:block;margin-top:14px;text-align:center;padding:10px;background:#1a1f3c;color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none">💬 채팅 바로가기</a>` : ''}
+          ${canChat ? `<a href="/chat.html?id=${p.id}" style="display:block;margin-top:14px;text-align:center;padding:10px;background:#1a1f3c;color:#fff;border-radius:8px;font-size: 15.6px;font-weight:700;text-decoration:none">💬 채팅 바로가기</a>` : ''}
         </div>`
     }
 
@@ -136,11 +145,12 @@ async function load() {
       sideHTML = `
       <div class="quote-box">
         <div class="qb-title">💬 작업 채팅</div>
-        <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.7">
-          ${isClient ? `<strong>${p.matched_editor_name || '편집자'}</strong>님과 작업을 진행하세요.` : `<strong>${p.client_name}</strong>님의 의뢰입니다.`}
+        <div style="font-size: 15.6px;color:#555;margin-bottom:14px;line-height:1.7">
+          ${isClient ? `<strong>${p.matched_editor_name || '에디터'}</strong>님과 작업을 진행하세요.` : `<strong>${p.client_name}</strong>님의 클라이언츠입니다.`}
           ${acceptedQuote ? `<br>계약 금액: <strong style="color:#5c67f2">${fmt(acceptedQuote.amount)}</strong>` : ''}
+          ${p.coupon_discount ? `<br>쿠폰 할인: <strong style="color:#2cae6b">-${fmt(p.coupon_discount)}</strong> · 최종 <strong>${fmt(p.final_contract_amount || acceptedQuote?.amount - p.coupon_discount)}</strong>` : ''}
         </div>
-        <a href="/chat.html?id=${p.id}" style="display:block;text-align:center;padding:12px;background:#5c67f2;color:#fff;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none">채팅방 입장하기 →</a>
+        <a href="/chat.html?id=${p.id}" style="display:block;text-align:center;padding:12px;background:#5c67f2;color:#fff;border-radius:8px;font-weight:700;font-size: 16.8px;text-decoration:none">채팅방 입장하기 →</a>
       </div>`
     } else if (isEditor && !myQuote && p.status === 'open') {
       sideHTML = `
@@ -162,23 +172,23 @@ async function load() {
       sideHTML = `
       <div class="quote-box">
         <div class="qb-title">내 견적 현황</div>
-        <div style="font-size:15px;font-weight:800;color:#5c67f2;margin-bottom:8px">${fmt(myQuote.amount)}</div>
-        <div style="font-size:13px;color:#666;margin-bottom:12px">${esc(myQuote.message)}</div>
+        <div style="font-size: 18px;font-weight:800;color:#5c67f2;margin-bottom:8px">${fmt(myQuote.amount)}</div>
+        <div style="font-size: 15.6px;color:#666;margin-bottom:12px">${esc(myQuote.message)}</div>
         <div class="qi-status ${myQuote.status}">${statusMap[myQuote.status]||myQuote.status}</div>
       </div>`
     } else if (!user) {
       sideHTML = `
       <div class="quote-box">
         <div class="qb-title">견적을 제출하려면?</div>
-        <p style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.7">로그인 후 공인 편집자로 신청하면 견적을 제출할 수 있습니다.</p>
-        <a href="/login.html" style="display:block;text-align:center;padding:10px;background:#5c67f2;color:#fff;border-radius:8px;font-weight:700;font-size:14px">로그인하기</a>
+        <p style="font-size: 15.6px;color:#666;margin-bottom:16px;line-height:1.7">로그인 후 에디터즈로 신청하면 견적을 제출할 수 있습니다.</p>
+        <a href="/login.html" style="display:block;text-align:center;padding:10px;background:#5c67f2;color:#fff;border-radius:8px;font-weight:700;font-size: 16.8px">로그인하기</a>
       </div>`
     }
 
     // 정보 박스
     sideHTML += `
       <div class="info-box">
-        <strong>의뢰 정보</strong><br><br>
+        <strong>클라이언츠 정보</strong><br><br>
         <div>카테고리: <strong>${p.category}</strong></div>
         <div>예산: <strong>${p.budget_min||p.budget_max ? (fmt(p.budget_min)||'')+(p.budget_max?` ~ ${fmt(p.budget_max)}`:'') : '협의'}</strong></div>
         ${p.deadline ? `<div>납품 희망일: <strong>${p.deadline}</strong></div>` : ''}
@@ -202,7 +212,7 @@ async function load() {
               <div class="qi-top">
                 <div class="qi-editor">
                   <span>${q.editor_name}</span>
-                  <span class="qi-editor-badge">공인 편집자</span>
+                  <span class="qi-editor-badge">에디터즈</span>
                 </div>
                 <div class="qi-amount">${fmt(q.amount)}</div>
               </div>
@@ -210,11 +220,16 @@ async function load() {
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <span class="qi-date">${(q.created_at||'').slice(0,10)}</span>
                 ${isClient && p.status === 'open' && q.status === 'pending'
-                  ? `<button class="qi-accept" onclick="acceptQuote('${q.id}')">이 견적 수락하기</button>`
+                  ? `<div style="text-align:right">
+                      <button class="qi-accept" onclick="acceptQuote('${q.id}', ${q.amount})">이 견적 수락하기</button>
+                      ${q.amount >= 30000 && clientProjectCoupons.length
+                        ? `<div style="font-size:12px;color:#5c67f2;margin-top:6px">1만원 할인 쿠폰 사용 가능 (${clientProjectCoupons.length}장 보유)</div>`
+                        : ''}
+                    </div>`
                   : `<span class="qi-status ${q.status}">${{pending:'검토중',accepted:'수락됨 ✅',rejected:'미선택'}[q.status]||q.status}</span>`}
               </div>
             </div>`).join('')
-          : '<div style="color:#aaa;font-size:14px;padding:16px 0">아직 견적이 없습니다.</div>'}
+          : '<div style="color:#aaa;font-size: 16.8px;padding:16px 0">아직 견적이 없습니다.</div>'}
         </div>`
     }
 
@@ -232,7 +247,7 @@ async function load() {
             <span><i class="ti ti-clock"></i> ${(p.created_at||'').slice(0,10)} 등록</span>
           </div>
           ${stageHTML}
-          <div class="section-label">의뢰 설명</div>
+          <div class="section-label">상세 설명</div>
           <div class="dc-body">${esc(p.description)}</div>
           ${p.requirements ? `<div class="section-label">세부 요구사항</div><div class="dc-body">${esc(p.requirements)}</div>` : ''}
           ${quotesHTML}
@@ -240,7 +255,7 @@ async function load() {
       </div>
       <div class="side-col">${sideHTML}</div>`
   } catch(e) {
-    document.getElementById('detail-wrap').innerHTML = '<div style="text-align:center;padding:60px;color:#aaa">의뢰를 불러올 수 없습니다.</div>'
+    document.getElementById('detail-wrap').innerHTML = '<div style="text-align:center;padding:60px;color:#aaa">클라이언츠를 불러올 수 없습니다.</div>'
   }
 }
 
@@ -261,11 +276,23 @@ async function submitQuote() {
   }
 }
 
-async function acceptQuote(quoteId) {
+async function acceptQuote(quoteId, quoteAmount) {
+  let couponId = null
+  if (quoteAmount >= 30000 && clientProjectCoupons.length) {
+    const useCoupon = confirm(
+      `1만원 할인 쿠폰을 사용하시겠습니까?\n\n` +
+      `견적 금액: ${Number(quoteAmount).toLocaleString()}원\n` +
+      `쿠폰 적용 후: ${(Number(quoteAmount) - 10000).toLocaleString()}원\n` +
+      `(보유 ${clientProjectCoupons.length}장 · 3만원 이상 의뢰 시 1장 사용)`
+    )
+    if (useCoupon) couponId = clientProjectCoupons[0].id
+  }
   if (!confirm('이 견적을 수락하시겠습니까?\n수락 후에는 변경할 수 없습니다.')) return
   try {
-    await API.post(`/projects/${projectId}/quotes/${quoteId}/accept`, {})
-    alert('견적이 수락되었습니다! 편집자에게 직접 연락해 작업을 진행해주세요.')
+    const res = await API.post(`/projects/${projectId}/quotes/${quoteId}/accept`, { coupon_id: couponId })
+    let msg = '견적이 수락되었습니다!'
+    if (res.discount) msg += `\n1만원 할인이 적용되었습니다. (최종 ${Number(res.final_amount).toLocaleString()}원)`
+    alert(msg + '\n편집자에게 직접 연락해 작업을 진행해주세요.')
     load()
   } catch(e) {
     alert(e.message || '처리 중 오류가 발생했습니다.')

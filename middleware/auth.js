@@ -22,4 +22,23 @@ function adminMiddleware(req, res, next) {
   })
 }
 
-module.exports = { authMiddleware, adminMiddleware }
+/** 로그인 선택 — 토큰 없거나 만료여도 통과 */
+function optionalAuth(req, res, next) {
+  const header = req.headers.authorization
+  if (header && header.startsWith('Bearer ')) {
+    try {
+      req.user = jwt.verify(header.slice(7), process.env.JWT_SECRET)
+    } catch {}
+  }
+  next()
+}
+
+function allowedReviewTypes(viewer) {
+  const types = ['student']
+  if (!viewer) return types
+  if (viewer.member_type === 'client' || viewer.role === 'admin') types.push('client')
+  if (viewer.role === 'editor' || viewer.role === 'admin') types.push('editor')
+  return types
+}
+
+module.exports = { authMiddleware, adminMiddleware, optionalAuth, allowedReviewTypes }

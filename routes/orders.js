@@ -1,5 +1,6 @@
 const router = require('express').Router()
 const db = require('../db/schema')
+const { CLIENT_COURSE_REWARD_REASON } = require('../db/schema')
 const { authMiddleware } = require('../middleware/auth')
 
 router.post('/', authMiddleware, async (req, res) => {
@@ -15,22 +16,27 @@ router.post('/', authMiddleware, async (req, res) => {
     if (!coupon) return res.status(400).json({ error: '유효하지 않은 쿠폰입니다.' })
     if (coupon.user_id !== req.user.id) return res.status(403).json({ error: '본인 쿠폰만 사용 가능합니다.' })
     if (coupon.status !== 'available') return res.status(400).json({ error: '이미 사용했거나 만료된 쿠폰입니다.' })
+    if (coupon.reason === CLIENT_COURSE_REWARD_REASON) {
+      return res.status(400).json({ error: '의뢰 할인 쿠폰은 클라이언츠 견적 수락 시 사용할 수 있습니다.' })
+    }
     discount = coupon.amount
   }
 
   const finalAmount = Math.max(0, course.sale_price - discount)
   let order
+  let rewardCoupon = null
   try {
     order = await db.createOrder(req.user.id, course_id, finalAmount, method, discount)
     if (coupon) await db.useCoupon(coupon.id, order.id)
     await db.enroll(req.user.id, course_id)
     await db.updateCourse(course_id, { student_count: (course.student_count || 0) + 1 })
+    rewardCoupon = await db.issueClientCourseRewardCoupons(req.user.id, course, order.id)
   } catch (e) {
     console.error('결제/수강 등록 오류:', e)
     if (order?.id) await db.cancelOrder(order.id).catch(() => {})
     return res.status(500).json({ error: '결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.' })
   }
-  res.json({ success: true, order_id: order.id, course_slug: course.slug, final_amount: finalAmount, discount })
+  res.json({ success: true, order_id: order.id, course_slug: course.slug, final_amount: finalAmount, discount, reward_coupon: rewardCoupon })
 })
 
 router.get('/my', authMiddleware, async (req, res) => {

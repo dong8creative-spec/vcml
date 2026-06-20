@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공지사항 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    .notices-wrap { max-width: 800px; margin: 0 auto; padding: 48px 24px 80px; }
+    .notices-hero { margin-bottom: 32px; }
+    .notices-hero h1 { font-size: 32px; font-weight: 900; color: var(--text-primary); }
+    .notices-hero p { font-size: 16px; color: var(--text-muted); margin-top: 6px; }
+
+    .notice-list { list-style: none; }
+    .notice-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 20px 0; border-bottom: 1px solid var(--border);
+      text-decoration: none; color: inherit;
+      transition: .12s;
+    }
+    .notice-item:first-child { border-top: 2px solid var(--text-primary); }
+    .notice-item:hover .notice-title { color: var(--primary); }
+    .notice-pin {
+      background: var(--primary); color: #fff;
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+      white-space: nowrap; margin-top: 3px;
+    }
+    .notice-body { flex: 1; }
+    .notice-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .notice-date { font-size: 13px; color: var(--text-hint); }
+    .notice-arrow { color: var(--text-hint); font-size: 18px; margin-top: 4px; }
+    .empty-notice { padding: 60px 0; text-align: center; color: var(--text-muted); font-size: 15px; }
+  </style>
+</head>
+<body data-legal-page="notices">
+
+<div data-chrome="header"></div>
+
+<div class="notices-wrap">
+  <div class="notices-hero">
+    <h1>공지사항</h1>
+    <p>타닥클래스의 업데이트·이벤트·점검 일정을 안내합니다.</p>
+  </div>
+
+  <ul class="notice-list" id="notice-list">
+    <li style="padding:60px 0;text-align:center;color:#aaa">불러오는 중...</li>
+  </ul>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+async function load() {
+  const list = document.getElementById('notice-list')
+  try {
+    const notices = await API.get('/notices')
+    if (!notices.length) {
+      list.innerHTML = '<li class="empty-notice">등록된 공지사항이 없습니다.</li>'
+      return
+    }
+    list.innerHTML = notices.map(n => `
+      <li>
+        <a class="notice-item" href="/notice-detail.html?id=${n.id}">
+          ${n.is_pinned ? '<span class="notice-pin">공지</span>' : ''}
+          <div class="notice-body">
+            <div class="notice-title">${esc(n.title)}</div>
+            <div class="notice-date">${fmtDate(n.created_at)}</div>
+          </div>
+          <i class="ti ti-chevron-right notice-arrow"></i>
+        </a>
+      </li>`).join('')
+  } catch (e) {
+    list.innerHTML = `<li class="empty-notice">${e.message || '불러오기 실패'}</li>`
+  }
+}
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function fmtDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()}.`
+}
+load()
+</script>
+
+<div data-chrome="footer"></div>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/legal-page.js"></script>
+</body>
+</html>

@@ -21,10 +21,486 @@ if (!admin.apps.length) {
 const fs = admin.firestore()
 fs.settings({ databaseId: process.env.FIREBASE_DATABASE_ID || 'vcmlmembers' })
 
-function now() { return new Date().toISOString() }
+const CLIENT_COURSE_REWARD_AMOUNT = 10000
+const CLIENT_COURSE_REWARD_COUNT = 10
+const CLIENT_COURSE_REWARD_MIN_COURSE_PRICE = 200000
+const CLIENT_PROJECT_COUPON_MIN_AMOUNT = 30000
+const CLIENT_COURSE_REWARD_REASON = 'client_course_reward'
+const EDITOR_FEATURED_REASON = 'editor_featured'
+const EDITOR_FEATURED_DAYS = 7
+const EDITOR_APPLY_FEATURED_REASON = 'editor_apply_featured'
+const EDITOR_APPLY_FEATURED_AMOUNT = 20000
+const EDITOR_APPLY_FEATURED_COUNT = 5
+const EDITOR_WORKBOOK_FAIL_COOLDOWN_DAYS = 5
+const EDITOR_WORKBOOK_STAGE_MINUTES = 40
+const EDITOR_PROGRAM_TERMS_VERSION = '2'
+const EDITOR_WORK_TYPES = ['remote', 'hybrid', 'onsite', 'project', 'fulltime']
+
+const DEFAULT_EDITOR_PROGRAM_STAGES = [
+  { order: 1, title: '오리엔테이션', mail_count: 1, minutes: 40 },
+  { order: 2, title: '기초 실전', mail_count: 3, minutes: 40 },
+  { order: 3, title: '심화 챌린지', mail_count: 9, minutes: 40 },
+  { order: 4, title: '색보정·톤', mail_count: 1, minutes: 40 },
+  { order: 5, title: '오디오·납품', mail_count: 1, minutes: 40 },
+  { order: 6, title: 'AI·브랜드', mail_count: 1, minutes: 40 },
+  { order: 7, title: '실무 납품', mail_count: 1, minutes: 40 },
+  { order: 8, title: '브랜드필름', mail_count: 1, minutes: 40 },
+  { order: 9, title: '포트폴리오 준비', mail_count: 1, minutes: 40 },
+  { order: 10, title: '최종 심사', mail_count: 1, minutes: 40 },
+]
+
+const DEFAULT_EDITOR_GUIDE_CARDS = [
+  {
+    icon: '🎬',
+    title: '프로그램이란?',
+    body: '타닥클래스 <strong>에디터즈 선발 프로그램</strong>은 실전 클라이언트 의뢰 메일을 순서대로 완료하는 과정입니다.\n\n모든 단계를 통과하면 <strong>에디터즈 신청 자격</strong>이 부여됩니다.',
+  },
+  {
+    icon: '📬',
+    title: '진행 방식',
+    body: '• 안내 카드를 모두 확인하고 <strong>동의</strong>하면 의뢰 메일함이 열립니다.\n• 메일은 <strong>한 통씩</strong> 순서대로만 공개됩니다.\n• 메일을 열면 해당 단계의 제한 시간이 시작됩니다.\n• 단계마다 메일 개수가 다를 수 있습니다 (예: 1개 → 3개 → 9개).\n• <strong>10단계</strong>를 모두 완료하면 최종 신청서를 작성할 수 있습니다.',
+  },
+  {
+    icon: '⏱️',
+    title: '시간 제한 · 탈락 정책',
+    body: '각 메일을 연 순간부터 제한 시간이 시작됩니다. 브라우저를 닫아도 서버 시간 기준으로 계속 흐릅니다.\n\n<strong>⚠️ 시간 초과 시 자동 탈락</strong>\n제한 시간 내 업로드·통과에 실패하면 <strong>모든 진행 기록이 초기화</strong>됩니다. 처음부터 다시 안내 확인 · 동의 후 시작해야 합니다.',
+  },
+  {
+    icon: '📤',
+    title: '납품 규칙',
+    body: '• 과제 결과물은 <strong>유튜브</strong> 링크만 제출 가능합니다.\n• 공개 설정은 반드시 <strong>일부공개</strong>여야 합니다.\n• 작업 설명에 「일부공개」 적용 사실을 명시해주세요.\n• 미션 요구사항(길이·비율·키워드 등)을 작업 설명에 반영해야 통과됩니다.',
+  },
+  {
+    icon: '✅',
+    title: '유의 사항 · 최종 동의',
+    body: '• 허위 제출·타인 작업물 제출 시 선발에서 제외될 수 있습니다.\n• 통과한 메일마다 <strong>금장 배지</strong>가 부여됩니다.\n• 아직 열리지 않은 메일은 제목·발신자가 표시되지 않습니다.',
+  },
+]
+
+const DEFAULT_EDITOR_PROGRAM_CONFIG = {
+  terms_version: EDITOR_PROGRAM_TERMS_VERSION,
+  stage_count: 10,
+  stages: DEFAULT_EDITOR_PROGRAM_STAGES,
+  guide_cards: DEFAULT_EDITOR_GUIDE_CARDS,
+}
+
+function normalizeEditorProgramConfig(raw) {
+  const stages = (raw?.stages?.length ? raw.stages : DEFAULT_EDITOR_PROGRAM_STAGES)
+    .slice(0, 10)
+    .map((s, i) => ({
+      order: i + 1,
+      title: String(s.title || `${i + 1}단계`).trim(),
+      mail_count: Math.max(1, Math.min(20, parseInt(s.mail_count, 10) || 1)),
+      minutes: Math.max(5, Math.min(180, parseInt(s.minutes, 10) || EDITOR_WORKBOOK_STAGE_MINUTES)),
+    }))
+  while (stages.length < 10) {
+    stages.push({
+      order: stages.length + 1,
+      title: `${stages.length + 1}단계`,
+      mail_count: 1,
+      minutes: EDITOR_WORKBOOK_STAGE_MINUTES,
+    })
+  }
+  const guide_cards = (raw?.guide_cards?.length ? raw.guide_cards : DEFAULT_EDITOR_GUIDE_CARDS)
+    .map(c => ({
+      icon: String(c.icon || '📋').trim(),
+      title: String(c.title || '').trim(),
+      body: String(c.body || '').trim(),
+    }))
+    .filter(c => c.title && c.body)
+  return {
+    terms_version: String(raw?.terms_version || EDITOR_PROGRAM_TERMS_VERSION),
+    stage_count: 10,
+    stages,
+    guide_cards: guide_cards.length ? guide_cards : DEFAULT_EDITOR_GUIDE_CARDS,
+    updated_at: raw?.updated_at || null,
+  }
+}
+
+function getTotalMailCountFromConfig(config) {
+  return config.stages.reduce((sum, s) => sum + s.mail_count, 0)
+}
+
+function buildWorkbookSlotMap(config) {
+  const slots = []
+  for (const stage of config.stages) {
+    for (let p = 1; p <= stage.mail_count; p++) {
+      slots.push({
+        order_num: slots.length + 1,
+        stage_num: stage.order,
+        position_in_stage: p,
+        stage_title: stage.title,
+        stage_minutes: stage.minutes,
+      })
+    }
+  }
+  return slots
+}
+
+function getStageConfigForWorkbook(workbook, config) {
+  if (!workbook) return null
+  return config.stages.find(s => s.order === workbook.stage_num) || null
+}
+
+function getWorkbookStageMinutes(workbook, config) {
+  return getStageConfigForWorkbook(workbook, config)?.minutes || EDITOR_WORKBOOK_STAGE_MINUTES
+}
+
+function isWorkbookCooldownActive(lockedUntil) {
+  if (!lockedUntil) return false
+  return new Date(lockedUntil).getTime() > Date.now()
+}
+
+function workbookCooldownUntil(days = EDITOR_WORKBOOK_FAIL_COOLDOWN_DAYS) {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString()
+}
+
+function resolveWorkbookItemState(sub, unlocked, { isActiveStage = false, withinTimer = false, stageNotStarted = false } = {}) {
+  if (sub?.status === 'passed') {
+    return { status: 'passed', can_submit: false, locked_until: null }
+  }
+  if (!unlocked) {
+    return { status: 'locked', can_submit: false, locked_until: null }
+  }
+  if (isActiveStage && (withinTimer || stageNotStarted)) {
+    return { status: sub?.status === 'failed' ? 'retry' : 'available', can_submit: withinTimer, locked_until: null }
+  }
+  if (sub?.status === 'failed' && isWorkbookCooldownActive(sub.locked_until)) {
+    return { status: 'cooldown', can_submit: false, locked_until: sub.locked_until }
+  }
+  if (isActiveStage && !withinTimer && !stageNotStarted) {
+    return { status: 'locked', can_submit: false, locked_until: null }
+  }
+  return { status: 'locked', can_submit: false, locked_until: null }
+}
+
+function getActiveWorkbookForProgram(workbooks, submissions) {
+  const sorted = [...workbooks].sort((a, b) => a.order_num - b.order_num)
+  for (const wb of sorted) {
+    const unlocked = wb.order_num <= 1 || submissions.some(
+      s => s.workbook_id === sorted.find(w => w.order_num === wb.order_num - 1)?.id && s.status === 'passed'
+    )
+    if (!unlocked) return null
+    const sub = submissions.find(s => s.workbook_id === wb.id)
+    if (sub?.status !== 'passed') return wb
+  }
+  return null
+}
+
+function stageDeadlineIso(stageStartedAt, minutes = EDITOR_WORKBOOK_STAGE_MINUTES) {
+  if (!stageStartedAt) return null
+  return new Date(new Date(stageStartedAt).getTime() + minutes * 60 * 1000).toISOString()
+}
+
+function isStageWithinTimer(stageStartedAt, minutes = EDITOR_WORKBOOK_STAGE_MINUTES) {
+  if (!stageStartedAt) return false
+  return Date.now() < new Date(stageStartedAt).getTime() + minutes * 60 * 1000
+}
+
+function getStageCompletionStatus(config, workbooks, submissions) {
+  return config.stages.map(stage => {
+    const mails = workbooks.filter(w => w.stage_num === stage.order)
+    const passedInStage = mails.filter(w =>
+      submissions.some(s => s.workbook_id === w.id && s.status === 'passed')
+    ).length
+    return {
+      order: stage.order,
+      title: stage.title,
+      mail_count: stage.mail_count,
+      passed: passedInStage,
+      minutes: stage.minutes,
+      is_complete: mails.length > 0 && passedInStage >= stage.mail_count,
+    }
+  })
+}
+
+function countCompletedStages(stageStatuses) {
+  return stageStatuses.filter(s => s.is_complete).length
+}
+
+function getVisibleWorkbooks(workbooks, submissions, active) {
+  const passedIds = new Set(submissions.filter(s => s.status === 'passed').map(s => s.workbook_id))
+  return workbooks.filter(w => passedIds.has(w.id) || (active && w.id === active.id))
+}
+
+function sanitizeWorkbookListItem(wb, state, { isActiveStage, visible, stageInfo }) {
+  const base = {
+    id: wb.id,
+    order_num: wb.order_num,
+    stage_num: wb.stage_num,
+    position_in_stage: wb.position_in_stage,
+    stage_title: stageInfo?.title || null,
+    mission_title: visible || state.status === 'passed' ? wb.mission_title : null,
+    status: state.status,
+    can_submit: state.can_submit,
+    locked_until: state.locked_until,
+    is_active_stage: isActiveStage,
+    submission: state.submission,
+    unlocked: visible,
+  }
+  if (!visible && state.status !== 'passed') {
+    return {
+      ...base,
+      from_name: null,
+      from_company: null,
+      subject: null,
+      received_at: null,
+      hidden: true,
+    }
+  }
+  return {
+    ...base,
+    from_name: wb.from_name,
+    from_company: wb.from_company,
+    subject: wb.subject,
+    received_at: wb.received_at,
+    hidden: false,
+  }
+}
+
+function evaluateWorkbookSubmission(workbook, submission) {
+  const notes = String(submission.work_notes || '').trim()
+  const url = String(submission.deliverable_url || '').trim()
+  if (!/^https?:\/\/.+/i.test(url)) {
+    return { passed: false, feedback: '납품 링크(URL)를 https:// 형식으로 입력해주세요.' }
+  }
+  if (!/^https?:\/\/(www\.)?(youtube\.com\/(watch|shorts|live)|youtu\.be\/)/i.test(url)) {
+    return { passed: false, feedback: '과제는 유튜브에 업로드한 링크만 제출할 수 있습니다. (youtube.com 또는 youtu.be)' }
+  }
+  if (!/일부공개|unlisted/i.test(notes)) {
+    return { passed: false, feedback: '유튜브 공개 설정을 「일부공개」로 적용했음을 작업 설명에 명시해주세요.' }
+  }
+  const minLen = workbook.min_note_length || 50
+  if (notes.length < minLen) {
+    return { passed: false, feedback: `작업 설명을 ${minLen}자 이상 작성해주세요. (현재 ${notes.length}자)` }
+  }
+  const keywords = workbook.required_keywords || []
+  const missing = keywords.filter(kw => !notes.includes(kw))
+  if (missing.length) {
+    return { passed: false, feedback: `작업 설명에 미션 요구사항을 반영해주세요: ${missing.join(', ')}` }
+  }
+  const badgeMsg = workbook.pass_message || '미션 통과! 수고하셨습니다.'
+  return { passed: true, feedback: `${badgeMsg} 🏅 금장 배지를 획득했습니다.` }
+}
+
+const EDITOR_WORKBOOK_SEED = [
+  {
+    slug: 'wb-shorts-hook',
+    order_num: 1,
+    from_name: '김지영',
+    from_email: 'jiyoung@fitstudio.kr',
+    from_company: '핏스튜디오',
+    subject: '[의뢰] 유튜브 쇼츠 30초 편집 부탁드립니다',
+    received_at: '2026-06-10T09:14:00',
+    body: `안녕하세요, 편집자님.\n\n핏스튜디오 마케팅팀 김지영입니다.\n헬스장 홍보용 쇼츠 영상 원본(약 2분)을 보내드립니다.\n\n■ 요청 사항\n- 30초 내외로 압축 편집\n- 첫 3초에 시선을 끄는 훅(질문형 자막 또는 임팩트 컷)\n- 세로 9:16, 유튜브 쇼츠 업로드용\n- BGM은 저작권 프리, 템포감 있게\n\n■ 원본 소스\n구글 드라이브: https://drive.google.com/example/fitstudio-raw\n\n■ 납품\n구글 드라이브 또는 유튜브 미등록(unlisted) 링크로 보내주세요.\n\n감사합니다.\n김지영 드림`,
+    mission_title: '30초 쇼츠 + 3초 훅',
+    mission_brief: '원본에서 30초 내외 쇼츠 1편을 편집하고, 첫 3초 훅 전략을 작업 설명에 적어 제출하세요.',
+    min_note_length: 50,
+    required_keywords: ['30초', '9:16'],
+    pass_message: '✅ 미션 통과! 김지영 클라이언트의 쇼츠 의뢰를 성공적으로 처리했습니다.',
+  },
+  {
+    slug: 'wb-vertical-reframe',
+    order_num: 2,
+    from_name: '박민수',
+    from_email: 'minsu.park@cafe-rove.com',
+    from_company: '카페 로브',
+    subject: '가로 영상 → 인스타 릴스(세로) 변환 의뢰',
+    received_at: '2026-06-11T11:02:00',
+    body: `편집자님, 안녕하세요.\n카페 로브 대표 박민수입니다.\n\n인스타그램 릴스용으로 가로(16:9)로 촬영한 카페 브이로그 원본이 있습니다.\n세로 9:16로 리프레이밍하고, 인물·음료가 잘리지 않게 구도를 잡아주세요.\n\n■ 길이: 20~25초\n■ 자막: 핵심 메뉴명 1~2개만 하단에\n■ 톤: 따뜻하고 감성적인 색감\n\n원본: https://drive.google.com/example/cafe-rove-h\n\n일정 여유 있으시면 답장 부탁드립니다.`,
+    mission_title: '16:9 → 9:16 리프레이밍',
+    mission_brief: '가로 원본을 세로 9:16 릴스용으로 재구도한 20~25초 영상을 제출하세요.',
+    min_note_length: 50,
+    required_keywords: ['9:16', '리프레이밍'],
+    pass_message: '✅ 미션 통과! 세로 리프레이밍 역량이 확인되었습니다.',
+  },
+  {
+    slug: 'wb-caption-style',
+    order_num: 3,
+    from_name: '이수진',
+    from_email: 'sujin.lee@studywithme.io',
+    from_company: '스터디윗미',
+    subject: '강의 클립 자막 스타일링 의뢰 (가독성 중요)',
+    received_at: '2026-06-12T14:30:00',
+    body: `안녕하세요, 스터디윗미 콘텐츠팀 이수진입니다.\n\n온라인 강의 하이라이트 45초 클립에 자막을 입혀주세요.\n\n■ 자막 요구\n- 말하는 키워드는 강조색(노랑 또는 브랜드 컬러)\n- 한 화면 2줄 이내, 모바일 가독성 최우선\n- 말 더듬·군더더기 구간은 컷 편집 OK\n\n■ 포맷: 9:16, 1080×1920\n원본: https://drive.google.com/example/study-clip\n\n자막 폰트명과 강조 방식을 작업 설명에 꼭 적어주세요.`,
+    mission_title: '자막 스타일링 + 가독성',
+    mission_brief: '45초 클립에 자막을 적용하고, 폰트·강조 방식을 설명과 함께 제출하세요.',
+    min_note_length: 50,
+    required_keywords: ['자막', '가독성'],
+    pass_message: '✅ 미션 통과! 자막 스타일링 미션을 클리어했습니다.',
+  },
+  {
+    slug: 'wb-reels-tempo',
+    order_num: 4,
+    from_name: '최하늘',
+    from_email: 'haneul@glowny.beauty',
+    from_company: '글로니 뷰티',
+    subject: '[릴스] 신제품 런칭 15초 3편 시리즈 편집',
+    received_at: '2026-06-13T10:08:00',
+    body: `편집자님, 글로니 뷰티 마케터 최하늘입니다.\n\n신제품 립틴트 런칭 릴스 15초 1편(시리즈 중 1편만 먼저 테스트) 편집 부탁드립니다.\n\n■ 편집 템포\n- 1~2초 단위 빠른 컷\n- 제품 클로즈업 + 사용 샷 교차\n- 마지막 2초 CTA 자막 「지금 구매」\n\n■ 레퍼런스\nhttps://instagram.com/example/reels-ref\n\n■ 원본\nhttps://drive.google.com/example/glowny-raw\n\n15초 ±1초, 9:16로 납품 부탁드립니다.`,
+    mission_title: '15초 릴스 템포 편집',
+    mission_brief: '15초 내외, 1~2초 컷 템포의 릴스 1편을 제출하고 CTA 처리 방식을 설명하세요.',
+    min_note_length: 50,
+    required_keywords: ['15초', 'CTA'],
+    pass_message: '✅ 미션 통과! 릴스 템포 편집 역량이 확인되었습니다.',
+  },
+  {
+    slug: 'wb-color-grade',
+    order_num: 5,
+    from_name: '정우빈',
+    from_email: 'woobin@moment-wedding.com',
+    from_company: '모먼트웨딩',
+    subject: '웨딩 하이라이트 색보정 통일 요청',
+    received_at: '2026-06-14T16:45:00',
+    body: `안녕하세요, 모먼트웨딩 정우빈입니다.\n\n야외·실내 촬영 클립 3개를 하나의 웨딩 하이라이트(60초)로 엮었는데,\n장면마다 색감·노출이 달라 보입니다.\n\n■ 요청\n- 3개 클립 색감·화이트밸런스 통일\n- 따뜻하고 고급스러운 웨딩 톤\n- Before/After 비교 가능하면 best\n\n원본 프로젝트/클립: https://drive.google.com/example/wedding-clips\n\n사용하신 LUT 또는 프리셋명을 작업 설명에 적어주세요.`,
+    mission_title: '색보정·톤 통일',
+    mission_brief: '다른 조건의 클립 색감을 통일한 결과물을 제출하고, LUT/프리셋을 설명하세요.',
+    min_note_length: 50,
+    required_keywords: ['색보정', 'LUT'],
+    pass_message: '✅ 미션 통과! 색보정 미션을 통과했습니다.',
+  },
+  {
+    slug: 'wb-audio-balance',
+    order_num: 6,
+    from_name: '한소희',
+    from_email: 'sohee@podlab.fm',
+    from_company: '팟랩',
+    subject: '팟캐스트 클립 BGM·보이스 밸런스 정리',
+    received_at: '2026-06-15T08:20:00',
+    body: `편집자님, 팟랩 한소희입니다.\n\n팟캐스트 1분 하이라이트 클립을 숏폼용으로 편집해주세요.\n\n■ 오디오\n- 보이스 음량 정규화\n- BGM은 보이스에 묻히지 않게(ducking)\n- 「음」 「어」 구간 가볍게 컷 OK\n\n■ 영상\n- 9:16, 웨이브폼 또는 자막으로 분위기 살리기\n\n원본: https://drive.google.com/example/podlab-audio\n\nBGM 볼륨 비율(예: 보이스 대비 -18dB)을 설명에 적어주세요.`,
+    mission_title: '오디오·BGM 밸런스',
+    mission_brief: '1분 클립의 보이스·BGM 밸런스를 정리하고, 볼륨 설정을 설명하세요.',
+    min_note_length: 50,
+    required_keywords: ['BGM', 'dB'],
+    pass_message: '✅ 미션 통과! 오디오 밸런스 처리 능력이 확인되었습니다.',
+  },
+  {
+    slug: 'wb-ai-tool',
+    order_num: 7,
+    from_name: '윤태호',
+    from_email: 'taeho@quickai.kr',
+    from_company: '퀵AI',
+    subject: 'AI 자막·업스케일 활용 숏폼 편집 테스트',
+    received_at: '2026-06-16T13:55:00',
+    body: `안녕하세요, 퀵AI 윤태호입니다.\n\n스타트업 소개 40초 숏폼을 편집해주시되,\nAI 도구(자막 생성, 업스케일, 노이즈 제거 등)를 1가지 이상 활용해주세요.\n\n■ 조건\n- 어떤 AI 툴을 썼는지 명시\n- 수작업만으로도 가능하지만 AI로 시간 단축한 구간 설명\n- 9:16, 40초 내외\n\n원본: https://drive.google.com/example/quickai-raw\n\nCapCut AI, Premiere Speech to Text, Topaz 등 자유롭게 사용하세요.`,
+    mission_title: 'AI 도구 활용 편집',
+    mission_brief: 'AI 도구 1가지 이상을 활용한 40초 숏폼을 제출하고, 사용 AI와 단축 구간을 설명하세요.',
+    min_note_length: 50,
+    required_keywords: ['AI'],
+    pass_message: '✅ 미션 통과! AI 활용 워크플로우가 확인되었습니다.',
+  },
+  {
+    slug: 'wb-brand-film',
+    order_num: 8,
+    from_name: '서예린',
+    from_email: 'yerin@pureskin.co.kr',
+    from_company: '퓨어스킨',
+    subject: '[세로 브랜드필름] 15초 광고형 편집 의뢰',
+    received_at: '2026-06-17T15:10:00',
+    body: `편집자님, 퓨어스킨 브랜드팀 서예린입니다.\n\n세로 브랜드필름 15초 1편 편집 부탁드립니다.\n\n■ 구성\n- 0~3초: 브랜드 로고 + 슬로건\n- 3~12초: 제품·모델 컷\n- 12~15초: CTA 「공식몰 20% OFF」\n\n■ 톤: 클린·미니멀·밝은 화이트 톤\n■ 해상도: 1080×1920\n\n에셋: https://drive.google.com/example/pureskin-assets\n\nCTA 문구와 납품 해상도를 설명에 포함해주세요.`,
+    mission_title: '15초 세로 브랜드필름',
+    mission_brief: '15초 세로 브랜드필름을 제출하고 CTA·해상도(1080×1920)를 설명하세요.',
+    min_note_length: 50,
+    required_keywords: ['1080', 'CTA'],
+    pass_message: '✅ 미션 통과! 브랜드필름 편집 미션을 클리어했습니다.',
+  },
+  {
+    slug: 'wb-delivery-pack',
+    order_num: 9,
+    from_name: '강민재',
+    from_email: 'minjae@mediaflow.agency',
+    from_company: '미디어플로우',
+    subject: '납품 파일 구조·네이밍 규칙 맞춰 전달 요청',
+    received_at: '2026-06-18T09:40:00',
+    body: `편집자님, 미디어플로우 프로듀서 강민재입니다.\n\n클라이언트 납품용으로 아래 규칙에 맞춰 최종 파일을 정리해주세요.\n\n■ 폴더 구조\n프로젝트명/\n  ├─ 01_Project/\n  ├─ 02_Assets/\n  └─ 03_Export/\n\n■ Export\n- 파일명: 프로젝트명_v1_YYYYMMDD.mp4\n- H.264, 1080×1920, 30fps\n\n■ 함께 제출\n- export 설정 스크린샷 1장(링크)\n- 폴더 구조 스크린샷 1장(링크)\n\n이번 미션은 「정리된 납품」이 핵심입니다.\n설명에 v1 네이밍과 export 프리셋을 적어주세요.`,
+    mission_title: '납품·파일 정리',
+    mission_brief: '납품 규칙에 맞춘 export 파일과 설정·폴더 스크린샷 링크를 제출하세요.',
+    min_note_length: 50,
+    required_keywords: ['v1', 'Export'],
+    pass_message: '✅ 미션 통과! 실무 납품 규칙을 이해하고 있습니다.',
+  },
+  {
+    slug: 'wb-portfolio-pack',
+    order_num: 10,
+    from_name: '타닥클래스',
+    from_email: 'editors@tadakclass.com',
+    from_company: '타닥클래스',
+    subject: '[최종] 에디터즈 포트폴리오 패키지 제출',
+    received_at: '2026-06-19T17:00:00',
+    body: `안녕하세요, 타닥클래스 에디터즈 운영팀입니다.\n\n지금까지 처리하신 의뢰 미션 중 **2편 이상**을 모아\n포트폴리오 페이지(Notion, Google Drive, 유튜브 unlisted 등)로 정리해주세요.\n\n■ 포함 내용\n- 대표 작업 2~3편 링크\n- 가능 작업 유형(쇼츠·릴스·색보정 등) 한 줄 소개\n- 사용 툴(CapCut, Premiere 등)\n\n■ 포지셔닝\n「어떤 클라이언트의 어떤 문제를 해결하는 편집자인지」50자 내외\n\n이 메일을 통과하시면 에디터즈 신청 자격이 부여됩니다.\n\n화이팅입니다!`,
+    mission_title: '포트폴리오 패키징 (최종)',
+    mission_brief: '미션 결과물 2편 이상을 담은 포트폴리오 URL과 50자 내외 포지셔닝을 제출하세요.',
+    min_note_length: 50,
+    required_keywords: ['포트폴리오', '툴'],
+    pass_message: '🎉 최종 미션 통과! 에디터즈 신청 자격이 부여되었습니다.',
+  },
+]
+
+async function seedEditorWorkbooks() {
+  for (const wb of EDITOR_WORKBOOK_SEED) {
+    const snap = await fs.collection('editor_workbooks').where('slug', '==', wb.slug).limit(1).get()
+    if (snap.empty) {
+      await fs.collection('editor_workbooks').add({ ...wb, created_at: now() })
+    } else {
+      await snap.docs[0].ref.set({ ...wb, updated_at: now() }, { merge: true })
+    }
+  }
+  await db.ensureEditorProgramConfig()
+  await db.syncWorkbookSlotsFromConfig()
+}
+
+function buildWorkbookFromTemplate(template, slot) {
+  const variant = slot.order_num > EDITOR_WORKBOOK_SEED.length
+  return {
+    slug: variant ? `wb-slot-${slot.order_num}` : template.slug,
+    order_num: slot.order_num,
+    stage_num: slot.stage_num,
+    position_in_stage: slot.position_in_stage,
+    from_name: template.from_name,
+    from_email: template.from_email,
+    from_company: template.from_company,
+    subject: variant
+      ? `[${slot.stage_num}단계-${slot.position_in_stage}] ${template.subject}`
+      : template.subject,
+    received_at: template.received_at,
+    body: variant
+      ? `${template.body}\n\n— ${slot.stage_title} · 메일 ${slot.position_in_stage}/${slot.stage_mail_count || slot.position_in_stage}`
+      : template.body,
+    mission_title: variant ? `${template.mission_title} (${slot.stage_num}-${slot.position_in_stage})` : template.mission_title,
+    mission_brief: template.mission_brief,
+    min_note_length: template.min_note_length,
+    required_keywords: template.required_keywords,
+    pass_message: template.pass_message,
+  }
+}
+
+function isEditorFeaturedCoupon(coupon) {
+  const reason = coupon?.reason || coupon?.coupon_type
+  return reason === EDITOR_FEATURED_REASON || reason === EDITOR_APPLY_FEATURED_REASON
+}
+
+function userPayload(user) {
+  if (!user) return null
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    member_type: user.member_type || 'student',
+    bio: user.bio || '',
+    profile_image: user.profile_image || null,
+    social_links: Array.isArray(user.social_links) ? user.social_links : [],
+  }
+}
 
 function nextId() {
   return fs.collection('_').doc().id
+}
+
+function now() {
+  return new Date().toISOString()
 }
 
 // ── 시드 데이터 (최초 1회) ──
@@ -33,31 +509,16 @@ async function seed() {
   if (!snap.empty) return
 
   const pw = bcrypt.hashSync('admin1234', 10)
-  await fs.collection('users').add({ email: 'admin@tadakclass.com', password: pw, name: '관리자', role: 'admin', profile_complete: true, marketing_agreed: 0, phone: null, created_at: now() })
-  const demoPw = bcrypt.hashSync('demo1234', 10)
-  const demoRef = await fs.collection('users').add({ email: 'demo@tadakclass.com', password: demoPw, name: '데모 수강생', role: 'student', profile_complete: true, marketing_agreed: 0, phone: null, created_at: now() })
+  await fs.collection('users').add({ email: 'admin@tadakclass.com', password: pw, name: '관리자', role: 'admin', member_type: 'student', profile_complete: true, marketing_agreed: 0, phone: null, created_at: now() })
 
-  const courses = [
-    { slug:'premiere-pro', title:'프리미어 프로 완전 정복 — 편집의 모든 것', category:'영상 편집', description:'타임라인 구성부터 색보정·오디오 믹싱까지, 현업 편집자의 실전 워크플로우를 그대로 배웁니다.', thumbnail_icon:'ti-cut', thumb_style:'dark', price:120000, sale_price:89000, badge:'BEST', rating:4.9, review_count:1240, student_count:1240, is_published:1, course_type:'recorded' },
-    { slug:'after-effects', title:'After Effects 모션그래픽 실전 마스터', category:'모션그래픽', description:'키프레임부터 익스프레션, 3D 레이어까지 — 방송·광고 현장에서 쓰는 모션그래픽을 만듭니다.', thumbnail_icon:'ti-sparkles', thumb_style:'light', price:130000, sale_price:99000, badge:'BEST', rating:4.9, review_count:987, student_count:987, is_published:1, course_type:'recorded' },
-    { slug:'davinci-color', title:'다빈치 리졸브 색보정 — 시네마틱 룩 완성', category:'색보정', description:'로그 영상 해석부터 커스텀 LUT 제작까지, 영화 같은 색감을 만드는 색보정 전 과정을 다룹니다.', thumbnail_icon:'ti-color-swatch', thumb_style:'dark', price:99000, sale_price:79000, badge:null, rating:4.8, review_count:763, student_count:763, is_published:1, course_type:'recorded' },
-    { slug:'youtube-production', title:'유튜브 채널 영상 제작 A to Z', category:'유튜브·콘텐츠', description:'기획·촬영·편집·썸네일까지 구독자를 늘리는 유튜브 영상의 전 제작 과정을 익힙니다.', thumbnail_icon:'ti-brand-youtube', thumb_style:'light', price:89000, sale_price:69000, badge:'NEW', rating:4.8, review_count:521, student_count:521, is_published:1, course_type:'recorded' },
-    { slug:'shortform', title:'숏폼 영상 제작 — 릴스·틱톡·쇼츠 완성', category:'유튜브·콘텐츠', description:'15~60초 안에 시선을 붙잡는 숏폼 편집 공식과 바이럴 전략을 배웁니다.', thumbnail_icon:'ti-device-mobile-vibration', thumb_style:'dark', price:79000, sale_price:59000, badge:'NEW', rating:4.7, review_count:412, student_count:412, is_published:1, course_type:'recorded' },
-    { slug:'camera-lighting', title:'촬영 & 조명 기초 — 카메라를 제대로 다루는 법', category:'촬영·조명', description:'노출·화이트밸런스·심도부터 원포인트 조명 세팅까지 혼자서도 퀄리티 높은 영상을 찍는 법을 알려줍니다.', thumbnail_icon:'ti-camera', thumb_style:'light', price:99000, sale_price:79000, badge:null, rating:4.8, review_count:634, student_count:634, is_published:1, course_type:'recorded' },
-    { slug:'commercial-video', title:'광고·상업 영상 제작 실전 클래스', category:'광고·상업', description:'브랜드 필름부터 제품 광고까지 — 클라이언트 납품 수준의 상업 영상을 처음부터 끝까지 만듭니다.', thumbnail_icon:'ti-movie', thumb_style:'dark', price:149000, sale_price:119000, badge:null, rating:4.9, review_count:389, student_count:389, is_published:1, course_type:'recorded' },
-    { slug:'drone-video', title:'드론 영상 촬영·편집 완성', category:'드론·항공', description:'드론 조종 기초부터 항공 푸티지 편집, 시네마틱 드론 샷 연출법까지 한 번에 배웁니다.', thumbnail_icon:'ti-drone', thumb_style:'light', price:119000, sale_price:89000, badge:null, rating:4.7, review_count:298, student_count:298, is_published:1, course_type:'recorded' },
-    { slug:'sound-design', title:'영상 사운드 디자인 — 음악·효과음·믹싱', category:'사운드', description:'BGM 선곡·편집부터 폴리 효과음 제작, 오디오 믹싱까지 영상의 완성도를 높이는 사운드 전 과정을 다룹니다.', thumbnail_icon:'ti-music', thumb_style:'dark', price:89000, sale_price:69000, badge:null, rating:4.8, review_count:276, student_count:276, is_published:1, course_type:'recorded' },
-  ]
+  const { COURSES } = require('./course-catalog')
+  const courses = COURSES
 
   const chapterDefs = {
-    'premiere-pro': [
-      { t:'강의 소개 및 프리미어 프로 환경 설정', d:'14분', free:1 },
-      { t:'타임라인 구성과 기본 편집 — 컷·트림·리플', d:'32분', free:1 },
-      { t:'트랜지션과 효과 — 영상 흐름 만들기', d:'28분', free:0 },
-      { t:'색보정 기초 — Lumetri Color 완전 정복', d:'40분', free:0 },
-      { t:'오디오 편집과 믹싱 — 배경음악·나레이션 처리', d:'35분', free:0 },
-      { t:'자막과 모션 타이틀 제작', d:'30분', free:0 },
-      { t:'최종 출력 설정과 유튜브·SNS 맞춤 렌더링', d:'22분', free:0 },
+    'premiere-beginner': [
+      { t:'강의 소개', d:'10분', free:1 },
+      { t:'핵심 1강', d:'30분', free:0 },
+      { t:'핵심 2강', d:'35분', free:0 },
     ],
     'after-effects': [
       { t:'After Effects 인터페이스와 핵심 개념', d:'18분', free:1 },
@@ -88,12 +549,174 @@ async function seed() {
     for (let i = 0; i < chs.length; i++) {
       await fs.collection('chapters').add({ course_id: ref.id, order_num: i+1, title: chs[i].t, duration: chs[i].d, is_free: chs[i].free, video_url: null })
     }
-    if (c.slug === 'premiere-pro') {
-      await fs.collection('enrollments').add({ user_id: demoRef.id, course_id: ref.id, enrolled_at: now() })
-      await fs.collection('orders').add({ user_id: demoRef.id, course_id: ref.id, amount: c.sale_price, discount: 0, method: '카카오페이', status: 'paid', paid_at: now() })
-    }
   }
   console.log('✓ Firestore 시드 데이터 완료')
+}
+
+function maskPublicName(name) {
+  if (!name) return '회원'
+  const n = String(name).trim()
+  if (n.length <= 1) return n + '**'
+  return n[0] + '**'
+}
+
+const DEFAULT_HOMEPAGE_LAYOUT = {
+  sections: {
+    categories: true,
+    instructors: true,
+    all_courses: true,
+    free_courses: true,
+    new_courses: true,
+    reviews: true,
+    purchase_ticker: true,
+  },
+  nav: {
+    search: true,
+    all: true,
+    capcut: true,
+    premiere: true,
+    ai: true,
+    editors: true,
+    projects: true,
+  },
+}
+
+function normalizeHomepageLayout(data = {}) {
+  const layout = {
+    sections: { ...DEFAULT_HOMEPAGE_LAYOUT.sections },
+    nav: { ...DEFAULT_HOMEPAGE_LAYOUT.nav },
+  }
+  if (data.sections) {
+    for (const key of Object.keys(layout.sections)) {
+      if (data.sections[key] !== undefined) layout.sections[key] = !!data.sections[key]
+    }
+  }
+  if (data.nav) {
+    for (const key of Object.keys(layout.nav)) {
+      if (data.nav[key] !== undefined) layout.nav[key] = !!data.nav[key]
+    }
+  }
+  return layout
+}
+
+const DEFAULT_FOOTER_CONFIG = {
+  brand_name: '타닥클래스',
+  tagline: '현업 전문가에게 배우는 실무 중심 영상 강의',
+  columns: [
+    {
+      title: '강의',
+      links: [
+        { label: '전체 강의', href: '/#all' },
+        { label: '캡컷 PRO', href: '/?cat=capcut#all' },
+        { label: '프리미어 PRO', href: '/?cat=premiere#all' },
+        { label: 'AI 콘텐츠 제작', href: '/?cat=ai#all' },
+      ],
+    },
+    {
+      title: '고객지원',
+      links: [
+        { label: '1:1 문의하기', href: '/inquiry.html' },
+        { label: '자주 묻는 질문', href: '/faq.html' },
+        { label: '환불 및 취소 정책', href: '/refund.html' },
+      ],
+    },
+    {
+      title: '안내',
+      links: [
+        { label: '공지사항', href: '/notices.html' },
+        { label: '개인정보처리방침', href: '/privacy.html', emphasis: true },
+        { label: '청소년보호정책', href: '/youth.html' },
+      ],
+    },
+  ],
+  biz_info: '상호명 블루필드매뉴얼픽쳐스 · 대표자 이동헌 · 사업자등록번호 640-50-00860 · 통신판매업신고 제 0000-부산OO-0000 호 · 사업장 부산광역시 부산진구 가야대로 707-2(당감동) · 고객센터 010-4850-6946 (평일 10:00~18:00) · 이메일 dong8creative@gmail.com · 호스팅 Amazon Web Services (AWS) · 개인정보보호책임자 이동헌',
+  copyright: '© 2025 타닥클래스. All rights reserved.',
+  policy_links: [
+    { label: '개인정보처리방침', href: '/privacy.html' },
+    { label: '이용약관', href: '/terms.html' },
+    { label: '청소년보호정책', href: '/youth.html' },
+    { label: '환불정책', href: '/refund.html' },
+  ],
+}
+
+function normalizeFooterLink(link) {
+  return {
+    label: String(link?.label || '').trim().slice(0, 80),
+    href: String(link?.href || '#').trim().slice(0, 500),
+    emphasis: !!link?.emphasis,
+  }
+}
+
+function normalizeFooterConfig(data = {}) {
+  const base = JSON.parse(JSON.stringify(DEFAULT_FOOTER_CONFIG))
+  if (data.brand_name != null) base.brand_name = String(data.brand_name).trim().slice(0, 40) || base.brand_name
+  if (data.tagline != null) base.tagline = String(data.tagline).trim().slice(0, 200)
+  if (data.biz_info != null) base.biz_info = String(data.biz_info).trim().slice(0, 2000)
+  if (data.copyright != null) base.copyright = String(data.copyright).trim().slice(0, 120) || base.copyright
+  if (Array.isArray(data.columns)) {
+    base.columns = data.columns.slice(0, 6).map(col => ({
+      title: String(col?.title || '').trim().slice(0, 40),
+      links: (Array.isArray(col?.links) ? col.links : [])
+        .slice(0, 12)
+        .map(normalizeFooterLink)
+        .filter(l => l.label),
+    })).filter(c => c.title)
+  }
+  if (Array.isArray(data.policy_links)) {
+    base.policy_links = data.policy_links.slice(0, 8).map(normalizeFooterLink).filter(l => l.label)
+  }
+  if (!base.columns.length) base.columns = DEFAULT_FOOTER_CONFIG.columns
+  return base
+}
+
+const DEFAULT_HERO_CONFIG = {
+  badge_text: '실무 중심 영상 강의',
+  title: '현업 20년 전문가에게 배우는',
+  title_emphasis: '영상 제작 실전 강의',
+  subtitle: '편집·모션·촬영·색보정 — 유튜브부터 방송까지\n현장에서 실제로 쓰는 방식을 알려드립니다.',
+  primary_btn: { label: '전체 강의 보기', href: '#all' },
+  secondary_btn: { label: '무료 맛보기', href: '/course.html?slug=capcut-beginner-free', show_icon: true },
+}
+
+const DEFAULT_INSTRUCTORS_INTRO = {
+  section_title: '강사 소개',
+  section_subtitle: '현업에서 검증된 전문가가 직접 알려드립니다.',
+  page_intro: '타닥클래스 강사진을 소개합니다. 각 분야 현장 경험을 바탕으로 실무 중심 강의를 진행합니다.',
+}
+
+function normalizeHeroConfig(data = {}) {
+  const base = JSON.parse(JSON.stringify(DEFAULT_HERO_CONFIG))
+  if (data.badge_text != null) base.badge_text = String(data.badge_text).trim().slice(0, 60) || base.badge_text
+  if (data.title != null) base.title = String(data.title).trim().slice(0, 120)
+  if (data.title_emphasis != null) base.title_emphasis = String(data.title_emphasis).trim().slice(0, 120)
+  if (data.subtitle != null) base.subtitle = String(data.subtitle).trim().slice(0, 400)
+  if (data.primary_btn) {
+    base.primary_btn = {
+      label: String(data.primary_btn.label || base.primary_btn.label).trim().slice(0, 40),
+      href: String(data.primary_btn.href || base.primary_btn.href).trim().slice(0, 300),
+    }
+  }
+  if (data.secondary_btn) {
+    base.secondary_btn = {
+      label: String(data.secondary_btn.label || base.secondary_btn.label).trim().slice(0, 40),
+      href: String(data.secondary_btn.href || base.secondary_btn.href).trim().slice(0, 300),
+      show_icon: data.secondary_btn.show_icon !== false,
+    }
+  }
+  return base
+}
+
+function normalizeInstructorsIntro(data = {}) {
+  const base = { ...DEFAULT_INSTRUCTORS_INTRO }
+  if (data.section_title != null) base.section_title = String(data.section_title).trim().slice(0, 80) || base.section_title
+  if (data.section_subtitle != null) base.section_subtitle = String(data.section_subtitle).trim().slice(0, 200)
+  if (data.page_intro != null) base.page_intro = String(data.page_intro).trim().slice(0, 1000)
+  return base
+}
+
+function normalizeInstructorTags(tags) {
+  if (!Array.isArray(tags)) return []
+  return tags.map(t => String(t).trim()).filter(Boolean).slice(0, 12).map(t => t.slice(0, 30))
 }
 
 // ── 헬퍼 ──
@@ -115,24 +738,52 @@ const db = {
     const snap = await fs.collection('users').where('kakao_id', '==', String(kakaoId)).limit(1).get()
     return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
   },
-  async createUser(email, password, name) {
-    const data = { email, password, name, role: 'student', profile_complete: true, marketing_agreed: 0, marketing_agreed_at: null, phone: null, created_at: now() }
+  async createUser(email, password, name, memberType = 'student') {
+    const data = { email, password, name, role: 'student', member_type: memberType, profile_complete: true, marketing_agreed: 0, marketing_agreed_at: null, phone: null, created_at: now() }
     const ref = await fs.collection('users').add(data)
     return { id: ref.id, ...data }
   },
   async createKakaoUser(kakaoId, email, name) {
-    const data = { kakao_id: String(kakaoId), email: email || null, password: null, name, role: 'student', profile_complete: false, marketing_agreed: 0, marketing_agreed_at: null, phone: null, created_at: now() }
+    const data = { kakao_id: String(kakaoId), email: email || null, password: null, name, role: 'student', member_type: null, profile_complete: false, marketing_agreed: 0, marketing_agreed_at: null, phone: null, created_at: now() }
     const ref = await fs.collection('users').add(data)
     return { id: ref.id, ...data }
   },
   async linkKakaoId(userId, kakaoId) {
     await fs.collection('users').doc(userId).update({ kakao_id: String(kakaoId) })
   },
-  async completeProfile(userId, { name, email, phone, marketing_agreed, ip }) {
+  async findUserByGoogleId(googleId) {
+    const snap = await fs.collection('users').where('google_id', '==', String(googleId)).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+  },
+  async createGoogleUser(googleId, email, name, profileImage) {
+    const data = {
+      google_id: String(googleId),
+      email: email || null,
+      password: null,
+      name: name || 'Google 사용자',
+      role: 'student',
+      member_type: 'student',
+      profile_complete: true,
+      profile_image: profileImage || null,
+      auth_provider: 'google',
+      marketing_agreed: 0,
+      marketing_agreed_at: null,
+      phone: null,
+      created_at: now(),
+    }
+    const ref = await fs.collection('users').add(data)
+    return { id: ref.id, ...data }
+  },
+  async linkGoogleId(userId, googleId) {
+    await fs.collection('users').doc(userId).update({ google_id: String(googleId), auth_provider: 'google' })
+  },
+  async completeProfile(userId, { name, email, phone, marketing_agreed, member_type, ip }) {
     const update = { profile_complete: true }
     if (name) update.name = name
     if (email) update.email = email
     if (phone) update.phone = phone
+    const existing = await db.findUserById(userId)
+    if (member_type && !existing?.member_type) update.member_type = member_type
     if (marketing_agreed) {
       update.marketing_agreed = 1
       update.marketing_agreed_at = new Date().toISOString()
@@ -145,13 +796,23 @@ const db = {
     await fs.collection('users').doc(userId).update({ marketing_agreed: 0 })
     await fs.collection('consent_logs').add({ user_id: userId, type: 'marketing_sms', agreed: 0, agreed_at: new Date().toISOString(), ip: ip || null })
   },
+  async updateUserProfile(userId, { name, bio, profile_image, social_links }) {
+    const update = { profile_updated_at: now() }
+    if (name !== undefined) update.name = String(name).trim()
+    if (bio !== undefined) update.bio = String(bio).trim().slice(0, 500)
+    if (profile_image !== undefined) update.profile_image = profile_image || null
+    if (social_links !== undefined) update.social_links = social_links
+    await fs.collection('users').doc(userId).update(update)
+    return db.findUserById(userId)
+  },
 
   // courses
   async getCourses(publishedOnly = true) {
     let q = fs.collection('courses')
     if (publishedOnly) q = q.where('is_published', '==', 1)
     const snap = await q.get()
-    return snapToArr(snap)
+    const items = snapToArr(snap)
+    return items.sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
   },
   async getCourseBySlug(slug) {
     const snap = await fs.collection('courses').where('slug', '==', slug).limit(1).get()
@@ -169,6 +830,56 @@ const db = {
     const data = { slug, title, description: description || '', category, thumbnail_icon: thumbnail_icon || 'ti-broadcast', thumb_style: 'dark', price: 0, sale_price: 0, badge: 'LIVE', rating: 0, review_count: 0, student_count: 0, is_published: 1, course_type: 'live', live_schedule: live_schedule || null, meet_code: meet_code || null, live_status: 'upcoming', created_at: now() }
     const ref = await fs.collection('courses').add(data)
     return { id: ref.id, ...data }
+  },
+
+  /** course-catalog.js 기준으로 Firestore 강의 동기화 (수강생·후기 통계는 유지) */
+  async syncCoursesFromCatalog() {
+    const { COURSES, TARGET_SLUGS } = require('./course-catalog')
+    const syncFields = [
+      'title', 'description', 'category', 'thumbnail_icon', 'thumb_style',
+      'price', 'sale_price', 'badge', 'sort_order', 'is_published', 'course_type', 'is_offline',
+    ]
+    const snap = await fs.collection('courses').get()
+    let updated = 0
+    let unpublished = 0
+    let created = 0
+
+    for (const doc of snap.docs) {
+      const data = doc.data()
+      const match = COURSES.find(c => c.slug === data.slug)
+      if (match) {
+        const patch = { updated_at: now() }
+        for (const key of syncFields) {
+          if (match[key] !== undefined) patch[key] = match[key]
+        }
+        patch.student_count = data.student_count ?? 0
+        patch.review_count = data.review_count ?? 0
+        patch.rating = data.rating ?? 0
+        await doc.ref.update(patch)
+        updated++
+      } else if (data.is_published) {
+        await doc.ref.update({ is_published: 0, updated_at: now() })
+        unpublished++
+      }
+    }
+
+    for (const c of COURSES) {
+      const existing = await fs.collection('courses').where('slug', '==', c.slug).limit(1).get()
+      if (existing.empty) {
+        const ref = await fs.collection('courses').add({ ...c, created_at: now() })
+        await fs.collection('chapters').add({
+          course_id: ref.id,
+          order_num: 1,
+          title: '강의 소개',
+          duration: '10분',
+          is_free: c.sale_price === 0 ? 1 : 0,
+          video_url: null,
+        })
+        created++
+      }
+    }
+
+    return { updated, unpublished, created, catalog_count: COURSES.length, catalog_slugs: [...TARGET_SLUGS] }
   },
 
   // chapters
@@ -236,6 +947,17 @@ const db = {
     } else {
       await fs.collection('progress').add({ user_id: userId, chapter_id: chapterId, completed: completed ? 1 : 0, watched_sec: watchedSec, updated_at: now() })
     }
+    // 마지막 시청 챕터 갱신 (이어서 수강하기에 사용)
+    const chapter = await db.getChapterById(chapterId)
+    if (chapter) {
+      const enrollSnap = await fs.collection('enrollments')
+        .where('user_id', '==', userId)
+        .where('course_id', '==', chapter.course_id)
+        .limit(1).get()
+      if (!enrollSnap.empty) {
+        await fs.collection('enrollments').doc(enrollSnap.docs[0].id).update({ last_chapter_id: chapterId, last_watched_at: now() })
+      }
+    }
   },
 
   // reviews
@@ -265,12 +987,87 @@ const db = {
     await fs.collection('reviews').doc(id).update({ is_public: isPublic ? 1 : 0 })
   },
 
+  // platform_reviews (실시간 후기 — 유형별 노출)
+  async getPlatformReviewsByTypes(types) {
+    const snap = await fs.collection('platform_reviews').where('is_public', '==', 1).get()
+    return snapToArr(snap)
+      .filter(r => types.includes(r.review_type) && !r.seed_key)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+  },
+  async upsertPlatformReview(seedKey, data) {
+    const snap = await fs.collection('platform_reviews').where('seed_key', '==', seedKey).limit(1).get()
+    if (!snap.empty) {
+      await snap.docs[0].ref.update({ ...data, updated_at: now() })
+      return snap.docs[0].id
+    }
+    const ref = await fs.collection('platform_reviews').add({ seed_key: seedKey, created_at: now(), is_public: 1, ...data })
+    return ref.id
+  },
+
   // coupons
-  async createCoupon(userId, amount, reason) {
+  async createCoupon(userId, amount, reason, extra = {}) {
     const code = 'TADAK' + String(Date.now()).slice(-7) + Math.random().toString(36).slice(2,5).toUpperCase()
-    const data = { user_id: userId, code, amount, reason, status: 'available', created_at: now(), used_at: null }
+    const data = { user_id: userId, code, amount, reason, status: 'available', created_at: now(), used_at: null, ...extra }
     const ref = await fs.collection('coupons').add(data)
     return { id: ref.id, ...data }
+  },
+  /** 의뢰인 — 20만원 이상 강의 수강 시 1만원 할인쿠폰 10장 (강의당 1회) */
+  async issueClientCourseRewardCoupons(userId, course, orderId) {
+    const user = await db.findUserById(userId)
+    if (!user || user.member_type !== 'client') return null
+    const price = course.sale_price ?? course.price ?? 0
+    if (price < CLIENT_COURSE_REWARD_MIN_COURSE_PRICE) return null
+    const existing = (await db.getCouponsByUser(userId)).filter(
+      c => c.reason === CLIENT_COURSE_REWARD_REASON && c.course_id === course.id
+    )
+    if (existing.length > 0) return null
+    const coupons = []
+    for (let i = 0; i < CLIENT_COURSE_REWARD_COUNT; i++) {
+      const coupon = await db.createCoupon(userId, CLIENT_COURSE_REWARD_AMOUNT, CLIENT_COURSE_REWARD_REASON, {
+        course_id: course.id,
+        enrollment_order_id: orderId,
+        coupon_type: 'client_project_discount',
+        min_project_amount: CLIENT_PROJECT_COUPON_MIN_AMOUNT,
+      })
+      coupons.push(coupon)
+    }
+    return {
+      count: coupons.length,
+      amount_each: CLIENT_COURSE_REWARD_AMOUNT,
+      total_amount: coupons.length * CLIENT_COURSE_REWARD_AMOUNT,
+      coupon_ids: coupons.map(c => c.id),
+    }
+  },
+  /** 의뢰인 — 3만원 이상 견적 수락 시 1만원 할인 쿠폰 사용 가능 여부 */
+  checkClientProjectCoupon(userId, couponId, quoteAmount) {
+    return db.getCouponById(couponId).then(coupon => {
+      if (!coupon) return null
+      if (coupon.user_id !== userId || coupon.reason !== CLIENT_COURSE_REWARD_REASON) return null
+      if (coupon.status !== 'available') return null
+      if (Number(quoteAmount) < CLIENT_PROJECT_COUPON_MIN_AMOUNT) return null
+      return coupon
+    })
+  },
+  async getCouponById(couponId) {
+    const doc = await fs.collection('coupons').doc(couponId).get()
+    return doc.exists ? { id: doc.id, ...doc.data() } : null
+  },
+  /** 의뢰인 — 3만원 이상 견적 수락 시 1만원 할인 쿠폰 사용 */
+  async redeemClientProjectCoupon(userId, couponId, projectId, quoteAmount) {
+    const coupon = await db.checkClientProjectCoupon(userId, couponId, quoteAmount)
+    if (!coupon) return null
+    await fs.collection('coupons').doc(couponId).update({
+      status: 'used',
+      used_at: now(),
+      project_id: projectId,
+      used_quote_amount: Number(quoteAmount),
+      order_id: null,
+    })
+    return {
+      discount: coupon.amount,
+      coupon_id: couponId,
+      final_amount: Number(quoteAmount) - coupon.amount,
+    }
   },
   async getCouponsByUser(userId) {
     const snap = await fs.collection('coupons').where('user_id', '==', userId).get()
@@ -338,16 +1135,453 @@ const db = {
   },
 
   // ── 편집자 신청 ──
-  async applyEditor(userId, { intro, skills, portfolio_url, experience_years, tools }) {
+  /** 에디터 승격(승인) 시 수강생에게 상위노출 쿠폰 2만원 × 5장 (최초 1회) */
+  async issueEditorApprovalFeaturedCoupons(userId, applicationId) {
+    const user = await db.findUserById(userId)
+    if (!user || user.member_type !== 'student') return null
+    const existing = (await db.getCouponsByUser(userId)).filter(c => c.reason === EDITOR_APPLY_FEATURED_REASON)
+    if (existing.length >= EDITOR_APPLY_FEATURED_COUNT) return null
+    const coupons = []
+    for (let i = existing.length; i < EDITOR_APPLY_FEATURED_COUNT; i++) {
+      const coupon = await db.createCoupon(userId, EDITOR_APPLY_FEATURED_AMOUNT, EDITOR_APPLY_FEATURED_REASON, {
+        coupon_type: EDITOR_FEATURED_REASON,
+        editor_application_id: applicationId,
+      })
+      coupons.push(coupon)
+    }
+    if (!coupons.length) return null
+    return {
+      count: coupons.length,
+      amount_each: EDITOR_APPLY_FEATURED_AMOUNT,
+      total_amount: coupons.length * EDITOR_APPLY_FEATURED_AMOUNT,
+      coupon_ids: coupons.map(c => c.id),
+    }
+  },
+  // ── 에디터즈 프로그램 설정 ──
+  async ensureEditorProgramConfig() {
+    const doc = await fs.collection('site_settings').doc('editor_program').get()
+    if (!doc.exists) {
+      const config = normalizeEditorProgramConfig(DEFAULT_EDITOR_PROGRAM_CONFIG)
+      await fs.collection('site_settings').doc('editor_program').set({ ...config, updated_at: now() })
+      return config
+    }
+    return normalizeEditorProgramConfig(doc.data())
+  },
+  async getEditorProgramConfig() {
+    const doc = await fs.collection('site_settings').doc('editor_program').get()
+    if (!doc.exists) return db.ensureEditorProgramConfig()
+    return normalizeEditorProgramConfig(doc.data())
+  },
+  async updateEditorProgramConfig(data) {
+    const current = await db.getEditorProgramConfig()
+    const next = normalizeEditorProgramConfig({
+      ...current,
+      terms_version: data.terms_version !== undefined ? data.terms_version : current.terms_version,
+      stages: data.stages !== undefined ? data.stages : current.stages,
+      guide_cards: data.guide_cards !== undefined ? data.guide_cards : current.guide_cards,
+    })
+    await fs.collection('site_settings').doc('editor_program').set({ ...next, updated_at: now() })
+    await db.syncWorkbookSlotsFromConfig(next)
+    return db.getEditorProgramConfig()
+  },
+  async syncWorkbookSlotsFromConfig(configIn) {
+    const config = configIn || await db.getEditorProgramConfig()
+    const slots = buildWorkbookSlotMap(config).map(s => ({
+      ...s,
+      stage_mail_count: config.stages.find(st => st.order === s.stage_num)?.mail_count || 1,
+    }))
+    const existing = await db.getEditorWorkbooks()
+    const byOrder = new Map(existing.map(w => [w.order_num, w]))
+    const usedIds = new Set()
+
+    for (const slot of slots) {
+      const template = EDITOR_WORKBOOK_SEED[(slot.order_num - 1) % EDITOR_WORKBOOK_SEED.length]
+      const existingWb = byOrder.get(slot.order_num)
+      const payload = buildWorkbookFromTemplate(template, slot)
+      if (existingWb) {
+        usedIds.add(existingWb.id)
+        await fs.collection('editor_workbooks').doc(existingWb.id).set({
+          ...payload,
+          slug: existingWb.slug || payload.slug,
+          updated_at: now(),
+        }, { merge: true })
+      } else {
+        const ref = await fs.collection('editor_workbooks').add({ ...payload, created_at: now() })
+        usedIds.add(ref.id)
+      }
+    }
+    for (const wb of existing) {
+      if (!usedIds.has(wb.id)) {
+        await fs.collection('editor_workbooks').doc(wb.id).delete().catch(() => {})
+      }
+    }
+    return { total_mails: slots.length, slots: slots.length }
+  },
+  async updateEditorWorkbook(id, data) {
+    const allowed = [
+      'from_name', 'from_email', 'from_company', 'subject', 'received_at', 'body',
+      'mission_title', 'mission_brief', 'min_note_length', 'required_keywords', 'pass_message',
+    ]
+    const update = { updated_at: now() }
+    for (const key of allowed) {
+      if (data[key] !== undefined) update[key] = data[key]
+    }
+    if (data.required_keywords !== undefined) {
+      update.required_keywords = Array.isArray(data.required_keywords)
+        ? data.required_keywords
+        : String(data.required_keywords).split(',').map(s => s.trim()).filter(Boolean)
+    }
+    await fs.collection('editor_workbooks').doc(id).update(update)
+    return db.getEditorWorkbookById(id)
+  },
+  // ── 에디터즈 프로그램 (동의 · 단계 타이머) ──
+  async getEditorProgram(userId) {
+    const doc = await fs.collection('editor_programs').doc(userId).get()
+    return doc.exists ? { id: doc.id, ...doc.data() } : null
+  },
+  async agreeEditorProgram(userId, { guide_steps_completed } = {}) {
+    const config = await db.getEditorProgramConfig()
+    const requiredSteps = config.guide_cards.length
+    if (!guide_steps_completed || guide_steps_completed < requiredSteps) {
+      return { error: 'guide_incomplete', message: `안내 카드 ${requiredSteps}개를 모두 확인한 후 동의해주세요.` }
+    }
+    await fs.collection('editor_programs').doc(userId).set({
+      user_id: userId,
+      agreed_at: now(),
+      terms_version: config.terms_version,
+      guide_steps_completed,
+      status: 'active',
+      active_workbook_id: null,
+      stage_started_at: null,
+      updated_at: now(),
+    }, { merge: true })
+    return db.getEditorProgram(userId)
+  },
+  async resetEditorProgram(userId, reason = 'timeout') {
+    const subs = await db.getWorkbookSubmissionsByUser(userId)
+    if (subs.length) {
+      const batch = fs.batch()
+      subs.forEach(s => batch.delete(fs.collection('workbook_submissions').doc(s.id)))
+      await batch.commit()
+    }
+    await fs.collection('editor_programs').doc(userId).set({
+      user_id: userId,
+      agreed_at: null,
+      terms_version: null,
+      status: 'reset',
+      guide_steps_completed: null,
+      reset_reason: reason,
+      reset_at: now(),
+      active_workbook_id: null,
+      stage_started_at: null,
+      updated_at: now(),
+    }, { merge: true })
+    return { reset: true, reason }
+  },
+  async checkAndHandleProgramTimeout(userId) {
+    const program = await db.getEditorProgram(userId)
+    if (!program?.agreed_at || !program.stage_started_at || !program.active_workbook_id) {
+      return { timed_out: false, program }
+    }
+    const config = await db.getEditorProgramConfig()
+    const workbook = await db.getEditorWorkbookById(program.active_workbook_id)
+    const minutes = getWorkbookStageMinutes(workbook, config)
+    if (isStageWithinTimer(program.stage_started_at, minutes)) {
+      return {
+        timed_out: false,
+        program,
+        deadline_at: stageDeadlineIso(program.stage_started_at, minutes),
+        stage_minutes: minutes,
+      }
+    }
+    await db.resetEditorProgram(userId, 'timeout')
+    return {
+      timed_out: true,
+      message: `제한 시간(${minutes}분) 내에 미션을 완료하지 못해 처음부터 다시 시작해야 합니다.`,
+    }
+  },
+  async beginWorkbookStage(userId, workbookId) {
+    const timeout = await db.checkAndHandleProgramTimeout(userId)
+    if (timeout.timed_out) return { error: 'timeout_reset', message: timeout.message }
+    const program = await db.getEditorProgram(userId)
+    if (!program?.agreed_at) return { error: 'not_agreed', message: '안내 문구에 동의한 후 프로그램을 시작해주세요.' }
+    const config = await db.getEditorProgramConfig()
+    const [workbooks, submissions] = await Promise.all([
+      db.getEditorWorkbooks(),
+      db.getWorkbookSubmissionsByUser(userId),
+    ])
+    const active = getActiveWorkbookForProgram(workbooks, submissions)
+    const workbook = workbooks.find(w => w.id === workbookId)
+    if (!workbook) return { error: 'not_found' }
+    const minutes = getWorkbookStageMinutes(workbook, config)
+    const sub = submissions.find(s => s.workbook_id === workbookId)
+    if (sub?.status === 'passed') {
+      return {
+        view_only: true,
+        stage_started_at: null,
+        deadline_at: null,
+        stage_minutes: minutes,
+        stage_num: workbook.stage_num,
+        stage_title: getStageConfigForWorkbook(workbook, config)?.title || null,
+      }
+    }
+    if (!active || active.id !== workbookId) {
+      return { error: 'not_active_stage', message: '현재 진행 중인 메일만 열 수 있습니다.' }
+    }
+    let stageStartedAt = program.stage_started_at
+    if (program.active_workbook_id !== workbookId || !stageStartedAt) {
+      stageStartedAt = now()
+      await fs.collection('editor_programs').doc(userId).update({
+        active_workbook_id: workbookId,
+        stage_started_at: stageStartedAt,
+        updated_at: now(),
+      })
+    }
+    return {
+      stage_started_at: stageStartedAt,
+      deadline_at: stageDeadlineIso(stageStartedAt, minutes),
+      stage_minutes: minutes,
+      stage_num: workbook.stage_num,
+      stage_title: getStageConfigForWorkbook(workbook, config)?.title || null,
+      position_in_stage: workbook.position_in_stage,
+    }
+  },
+  async clearWorkbookStageTimer(userId) {
+    const program = await db.getEditorProgram(userId)
+    if (!program) return
+    const config = await db.getEditorProgramConfig()
+    const [workbooks, submissions] = await Promise.all([
+      db.getEditorWorkbooks(),
+      db.getWorkbookSubmissionsByUser(userId),
+    ])
+    const stagesCompleted = countCompletedStages(getStageCompletionStatus(config, workbooks, submissions))
+    const update = {
+      active_workbook_id: null,
+      stage_started_at: null,
+      updated_at: now(),
+      status: stagesCompleted >= config.stage_count ? 'completed' : 'active',
+    }
+    await fs.collection('editor_programs').doc(userId).update(update)
+  },
+
+  // ── 에디터즈 워크북 (의뢰 메일 미션) ──
+  async getEditorWorkbooks() {
+    const snap = await fs.collection('editor_workbooks').orderBy('order_num').get()
+    return snapToArr(snap)
+  },
+  async getEditorWorkbookById(id) {
+    const doc = await fs.collection('editor_workbooks').doc(id).get()
+    return docToObj(doc)
+  },
+  async getWorkbookSubmissionsByUser(userId) {
+    const snap = await fs.collection('workbook_submissions').where('user_id', '==', userId).get()
+    return snapToArr(snap)
+  },
+  async getWorkbookSubmission(userId, workbookId) {
+    const subs = await db.getWorkbookSubmissionsByUser(userId)
+    const sub = subs.find(s => s.workbook_id === workbookId)
+    return sub || null
+  },
+  isWorkbookUnlocked(workbooks, submissions, orderNum) {
+    if (orderNum <= 1) return true
+    const prev = workbooks.find(w => w.order_num === orderNum - 1)
+    if (!prev) return true
+    const sub = submissions.find(s => s.workbook_id === prev.id && s.status === 'passed')
+    return !!sub
+  },
+  async getEditorWorkbookProgress(userId) {
+    const config = await db.getEditorProgramConfig()
+    const stageRequired = config.stage_count
+    const totalMails = getTotalMailCountFromConfig(config)
+    const timeout = await db.checkAndHandleProgramTimeout(userId)
+    if (timeout.timed_out) {
+      return {
+        required: stageRequired,
+        stage_count: stageRequired,
+        total_mails: totalMails,
+        mails_passed: 0,
+        total: 0,
+        passed: 0,
+        can_apply: false,
+        needs_agreement: true,
+        timed_out: true,
+        timeout_message: timeout.message,
+        workbooks: [],
+        stages: [],
+        stage_progress: [],
+        program: null,
+        guide_card_count: config.guide_cards.length,
+      }
+    }
+    const program = await db.getEditorProgram(userId)
+    const [workbooks, submissions] = await Promise.all([
+      db.getEditorWorkbooks(),
+      db.getWorkbookSubmissionsByUser(userId),
+    ])
+    const stageProgress = getStageCompletionStatus(config, workbooks, submissions)
+    const stagesCompleted = countCompletedStages(stageProgress)
+    const mailsPassed = submissions.filter(s => s.status === 'passed').length
+
+    if (!program?.agreed_at) {
+      return {
+        required: stageRequired,
+        stage_count: stageRequired,
+        total_mails: totalMails,
+        mails_passed: mailsPassed,
+        total: workbooks.length,
+        passed: stagesCompleted,
+        can_apply: false,
+        needs_agreement: true,
+        workbooks: [],
+        stages: [],
+        stage_progress: stageProgress,
+        program: program || null,
+        guide_card_count: config.guide_cards.length,
+      }
+    }
+    const active = getActiveWorkbookForProgram(workbooks, submissions)
+    const activeMinutes = getWorkbookStageMinutes(active, config)
+    const withinTimer = program.active_workbook_id
+      && isStageWithinTimer(program.stage_started_at, activeMinutes)
+    const visibleWbs = getVisibleWorkbooks(workbooks, submissions, active)
+
+    const items = visibleWbs.map(wb => {
+      const sub = submissions.find(s => s.workbook_id === wb.id)
+      const unlocked = db.isWorkbookUnlocked(workbooks, submissions, wb.order_num)
+      const isActiveStage = active?.id === wb.id
+      const stageInfo = getStageConfigForWorkbook(wb, config)
+      const state = resolveWorkbookItemState(sub, unlocked, {
+        isActiveStage,
+        withinTimer: isActiveStage && withinTimer,
+        stageNotStarted: isActiveStage && !program.stage_started_at,
+      })
+      const submission = sub ? {
+        deliverable_url: sub.deliverable_url,
+        work_notes: sub.work_notes,
+        feedback: sub.feedback,
+        submitted_at: sub.submitted_at,
+        locked_until: sub.locked_until || null,
+      } : null
+      return sanitizeWorkbookListItem(wb, { ...state, submission }, {
+        isActiveStage,
+        visible: true,
+        stageInfo,
+      })
+    })
+
+    const stages = stageProgress.map(stage => ({
+      ...stage,
+      is_current: active?.stage_num === stage.order,
+      visible: stage.passed > 0 || active?.stage_num === stage.order,
+    })).filter(s => s.visible)
+
+    return {
+      required: stageRequired,
+      stage_count: stageRequired,
+      total_mails: totalMails,
+      mails_passed: mailsPassed,
+      total: workbooks.length,
+      passed: stagesCompleted,
+      can_apply: stagesCompleted >= stageRequired,
+      needs_agreement: false,
+      program: {
+        agreed_at: program.agreed_at,
+        active_workbook_id: program.active_workbook_id,
+        stage_started_at: program.stage_started_at,
+        deadline_at: withinTimer ? stageDeadlineIso(program.stage_started_at, activeMinutes) : null,
+        stage_minutes: activeMinutes,
+        active_order: active?.order_num || null,
+        active_stage: active?.stage_num || null,
+        active_stage_title: active ? getStageConfigForWorkbook(active, config)?.title : null,
+      },
+      stages,
+      stage_progress: stageProgress,
+      workbooks: items,
+      guide_card_count: config.guide_cards.length,
+    }
+  },
+  async submitEditorWorkbook(userId, workbookId, { deliverable_url, work_notes }) {
+    const timeout = await db.checkAndHandleProgramTimeout(userId)
+    if (timeout.timed_out) return { error: 'timeout_reset', message: timeout.message }
+    const program = await db.getEditorProgram(userId)
+    if (!program?.agreed_at) {
+      return { error: 'not_agreed', message: '안내 문구에 동의한 후 프로그램을 시작해주세요.' }
+    }
+    const config = await db.getEditorProgramConfig()
+    const workbook = await db.getEditorWorkbookById(workbookId)
+    if (!workbook) return { error: 'not_found' }
+    const minutes = getWorkbookStageMinutes(workbook, config)
+    const [workbooks, submissions] = await Promise.all([
+      db.getEditorWorkbooks(),
+      db.getWorkbookSubmissionsByUser(userId),
+    ])
+    const active = getActiveWorkbookForProgram(workbooks, submissions)
+    if (!active || active.id !== workbookId) {
+      return { error: 'not_active_stage', message: '현재 진행 중인 메일만 제출할 수 있습니다.' }
+    }
+    if (!program.stage_started_at || !isStageWithinTimer(program.stage_started_at, minutes)) {
+      await db.resetEditorProgram(userId, 'timeout')
+      return { error: 'timeout_reset', message: `제한 시간(${minutes}분)이 초과되어 처음부터 다시 시작해야 합니다.` }
+    }
+    const existing = submissions.find(s => s.workbook_id === workbookId)
+    if (existing?.status === 'passed') {
+      return { error: 'already_passed', message: '이미 통과한 미션입니다.' }
+    }
+    const evaluation = evaluateWorkbookSubmission(workbook, { deliverable_url, work_notes })
+    const data = {
+      user_id: userId,
+      workbook_id: workbookId,
+      deliverable_url: String(deliverable_url || '').trim(),
+      work_notes: String(work_notes || '').trim(),
+      status: evaluation.passed ? 'passed' : 'failed',
+      feedback: evaluation.feedback,
+      submitted_at: now(),
+      reviewed_at: now(),
+      locked_until: null,
+    }
+    if (existing) {
+      await fs.collection('workbook_submissions').doc(existing.id).update(data)
+    } else {
+      await fs.collection('workbook_submissions').add({ ...data, created_at: now() })
+    }
+    if (evaluation.passed) {
+      await db.clearWorkbookStageTimer(userId)
+    }
+    return {
+      submission: data,
+      passed: evaluation.passed,
+      feedback: evaluation.feedback,
+      locked_until: null,
+    }
+  },
+
+  async applyEditor(userId, { intro, skills, portfolio_url, experience_years, tools, location, work_type }) {
     const existing = await fs.collection('editor_applications').where('user_id', '==', userId).limit(1).get()
+    const fields = {
+      intro, skills, portfolio_url, experience_years, tools,
+      location: location || null,
+      work_type: work_type || null,
+      status: 'pending',
+      applied_at: now(),
+    }
+    let app
     if (!existing.empty) {
       const doc = existing.docs[0]
-      await doc.ref.update({ intro, skills, portfolio_url, experience_years, tools, status: 'pending', applied_at: now() })
-      return { id: doc.id, ...doc.data(), intro, skills, portfolio_url, experience_years, tools, status: 'pending' }
+      await doc.ref.update(fields)
+      app = { id: doc.id, ...doc.data(), ...fields }
+    } else {
+      const data = {
+        user_id: userId,
+        ...fields,
+        reviewed_at: null,
+        reject_reason: null,
+        featured_until: null,
+        featured_started_at: null,
+      }
+      const ref = await fs.collection('editor_applications').add(data)
+      app = { id: ref.id, ...data }
     }
-    const data = { user_id: userId, intro, skills, portfolio_url: portfolio_url || null, experience_years: experience_years || 0, tools: tools || [], status: 'pending', applied_at: now(), reviewed_at: null, reject_reason: null }
-    const ref = await fs.collection('editor_applications').add(data)
-    return { id: ref.id, ...data }
+    return app
   },
   async getEditorApplication(userId) {
     const snap = await fs.collection('editor_applications').where('user_id', '==', userId).limit(1).get()
@@ -362,13 +1596,66 @@ const db = {
   async reviewEditorApplication(appId, status, rejectReason = null) {
     const doc = await fs.collection('editor_applications').doc(appId).get()
     if (!doc.exists) return null
+    const userId = doc.data().user_id
     await doc.ref.update({ status, reviewed_at: now(), reject_reason: rejectReason || null })
     if (status === 'approved') {
-      await fs.collection('users').doc(doc.data().user_id).update({ role: 'editor' })
+      await fs.collection('users').doc(userId).update({ role: 'editor' })
+      await db.grantEditorFeaturedBoost(userId)
+      const approvalCoupons = await db.issueEditorApprovalFeaturedCoupons(userId, doc.id)
+      return { id: doc.id, ...doc.data(), status, approval_featured_coupons: approvalCoupons }
     } else if (status === 'rejected') {
-      await fs.collection('users').doc(doc.data().user_id).update({ role: 'student' })
+      await fs.collection('users').doc(userId).update({ role: 'student' })
     }
     return { id: doc.id, ...doc.data(), status }
+  },
+  /** 편집자 승인 시 상위노출 7일 + 쿠폰 발급(즉시 적용) */
+  async grantEditorFeaturedBoost(userId) {
+    const app = await db.getEditorApplication(userId)
+    if (!app || app.status !== 'approved') return null
+    const until = new Date(Date.now() + EDITOR_FEATURED_DAYS * 86400000).toISOString()
+    await fs.collection('editor_applications').doc(app.id).update({
+      featured_until: until,
+      featured_started_at: now(),
+    })
+    const coupon = await db.createCoupon(userId, 0, EDITOR_FEATURED_REASON, {
+      coupon_type: EDITOR_FEATURED_REASON,
+      featured_until: until,
+    })
+    await fs.collection('coupons').doc(coupon.id).update({ status: 'used', used_at: now(), order_id: null })
+    return { featured_until: until, coupon_id: coupon.id }
+  },
+  async redeemEditorFeaturedCoupon(userId, couponId) {
+    const couponDoc = await fs.collection('coupons').doc(couponId).get()
+    if (!couponDoc.exists) return null
+    const coupon = { id: couponDoc.id, ...couponDoc.data() }
+    if (coupon.user_id !== userId || !isEditorFeaturedCoupon(coupon) || coupon.status !== 'available') {
+      return null
+    }
+    const app = await db.getEditorApplication(userId)
+    if (!app || app.status !== 'approved') return null
+    const until = new Date(Date.now() + EDITOR_FEATURED_DAYS * 86400000).toISOString()
+    await fs.collection('editor_applications').doc(app.id).update({
+      featured_until: until,
+      featured_started_at: now(),
+    })
+    await fs.collection('coupons').doc(couponId).update({
+      status: 'used',
+      used_at: now(),
+      order_id: null,
+      featured_until: until,
+    })
+    return { featured_until: until }
+  },
+  async updateEditorProfile(userId, { location, work_type, intro, portfolio_url }) {
+    const app = await db.getEditorApplication(userId)
+    if (!app || app.status !== 'approved') return null
+    const update = { profile_updated_at: now() }
+    if (location !== undefined) update.location = String(location).trim() || null
+    if (work_type !== undefined) update.work_type = work_type || null
+    if (intro !== undefined) update.intro = String(intro).trim().slice(0, 1000)
+    if (portfolio_url !== undefined) update.portfolio_url = portfolio_url || null
+    await fs.collection('editor_applications').doc(app.id).update(update)
+    return db.getEditorApplication(userId)
   },
   async getEditorProfile(userId) {
     const [user, app] = await Promise.all([
@@ -380,11 +1667,32 @@ const db = {
   },
   async getApprovedEditors() {
     const snap = await fs.collection('editor_applications').where('status', '==', 'approved').get()
-    return Promise.all(snap.docs.map(async d => {
+    const ts = Date.now()
+    const editors = await Promise.all(snap.docs.map(async d => {
       const user = await db.findUserById(d.data().user_id)
       if (!user) return null
-      return { ...d.data(), id: d.id, user_id: user.id, name: user.name, created_at: user.created_at }
-    })).then(arr => arr.filter(Boolean))
+      const data = d.data()
+      const featuredActive = data.featured_until && new Date(data.featured_until).getTime() > ts
+      return {
+        ...data,
+        id: d.id,
+        user_id: user.id,
+        name: user.name,
+        bio: user.bio || '',
+        profile_image: user.profile_image || null,
+        social_links: user.social_links || [],
+        created_at: user.created_at,
+        is_featured: featuredActive,
+      }
+    }))
+    return editors.filter(Boolean).sort((a, b) => {
+      if (a.is_featured && !b.is_featured) return -1
+      if (!a.is_featured && b.is_featured) return 1
+      if (a.is_featured && b.is_featured) {
+        return (b.featured_until || '').localeCompare(a.featured_until || '')
+      }
+      return (b.reviewed_at || b.applied_at || '').localeCompare(a.reviewed_at || a.applied_at || '')
+    })
   },
 
   // ── 메시지 ──
@@ -452,8 +1760,302 @@ const db = {
       return { id: c.id, title: c.title, sale_price: c.sale_price, student_count: c.student_count || 0, revenue }
     }))
   },
+
+  async getPublicSiteStats() {
+    const [courses, enrollSnap, reviewSnap] = await Promise.all([
+      db.getCourses(true),
+      fs.collection('enrollments').get(),
+      fs.collection('reviews').where('is_public', '==', 1).get(),
+    ])
+    const reviews = reviewSnap.docs.map(d => d.data())
+    const avgRating = reviews.length
+      ? Math.round(reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length * 10) / 10
+      : 0
+    return {
+      studentCount: enrollSnap.size,
+      avgRating,
+      courseCount: courses.length,
+    }
+  },
+
+  async getRecentPublicOrders(limit = 20) {
+    const snap = await fs.collection('orders').orderBy('paid_at', 'desc').limit(50).get()
+    const orders = snapToArr(snap).filter(o => o.status === 'paid').slice(0, limit)
+    return Promise.all(orders.map(async o => {
+      const [u, c] = await Promise.all([
+        db.findUserById(o.user_id),
+        db.getCourseById(o.course_id),
+      ])
+      return {
+        user_name: maskPublicName(u?.name),
+        course_title: c?.title || '강의',
+        paid_at: o.paid_at,
+      }
+    }))
+  },
+
+  // ── 미션 제출 검수 ──
+  async getWorkbookSubmissions({ userId, workbookId } = {}) {
+    let snap
+    if (userId) {
+      snap = await fs.collection('workbook_submissions').where('user_id', '==', userId).orderBy('created_at', 'desc').get()
+    } else if (workbookId) {
+      snap = await fs.collection('workbook_submissions').where('workbook_id', '==', workbookId).orderBy('created_at', 'desc').get()
+    } else {
+      snap = await fs.collection('workbook_submissions').orderBy('created_at', 'desc').limit(200).get()
+    }
+    return snapToArr(snap)
+  },
+  async adminReviewSubmission(submissionId, { verdict, feedback }) {
+    if (!['passed', 'failed'].includes(verdict)) throw new Error('verdict must be passed or failed')
+    await fs.collection('workbook_submissions').doc(submissionId).update({
+      status: verdict,
+      feedback: feedback || (verdict === 'passed' ? '관리자 승인으로 통과되었습니다.' : '관리자 검토 결과 반려되었습니다.'),
+      reviewed_at: now(),
+      admin_reviewed: true,
+      updated_at: now(),
+    })
+    const sub = (await fs.collection('workbook_submissions').doc(submissionId).get()).data()
+    if (verdict === 'passed' && sub?.user_id) {
+      await db.clearWorkbookStageTimer(sub.user_id).catch(() => {})
+    }
+    return sub
+  },
+
+  // ── 공지사항 ──
+  async getNotices({ publicOnly = false } = {}) {
+    const snap = await fs.collection('notices').orderBy('created_at', 'desc').get()
+    const items = snapToArr(snap)
+    const sorted = [...items.filter(n => n.is_pinned), ...items.filter(n => !n.is_pinned)]
+    if (publicOnly) return sorted.filter(n => n.is_public)
+    return sorted
+  },
+  async getNoticeById(id) {
+    const doc = await fs.collection('notices').doc(id).get()
+    return docToObj(doc)
+  },
+  async createNotice({ title, content, is_public = false, is_pinned = false }) {
+    const data = { title, content, is_public, is_pinned, created_at: now(), updated_at: now() }
+    const ref = await fs.collection('notices').add(data)
+    return { id: ref.id, ...data }
+  },
+  async updateNotice(id, { title, content, is_public, is_pinned }) {
+    const update = { updated_at: now() }
+    if (title !== undefined) update.title = title
+    if (content !== undefined) update.content = content
+    if (is_public !== undefined) update.is_public = is_public
+    if (is_pinned !== undefined) update.is_pinned = is_pinned
+    await fs.collection('notices').doc(id).update(update)
+    return db.getNoticeById(id)
+  },
+  async deleteNotice(id) {
+    await fs.collection('notices').doc(id).delete()
+  },
+
+  // ── 고객지원 문의 ──
+  async createTicket({ name, email, type, subject, content, user_id = null }) {
+    const data = { name, email, type: type || 'general', subject, content, status: 'open', answer: null, user_id, created_at: now(), updated_at: now(), answered_at: null }
+    const ref = await fs.collection('support_tickets').add(data)
+    return { id: ref.id, ...data }
+  },
+  async getTickets({ status } = {}) {
+    let snap
+    if (status && status !== 'all') {
+      snap = await fs.collection('support_tickets').where('status', '==', status).orderBy('created_at', 'desc').get()
+    } else {
+      snap = await fs.collection('support_tickets').orderBy('created_at', 'desc').get()
+    }
+    return snapToArr(snap)
+  },
+  async getTicketById(id) {
+    const doc = await fs.collection('support_tickets').doc(id).get()
+    return docToObj(doc)
+  },
+  async answerTicket(id, { answer }) {
+    const update = { answer, status: 'answered', answered_at: now(), updated_at: now() }
+    await fs.collection('support_tickets').doc(id).update(update)
+    return db.getTicketById(id)
+  },
+  async updateTicketStatus(id, status) {
+    await fs.collection('support_tickets').doc(id).update({ status, updated_at: now() })
+    return db.getTicketById(id)
+  },
+  async deleteTicket(id) {
+    await fs.collection('support_tickets').doc(id).delete()
+  },
+
+  // ── FAQ ──
+  async getFaqs({ publicOnly = false } = {}) {
+    const snap = await fs.collection('faqs').orderBy('sort_order', 'asc').get()
+    const items = snapToArr(snap)
+    if (publicOnly) return items.filter(f => f.is_public)
+    return items
+  },
+  async getFaqById(id) {
+    const doc = await fs.collection('faqs').doc(id).get()
+    return docToObj(doc)
+  },
+  async createFaq({ question, answer, category = '일반', is_public = true, sort_order }) {
+    const existing = await db.getFaqs()
+    const order = sort_order !== undefined ? sort_order : (existing.length ? Math.max(...existing.map(f => f.sort_order || 0)) + 1 : 0)
+    const data = { question, answer, category, is_public, sort_order: order, created_at: now(), updated_at: now() }
+    const ref = await fs.collection('faqs').add(data)
+    return { id: ref.id, ...data }
+  },
+  async updateFaq(id, { question, answer, category, is_public, sort_order }) {
+    const update = { updated_at: now() }
+    if (question !== undefined) update.question = question
+    if (answer !== undefined) update.answer = answer
+    if (category !== undefined) update.category = category
+    if (is_public !== undefined) update.is_public = is_public
+    if (sort_order !== undefined) update.sort_order = sort_order
+    await fs.collection('faqs').doc(id).update(update)
+    return db.getFaqById(id)
+  },
+  async deleteFaq(id) {
+    await fs.collection('faqs').doc(id).delete()
+  },
+
+  // ── 사이트 설정 ──
+  async getSiteSettings(key) {
+    const doc = await fs.collection('site_settings').doc(key).get()
+    if (!doc.exists) return { pending_review_image: null, updated_at: null }
+    const data = doc.data()
+    return {
+      pending_review_image: data.pending_review_image || null,
+      updated_at: data.updated_at || null,
+    }
+  },
+  async updateSiteSettings(key, data) {
+    const update = { updated_at: now() }
+    if (data.pending_review_image !== undefined) {
+      update.pending_review_image = data.pending_review_image || null
+    }
+    await fs.collection('site_settings').doc(key).set(update, { merge: true })
+    return db.getSiteSettings(key)
+  },
+
+  async getHomepageLayout() {
+    const doc = await fs.collection('site_settings').doc('homepage').get()
+    if (!doc.exists) return { ...normalizeHomepageLayout({}), updated_at: null }
+    const data = doc.data()
+    return { ...normalizeHomepageLayout(data), updated_at: data.updated_at || null }
+  },
+
+  async updateHomepageLayout({ sections, nav } = {}) {
+    const current = await db.getHomepageLayout()
+    const next = normalizeHomepageLayout({
+      sections: sections ? { ...current.sections, ...sections } : current.sections,
+      nav: nav ? { ...current.nav, ...nav } : current.nav,
+    })
+    await fs.collection('site_settings').doc('homepage').set({ ...next, updated_at: now() })
+    return db.getHomepageLayout()
+  },
+
+  async getFooterConfig() {
+    const doc = await fs.collection('site_settings').doc('footer').get()
+    if (!doc.exists) return { ...normalizeFooterConfig({}), updated_at: null }
+    const data = doc.data()
+    return { ...normalizeFooterConfig(data), updated_at: data.updated_at || null }
+  },
+
+  async updateFooterConfig(data) {
+    const next = normalizeFooterConfig(data)
+    await fs.collection('site_settings').doc('footer').set({ ...next, updated_at: now() })
+    return db.getFooterConfig()
+  },
+
+  async getHeroConfig() {
+    const doc = await fs.collection('site_settings').doc('hero').get()
+    if (!doc.exists) return { ...normalizeHeroConfig({}), updated_at: null }
+    const data = doc.data()
+    return { ...normalizeHeroConfig(data), updated_at: data.updated_at || null }
+  },
+
+  async updateHeroConfig(data) {
+    const next = normalizeHeroConfig(data)
+    await fs.collection('site_settings').doc('hero').set({ ...next, updated_at: now() })
+    return db.getHeroConfig()
+  },
+
+  async getInstructorsIntro() {
+    const doc = await fs.collection('site_settings').doc('instructors_intro').get()
+    if (!doc.exists) return { ...normalizeInstructorsIntro({}), updated_at: null }
+    const data = doc.data()
+    return { ...normalizeInstructorsIntro(data), updated_at: data.updated_at || null }
+  },
+
+  async updateInstructorsIntro(data) {
+    const next = normalizeInstructorsIntro(data)
+    await fs.collection('site_settings').doc('instructors_intro').set({ ...next, updated_at: now() })
+    return db.getInstructorsIntro()
+  },
+
+  async getInstructors({ publicOnly = false } = {}) {
+    const snap = await fs.collection('instructors').orderBy('sort_order', 'asc').get()
+    const items = snapToArr(snap)
+    if (publicOnly) return items.filter(i => i.is_published)
+    return items
+  },
+
+  async getInstructorById(id) {
+    const doc = await fs.collection('instructors').doc(id).get()
+    return docToObj(doc)
+  },
+
+  async createInstructor(data) {
+    const existing = await db.getInstructors()
+    const sort_order = data.sort_order !== undefined
+      ? Number(data.sort_order)
+      : (existing.length ? Math.max(...existing.map(i => i.sort_order || 0)) + 1 : 1)
+    const payload = {
+      name: String(data.name || '').trim().slice(0, 40),
+      role_title: String(data.role_title || '').trim().slice(0, 120),
+      bio: String(data.bio || '').trim().slice(0, 2000),
+      profile_image: data.profile_image || null,
+      tags: normalizeInstructorTags(data.tags),
+      sort_order,
+      is_published: data.is_published === false || data.is_published === 0 ? 0 : 1,
+      created_at: now(),
+      updated_at: now(),
+    }
+    if (!payload.name) throw new Error('강사 이름은 필수입니다.')
+    const ref = await fs.collection('instructors').add(payload)
+    return { id: ref.id, ...payload }
+  },
+
+  async updateInstructor(id, data) {
+    const existing = await db.getInstructorById(id)
+    if (!existing) return null
+    const update = { updated_at: now() }
+    if (data.name !== undefined) update.name = String(data.name).trim().slice(0, 40)
+    if (data.role_title !== undefined) update.role_title = String(data.role_title).trim().slice(0, 120)
+    if (data.bio !== undefined) update.bio = String(data.bio).trim().slice(0, 2000)
+    if (data.profile_image !== undefined) update.profile_image = data.profile_image || null
+    if (data.tags !== undefined) update.tags = normalizeInstructorTags(data.tags)
+    if (data.sort_order !== undefined) update.sort_order = Number(data.sort_order) || 0
+    if (data.is_published !== undefined) update.is_published = data.is_published ? 1 : 0
+    await fs.collection('instructors').doc(id).update(update)
+    return db.getInstructorById(id)
+  },
+
+  async deleteInstructor(id) {
+    await fs.collection('instructors').doc(id).delete()
+  },
 }
 
 seed().catch(console.error)
+seedEditorWorkbooks().catch(console.error)
 
 module.exports = db
+module.exports.userPayload = userPayload
+module.exports.EDITOR_WORK_TYPES = EDITOR_WORK_TYPES
+module.exports.EDITOR_FEATURED_REASON = EDITOR_FEATURED_REASON
+module.exports.CLIENT_COURSE_REWARD_REASON = CLIENT_COURSE_REWARD_REASON
+module.exports.CLIENT_PROJECT_COUPON_MIN_AMOUNT = CLIENT_PROJECT_COUPON_MIN_AMOUNT
+module.exports.getTotalMailCountFromConfig = getTotalMailCountFromConfig
+module.exports.DEFAULT_EDITOR_PROGRAM_CONFIG = DEFAULT_EDITOR_PROGRAM_CONFIG
+module.exports.DEFAULT_HOMEPAGE_LAYOUT = DEFAULT_HOMEPAGE_LAYOUT
+module.exports.DEFAULT_FOOTER_CONFIG = DEFAULT_FOOTER_CONFIG
+module.exports.DEFAULT_HERO_CONFIG = DEFAULT_HERO_CONFIG
+module.exports.DEFAULT_INSTRUCTORS_INTRO = DEFAULT_INSTRUCTORS_INTRO

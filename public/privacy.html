@@ -5,19 +5,34 @@
   <title>개인정보처리방침 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
-<body>
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥<span>클래스</span></a>
-    <div class="header-right"><a href="/" class="nav-btn">← 홈으로</a></div>
-  </div>
-</header>
+<body class="legal-page" data-legal-page="privacy">
 
-<div class="legal-wrap">
-  <div class="legal-inner">
-    <h1 class="legal-title">개인정보처리방침</h1>
-    <p class="legal-updated">시행일: 2025년 1월 1일 · 최종 개정: 2025년 6월 20일</p>
+<div data-chrome="header"></div>
+
+<main class="legal-main">
+  <header class="legal-hero">
+    <p class="legal-hero-eyebrow">Legal</p>
+    <h1 class="legal-hero-title">개인정보처리방침</h1>
+    <p class="legal-hero-meta">시행일: 2025년 1월 1일 · 최종 개정: 2025년 6월 20일</p>
+  </header>
+
+  <div class="legal-layout">
+    <aside class="legal-aside" aria-label="목차">
+      <div class="legal-toc-wrap">
+        <p class="legal-toc-label">목차</p>
+        <nav class="legal-toc" id="legal-toc"></nav>
+      </div>
+    </aside>
+
+    <div class="legal-body">
+      <div class="legal-toc-mobile">
+        <button type="button" class="legal-toc-mobile-btn" id="legal-toc-mobile-btn" aria-expanded="false">목차 보기</button>
+        <div class="legal-toc-mobile-panel" id="legal-toc-mobile-panel"></div>
+      </div>
+
+      <article class="legal-article" id="legal-article">
     <p>블루필드매뉴얼픽쳐스(이하 "회사")는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 다음과 같이 개인정보처리방침을 수립·공개합니다.</p>
 
     <section>
@@ -128,10 +143,8 @@
       <h2>제10조 (개인정보 보호책임자)</h2>
       <div class="legal-box">
         <strong>개인정보 보호책임자</strong><br>
-        성명: 이동헌<br>
-        직책: 대표<br>
-        이메일: dong8creative@gmail.com<br>
-        전화: 010-4850-6946<br><br>
+        성명: 이동헌 · 직책: 대표<br>
+        이메일: dong8creative@gmail.com · 전화: 010-4850-6946<br><br>
         개인정보 침해에 관한 신고·상담은 아래 기관에도 문의할 수 있습니다.<br>
         · 개인정보침해신고센터: 118 / privacy.kisa.or.kr<br>
         · 개인정보 분쟁조정위원회: 1833-6972 / www.kopico.go.kr<br>
@@ -144,21 +157,13 @@
       <h2>제11조 (개인정보처리방침의 변경)</h2>
       <p>이 개인정보처리방침은 2025년 1월 1일부터 적용되며, 변경 사항이 있는 경우 서비스 공지사항을 통해 사전에 고지합니다.</p>
     </section>
-  </div>
-</div>
-
-<footer class="footer" style="margin-top:0">
-  <div class="container">
-    <div class="footer-bottom">
-      <span>© 2025 타닥클래스. All rights reserved.</span>
-      <div class="footer-policy">
-        <a href="/terms.html">이용약관</a>
-        <a href="/privacy.html" style="color:#fff">개인정보처리방침</a>
-        <a href="/refund.html">환불정책</a>
-        <a href="/youth.html">청소년보호정책</a>
-      </div>
+      </article>
     </div>
   </div>
-</footer>
+</main>
+
+<div data-chrome="footer"></div>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/legal-page.js"></script>
 </body>
 </html>

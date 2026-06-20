@@ -27,7 +27,12 @@ const API = {
       body: body ? JSON.stringify(body) : undefined
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.error || '오류가 발생했습니다.')
+    if (!res.ok) {
+      const err = new Error(data.error || '오류가 발생했습니다.')
+      if (data.timed_out) err.timed_out = true
+      if (data.code) err.code = data.code
+      throw err
+    }
     return data
   },
 
@@ -51,7 +56,7 @@ function updateNav() {
   } else {
     navRight.innerHTML = `
       <a href="/login.html" class="btn-ghost">로그인</a>
-      <a href="/login.html?tab=register" class="btn-black">무료 시작</a>
+      <a href="/api/auth/google?next=${encodeURIComponent(location.pathname + location.search)}" class="btn-black"><i class="ti ti-brand-google"></i> Google로 시작</a>
     `
   }
 }

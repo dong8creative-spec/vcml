@@ -2,58 +2,100 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>편집자 인증 신청 — 타닥클래스</title>
+  <title>에디터즈 신청 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/legal.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     .apply-wrap { max-width: 680px; margin: 48px auto; padding: 0 24px 80px; }
     .apply-hero { background: linear-gradient(135deg,#1a1f3c,#3d4a8a); border-radius: 16px; padding: 36px; color:#fff; margin-bottom:32px; }
-    .apply-hero h1 { font-size:26px; font-weight:900; margin-bottom:8px; }
-    .apply-hero p { font-size:14px; color:rgba(255,255,255,.7); line-height:1.7; }
+    .apply-hero h1 { font-size: 31.2px; font-weight:900; margin-bottom:8px; }
+    .apply-hero p { font-size: 16.8px; color:rgba(255,255,255,.7); line-height:1.7; }
     .badge-list { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
-    .badge-list span { background:rgba(255,255,255,.15); color:#fff; font-size:12px; padding:4px 12px; border-radius:20px; }
+    .badge-list span { background:rgba(255,255,255,.15); color:#fff; font-size: 14.4px; padding:4px 12px; border-radius:20px; }
 
     .form-card { background:#fff; border-radius:16px; border:1px solid #eee; padding:32px; }
     .form-group { margin-bottom:24px; }
-    .form-group label { display:block; font-size:13px; font-weight:700; color:#333; margin-bottom:8px; }
+    .form-group label { display:block; font-size: 15.6px; font-weight:700; color:#333; margin-bottom:8px; }
     .form-group label .req { color:#e63946; margin-left:2px; }
     .form-group input, .form-group textarea, .form-group select {
       width:100%; padding:12px 14px; border:1.5px solid #e5e5e5; border-radius:8px;
-      font-size:14px; color:#1a1a1a; outline:none; transition:.15s;
+      font-size: 16.8px; color:#1a1a1a; outline:none; transition:.15s;
       font-family:inherit;
     }
     .form-group input:focus, .form-group textarea:focus { border-color:#5c67f2; }
     .form-group textarea { resize:vertical; min-height:120px; line-height:1.6; }
-    .form-hint { font-size:12px; color:#aaa; margin-top:6px; }
+    .form-hint { font-size: 14.4px; color:#aaa; margin-top:6px; }
 
     .skill-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-    .skill-chip { display:flex; align-items:center; gap:6px; background:#f4f5ff; border:1.5px solid #dce0ff; border-radius:20px; padding:6px 14px; font-size:13px; color:#5c67f2; cursor:pointer; user-select:none; transition:.15s; }
+    .skill-chip { display:flex; align-items:center; gap:6px; background:#f4f5ff; border:1.5px solid #dce0ff; border-radius:20px; padding:6px 14px; font-size: 15.6px; color:#5c67f2; cursor:pointer; user-select:none; transition:.15s; }
     .skill-chip.active { background:#5c67f2; color:#fff; border-color:#5c67f2; }
 
     .tool-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-    .tool-chip { display:flex; align-items:center; gap:6px; background:#f8f9fb; border:1.5px solid #eee; border-radius:20px; padding:6px 14px; font-size:13px; color:#444; cursor:pointer; user-select:none; transition:.15s; }
+    .tool-chip { display:flex; align-items:center; gap:6px; background:#f8f9fb; border:1.5px solid #eee; border-radius:20px; padding:6px 14px; font-size: 15.6px; color:#444; cursor:pointer; user-select:none; transition:.15s; }
     .tool-chip.active { background:#1a1f3c; color:#fff; border-color:#1a1f3c; }
 
-    .submit-btn { width:100%; padding:16px; background:#5c67f2; color:#fff; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; transition:.15s; margin-top:8px; }
+    .submit-btn { width:100%; padding:16px; background:#5c67f2; color:#fff; border:none; border-radius:10px; font-size: 19.2px; font-weight:700; cursor:pointer; transition:.15s; margin-top:8px; }
     .submit-btn:hover { background:#4a55e0; }
     .submit-btn:disabled { background:#ccc; cursor:not-allowed; }
 
     .status-card { border-radius:12px; padding:24px; text-align:center; margin-bottom:24px; }
-    .status-pending { background:#fffbf0; border:1px solid #ffe58f; }
+    .status-pending {
+      position: relative; overflow: hidden; text-align: left;
+      background: #fffbf0; border: 1px solid #ffe58f;
+      min-height: 200px; padding: 0;
+    }
+    .status-pending-overlay {
+      position: absolute; inset: 0; z-index: 1; pointer-events: none;
+      background: linear-gradient(105deg, #fffbf0 0%, #fffbf0 54%, rgba(255,251,240,.88) 68%, rgba(255,251,240,.35) 100%);
+    }
+    .status-pending.has-image .status-pending-overlay {
+      background: linear-gradient(105deg, #fffbf0 0%, #fffbf0 50%, rgba(255,251,240,.92) 62%, rgba(255,251,240,.25) 100%);
+    }
+    .status-pending-bg {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 46%;
+      background-size: cover; background-position: center; z-index: 0;
+    }
+    .status-pending-content {
+      position: relative; z-index: 2; text-align: left;
+      padding: 28px 32px; max-width: 58%;
+    }
     .status-approved { background:#f0fff4; border:1px solid #b7ebc8; }
     .status-rejected { background:#fff0f0; border:1px solid #ffc9c9; }
-    .status-icon { font-size:40px; margin-bottom:12px; }
-    .status-title { font-size:18px; font-weight:800; margin-bottom:8px; }
-    .status-desc { font-size:14px; color:#666; line-height:1.6; }
+    .status-icon { font-size: 48px; margin-bottom:12px; }
+    .status-title { font-size: 21.6px; font-weight:800; margin-bottom:8px; }
+    .status-desc { font-size: 16.8px; color:#666; line-height:1.6; }
+    .workbook-gate {
+      background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 24px 28px; margin-bottom: 24px;
+    }
+    .workbook-gate.complete { background: #f0fff4; border-color: #b7ebc8; }
+    .workbook-gate.locked { background: #fffbf0; border-color: #ffe58f; }
+    .workbook-gate h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .workbook-gate p { font-size: 15px; color: #666; line-height: 1.6; margin-bottom: 14px; }
+    .workbook-progress { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
+    .workbook-progress div { height: 100%; background: #5c67f2; border-radius: 4px; transition: width .3s; }
+    .workbook-gate.complete .workbook-progress div { background: #2cae6b; }
+    .workbook-gate-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .workbook-gate-actions a {
+      padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 15px; text-decoration: none;
+      background: #5c67f2; color: #fff;
+    }
+    .form-card.form-locked { opacity: .55; pointer-events: none; user-select: none; }
+    @media (max-width: 560px) {
+      .status-pending-content { max-width: 100%; padding: 24px; }
+      .status-pending-bg { width: 100%; opacity: .35; }
+      .status-pending-overlay {
+        background: linear-gradient(180deg, #fffbf0 0%, rgba(255,251,240,.92) 70%, rgba(255,251,240,.75) 100%);
+      }
+    }
   </style>
 </head>
 <body>
 <header class="header">
   <div class="header-inner">
-    <a href="/" class="logo">타닥<span>클래스</span></a>
+    <a href="/" class="logo">타닥클래스</a>
     <div class="header-right">
-      <a href="/editors.html" class="nav-btn">편집자 목록</a>
+      <a href="/editors.html" class="nav-btn">에디터즈</a>
       <a href="/" class="nav-btn">← 홈</a>
     </div>
   </div>
@@ -61,16 +103,17 @@
 
 <div class="apply-wrap">
   <div class="apply-hero">
-    <h1>🎬 공인 편집자 신청</h1>
-    <p>타닥클래스 수강생 중 실력이 검증된 편집자만 선발합니다.<br>승인 후 의뢰인과 직접 프로젝트를 진행할 수 있습니다.</p>
+    <h1>🎬 에디터즈 신청</h1>
+    <p>타닥클래스 수강생 중 실력이 검증된 에디터만 선발합니다.<br>승인 후 의뢰인과 직접 프로젝트를 진행할 수 있습니다.</p>
     <div class="badge-list">
-      <span>✓ 의뢰 수주 가능</span>
+      <span>✓ 클라이언츠 수주 가능</span>
       <span>✓ 프로필 공개 노출</span>
       <span>✓ 타닥클래스 인증 마크</span>
     </div>
   </div>
 
-  <!-- 신청 상태 표시 (JS로 조건 렌더링) -->
+  <!-- 워크북 자격 / 신청 상태 -->
+  <div id="workbook-gate-area"></div>
   <div id="status-area"></div>
 
   <!-- 신청 폼 -->
@@ -91,14 +134,10 @@
       <div class="form-group">
         <label>주요 사용 툴 <span class="req">*</span></label>
         <div class="tool-chips" id="tool-chips">
+          <div class="tool-chip" data-val="CapCut Pro">CapCut Pro</div>
           <div class="tool-chip" data-val="Premiere Pro">Premiere Pro</div>
-          <div class="tool-chip" data-val="After Effects">After Effects</div>
-          <div class="tool-chip" data-val="DaVinci Resolve">DaVinci Resolve</div>
           <div class="tool-chip" data-val="Final Cut Pro">Final Cut Pro</div>
-          <div class="tool-chip" data-val="Photoshop">Photoshop</div>
-          <div class="tool-chip" data-val="Illustrator">Illustrator</div>
-          <div class="tool-chip" data-val="Cinema 4D">Cinema 4D</div>
-          <div class="tool-chip" data-val="Blender">Blender</div>
+          <div class="tool-chip" data-val="DaVinci Resolve">DaVinci Resolve</div>
         </div>
         <p class="form-hint">복수 선택 가능</p>
       </div>
@@ -106,17 +145,52 @@
       <div class="form-group">
         <label>가능한 작업 유형 <span class="req">*</span></label>
         <div class="skill-chips" id="skill-chips">
-          <div class="skill-chip" data-val="유튜브 편집">유튜브 편집</div>
-          <div class="skill-chip" data-val="숏폼/릴스">숏폼/릴스</div>
-          <div class="skill-chip" data-val="광고 영상">광고 영상</div>
-          <div class="skill-chip" data-val="모션그래픽">모션그래픽</div>
+          <div class="skill-chip" data-val="유튜브 쇼츠">유튜브 쇼츠</div>
+          <div class="skill-chip" data-val="인스타그램 릴스">인스타그램 릴스</div>
+          <div class="skill-chip" data-val="틱톡">틱톡</div>
+          <div class="skill-chip" data-val="AI영상">AI영상</div>
           <div class="skill-chip" data-val="색보정">색보정</div>
-          <div class="skill-chip" data-val="브랜드 필름">브랜드 필름</div>
-          <div class="skill-chip" data-val="웨딩/행사">웨딩/행사</div>
-          <div class="skill-chip" data-val="드론 편집">드론 편집</div>
-          <div class="skill-chip" data-val="사운드 디자인">사운드 디자인</div>
+          <div class="skill-chip" data-val="세로 브랜드필름">세로 브랜드필름</div>
         </div>
         <p class="form-hint">복수 선택 가능</p>
+      </div>
+
+      <div class="form-group">
+        <label>활동 지역 <span class="req">*</span></label>
+        <select name="location" required>
+          <option value="">선택해주세요</option>
+          <option value="서울">서울</option>
+          <option value="경기">경기</option>
+          <option value="인천">인천</option>
+          <option value="부산">부산</option>
+          <option value="대구">대구</option>
+          <option value="광주">광주</option>
+          <option value="대전">대전</option>
+          <option value="울산">울산</option>
+          <option value="세종">세종</option>
+          <option value="강원">강원</option>
+          <option value="충북">충북</option>
+          <option value="충남">충남</option>
+          <option value="전북">전북</option>
+          <option value="전남">전남</option>
+          <option value="경북">경북</option>
+          <option value="경남">경남</option>
+          <option value="제주">제주</option>
+          <option value="해외·원격">해외·원격</option>
+        </select>
+        <p class="form-hint">대략적인 활동 지역을 선택해주세요. 의뢰인이 참고합니다.</p>
+      </div>
+
+      <div class="form-group">
+        <label>희망 근무 형태 <span class="req">*</span></label>
+        <select name="work_type" required>
+          <option value="">선택해주세요</option>
+          <option value="remote">원격·재택</option>
+          <option value="hybrid">하이브리드</option>
+          <option value="onsite">현장 근무</option>
+          <option value="project">프로젝트 단위</option>
+          <option value="fulltime">풀타임·장기</option>
+        </select>
       </div>
 
       <div class="form-group">
@@ -133,9 +207,11 @@
 
       <div class="legal-box" style="margin-bottom:20px">
         <strong>신청 전 확인사항</strong><br>
-        · 타닥클래스 강의를 1개 이상 수강 완료한 분만 신청 가능합니다.<br>
+        · <strong>워크북 10단계</strong>를 순서대로 완료해야 신청할 수 있습니다. (단계당 메일 수·제한 시간은 프로그램 설계에 따름)<br>
         · 심사는 영업일 기준 3~5일 소요됩니다.<br>
-        · 승인 후 프로필이 공개되며, 의뢰 수수료 15%가 적용됩니다.<br>
+        · <strong>수강생</strong>은 승인 시 <strong>상위노출 쿠폰 2만원 × 5장</strong>(총 10만원)이 발급됩니다.<br>
+        · 승인 시 <strong>1주일간 에디터즈 명단 상단 노출</strong>이 자동 적용됩니다.<br>
+        · 승인 후 프로필이 공개되며, 클라이언츠 수수료 15%가 적용됩니다.<br>
         · 허위 정보 기재 시 인증이 취소될 수 있습니다.
       </div>
 
@@ -172,18 +248,88 @@ introTA.addEventListener('input', () => {
   document.getElementById('intro-count').textContent = introTA.value.length + '자'
 })
 
+function renderPendingCard(appliedDate, imageUrl) {
+  const hasImage = !!imageUrl
+  const card = document.createElement('div')
+  card.className = 'status-card status-pending' + (hasImage ? ' has-image' : '')
+  if (hasImage) {
+    const bg = document.createElement('div')
+    bg.className = 'status-pending-bg'
+    bg.style.backgroundImage = `url("${imageUrl.replace(/"/g, '\\"')}")`
+    card.appendChild(bg)
+  }
+  const overlay = document.createElement('div')
+  overlay.className = 'status-pending-overlay'
+  card.appendChild(overlay)
+  const content = document.createElement('div')
+  content.className = 'status-pending-content'
+  content.innerHTML = `
+    <div class="status-icon">⏳</div>
+    <div class="status-title">심사 중입니다</div>
+    <div class="status-desc">신청서를 검토하고 있습니다.<br>영업일 기준 3~5일 이내에 결과를 이메일로 안내드립니다.<br><br>신청일: ${appliedDate || '-'}</div>
+  `
+  card.appendChild(content)
+  return card
+}
+
+function renderWorkbookGate(progress) {
+  const area = document.getElementById('workbook-gate-area')
+  const formWrap = document.getElementById('apply-form-wrap')
+  const pct = Math.round((progress.passed / progress.required) * 100)
+  const complete = progress.can_apply
+  area.innerHTML = `
+    <div class="workbook-gate ${complete ? 'complete' : 'locked'}">
+      <h3>${complete ? '✅ 에디터즈 신청 자격 충족' : '📬 의뢰 메일 미션 진행 중'}</h3>
+      <p>${complete
+        ? '10단계 워크북을 모두 완료했습니다. 아래 신청서를 작성해주세요.'
+        : `에디터즈 선발 워크북 <strong>10단계</strong>를 순서대로 완료해야 합니다. (${progress.passed}/${progress.required}단계 완료)`}</p>
+      <div class="workbook-progress"><div style="width:${pct}%"></div></div>
+      <div class="workbook-gate-actions">
+        <a href="/editor-program.html">${complete ? '프로그램 안내 보기' : '에디터즈 선발 프로그램 시작 →'}</a>
+      </div>
+    </div>`
+  if (!complete) formWrap.classList.add('form-locked')
+  else formWrap.classList.remove('form-locked')
+}
+
+async function loadEligibility() {
+  try {
+    const progress = await API.get('/editor/workbooks/eligibility')
+    if (progress.timed_out) {
+      location.href = '/editor-program.html'
+      return null
+    }
+    if (!progress.can_apply && progress.needs_agreement) {
+      location.href = '/editor-program.html'
+      return null
+    }
+    renderWorkbookGate(progress)
+    return progress
+  } catch (e) {
+    console.error(e)
+    return null
+  }
+}
+
 // 기존 신청 상태 확인
 async function checkStatus() {
   try {
-    const app = await API.get('/editor/my-application')
+    const [app, settings] = await Promise.all([
+      API.get('/editor/my-application'),
+      API.get('/editor/apply-settings').catch(() => ({})),
+    ])
+    await loadEligibility()
     if (!app) return
     const area = document.getElementById('status-area')
     if (app.status === 'pending') {
-      area.innerHTML = `<div class="status-card status-pending"><div class="status-icon">⏳</div><div class="status-title">심사 중입니다</div><div class="status-desc">신청서를 검토하고 있습니다.<br>영업일 기준 3~5일 이내에 결과를 이메일로 안내드립니다.<br><br>신청일: ${app.applied_at?.slice(0,10)}</div></div>`
+      area.innerHTML = ''
+      area.appendChild(renderPendingCard(app.applied_at?.slice(0, 10), settings.pending_review_image))
       document.getElementById('apply-form-wrap').style.display = 'none'
+      document.getElementById('workbook-gate-area').style.display = 'none'
     } else if (app.status === 'approved') {
-      area.innerHTML = `<div class="status-card status-approved"><div class="status-icon">✅</div><div class="status-title">승인되었습니다!</div><div class="status-desc">타닥클래스 공인 편집자로 등록되었습니다.<br><a href="/editors.html" style="color:#5c67f2;font-weight:700">편집자 목록에서 내 프로필 보기 →</a></div></div>`
+      area.innerHTML = `<div class="status-card status-approved"><div class="status-icon">✅</div><div class="status-title">승인되었습니다!</div><div class="status-desc">타닥클래스 에디터즈로 등록되었습니다.<br><a href="/editors.html" style="color:#5c67f2;font-weight:700">에디터즈에서 내 프로필 보기 →</a></div></div>`
       document.getElementById('apply-form-wrap').style.display = 'none'
+      document.getElementById('workbook-gate-area').style.display = 'none'
     } else if (app.status === 'rejected') {
       area.innerHTML = `<div class="status-card status-rejected"><div class="status-icon">❌</div><div class="status-title">이번에는 승인되지 않았습니다</div><div class="status-desc">${app.reject_reason ? '사유: ' + app.reject_reason + '<br><br>' : ''}포트폴리오를 보강하신 후 재신청해 주세요.</div></div>`
     }
@@ -208,6 +354,8 @@ document.getElementById('apply-form').addEventListener('submit', async e => {
       portfolio_url: fd.get('portfolio_url'),
       experience_years: parseInt(fd.get('experience_years')) || 0,
       tools: [...selectedTools],
+      location: fd.get('location'),
+      work_type: fd.get('work_type'),
     })
     alert('신청이 완료되었습니다! 영업일 기준 3~5일 이내에 결과를 안내드립니다.')
     location.reload()

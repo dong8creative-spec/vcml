@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>강사 소개 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/common.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo">타닥클래스</a>
+    <div class="header-right">
+      <a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>
+    </div>
+  </div>
+</header>
+
+<section class="instructors-page-hero">
+  <h1 id="page-title">강사 소개</h1>
+  <p id="page-intro">타닥클래스 강사진을 소개합니다.</p>
+</section>
+
+<section class="instructors-section">
+  <div class="container">
+    <div class="instructors-grid" id="instructors-grid">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</section>
+
+<div data-chrome="footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/site-chrome.js"></script>
+<script>
+function escHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function instructorCard(i) {
+  const initial = (i.name || '?')[0]
+  const avatar = i.profile_image
+    ? `<div class="instructor-avatar"><img src="${escHtml(i.profile_image)}" alt="" /></div>`
+    : `<div class="instructor-avatar instructor-avatar--placeholder">${escHtml(initial)}</div>`
+  const tags = (i.tags || []).map(t => `<span>${escHtml(t)}</span>`).join('')
+  return `<article class="instructor-card">
+    ${avatar}
+    <div class="instructor-body">
+      <h3 class="instructor-name">${escHtml(i.name)}</h3>
+      ${i.role_title ? `<p class="instructor-role">${escHtml(i.role_title)}</p>` : ''}
+      ${tags ? `<div class="instructor-tags">${tags}</div>` : ''}
+      ${i.bio ? `<p class="instructor-bio" style="-webkit-line-clamp:unset">${escHtml(i.bio)}</p>` : ''}
+    </div>
+  </article>`
+}
+
+async function load() {
+  const grid = document.getElementById('instructors-grid')
+  try {
+    const data = await API.get('/instructors')
+    if (data.intro?.section_title) document.getElementById('page-title').textContent = data.intro.section_title
+    if (data.intro?.page_intro) document.getElementById('page-intro').textContent = data.intro.page_intro
+    const list = data.instructors || []
+    if (!list.length) {
+      grid.innerHTML = '<p class="empty">등록된 강사가 없습니다.</p>'
+      return
+    }
+    grid.innerHTML = list.map(instructorCard).join('')
+  } catch (e) {
+    console.error(e)
+    grid.innerHTML = '<p class="empty">강사 정보를 불러오지 못했습니다.</p>'
+  }
+}
+
+load()
+</script>
+</body>
+</html>

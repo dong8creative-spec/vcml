@@ -1,26 +1,26 @@
-body.login-body { background: var(--bg-soft); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
-.login-logo { font-size: 26px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.04em; margin-bottom: 28px; text-decoration: none; }
-.login-card { width: 100%; max-width: 400px; background: #fff; border: 0.5px solid var(--border); border-radius: 16px; padding: 32px; }
+body.login-body { background: var(--bg-soft); min-height: 100vh; display: flex; flex-direction: column; }
+.login-body-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+.login-card { width: 100%; max-width: 520px; background: #fff; border: 0.5px solid var(--border); border-radius: 16px; padding: 32px; box-sizing: border-box; height: auto; }
 .tab-row { display: flex; border-bottom: 0.5px solid var(--border); margin-bottom: 28px; }
-.tab-btn { flex: 1; background: none; border: none; padding: 10px; font-size: 20px; color: var(--text-hint); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
+.tab-btn { flex: 1; background: none; border: none; padding: 10px; font-size: 24px; color: var(--text-hint); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
 .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--text-primary); font-weight: 500; }
 .form-field { margin-bottom: 18px; }
-.form-field label { display: block; font-size: 17px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
-.form-field .hint { font-size: 14px; color: var(--text-hint); font-weight: 400; }
-.form-field input { width: 100%; padding: 11px 14px; border: 0.5px solid var(--border); border-radius: 8px; font-size: 20px; color: var(--text-secondary); outline: none; transition: border-color 0.2s; }
+.form-field label { display: block; font-size: 20.4px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+.form-field .hint { font-size: 16.8px; color: var(--text-hint); font-weight: 400; }
+.form-field input { width: 100%; padding: 11px 14px; border: 0.5px solid var(--border); border-radius: 8px; font-size: 24px; color: var(--text-secondary); outline: none; transition: border-color 0.2s; }
 .form-field input:focus { border-color: var(--text-hint); }
 .pw-wrap { position: relative; }
 .pw-wrap input { padding-right: 44px; }
-.pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-hint); font-size: 23px; padding: 0; cursor: pointer; }
-.btn-submit { width: 100%; padding: 13px; background: var(--text-primary); color: #fff; border: none; border-radius: 8px; font-size: 21px; font-weight: 500; cursor: pointer; margin-top: 8px; transition: background 0.2s; }
+.pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-hint); font-size: 27.6px; padding: 0; cursor: pointer; }
+.btn-submit { width: 100%; padding: 13px; background: var(--text-primary); color: #fff; border: none; border-radius: 8px; font-size: 25.2px; font-weight: 500; cursor: pointer; margin-top: 8px; transition: background 0.2s; }
 .btn-submit:hover { background: var(--text-secondary); }
 .btn-submit:disabled { background: var(--border-strong); cursor: not-allowed; }
 .divider { text-align: center; margin: 20px 0; position: relative; }
 .divider::before { content:''; position:absolute; top:50%; left:0; right:0; border-top:0.5px solid var(--border); }
-.divider span { background:#fff; padding: 0 12px; font-size:12px; color:var(--text-hint); position:relative; }
-.demo-hint { background: var(--bg-soft); border: 0.5px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 17px; color: var(--text-muted); line-height: 1.7; }
+.divider span { background:#fff; padding: 0 12px; font-size: 14.4px; color:var(--text-hint); position:relative; }
+.demo-hint { background: var(--bg-soft); border: 0.5px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 20.4px; color: var(--text-muted); line-height: 1.7; }
 .demo-hint b { color: var(--text-secondary); }
-.agree-row { margin-bottom: 14px; font-size: 17px; color: var(--text-muted); }
+.agree-row { margin-bottom: 14px; font-size: 20.4px; color: var(--text-muted); }
 .agree-row a { color: var(--text-secondary); text-decoration: underline; }
 .agree-row input[type=checkbox] { margin-right: 6px; accent-color: var(--text-primary); }
 
@@ -34,7 +34,7 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
   padding: 13px;
   background: #FEE500;
   color: #2a1a1a;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 600;
   border: none;
   border-radius: 10px;
@@ -45,12 +45,64 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
   margin-bottom: 16px;
 }
 .btn-kakao:hover { background: #F5DC00; }
+
+/* Google 로그인 */
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px;
+  background: #fff;
+  color: #3c4043;
+  font-size: 24px;
+  font-weight: 600;
+  border: 1px solid #dadce0;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, box-shadow 0.15s;
+  margin-top: 0;
+  box-sizing: border-box;
+}
+.btn-google:hover { background: #f8f9fa; box-shadow: 0 1px 3px rgba(60,64,67,.15); }
+.btn-google:disabled, .btn-google.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.login-beta-notice {
+  background: #f0f7ff;
+  border: 1px solid #c5ddf8;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 18px;
+  color: #1a4a7a;
+  line-height: 1.65;
+  margin-bottom: 20px;
+}
+.login-beta-notice strong { display: block; font-size: 19.2px; margin-bottom: 4px; color: #0d3a66; }
+.login-social-stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+.login-email-toggle {
+  width: 100%;
+  padding: 11px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20.4px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.login-email-toggle:hover { color: var(--text-secondary); }
+.login-email-panel { margin-top: 8px; }
+.login-email-panel[hidden] { display: none !important; }
 .or-divider {
   display: flex;
   align-items: center;
   gap: 10px;
   margin: 18px 0 4px;
-  font-size: 16px;
+  font-size: 19.2px;
   color: var(--border-strong);
 }
 .or-divider::before,
@@ -63,8 +115,10 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
 /* ── 3단계 회원가입 ── */
 .step-indicator {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 0;
   margin-bottom: 28px;
 }
 .step-item {
@@ -79,7 +133,7 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
   border-radius: 50%;
   background: var(--border);
   color: var(--text-hint);
-  font-size: 17px;
+  font-size: 20.4px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -95,18 +149,18 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
   color: #fff;
 }
 .step-label {
-  font-size: 14px;
+  font-size: 16.8px;
   color: var(--text-hint);
   white-space: nowrap;
 }
 .step-item.active .step-label { color: var(--text-primary); font-weight: 500; }
 .step-item.done .step-label { color: var(--text-secondary); }
 .step-line {
-  width: 36px;
+  width: 28px;
   height: 1px;
   background: var(--border);
-  margin: 0 6px;
-  margin-bottom: 14px;
+  margin: 14px 4px 0;
+  flex-shrink: 0;
 }
 
 /* 이메일 + 버튼 나란히 */
@@ -117,6 +171,7 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
 }
 .code-row input {
   flex: 1;
+  min-width: 0;
 }
 .btn-send-code {
   flex-shrink: 0;
@@ -125,7 +180,7 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
   color: #fff;
   border: none;
   border-radius: 8px;
-  font-size: 17px;
+  font-size: 20.4px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
@@ -141,12 +196,12 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
 .btn-send-code.verify:hover { background: var(--bg-soft); }
 
 .code-hint {
-  font-size: 16px;
+  font-size: 19.2px;
   color: var(--text-hint);
   margin-top: 5px;
 }
 .verified-msg {
-  font-size: 16px;
+  font-size: 19.2px;
   color: var(--success);
   margin-top: 5px;
   display: none;
@@ -176,7 +231,7 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
 .pw-bar.good   { background: #5ab55e; }
 .pw-bar.strong { background: var(--primary-light); }
 .pw-label {
-  font-size: 14px;
+  font-size: 16.8px;
   color: var(--text-hint);
   min-width: 28px;
   text-align: right;
@@ -195,7 +250,7 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
   gap: 4px 12px;
 }
 .pw-rules li {
-  font-size: 14px;
+  font-size: 16.8px;
   color: var(--text-hint);
   display: flex;
   align-items: center;
@@ -203,7 +258,7 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
 }
 .pw-rules li::before {
   content: '○';
-  font-size: 13px;
+  font-size: 15.6px;
 }
 .pw-rules li.ok {
   color: var(--success);
@@ -213,7 +268,7 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
 }
 
 .pw-match-msg {
-  font-size: 16px;
+  font-size: 19.2px;
   margin-top: 5px;
   display: none;
 }
@@ -228,7 +283,7 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
   padding: 12px 14px;
   background: var(--bg-soft);
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 21.6px;
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
@@ -243,7 +298,7 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 17px;
+  font-size: 20.4px;
   color: var(--text-secondary);
   padding: 6px 2px;
 }
@@ -251,10 +306,10 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
   color: var(--text-secondary);
   text-decoration: underline;
   margin-left: auto;
-  font-size: 16px;
+  font-size: 19.2px;
 }
 .terms-row.required .req-badge {
-  font-size: 13px;
+  font-size: 15.6px;
   color: #fff;
   background: var(--text-primary);
   border-radius: 3px;
@@ -275,9 +330,34 @@ body.login-body { background: var(--bg-soft); display: flex; flex-direction: col
   color: var(--text-secondary);
   border: 0.5px solid var(--border-strong);
   border-radius: 8px;
-  font-size: 20px;
+  font-size: 24px;
   cursor: pointer;
   margin-top: 8px;
   transition: background 0.2s;
 }
 .btn-outline-step:hover { background: var(--bg-soft); }
+
+/* 가입 유형 선택 */
+.member-type-label { font-size: 20.4px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.4; }
+.member-type-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+.member-type-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 0;
+  height: auto;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: #fff;
+  box-sizing: border-box;
+}
+.member-type-card input { position: absolute; opacity: 0; pointer-events: none; }
+.member-type-card:has(input:checked) { border-color: var(--text-primary); background: var(--bg-soft); }
+.member-type-title { font-size: 21.6px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; line-height: 1.35; }
+.member-type-desc { font-size: 16.8px; color: var(--text-muted); line-height: 1.5; word-break: keep-all; overflow-wrap: break-word; }
+.member-type-benefit { font-size: 15.6px; color: var(--primary-dark); margin-top: 6px; line-height: 1.45; word-break: keep-all; overflow-wrap: break-word; }

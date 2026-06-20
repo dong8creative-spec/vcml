@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타닥클래스 관리자</title>
+  <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/admin.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
@@ -11,10 +12,7 @@
 
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-mark">타닥</span>
-      <span class="logo-sub">관리자</span>
-    </div>
+    <div class="sidebar-logo">타닥클래스<span>Admin Panel</span></div>
     <nav class="sidebar-nav">
       <div class="nav-group-label">대시보드</div>
       <a href="#dashboard" class="nav-item active" data-section="dashboard">
@@ -44,21 +42,36 @@
         <span class="badge-dot">3</span>
       </a>
 
-      <div class="nav-group-label">편집자 마켓</div>
+      <div class="nav-group-label">에디터즈</div>
       <a href="#editor-apps" class="nav-item" data-section="editor-apps">
-        <i class="ti ti-rosette"></i> 편집자 신청
+        <i class="ti ti-rosette"></i> 에디터즈 신청
         <span class="badge-dot" id="editor-badge" style="display:none"></span>
       </a>
+      <a href="#editor-program" class="nav-item" data-section="editor-program">
+        <i class="ti ti-mail"></i> 선발 프로그램 설계
+      </a>
+      <a href="#submissions" class="nav-item" data-section="submissions">
+        <i class="ti ti-clipboard-check"></i> 미션 제출 검수
+      </a>
       <a href="#projects" class="nav-item" data-section="projects">
-        <i class="ti ti-briefcase"></i> 의뢰 현황
+        <i class="ti ti-briefcase"></i> 클라이언츠 현황
       </a>
 
       <div class="nav-group-label">콘텐츠</div>
+      <a href="#instructors" class="nav-item" data-section="instructors">
+        <i class="ti ti-user-star"></i> 강사 관리
+      </a>
       <a href="#reviews" class="nav-item" data-section="reviews">
         <i class="ti ti-star"></i> 수강 후기
       </a>
       <a href="#notices" class="nav-item" data-section="notices">
         <i class="ti ti-bell"></i> 공지사항
+      </a>
+      <a href="#tickets" class="nav-item" data-section="tickets">
+        <i class="ti ti-headset"></i> 고객 문의
+      </a>
+      <a href="#faqs" class="nav-item" data-section="faqs">
+        <i class="ti ti-help-circle"></i> FAQ 관리
       </a>
 
       <div class="nav-group-label">설정</div>
@@ -169,23 +182,8 @@
           <thead>
             <tr><th>수강생</th><th>강의</th><th>별점</th><th>내용</th><th>작성일</th><th>관리</th></tr>
           </thead>
-          <tbody>
-            <tr>
-              <td><div class="user-cell"><div class="avatar-sm">김</div> 김○○</div></td>
-              <td class="td-sub">파이썬 데이터 분석</td>
-              <td><span class="stars-sm">★★★★★</span></td>
-              <td class="td-review">실무에서 바로 쓸 수 있는 내용만 골라 가르쳐줘서 시간 낭비가 없었어요.</td>
-              <td class="td-date">2025.06.18</td>
-              <td><button class="btn-sm-danger">삭제</button></td>
-            </tr>
-            <tr>
-              <td><div class="user-cell"><div class="avatar-sm">이</div> 이○○</div></td>
-              <td class="td-sub">Next.js 풀스택</td>
-              <td><span class="stars-sm">★★★★★</span></td>
-              <td class="td-review">왜 이렇게 해야 하는지 이유를 항상 설명해줘서 좋았어요.</td>
-              <td class="td-date">2025.06.17</td>
-              <td><button class="btn-sm-danger">삭제</button></td>
-            </tr>
+          <tbody id="dashboard-reviews-body">
+            <tr><td colspan="6" style="text-align:center;color:#888">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -195,13 +193,25 @@
     <!-- ===== SECTION: COURSES ===== -->
     <section class="section" id="sec-courses">
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">강의 목록</div>
-          <button class="btn-primary-sm" onclick="openLiveCreateModal()"><i class="ti ti-broadcast"></i> 라이브 강의 등록</button>
+        <div class="card-header" style="flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="card-title">강의 목록 <span id="courses-count-label" style="font-weight:500;color:#888;font-size:14px"></span></div>
+            <p class="sec-sub" style="margin:4px 0 0">사이트에 노출되는 운영 강의는 카탈로그 11개 기준입니다.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto">
+            <div class="filter-tabs" id="course-filter-tabs">
+              <button type="button" class="filter-tab active" data-course-filter="published">공개 (운영)</button>
+              <button type="button" class="filter-tab" data-course-filter="catalog">카탈로그</button>
+              <button type="button" class="filter-tab" data-course-filter="all">전체</button>
+              <button type="button" class="filter-tab" data-course-filter="archived">구버전·비공개</button>
+            </div>
+            <button type="button" class="btn-sm" id="btn-sync-catalog"><i class="ti ti-refresh"></i> 카탈로그 동기화</button>
+            <button class="btn-primary-sm" onclick="openLiveCreateModal()"><i class="ti ti-broadcast"></i> 라이브 강의 등록</button>
+          </div>
         </div>
         <table class="data-table">
           <thead>
-            <tr><th>#</th><th>강의명</th><th>카테고리</th><th>유형</th><th>판매가</th><th>수강생</th><th>상태</th><th>관리</th></tr>
+            <tr><th>순서</th><th>강의명</th><th>카테고리</th><th>유형</th><th>판매가</th><th>수강생</th><th>상태</th><th>관리</th></tr>
           </thead>
           <tbody id="courses-table-body">
             <tr><td colspan="8" style="text-align:center;color:#888">로딩 중...</td></tr>
@@ -229,7 +239,7 @@
                 <input type="datetime-local" id="live-schedule" />
               </div>
               <div class="form-group">
-                <label>Google Meet 코드 <span style="font-size:11px;color:#aaa">(예: abc-defg-hij)</span></label>
+                <label>Google Meet 코드 <span style="font-size: 13.2px;color:#aaa">(예: abc-defg-hij)</span></label>
                 <input type="text" id="live-meet-code" placeholder="meet.google.com/ 뒤 코드 입력" />
               </div>
               <div class="form-group">
@@ -245,16 +255,77 @@
           </div>
           <div id="live-send-section" style="display:none">
             <div style="background:#fff3e0;border:0.5px solid #ffcc80;border-radius:10px;padding:16px;margin-bottom:16px">
-              <div style="font-size:13px;font-weight:600;color:#e65100;margin-bottom:8px">📣 알림톡 발송</div>
-              <div style="font-size:13px;color:#bf360c;line-height:1.7">
+              <div style="font-size: 15.6px;font-weight:600;color:#e65100;margin-bottom:8px">📣 알림톡 발송</div>
+              <div style="font-size: 15.6px;color:#bf360c;line-height:1.7">
                 수강 등록된 학생 전원에게<br>Google Meet 참여 코드를<br>카카오 알림톡으로 발송합니다.<br>
-                <span style="font-size:11px;color:#aaa">(전화번호 미등록 수강생 제외)</span>
+                <span style="font-size: 13.2px;color:#aaa">(전화번호 미등록 수강생 제외)</span>
               </div>
             </div>
-            <button class="btn-primary-sm" style="width:100%;padding:12px;font-size:14px" onclick="sendLiveInvite()">
+            <button class="btn-primary-sm" style="width:100%;padding:12px;font-size: 16.8px" onclick="sendLiveInvite()">
               <i class="ti ti-brand-kakao"></i> 수강생에게 Meet 코드 발송
             </button>
-            <div id="send-result" style="margin-top:12px;font-size:13px;display:none"></div>
+            <div id="send-result" style="margin-top:12px;font-size: 15.6px;display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="course-modal">
+        <div class="modal" style="max-width:560px">
+          <div class="modal-header">
+            <div class="modal-title" id="course-modal-title">강의 편집</div>
+            <button class="modal-close" onclick="document.getElementById('course-modal').style.display='none'">✕</button>
+          </div>
+          <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
+            <div class="form-group">
+              <label>강의명</label>
+              <input type="text" id="cm-title" />
+            </div>
+            <div class="form-group">
+              <label>카테고리</label>
+              <input type="text" id="cm-category" placeholder="캡컷 PRO, 프리미어 프로, AI·상세페이지" />
+            </div>
+            <div class="form-group">
+              <label>설명</label>
+              <textarea id="cm-description" rows="3"></textarea>
+            </div>
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>정가 (원)</label>
+                <input type="number" id="cm-price" min="0" step="1000" />
+              </div>
+              <div class="form-group">
+                <label>판매가 (원)</label>
+                <input type="number" id="cm-sale-price" min="0" step="1000" />
+              </div>
+            </div>
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>노출 순서</label>
+                <input type="number" id="cm-sort-order" min="1" />
+              </div>
+              <div class="form-group">
+                <label>뱃지</label>
+                <select id="cm-badge">
+                  <option value="">없음</option>
+                  <option value="FREE">FREE</option>
+                  <option value="NEW">NEW</option>
+                  <option value="BEST">BEST</option>
+                  <option value="OFFLINE">OFFLINE</option>
+                  <option value="LIVE">LIVE</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>공개 여부</label>
+              <select id="cm-published">
+                <option value="1">공개</option>
+                <option value="0">비공개</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-sm" onclick="document.getElementById('course-modal').style.display='none'">취소</button>
+            <button class="btn-primary-sm" id="cm-save-btn">저장</button>
           </div>
         </div>
       </div>
@@ -306,51 +377,99 @@
     <section class="section" id="sec-refunds">
       <div class="card">
         <div class="card-header">
-          <div class="card-title">환불 요청 <span class="badge-count">3건</span></div>
+          <div class="card-title">환불 요청 <span class="badge-count" id="refund-count">0건</span></div>
         </div>
         <table class="data-table">
           <thead>
             <tr><th>수강생</th><th>강의</th><th>결제일</th><th>환불 요청일</th><th>사유</th><th>금액</th><th>처리</th></tr>
           </thead>
-          <tbody>
-            <tr>
-              <td><div class="user-cell"><div class="avatar-sm">정</div> 정○○</div></td>
-              <td class="td-sub">React Native</td>
-              <td class="td-date">2025.06.16</td>
-              <td class="td-date">2025.06.17</td>
-              <td class="td-sub">단순 변심</td>
-              <td class="td-price bold">₩89,000</td>
-              <td class="td-actions">
-                <button class="btn-sm">승인</button>
-                <button class="btn-sm-danger">거절</button>
-              </td>
-            </tr>
-            <tr>
-              <td><div class="user-cell"><div class="avatar-sm">오</div> 오○○</div></td>
-              <td class="td-sub">AWS 배포와 운영</td>
-              <td class="td-date">2025.06.10</td>
-              <td class="td-date">2025.06.18</td>
-              <td class="td-sub">영상 재생 오류</td>
-              <td class="td-price bold">₩59,000</td>
-              <td class="td-actions">
-                <button class="btn-sm">승인</button>
-                <button class="btn-sm-danger">거절</button>
-              </td>
-            </tr>
-            <tr>
-              <td><div class="user-cell"><div class="avatar-sm">한</div> 한○○</div></td>
-              <td class="td-sub">파이썬 데이터 분석</td>
-              <td class="td-date">2025.06.05</td>
-              <td class="td-date">2025.06.19</td>
-              <td class="td-sub">기대와 다른 내용</td>
-              <td class="td-price bold">₩79,000</td>
-              <td class="td-actions">
-                <button class="btn-sm">승인</button>
-                <button class="btn-sm-danger">거절</button>
-              </td>
-            </tr>
+          <tbody id="refunds-table-body">
+            <tr class="empty-state-row"><td colspan="7">환불 요청이 없습니다.</td></tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: INSTRUCTORS ===== -->
+    <section class="section" id="sec-instructors">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">강사 관리</div>
+          <div class="sec-sub">메인·강사 소개 페이지에 표시되는 강사 프로필을 등록·수정합니다.</div>
+        </div>
+        <div class="sec-actions">
+          <button class="btn-primary-sm" id="instructor-create-btn"><i class="ti ti-plus"></i> 강사 등록</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <div class="card-title">강사 소개란 문구</div>
+          <p class="sec-sub" style="margin:0">홈 섹션 제목·부제, 강사 소개 페이지 상단 문구입니다.</p>
+        </div>
+        <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:12px">
+          <div class="two-col" style="gap:12px">
+            <div class="form-group">
+              <label>섹션 제목 (홈·강사 페이지)</label>
+              <input type="text" id="instructors-intro-title" />
+            </div>
+            <div class="form-group">
+              <label>섹션 부제 (홈만)</label>
+              <input type="text" id="instructors-intro-subtitle" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>강사 페이지 상단 소개</label>
+            <textarea id="instructors-intro-page" rows="3" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <button type="button" class="btn-save" id="instructors-intro-save">소개란 저장</button>
+            <span id="instructors-intro-status" style="font-size:14px;color:#888"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr><th>순서</th><th>프로필</th><th>이름</th><th>한줄 소개</th><th>태그</th><th>공개</th><th>관리</th></tr>
+          </thead>
+          <tbody id="instructors-tbody">
+            <tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-overlay" id="instructor-modal">
+        <div class="modal" style="max-width:520px">
+          <div class="modal-header">
+            <div class="modal-title" id="instructor-modal-title">강사 등록</div>
+            <button class="modal-close" onclick="document.getElementById('instructor-modal').style.display='none'">✕</button>
+          </div>
+          <div style="padding:0 20px 16px;display:flex;gap:20px;align-items:flex-start">
+            <div style="flex-shrink:0">
+              <div id="instructor-img-preview" style="width:96px;height:96px;border-radius:50%;border:1.5px dashed #ddd;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:13px;overflow:hidden;background-size:cover;background-position:center">사진</div>
+              <input type="file" id="instructor-img-input" accept="image/jpeg,image/png,image/webp" style="margin-top:8px;font-size:12px;width:96px" />
+              <button type="button" class="btn-sm" id="instructor-img-remove" style="display:none;margin-top:6px;width:100%">제거</button>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div class="form-group"><label>이름 *</label><input type="text" id="im-name" maxlength="40" /></div>
+              <div class="form-group"><label>한줄 소개</label><input type="text" id="im-role" maxlength="120" placeholder="예: 영상 제작 20년차 · 방송·광고 현장 출신" /></div>
+            </div>
+          </div>
+          <div class="form-group" style="padding:0 20px"><label>상세 소개</label><textarea id="im-bio" rows="5" maxlength="2000" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="경력, 전문 분야, 강의 스타일 등"></textarea></div>
+          <div class="form-group" style="padding:0 20px"><label>스킬 태그 (쉼표로 구분)</label><input type="text" id="im-tags" placeholder="프리미어 프로, 에프터 이펙트, 다빈치 리졸브" /></div>
+          <div class="two-col" style="padding:0 20px;gap:12px">
+            <div class="form-group"><label>표시 순서</label><input type="number" id="im-sort" min="0" value="1" /></div>
+            <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:8px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer"><input type="checkbox" id="im-published" checked /> 공개</label>
+            </div>
+          </div>
+          <div style="padding:14px 20px 16px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--bg-soft)">
+            <button class="btn-sm" onclick="document.getElementById('instructor-modal').style.display='none'">취소</button>
+            <button class="btn-primary-sm" id="im-save">저장</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -373,30 +492,43 @@
 
     <!-- ===== SECTION: NOTICES ===== -->
     <section class="section" id="sec-notices">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">공지사항 관리</div>
-          <button class="btn-primary-sm"><i class="ti ti-plus"></i> 새 공지 작성</button>
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">공지사항</div>
+          <div class="sec-sub">사이트에 게시되는 공개 공지를 관리합니다.</div>
         </div>
+        <div class="sec-actions">
+          <button class="btn-primary-sm" id="notice-create-btn"><i class="ti ti-plus"></i> 새 공지 작성</button>
+        </div>
+      </div>
+      <div class="card">
         <table class="data-table">
           <thead>
-            <tr><th>제목</th><th>작성일</th><th>공개</th><th>관리</th></tr>
+            <tr><th>고정</th><th>제목</th><th>공개</th><th>작성일</th><th>관리</th></tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>6월 특가 프로모션 안내 — 전 강의 최대 40% 할인</td>
-              <td class="td-date">2025.06.01</td>
-              <td><span class="status-tag done">공개</span></td>
-              <td class="td-actions"><button class="btn-sm">편집</button> <button class="btn-sm-danger">삭제</button></td>
-            </tr>
-            <tr>
-              <td>서버 점검 안내 (6/10 새벽 2~4시)</td>
-              <td class="td-date">2025.06.09</td>
-              <td><span class="status-tag pending">비공개</span></td>
-              <td class="td-actions"><button class="btn-sm">편집</button> <button class="btn-sm-danger">삭제</button></td>
-            </tr>
+          <tbody id="notices-tbody">
+            <tr class="empty-state-row"><td colspan="5">불러오는 중...</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="modal-overlay" id="notice-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title" id="notice-modal-title">공지 작성</div>
+            <button class="modal-close" onclick="document.getElementById('notice-modal').style.display='none'">✕</button>
+          </div>
+          <div class="form-group"><label>제목</label><input type="text" id="nm-title" /></div>
+          <div class="form-group"><label>내용</label><textarea id="nm-content" rows="8" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea></div>
+          <div style="display:flex;gap:20px;padding:12px 20px;border-bottom:1px solid var(--bg-soft)">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="nm-public" /> 공개</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="nm-pin" /> 고정</label>
+          </div>
+          <div style="padding:14px 20px 16px;display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn-sm" onclick="document.getElementById('notice-modal').style.display='none'">취소</button>
+            <button class="btn-primary-sm" id="nm-save">저장</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -404,7 +536,7 @@
     <section class="section" id="sec-editor-apps">
       <div class="card">
         <div class="card-header">
-          <div class="card-title">편집자 신청 관리</div>
+          <div class="card-title">에디터즈 신청 관리</div>
           <div style="display:flex;gap:8px">
             <button class="btn-sm active" onclick="loadEditorApps('pending')" id="tab-pending">대기중</button>
             <button class="btn-sm" onclick="loadEditorApps('approved')" id="tab-approved">승인됨</button>
@@ -414,10 +546,10 @@
         </div>
         <table class="data-table">
           <thead>
-            <tr><th>신청자</th><th>이메일</th><th>툴</th><th>작업유형</th><th>경력</th><th>포트폴리오</th><th>신청일</th><th>상태</th><th>관리</th></tr>
+            <tr><th>신청자</th><th>이메일</th><th>지역·근무</th><th>툴</th><th>작업유형</th><th>경력</th><th>포트폴리오</th><th>신청일</th><th>상태</th><th>관리</th></tr>
           </thead>
           <tbody id="editor-apps-tbody">
-            <tr><td colspan="9" style="text-align:center;color:#aaa;padding:32px">로딩 중...</td></tr>
+            <tr><td colspan="10" style="text-align:center;color:#aaa;padding:32px">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -426,12 +558,12 @@
       <div class="modal-overlay" id="editor-detail-modal" style="display:none">
         <div class="modal" style="max-width:560px">
           <div class="modal-header">
-            <div class="modal-title" id="editor-modal-title">편집자 신청 상세</div>
+            <div class="modal-title" id="editor-modal-title">에디터즈 신청 상세</div>
             <button class="modal-close" onclick="document.getElementById('editor-detail-modal').style.display='none'">✕</button>
           </div>
-          <div id="editor-modal-body" style="padding:20px;font-size:14px;line-height:1.8;color:#333;max-height:60vh;overflow-y:auto"></div>
+          <div id="editor-modal-body" style="padding:20px;font-size: 16.8px;line-height:1.8;color:#333;max-height:60vh;overflow-y:auto"></div>
           <div style="padding:16px 20px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:flex-end">
-            <input type="text" id="reject-reason-input" placeholder="거절 사유 (선택)" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px" />
+            <input type="text" id="reject-reason-input" placeholder="거절 사유 (선택)" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size: 15.6px" />
             <button class="btn-sm-danger" id="reject-btn" onclick="reviewApp('rejected')">거절</button>
             <button class="btn-primary-sm" id="approve-btn" onclick="reviewApp('approved')">승인</button>
           </div>
@@ -443,7 +575,7 @@
     <section class="section" id="sec-projects">
       <div class="card">
         <div class="card-header">
-          <div class="card-title">의뢰 현황</div>
+          <div class="card-title">클라이언츠 현황</div>
           <div style="display:flex;gap:8px">
             <button class="btn-sm active" onclick="loadProjects('open')" id="ptab-open">모집중</button>
             <button class="btn-sm" onclick="loadProjects('matched')" id="ptab-matched">매칭완료</button>
@@ -459,6 +591,233 @@
             <tr><td colspan="9" style="text-align:center;color:#aaa;padding:32px">로딩 중...</td></tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- ===== 에디터즈 선발 프로그램 설계 ===== -->
+    <section class="section" id="sec-editor-program">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">에디터즈 선발 프로그램 설계</div>
+          <div class="sec-sub">10단계 구성, 안내 카드, 의뢰 메일 내용을 관리합니다.</div>
+        </div>
+        <div class="sec-actions">
+          <span style="font-size:13px;color:var(--text-muted)">총 메일 <strong id="ep-total-mails">-</strong>통</span>
+          <button type="button" class="btn-sm" id="ep-sync-slots"><i class="ti ti-refresh"></i> 슬롯 동기화</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" style="padding-bottom:0;border-bottom:none">
+          <div style="display:flex;gap:4px">
+            <button class="ep-tab-btn active" id="ep-tab-stages" onclick="switchEpTab('stages')">단계 설정</button>
+            <button class="ep-tab-btn" id="ep-tab-guide" onclick="switchEpTab('guide')">안내 카드</button>
+            <button class="ep-tab-btn" id="ep-tab-mails" onclick="switchEpTab('mails')">의뢰 메일</button>
+          </div>
+        </div>
+
+        <!-- 단계 설정 탭 -->
+        <div class="ep-tab-panel active" id="ep-panel-stages">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
+            단계별 메일 개수와 제한 시간을 설정하세요. 저장 시 메일 슬롯이 자동 생성됩니다.<br>
+            수강생에게는 <strong>한 통씩</strong>만 공개되며, 미오픈 메일 제목은 숨겨집니다.
+          </p>
+          <p id="ep-stage-status" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></p>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>단계</th><th>단계명</th><th>메일 개수</th><th>제한(분/메일)</th></tr></thead>
+              <tbody id="ep-stages-tbody"></tbody>
+            </table>
+          </div>
+          <div style="padding:14px 0 4px">
+            <button type="button" class="btn-primary-sm" id="ep-save-stages"><i class="ti ti-device-floppy"></i> 단계 설정 저장</button>
+          </div>
+        </div>
+
+        <!-- 안내 카드 탭 -->
+        <div class="ep-tab-panel" id="ep-panel-guide">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <p style="font-size:13px;color:var(--text-muted)">수강생은 모든 카드를 「확인」한 뒤에야 동의·시작할 수 있습니다.</p>
+            <button type="button" class="btn-sm" id="ep-add-guide-btn"><i class="ti ti-plus"></i> 카드 추가</button>
+          </div>
+          <div id="ep-guide-cards"></div>
+          <div style="padding-top:14px;display:flex;align-items:center;gap:10px">
+            <button type="button" class="btn-primary-sm" id="ep-save-guide"><i class="ti ti-device-floppy"></i> 안내 카드 저장</button>
+            <span id="ep-guide-status" style="font-size:13px;color:var(--text-muted)"></span>
+          </div>
+        </div>
+
+        <!-- 의뢰 메일 탭 -->
+        <div class="ep-tab-panel" id="ep-panel-mails">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">각 슬롯의 발신자·제목·미션 내용을 편집합니다.</p>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>단계</th><th>발신</th><th>제목</th><th>미션</th><th></th></tr></thead>
+              <tbody id="ep-mails-tbody">
+                <tr class="empty-state-row"><td colspan="6">로딩 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="ep-mail-modal">
+        <div class="modal" style="max-width:720px;width:95vw">
+          <div class="modal-header">
+            <div class="modal-title" id="ep-mail-modal-title">메일 편집</div>
+            <button class="modal-close" onclick="document.getElementById('ep-mail-modal').style.display='none'">✕</button>
+          </div>
+          <div style="padding:20px;max-height:70vh;overflow-y:auto">
+            <div class="form-group"><label>발신자명</label><input type="text" id="epm-from-name" /></div>
+            <div class="form-group"><label>회사/팀</label><input type="text" id="epm-from-company" /></div>
+            <div class="form-group"><label>이메일</label><input type="email" id="epm-from-email" /></div>
+            <div class="form-group"><label>제목</label><input type="text" id="epm-subject" /></div>
+            <div class="form-group"><label>미션 제목</label><input type="text" id="epm-mission-title" /></div>
+            <div class="form-group"><label>미션 요약</label><input type="text" id="epm-mission-brief" /></div>
+            <div class="form-group"><label>메일 본문</label><textarea id="epm-body" rows="8" style="width:100%;font-family:inherit"></textarea></div>
+            <div class="form-group"><label>필수 키워드 (쉼표 구분)</label><input type="text" id="epm-keywords" /></div>
+            <div class="form-group"><label>통과 메시지</label><input type="text" id="epm-pass-message" /></div>
+            <div style="padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px">
+              <button type="button" class="btn-sm" onclick="document.getElementById('ep-mail-modal').style.display='none'">취소</button>
+              <button type="button" class="btn-primary-sm" id="epm-save">저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: SUBMISSIONS ===== -->
+    <section class="section" id="sec-submissions">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">미션 제출 검수</div>
+          <div class="sec-sub">수강생이 제출한 워크북 미션을 확인하고 수동으로 승인·반려합니다.</div>
+        </div>
+        <div class="sec-actions">
+          <select id="sub-filter-status" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);outline:none">
+            <option value="">전체</option>
+            <option value="passed">통과</option>
+            <option value="failed">실패</option>
+          </select>
+          <button class="btn-sm" onclick="loadSubmissions()"><i class="ti ti-refresh"></i> 새로고침</button>
+        </div>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr><th>수강생</th><th>메일</th><th>단계</th><th>제출 링크</th><th>자동 판정</th><th>검수</th><th>제출일</th><th>관리</th></tr>
+          </thead>
+          <tbody id="submissions-tbody">
+            <tr class="empty-state-row"><td colspan="8">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-overlay" id="sub-modal">
+        <div class="modal" style="max-width:660px">
+          <div class="modal-header">
+            <div class="modal-title" id="sub-modal-title">제출 상세</div>
+            <button class="modal-close" onclick="document.getElementById('sub-modal').style.display='none'">✕</button>
+          </div>
+          <div id="sub-modal-body" style="padding:20px;max-height:55vh;overflow-y:auto"></div>
+          <div style="padding:16px 20px;border-top:1px solid var(--border)">
+            <textarea id="sub-feedback-input" rows="3" placeholder="피드백 (선택, 비우면 기본 메시지 사용)..." style="width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;resize:vertical;font-family:inherit;background:var(--bg-soft);outline:none;margin-bottom:10px"></textarea>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button class="btn-sm-danger" id="sub-fail-btn">반려</button>
+              <button class="btn-primary-sm" id="sub-pass-btn"><i class="ti ti-check"></i> 승인</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: TICKETS ===== -->
+    <section class="section" id="sec-tickets">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">고객 문의</div>
+          <div class="sec-sub">1:1 문의 목록을 확인하고 답변합니다.</div>
+        </div>
+        <div class="sec-actions">
+          <button class="tab-btn active" onclick="loadTickets('open')" id="ttab-open">미답변</button>
+          <button class="tab-btn" onclick="loadTickets('answered')" id="ttab-answered">답변완료</button>
+          <button class="tab-btn" onclick="loadTickets('closed')" id="ttab-closed">종료</button>
+          <button class="tab-btn" onclick="loadTickets('all')" id="ttab-all">전체</button>
+        </div>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr><th>유형</th><th>제목 / 내용</th><th>이름</th><th>이메일</th><th>상태</th><th>접수일</th><th>관리</th></tr>
+          </thead>
+          <tbody id="tickets-tbody">
+            <tr class="empty-state-row"><td colspan="7">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-overlay" id="ticket-modal">
+        <div class="modal" style="max-width:640px">
+          <div class="modal-header">
+            <div class="modal-title" id="ticket-modal-title">문의 상세</div>
+            <button class="modal-close" onclick="document.getElementById('ticket-modal').style.display='none'">✕</button>
+          </div>
+          <div id="ticket-modal-body" style="padding:20px;max-height:55vh;overflow-y:auto"></div>
+          <div style="padding:16px 20px;border-top:1px solid var(--border)">
+            <textarea id="ticket-answer-input" rows="4" placeholder="답변을 입력하세요..." style="width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;resize:vertical;font-family:inherit;background:var(--bg-soft);outline:none"></textarea>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+              <button class="btn-sm-danger" id="ticket-close-btn">문의 종료</button>
+              <button class="btn-primary-sm" id="ticket-answer-btn">답변 저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: FAQS ===== -->
+    <section class="section" id="sec-faqs">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">FAQ 관리</div>
+          <div class="sec-sub">고객지원 페이지에 표시되는 자주 묻는 질문을 관리합니다.</div>
+        </div>
+        <div class="sec-actions">
+          <button class="btn-primary-sm" id="faq-create-btn"><i class="ti ti-plus"></i> FAQ 추가</button>
+        </div>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr><th>순서</th><th>카테고리</th><th>질문</th><th>공개</th><th>관리</th></tr>
+          </thead>
+          <tbody id="faqs-tbody">
+            <tr class="empty-state-row"><td colspan="5">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-overlay" id="faq-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title" id="faq-modal-title">FAQ 추가</div>
+            <button class="modal-close" onclick="document.getElementById('faq-modal').style.display='none'">✕</button>
+          </div>
+          <div class="form-group"><label>카테고리</label>
+            <select id="fm-category">
+              <option>일반</option><option>결제·환불</option><option>강의</option><option>에디터즈</option><option>계정</option>
+            </select>
+          </div>
+          <div class="form-group"><label>질문</label><input type="text" id="fm-question" /></div>
+          <div class="form-group"><label>답변</label><textarea id="fm-answer" rows="5" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea></div>
+          <div class="form-group"><label>정렬 순서 (숫자가 작을수록 위)</label><input type="number" id="fm-order" /></div>
+          <div style="padding:10px 20px;border-bottom:1px solid var(--bg-soft)">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="fm-public" checked /> 공개</label>
+          </div>
+          <div style="padding:14px 20px 16px;display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn-sm" onclick="document.getElementById('faq-modal').style.display='none'">취소</button>
+            <button class="btn-primary-sm" id="fm-save">저장</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -509,6 +868,171 @@
           </div>
           <button class="btn-save">저장</button>
         </div>
+
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-header">
+            <div class="card-title">메인 히어로 영역</div>
+            <p class="sec-sub" style="margin:0">홈 상단 배너의 뱃지·제목·부제·버튼 문구를 수정합니다.</p>
+          </div>
+          <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:12px">
+            <div class="form-group">
+              <label>뱃지 텍스트</label>
+              <input type="text" id="hero-badge-text" maxlength="60" />
+            </div>
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>제목 (첫 줄)</label>
+                <input type="text" id="hero-title" maxlength="120" />
+              </div>
+              <div class="form-group">
+                <label>제목 강조 (두 번째 줄)</label>
+                <input type="text" id="hero-title-emphasis" maxlength="120" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>부제 (줄바꿈 가능)</label>
+              <textarea id="hero-subtitle" rows="3" maxlength="400" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
+            </div>
+            <div class="layout-toggle-group-title" style="margin-top:4px">주요 버튼</div>
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>버튼 문구</label>
+                <input type="text" id="hero-primary-label" maxlength="40" />
+              </div>
+              <div class="form-group">
+                <label>링크 (예: #all, /course.html?slug=...)</label>
+                <input type="text" id="hero-primary-href" maxlength="300" />
+              </div>
+            </div>
+            <div class="layout-toggle-group-title">보조 버튼</div>
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>버튼 문구</label>
+                <input type="text" id="hero-secondary-label" maxlength="40" />
+              </div>
+              <div class="form-group">
+                <label>링크</label>
+                <input type="text" id="hero-secondary-href" maxlength="300" />
+              </div>
+            </div>
+            <label class="layout-toggle" style="max-width:280px">
+              <input type="checkbox" id="hero-secondary-icon" checked />
+              <span>보조 버튼에 재생 아이콘 표시</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:12px;padding-top:8px;border-top:1px solid var(--border)">
+              <button type="button" class="btn-save" id="hero-save-btn">히어로 저장</button>
+              <span id="hero-save-status" style="font-size:14px;color:#888"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-header">
+            <div class="card-title">푸터 설정</div>
+            <p class="sec-sub" style="margin:0">사이트 하단 푸터 링크·문구를 수정합니다. 저장 즉시 전체 페이지에 반영됩니다.</p>
+          </div>
+          <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:16px">
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>브랜드명 (로고 텍스트)</label>
+                <input type="text" id="footer-brand-name" />
+              </div>
+              <div class="form-group">
+                <label>슬로건</label>
+                <input type="text" id="footer-tagline" />
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <label style="font-weight:600">링크 열</label>
+                <button type="button" class="btn-sm" id="footer-add-column">+ 열 추가</button>
+              </div>
+              <div id="footer-columns-editor" class="footer-columns-editor"></div>
+            </div>
+            <div class="form-group">
+              <label>사업자 정보 (접기 영역)</label>
+              <textarea id="footer-biz-info" rows="3" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
+            </div>
+            <div class="form-group">
+              <label>저작권 문구</label>
+              <input type="text" id="footer-copyright" />
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <label style="font-weight:600">하단 정책 링크</label>
+                <button type="button" class="btn-sm" id="footer-add-policy">+ 링크 추가</button>
+              </div>
+              <div id="footer-policy-editor" class="footer-link-rows"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding-top:8px;border-top:1px solid var(--border)">
+              <button type="button" class="btn-save" id="footer-save-btn">푸터 저장</button>
+              <span id="footer-save-status" style="font-size:14px;color:#888"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-header">
+            <div class="card-title">메인 페이지 노출 설정</div>
+            <p class="sec-sub" style="margin:0">홈페이지 섹션과 상단 메뉴(GNB)의 노출 여부를 설정합니다.</p>
+          </div>
+          <div class="layout-toggle-grid">
+            <div>
+              <div class="layout-toggle-group-title">홈 섹션</div>
+              <div class="layout-toggle-list" id="home-section-toggles">
+                <label class="layout-toggle"><input type="checkbox" data-layout-section="categories" checked /><span>카테고리 타일</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-section="instructors" checked /><span>강사 소개</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-section="all_courses" checked /><span>전체 강의</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-section="free_courses" checked /><span>무료 강의</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-section="new_courses" checked /><span>최신 강의</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-section="reviews" checked /><span>실시간 후기</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-section="purchase_ticker" checked /><span>구매현황 LIVE</span></label>
+              </div>
+            </div>
+            <div>
+              <div class="layout-toggle-group-title">상단 메뉴 (GNB)</div>
+              <div class="layout-toggle-list" id="home-nav-toggles">
+                <label class="layout-toggle"><input type="checkbox" data-layout-nav="search" checked /><span>검색창</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-nav="all" checked /><span>전체강의</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-nav="capcut" checked /><span>캡컷 PRO</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-nav="premiere" checked /><span>프리미어 PRO</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-nav="ai" checked /><span>AI 콘텐츠 제작</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-nav="editors" checked /><span>에디터즈</span></label>
+                <label class="layout-toggle"><input type="checkbox" data-layout-nav="projects" checked /><span>클라이언츠</span></label>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+            <button type="button" class="btn-save" id="homepage-layout-save">노출 설정 저장</button>
+            <span id="homepage-layout-status" style="font-size:14px;color:#888"></span>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-header"><div class="card-title">에디터즈 신청 — 심사 중 화면</div></div>
+          <p style="font-size:15px;color:#666;line-height:1.6;margin-bottom:20px">
+            에디터즈 신청 후 「심사 중입니다」 카드 우측에 표시되는 배경 이미지입니다. 텍스트는 좌측에 정렬됩니다.
+          </p>
+          <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+            <div style="flex:0 0 280px">
+              <div id="editor-apply-img-preview" style="width:280px;height:160px;border-radius:12px;border:1.5px dashed #ddd;background:#fffbf0;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:14px;overflow:hidden;background-size:cover;background-position:center">
+                미리보기 없음
+              </div>
+              <p style="font-size:13px;color:#aaa;margin-top:8px">JPG, PNG, WebP · 2MB 이하 권장</p>
+            </div>
+            <div style="flex:1;min-width:240px">
+              <div class="form-group">
+                <label>배경 이미지</label>
+                <input type="file" id="editor-apply-img-input" accept="image/jpeg,image/png,image/webp" />
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button type="button" class="btn-save" id="editor-apply-img-save">저장</button>
+                <button type="button" class="btn-sm" id="editor-apply-img-remove" style="display:none">이미지 제거</button>
+              </div>
+              <p id="editor-apply-img-status" style="font-size:14px;color:#888;margin-top:12px"></p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -518,10 +1042,10 @@
   <div id="live-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:16px;padding:28px;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <div style="font-size:17px;font-weight:600;color:#111"><i class="ti ti-broadcast" style="color:#e53935"></i> 라이브 강의 등록</div>
-        <button onclick="closeLiveCreateModal()" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
+        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-broadcast" style="color:#e53935"></i> 라이브 강의 등록</div>
+        <button onclick="closeLiveCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
       </div>
-      <div style="background:#fff3e0;border-radius:8px;padding:12px 14px;font-size:13px;color:#e65100;margin-bottom:20px;line-height:1.6">
+      <div style="background:#fff3e0;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#e65100;margin-bottom:20px;line-height:1.6">
         라이브 강의는 <b>무료</b>로 제공됩니다.<br>수강 신청한 학생에게 카카오 알림톡으로 Google Meet 코드를 발송합니다.
       </div>
       <div class="form-group">
@@ -544,7 +1068,7 @@
       </div>
       <div class="form-group">
         <label>강의 설명</label>
-        <textarea id="lc-desc" rows="3" placeholder="라이브 강의 내용을 간략히 설명해주세요" style="width:100%;padding:10px 14px;border:0.5px solid #ddd;border-radius:8px;font-size:14px;resize:vertical;font-family:inherit"></textarea>
+        <textarea id="lc-desc" rows="3" placeholder="라이브 강의 내용을 간략히 설명해주세요" style="width:100%;padding:10px 14px;border:0.5px solid #ddd;border-radius:8px;font-size: 16.8px;resize:vertical;font-family:inherit"></textarea>
       </div>
       <div class="form-group">
         <label>라이브 일정 <span style="color:#c62828">*</span></label>
@@ -553,7 +1077,7 @@
       <div class="form-group">
         <label>Google Meet 코드</label>
         <input type="text" id="lc-meet-code" placeholder="abc-defg-hij (나중에 입력 가능)" />
-        <div style="font-size:11px;color:#aaa;margin-top:4px">Google Meet 생성 후 URL에서 코드 부분만 입력 (meet.google.com/ 뒤)</div>
+        <div style="font-size: 13.2px;color:#aaa;margin-top:4px">Google Meet 생성 후 URL에서 코드 부분만 입력 (meet.google.com/ 뒤)</div>
       </div>
       <div class="form-group">
         <label>썸네일 아이콘</label>
@@ -571,6 +1095,10 @@
 
   <script src="js/api.js"></script>
   <script>
+    // ── 헬퍼 ──
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+    function fmtD(iso) { return iso ? iso.slice(0,10) : '-' }
+
     // ── 어드민 인증 체크 ──
     (function() {
       const u = API.user();
@@ -580,13 +1108,13 @@
     // ── 데이터 로드 함수들 ──
     async function loadDashboard() {
       try {
-        const stats = await API.get('/api/admin/stats');
+        const stats = await API.get('/admin/stats');
         document.getElementById('stat-revenue').textContent = stats.revenue.toLocaleString() + '원';
         document.getElementById('stat-students').textContent = stats.totalStudents.toLocaleString() + '명';
         document.getElementById('stat-orders').textContent = stats.orderCount.toLocaleString() + '건';
         document.getElementById('stat-refunds').textContent = stats.refundPending.toLocaleString() + '건';
 
-        const orders = await API.get('/api/admin/orders');
+        const orders = await API.get('/admin/orders');
         const tbody = document.getElementById('recent-orders-body');
         if (tbody) {
           tbody.innerHTML = orders.slice(0, 5).map(o => `
@@ -600,7 +1128,7 @@
             </tr>`).join('');
         }
 
-        const courseStats = await API.get('/api/admin/course-stats');
+        const courseStats = await API.get('/admin/course-stats');
         const chartEl = document.getElementById('revenue-chart');
         if (chartEl) {
           const max = Math.max(...courseStats.map(c => c.revenue), 1);
@@ -611,46 +1139,152 @@
               <div class="bar-value">${(c.revenue||0).toLocaleString()}원</div>
             </div>`).join('');
         }
+
+        const reviews = await API.get('/admin/reviews');
+        const revBody = document.getElementById('dashboard-reviews-body');
+        if (revBody) {
+          if (!reviews.length) {
+            revBody.innerHTML = '<tr class="empty-state-row"><td colspan="6">등록된 후기가 없습니다.</td></tr>';
+          } else {
+            revBody.innerHTML = reviews.slice(0, 5).map(r => `
+              <tr>
+                <td><div class="user-cell"><div class="avatar-sm">${esc((r.user_name||'?')[0])}</div> ${esc(r.user_name||'-')}</div></td>
+                <td class="td-sub">${esc(r.course_title||'-')}</td>
+                <td><span class="stars-sm">${'★'.repeat(r.rating||0)}</span></td>
+                <td class="td-review">${esc((r.content||'').slice(0,60))}${(r.content||'').length > 60 ? '…' : ''}</td>
+                <td class="td-date">${fmtD(r.created_at)}</td>
+                <td><button class="btn-sm-danger" onclick="deleteReview('${r.id}')">삭제</button></td>
+              </tr>`).join('');
+          }
+        }
       } catch(e) { console.error('dashboard load error', e); }
     }
 
     let _courses = []
     let _selectedCourseId = null
+    let _courseEditId = null
+    let _courseFilter = 'published'
 
-    async function loadCourses() {
-      _courses = await API.get('/api/courses');
-      const tbody = document.getElementById('courses-table-body');
-      if (!tbody) return;
-      tbody.innerHTML = _courses.map(c => {
+    function filterCoursesForAdmin(list) {
+      if (_courseFilter === 'published') return list.filter(c => c.is_published)
+      if (_courseFilter === 'catalog') return list.filter(c => c.is_catalog)
+      if (_courseFilter === 'archived') return list.filter(c => !c.is_published || !c.is_catalog)
+      return list
+    }
+
+    function renderCoursesTable() {
+      const tbody = document.getElementById('courses-table-body')
+      const countLabel = document.getElementById('courses-count-label')
+      if (!tbody) return
+      const filtered = filterCoursesForAdmin(_courses)
+      const publishedCount = _courses.filter(c => c.is_published).length
+      const catalogCount = _courses.filter(c => c.is_catalog).length
+      if (countLabel) {
+        countLabel.textContent = `(공개 ${publishedCount} · 카탈로그 ${catalogCount} · 전체 ${_courses.length})`
+      }
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr class="empty-state-row"><td colspan="8">표시할 강의가 없습니다.</td></tr>'
+        return
+      }
+      const sorted = [...filtered].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
+      tbody.innerHTML = sorted.map(c => {
         const isLive = c.course_type === 'live'
+        const isOffline = c.course_type === 'offline' || c.is_offline
         const typeBadge = isLive
           ? `<span class="badge-status" style="background:#ffebee;color:#c62828">🔴 라이브</span>`
-          : `<span class="badge-status" style="background:#f5f5f5;color:#555">📹 VOD</span>`
+          : isOffline
+            ? `<span class="badge-status" style="background:#e8eaf6;color:#3949ab">📍 오프라인</span>`
+            : `<span class="badge-status" style="background:#f5f5f5;color:#555">📹 VOD</span>`
+        const catalogBadge = c.is_catalog
+          ? ''
+          : `<span class="badge-status refund" style="margin-left:4px">구버전</span>`
         return `
         <tr>
-          <td>${c.id}</td>
-          <td>${c.title}</td>
-          <td>${c.category}</td>
+          <td>${c.sort_order ?? '-'}</td>
+          <td>${esc(c.title)}${catalogBadge}</td>
+          <td>${esc(c.category || '-')}</td>
           <td>${typeBadge}</td>
           <td>${(c.sale_price||0).toLocaleString()}원</td>
           <td>${c.student_count||0}</td>
           <td><span class="badge-status ${c.is_published?'paid':'refund'}">${c.is_published?'공개':'비공개'}</span></td>
-          <td style="display:flex;gap:4px">
-            <button class="btn-sm" onclick="togglePublish(${c.id}, ${c.is_published})">${c.is_published?'비공개':'공개'}</button>
-            <button class="btn-sm" onclick="openLivePanel(${c.id})">라이브 설정</button>
+          <td style="display:flex;gap:4px;flex-wrap:wrap">
+            <button class="btn-sm" onclick="openCourseModal('${c.id}')">편집</button>
+            <button class="btn-sm" onclick="togglePublish('${c.id}', ${c.is_published})">${c.is_published?'비공개':'공개'}</button>
+            <button class="btn-sm" onclick="openLivePanel('${c.id}')">라이브</button>
           </td>
         </tr>`
-      }).join('');
+      }).join('')
     }
 
+    async function loadCourses() {
+      _courses = await API.get('/admin/courses')
+      renderCoursesTable()
+    }
+
+    document.getElementById('course-filter-tabs')?.addEventListener('click', e => {
+      const btn = e.target.closest('[data-course-filter]')
+      if (!btn) return
+      _courseFilter = btn.dataset.courseFilter
+      document.querySelectorAll('[data-course-filter]').forEach(el => el.classList.toggle('active', el === btn))
+      renderCoursesTable()
+    })
+
+    document.getElementById('btn-sync-catalog')?.addEventListener('click', async () => {
+      if (!confirm('카탈로그(11개) 기준으로 강의 정보를 동기화할까요?\n구버전 강의는 비공개 처리됩니다. 수강생·후기 통계는 유지됩니다.')) return
+      const btn = document.getElementById('btn-sync-catalog')
+      try {
+        btn.disabled = true
+        const result = await API.post('/admin/courses/sync-catalog', {})
+        alert(`동기화 완료\n· 갱신 ${result.updated}개\n· 신규 ${result.created}개\n· 구버전 비공개 ${result.unpublished}개`)
+        await loadCourses()
+      } catch (e) {
+        alert(e.message || '동기화 실패')
+      } finally {
+        btn.disabled = false
+      }
+    })
+
+    function openCourseModal(id) {
+      const c = _courses.find(x => String(x.id) === String(id))
+      if (!c) return
+      _courseEditId = id
+      document.getElementById('course-modal-title').textContent = '강의 편집 — ' + c.title
+      document.getElementById('cm-title').value = c.title || ''
+      document.getElementById('cm-category').value = c.category || ''
+      document.getElementById('cm-description').value = c.description || ''
+      document.getElementById('cm-price').value = c.price ?? 0
+      document.getElementById('cm-sale-price').value = c.sale_price ?? 0
+      document.getElementById('cm-sort-order').value = c.sort_order ?? ''
+      document.getElementById('cm-badge').value = c.badge || ''
+      document.getElementById('cm-published').value = c.is_published ? '1' : '0'
+      document.getElementById('course-modal').style.display = 'flex'
+    }
+
+    document.getElementById('cm-save-btn').addEventListener('click', async () => {
+      if (!_courseEditId) return
+      const badge = document.getElementById('cm-badge').value
+      await API.patch('/admin/courses/' + _courseEditId, {
+        title: document.getElementById('cm-title').value.trim(),
+        category: document.getElementById('cm-category').value.trim(),
+        description: document.getElementById('cm-description').value.trim(),
+        price: parseInt(document.getElementById('cm-price').value, 10) || 0,
+        sale_price: parseInt(document.getElementById('cm-sale-price').value, 10) || 0,
+        sort_order: parseInt(document.getElementById('cm-sort-order').value, 10) || undefined,
+        badge: badge || null,
+        is_published: parseInt(document.getElementById('cm-published').value, 10),
+      })
+      document.getElementById('course-modal').style.display = 'none'
+      loadCourses()
+    })
+
     async function togglePublish(id, current) {
-      await API.patch(`/api/admin/courses/${id}`, { is_published: current ? 0 : 1 });
+      await API.patch(`/admin/courses/${id}`, { is_published: current ? 0 : 1 });
       loadCourses();
     }
 
     function openLivePanel(courseId) {
       _selectedCourseId = courseId
-      const c = _courses.find(c => c.id === courseId)
+      const c = _courses.find(c => String(c.id) === String(courseId))
       if (!c) return
       document.getElementById('live-panel').style.display = 'block'
       document.getElementById('live-panel-title').textContent = c.title
@@ -678,7 +1312,7 @@
       const scheduleVal = document.getElementById('live-schedule').value
       const meet_code = document.getElementById('live-meet-code').value.trim()
       const live_status = document.getElementById('live-status').value
-      await API.patch(`/api/admin/courses/${_selectedCourseId}`, {
+      await API.patch(`/admin/courses/${_selectedCourseId}`, {
         course_type,
         live_schedule: scheduleVal ? new Date(scheduleVal).toLocaleString('ko-KR') : null,
         meet_code: meet_code || null,
@@ -698,7 +1332,7 @@
 
       // 저장 후 발송
       await saveLiveSettings()
-      const result = await API.post(`/api/admin/courses/${_selectedCourseId}/send-live-invite`, {})
+      const result = await API.post(`/admin/courses/${_selectedCourseId}/send-live-invite`, {})
       const el = document.getElementById('send-result')
       el.style.display = 'block'
       el.innerHTML = `
@@ -706,13 +1340,13 @@
           ✅ 발송 완료<br>
           발송 성공: <b>${result.sent}명</b><br>
           전화번호 미등록(스킵): <b>${result.skipped}명</b>
-          ${result.skipped_users?.length ? `<br><span style="font-size:11px;color:#aaa">${result.skipped_users.join(', ')}</span>` : ''}
+          ${result.skipped_users?.length ? `<br><span style="font-size: 13.2px;color:#aaa">${result.skipped_users.join(', ')}</span>` : ''}
           ${result.failed ? `<br>발송 실패: <b style="color:#c62828">${result.failed}명</b>` : ''}
         </div>`
     }
 
     async function loadStudents() {
-      const students = await API.get('/api/admin/students');
+      const students = await API.get('/admin/students');
       const tbody = document.getElementById('students-table-body');
       if (!tbody) return;
       tbody.innerHTML = students.map(s => `
@@ -727,7 +1361,7 @@
     }
 
     async function loadOrders() {
-      const orders = await API.get('/api/admin/orders');
+      const orders = await API.get('/admin/orders');
       const tbody = document.getElementById('orders-table-body');
       if (!tbody) return;
       tbody.innerHTML = orders.map(o => `
@@ -743,7 +1377,7 @@
     }
 
     async function loadReviews() {
-      const reviews = await API.get('/api/admin/reviews');
+      const reviews = await API.get('/admin/reviews');
       const tbody = document.getElementById('reviews-table-body');
       if (!tbody) return;
       tbody.innerHTML = reviews.map(r => `
@@ -761,13 +1395,13 @@
     }
 
     async function toggleReview(id, current) {
-      await API.patch(`/api/admin/reviews/${id}`, { is_public: current ? 0 : 1 });
+      await API.patch(`/admin/reviews/${id}`, { is_public: current ? 0 : 1 });
       loadReviews();
     }
 
     async function deleteReview(id) {
       if (!confirm('후기를 삭제할까요?')) return;
-      await API.del(`/api/admin/reviews/${id}`);
+      await API.del(`/admin/reviews/${id}`);
       loadReviews();
     }
 
@@ -779,9 +1413,16 @@
       students: '수강생 목록',
       orders: '결제 내역',
       refunds: '환불 요청',
+      instructors: '강사 관리',
       reviews: '수강 후기',
       notices: '공지사항',
-      settings: '사이트 설정'
+      'editor-apps': '에디터즈 신청',
+      'editor-program': '선발 프로그램 설계',
+      projects: '클라이언츠 현황',
+      submissions: '미션 제출 검수',
+      tickets: '고객 문의',
+      faqs: 'FAQ 관리',
+      settings: '사이트 설정',
     };
 
     // ── 편집자 신청 관리 ──
@@ -795,47 +1436,50 @@
         if (el) el.classList.toggle('active', (status||'all') === t)
       })
       const tbody = document.getElementById('editor-apps-tbody')
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr>'
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr>'
       try {
         const qs = status ? `?status=${status}` : ''
-        const apps = await API.get('/api/admin/editor-applications' + qs)
+        const apps = await API.get('/admin/editor-applications' + qs)
         // 뱃지 업데이트
         const pending = apps.filter(a => a.status === 'pending').length
         const badge = document.getElementById('editor-badge')
         if (badge) { badge.textContent = pending; badge.style.display = pending ? '' : 'none' }
 
-        if (!apps.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">신청 내역이 없습니다.</td></tr>'; return }
+        if (!apps.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#aaa;padding:24px">신청 내역이 없습니다.</td></tr>'; return }
         tbody.innerHTML = apps.map(a => {
           const statusMap = { pending:'<span class="status-tag pending">대기중</span>', approved:'<span class="status-tag done">승인</span>', rejected:'<span class="status-tag refund">거절</span>' }
           const tools = Array.isArray(a.tools) ? a.tools.join(', ') : ''
           return `<tr>
             <td><strong>${a.user_name||'-'}</strong></td>
             <td>${a.email||'-'}</td>
-            <td style="font-size:12px;color:#666">${tools||'-'}</td>
-            <td style="font-size:12px;color:#666">${a.skills||'-'}</td>
+            <td style="font-size: 14.4px;color:#666">${a.location||'-'} · ${({remote:'원격',hybrid:'하이브리드',onsite:'현장',project:'프로젝트',fulltime:'풀타임'})[a.work_type]||'-'}</td>
+            <td style="font-size: 14.4px;color:#666">${tools||'-'}</td>
+            <td style="font-size: 14.4px;color:#666">${a.skills||'-'}</td>
             <td>${expLabel[a.experience_years]||'-'}</td>
-            <td>${a.portfolio_url ? `<a href="${a.portfolio_url}" target="_blank" style="color:#5c67f2;font-size:12px">보기 →</a>` : '-'}</td>
+            <td>${a.portfolio_url ? `<a href="${a.portfolio_url}" target="_blank" style="color:#5c67f2;font-size: 14.4px">보기 →</a>` : '-'}</td>
             <td class="td-date">${(a.applied_at||'').slice(0,10)}</td>
             <td>${statusMap[a.status]||a.status}</td>
             <td class="td-actions"><button class="btn-sm" onclick="openEditorDetail('${a.id}')">상세</button></td>
           </tr>`
         }).join('')
       } catch(e) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#e00;padding:24px">오류: ' + (e.message||'불러오기 실패') + '</td></tr>'
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#e00;padding:24px">오류: ' + (e.message||'불러오기 실패') + '</td></tr>'
       }
     }
 
     async function openEditorDetail(appId) {
       currentAppId = appId
-      const apps = await API.get('/api/admin/editor-applications')
+      const apps = await API.get('/admin/editor-applications')
       const app = apps.find(a => a.id === appId)
       if (!app) return
-      document.getElementById('editor-modal-title').textContent = `${app.user_name} 님의 편집자 신청`
+      document.getElementById('editor-modal-title').textContent = `${app.user_name} 님의 에디터즈 신청`
       const tools = Array.isArray(app.tools) ? app.tools.join(', ') : '-'
       document.getElementById('editor-modal-body').innerHTML = `
         <div style="display:grid;gap:12px">
           <div><strong>이름:</strong> ${app.user_name} &nbsp;|&nbsp; <strong>이메일:</strong> ${app.email||'-'}</div>
           <div><strong>경력:</strong> ${expLabel[app.experience_years]||'-'}</div>
+          <div><strong>활동 지역:</strong> ${app.location||'-'}</div>
+          <div><strong>희망 근무 형태:</strong> ${({remote:'원격·재택',hybrid:'하이브리드',onsite:'현장 근무',project:'프로젝트 단위',fulltime:'풀타임·장기'})[app.work_type]||app.work_type||'-'}</div>
           <div><strong>사용 툴:</strong> ${tools}</div>
           <div><strong>작업 유형:</strong> ${app.skills||'-'}</div>
           ${app.portfolio_url ? `<div><strong>포트폴리오:</strong> <a href="${app.portfolio_url}" target="_blank" style="color:#5c67f2">${app.portfolio_url}</a></div>` : ''}
@@ -843,7 +1487,7 @@
             <strong>자기소개</strong><br><br>${(app.intro||'').replace(/\n/g,'<br>')}
           </div>
           ${app.reject_reason ? `<div style="color:#e00"><strong>거절 사유:</strong> ${app.reject_reason}</div>` : ''}
-          <div style="color:#888;font-size:12px">신청일: ${(app.applied_at||'').slice(0,10)}</div>
+          <div style="color:#888;font-size: 14.4px">신청일: ${(app.applied_at||'').slice(0,10)}</div>
         </div>`
       const isReviewed = app.status !== 'pending'
       document.getElementById('approve-btn').disabled = isReviewed
@@ -856,12 +1500,718 @@
       const reason = document.getElementById('reject-reason-input').value.trim()
       if (status === 'rejected' && !reason) { alert('거절 사유를 입력해주세요.'); return }
       try {
-        await API.patch('/api/admin/editor-applications/' + currentAppId, { status, reject_reason: reason || null })
-        alert(status === 'approved' ? '✅ 승인되었습니다.' : '❌ 거절되었습니다.')
+        await API.patch('/admin/editor-applications/' + currentAppId, { status, reject_reason: reason || null })
+        alert(status === 'approved' ? '✅ 승인되었습니다. 1주일 상위노출이 적용되며, 수강생은 상위노출 쿠폰 2만원×5장이 발급됩니다.' : '❌ 거절되었습니다.')
         document.getElementById('editor-detail-modal').style.display = 'none'
         loadEditorApps('pending')
       } catch(e) { alert(e.message || '처리 중 오류가 발생했습니다.') }
     }
+
+    let _editorApplyPendingImage = null
+
+    function updateEditorApplyImgPreview(url) {
+      const el = document.getElementById('editor-apply-img-preview')
+      const removeBtn = document.getElementById('editor-apply-img-remove')
+      if (!el) return
+      if (url) {
+        el.style.backgroundImage = `url("${url.replace(/"/g, '\\"')}")`
+        el.textContent = ''
+        if (removeBtn) removeBtn.style.display = 'inline-flex'
+      } else {
+        el.style.backgroundImage = ''
+        el.textContent = '미리보기 없음'
+        if (removeBtn) removeBtn.style.display = 'none'
+      }
+    }
+
+    function resizeEditorApplyImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const img = new Image()
+          img.onload = () => {
+            const max = 960
+            let w = img.width, h = img.height
+            if (w > max || h > max) {
+              if (w > h) { h = Math.round(h * max / w); w = max }
+              else { w = Math.round(w * max / h); h = max }
+            }
+            const canvas = document.createElement('canvas')
+            canvas.width = w; canvas.height = h
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+            resolve(canvas.toDataURL('image/jpeg', 0.85))
+          }
+          img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'))
+          img.src = reader.result
+        }
+        reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'))
+        reader.readAsDataURL(file)
+      })
+    }
+
+    async function loadSettings() {
+      const statusEl = document.getElementById('editor-apply-img-status')
+      try {
+        const settings = await API.get('/admin/site-settings/editor-apply')
+        _editorApplyPendingImage = settings.pending_review_image || null
+        updateEditorApplyImgPreview(_editorApplyPendingImage)
+        if (statusEl && settings.updated_at) {
+          statusEl.textContent = '마지막 저장: ' + settings.updated_at.slice(0, 16).replace('T', ' ')
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = '설정을 불러오지 못했습니다.'
+      }
+      await loadHomepageLayoutSettings()
+      await loadFooterSettings()
+      await loadHeroSettings()
+    }
+
+    function fillHeroEditor(cfg) {
+      document.getElementById('hero-badge-text').value = cfg.badge_text || ''
+      document.getElementById('hero-title').value = cfg.title || ''
+      document.getElementById('hero-title-emphasis').value = cfg.title_emphasis || ''
+      document.getElementById('hero-subtitle').value = cfg.subtitle || ''
+      document.getElementById('hero-primary-label').value = cfg.primary_btn?.label || ''
+      document.getElementById('hero-primary-href').value = cfg.primary_btn?.href || ''
+      document.getElementById('hero-secondary-label').value = cfg.secondary_btn?.label || ''
+      document.getElementById('hero-secondary-href').value = cfg.secondary_btn?.href || ''
+      document.getElementById('hero-secondary-icon').checked = cfg.secondary_btn?.show_icon !== false
+    }
+
+    function readHeroForm() {
+      return {
+        badge_text: document.getElementById('hero-badge-text').value.trim(),
+        title: document.getElementById('hero-title').value.trim(),
+        title_emphasis: document.getElementById('hero-title-emphasis').value.trim(),
+        subtitle: document.getElementById('hero-subtitle').value.trim(),
+        primary_btn: {
+          label: document.getElementById('hero-primary-label').value.trim(),
+          href: document.getElementById('hero-primary-href').value.trim(),
+        },
+        secondary_btn: {
+          label: document.getElementById('hero-secondary-label').value.trim(),
+          href: document.getElementById('hero-secondary-href').value.trim(),
+          show_icon: document.getElementById('hero-secondary-icon').checked,
+        },
+      }
+    }
+
+    async function loadHeroSettings() {
+      const statusEl = document.getElementById('hero-save-status')
+      try {
+        const cfg = await API.get('/admin/hero')
+        fillHeroEditor(cfg)
+        if (statusEl && cfg.updated_at) {
+          statusEl.textContent = '마지막 저장: ' + cfg.updated_at.slice(0, 16).replace('T', ' ')
+        } else if (statusEl) {
+          statusEl.textContent = ''
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = '히어로 설정을 불러오지 못했습니다.'
+      }
+    }
+
+    document.getElementById('hero-save-btn')?.addEventListener('click', async () => {
+      const statusEl = document.getElementById('hero-save-status')
+      const btn = document.getElementById('hero-save-btn')
+      try {
+        btn.disabled = true
+        const result = await API.patch('/admin/hero', readHeroForm())
+        fillHeroEditor(result)
+        if (statusEl) {
+          statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+        }
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      } finally {
+        btn.disabled = false
+      }
+    })
+
+    // ── 강사 관리 ──
+    let _instructorEditId = null
+    let _instructorPendingImage = undefined
+
+    function resizeInstructorImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const img = new Image()
+          img.onload = () => {
+            const max = 480
+            let w = img.width, h = img.height
+            if (w > max || h > max) {
+              if (w > h) { h = Math.round(h * max / w); w = max }
+              else { w = Math.round(w * max / h); h = max }
+            }
+            const canvas = document.createElement('canvas')
+            canvas.width = w; canvas.height = h
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+            resolve(canvas.toDataURL('image/jpeg', 0.85))
+          }
+          img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'))
+          img.src = reader.result
+        }
+        reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'))
+        reader.readAsDataURL(file)
+      })
+    }
+
+    function updateInstructorImgPreview(url) {
+      const el = document.getElementById('instructor-img-preview')
+      const removeBtn = document.getElementById('instructor-img-remove')
+      if (!el) return
+      if (url) {
+        el.style.backgroundImage = `url(${url})`
+        el.textContent = ''
+        if (removeBtn) removeBtn.style.display = ''
+      } else {
+        el.style.backgroundImage = ''
+        el.textContent = '사진'
+        if (removeBtn) removeBtn.style.display = 'none'
+      }
+    }
+
+    function fillInstructorsIntroEditor(cfg) {
+      document.getElementById('instructors-intro-title').value = cfg.section_title || ''
+      document.getElementById('instructors-intro-subtitle').value = cfg.section_subtitle || ''
+      document.getElementById('instructors-intro-page').value = cfg.page_intro || ''
+    }
+
+    function readInstructorsIntroForm() {
+      return {
+        section_title: document.getElementById('instructors-intro-title').value.trim(),
+        section_subtitle: document.getElementById('instructors-intro-subtitle').value.trim(),
+        page_intro: document.getElementById('instructors-intro-page').value.trim(),
+      }
+    }
+
+    async function loadInstructorsIntroSettings() {
+      try {
+        const cfg = await API.get('/admin/instructors-intro')
+        fillInstructorsIntroEditor(cfg)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
+    async function loadInstructors() {
+      const tbody = document.getElementById('instructors-tbody')
+      if (!tbody) return
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>'
+      await loadInstructorsIntroSettings()
+      try {
+        const list = await API.get('/admin/instructors')
+        if (!list.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">등록된 강사가 없습니다.</td></tr>'
+          return
+        }
+        tbody.innerHTML = list.map(i => {
+          const thumb = i.profile_image
+            ? `<img src="${esc(i.profile_image)}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover" />`
+            : `<span style="display:inline-flex;width:40px;height:40px;border-radius:50%;background:#eee;align-items:center;justify-content:center;font-weight:700;color:#888">${esc((i.name||'?')[0])}</span>`
+          const tags = (i.tags || []).join(', ')
+          return `<tr>
+            <td>${i.sort_order ?? '-'}</td>
+            <td>${thumb}</td>
+            <td><strong>${esc(i.name)}</strong></td>
+            <td style="font-size:14px;color:#666">${esc(i.role_title || '-')}</td>
+            <td style="font-size:13px;color:#888">${esc(tags || '-')}</td>
+            <td><span class="status-tag ${i.is_published ? 'done' : 'draft'}">${i.is_published ? '공개' : '비공개'}</span></td>
+            <td class="td-actions">
+              <button class="btn-sm" onclick="openInstructorEdit('${i.id}')">편집</button>
+              <button class="btn-sm-danger" onclick="deleteInstructor('${i.id}')">삭제</button>
+            </td>
+          </tr>`
+        }).join('')
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e00">오류: ' + esc(e.message || '불러오기 실패') + '</td></tr>'
+      }
+    }
+
+    function openInstructorModal(data) {
+      _instructorEditId = data?.id || null
+      _instructorPendingImage = data ? (data.profile_image || null) : null
+      document.getElementById('instructor-modal-title').textContent = data ? '강사 편집' : '강사 등록'
+      document.getElementById('im-name').value = data?.name || ''
+      document.getElementById('im-role').value = data?.role_title || ''
+      document.getElementById('im-bio').value = data?.bio || ''
+      document.getElementById('im-tags').value = (data?.tags || []).join(', ')
+      document.getElementById('im-sort').value = data?.sort_order ?? 1
+      document.getElementById('im-published').checked = data ? !!data.is_published : true
+      updateInstructorImgPreview(_instructorPendingImage)
+      document.getElementById('instructor-modal').style.display = 'flex'
+    }
+
+    window.openInstructorEdit = async (id) => {
+      try {
+        const list = await API.get('/admin/instructors')
+        const item = list.find(i => i.id === id)
+        if (item) openInstructorModal(item)
+      } catch (e) {
+        alert(e.message || '불러오기 실패')
+      }
+    }
+
+    window.deleteInstructor = async (id) => {
+      if (!confirm('이 강사 프로필을 삭제하시겠습니까?')) return
+      try {
+        await API.del('/admin/instructors/' + id)
+        loadInstructors()
+      } catch (e) {
+        alert(e.message || '삭제 실패')
+      }
+    }
+
+    document.getElementById('instructor-create-btn')?.addEventListener('click', () => openInstructorModal(null))
+
+    document.getElementById('instructor-img-input')?.addEventListener('change', async e => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      if (file.size > 2 * 1024 * 1024) { alert('2MB 이하 이미지만 업로드할 수 있습니다.'); e.target.value = ''; return }
+      try {
+        _instructorPendingImage = await resizeInstructorImage(file)
+        updateInstructorImgPreview(_instructorPendingImage)
+      } catch (err) {
+        alert(err.message)
+      }
+      e.target.value = ''
+    })
+
+    document.getElementById('instructor-img-remove')?.addEventListener('click', () => {
+      _instructorPendingImage = null
+      updateInstructorImgPreview(null)
+    })
+
+    document.getElementById('im-save')?.addEventListener('click', async () => {
+      const name = document.getElementById('im-name').value.trim()
+      if (!name) { alert('강사 이름을 입력해주세요.'); return }
+      const payload = {
+        name,
+        role_title: document.getElementById('im-role').value.trim(),
+        bio: document.getElementById('im-bio').value.trim(),
+        tags: document.getElementById('im-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+        sort_order: Number(document.getElementById('im-sort').value) || 0,
+        is_published: document.getElementById('im-published').checked,
+      }
+      if (_instructorPendingImage !== undefined) payload.profile_image = _instructorPendingImage
+      try {
+        if (_instructorEditId) {
+          await API.patch('/admin/instructors/' + _instructorEditId, payload)
+        } else {
+          await API.post('/admin/instructors', payload)
+        }
+        document.getElementById('instructor-modal').style.display = 'none'
+        loadInstructors()
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      }
+    })
+
+    document.getElementById('instructors-intro-save')?.addEventListener('click', async () => {
+      const statusEl = document.getElementById('instructors-intro-status')
+      const btn = document.getElementById('instructors-intro-save')
+      try {
+        btn.disabled = true
+        const result = await API.patch('/admin/instructors-intro', readInstructorsIntroForm())
+        fillInstructorsIntroEditor(result)
+        if (statusEl) {
+          statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+        }
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      } finally {
+        btn.disabled = false
+      }
+    })
+
+    function footerLinkRowHtml(link = {}, showEmphasis = false) {
+      return `<div class="footer-link-row">
+        <input type="text" data-link-label placeholder="링크 이름" value="${esc(link.label || '')}" />
+        <input type="text" data-link-href placeholder="/path 또는 https://..." value="${esc(link.href || '')}" />
+        ${showEmphasis ? `<label class="emphasis"><input type="checkbox" data-link-emphasis ${link.emphasis ? 'checked' : ''} /> 강조</label>` : '<span></span>'}
+        <button type="button" class="btn-sm-danger" data-remove-link>삭제</button>
+      </div>`
+    }
+
+    function renderFooterColumnCard(col = { title: '', links: [] }) {
+      const links = (col.links && col.links.length ? col.links : [{ label: '', href: '' }])
+        .map(l => footerLinkRowHtml(l, true)).join('')
+      return `<div class="footer-col-card" data-footer-col>
+        <div class="footer-col-card-head">
+          <input type="text" data-col-title placeholder="열 제목 (예: 강의)" value="${esc(col.title || '')}" />
+          <button type="button" class="btn-sm-danger" data-remove-col>열 삭제</button>
+        </div>
+        <div class="footer-link-rows" data-col-links>${links}</div>
+        <button type="button" class="btn-sm" data-add-col-link style="margin-top:8px">+ 링크 추가</button>
+      </div>`
+    }
+
+    function fillFooterEditor(cfg) {
+      document.getElementById('footer-brand-name').value = cfg.brand_name || ''
+      document.getElementById('footer-tagline').value = cfg.tagline || ''
+      document.getElementById('footer-biz-info').value = cfg.biz_info || ''
+      document.getElementById('footer-copyright').value = cfg.copyright || ''
+      const colsEl = document.getElementById('footer-columns-editor')
+      const cols = cfg.columns?.length ? cfg.columns : [{ title: '', links: [{ label: '', href: '' }] }]
+      colsEl.innerHTML = cols.map(renderFooterColumnCard).join('')
+      const polEl = document.getElementById('footer-policy-editor')
+      const policies = cfg.policy_links?.length ? cfg.policy_links : [{ label: '', href: '' }]
+      polEl.innerHTML = policies.map(l => footerLinkRowHtml(l, false)).join('')
+    }
+
+    function readFooterEditorForm() {
+      const columns = [...document.querySelectorAll('[data-footer-col]')].map(colEl => ({
+        title: colEl.querySelector('[data-col-title]')?.value.trim() || '',
+        links: [...colEl.querySelectorAll('[data-col-links] .footer-link-row')].map(row => ({
+          label: row.querySelector('[data-link-label]')?.value.trim() || '',
+          href: row.querySelector('[data-link-href]')?.value.trim() || '',
+          emphasis: !!row.querySelector('[data-link-emphasis]')?.checked,
+        })).filter(l => l.label),
+      })).filter(c => c.title)
+      const policy_links = [...document.querySelectorAll('#footer-policy-editor .footer-link-row')].map(row => ({
+        label: row.querySelector('[data-link-label]')?.value.trim() || '',
+        href: row.querySelector('[data-link-href]')?.value.trim() || '',
+      })).filter(l => l.label)
+      return {
+        brand_name: document.getElementById('footer-brand-name').value.trim(),
+        tagline: document.getElementById('footer-tagline').value.trim(),
+        biz_info: document.getElementById('footer-biz-info').value.trim(),
+        copyright: document.getElementById('footer-copyright').value.trim(),
+        columns,
+        policy_links,
+      }
+    }
+
+    async function loadFooterSettings() {
+      const statusEl = document.getElementById('footer-save-status')
+      try {
+        const cfg = await API.get('/admin/footer')
+        fillFooterEditor(cfg)
+        if (statusEl && cfg.updated_at) {
+          statusEl.textContent = '마지막 저장: ' + cfg.updated_at.slice(0, 16).replace('T', ' ')
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = '푸터 설정을 불러오지 못했습니다.'
+      }
+    }
+
+    document.getElementById('footer-columns-editor')?.addEventListener('click', e => {
+      const col = e.target.closest('[data-footer-col]')
+      if (!col) return
+      if (e.target.matches('[data-remove-col]')) {
+        col.remove()
+        return
+      }
+      if (e.target.matches('[data-add-col-link]')) {
+        col.querySelector('[data-col-links]').insertAdjacentHTML('beforeend', footerLinkRowHtml({}, true))
+      }
+      if (e.target.matches('[data-remove-link]')) {
+        const rows = col.querySelectorAll('[data-col-links] .footer-link-row')
+        if (rows.length <= 1) return
+        e.target.closest('.footer-link-row')?.remove()
+      }
+    })
+
+    document.getElementById('footer-policy-editor')?.addEventListener('click', e => {
+      if (e.target.matches('[data-remove-link]')) {
+        const rows = document.querySelectorAll('#footer-policy-editor .footer-link-row')
+        if (rows.length <= 1) return
+        e.target.closest('.footer-link-row')?.remove()
+      }
+    })
+
+    document.getElementById('footer-add-column')?.addEventListener('click', () => {
+      document.getElementById('footer-columns-editor').insertAdjacentHTML('beforeend', renderFooterColumnCard({ title: '', links: [{ label: '', href: '' }] }))
+    })
+
+    document.getElementById('footer-add-policy')?.addEventListener('click', () => {
+      document.getElementById('footer-policy-editor').insertAdjacentHTML('beforeend', footerLinkRowHtml({}, false))
+    })
+
+    document.getElementById('footer-save-btn')?.addEventListener('click', async () => {
+      const statusEl = document.getElementById('footer-save-status')
+      const btn = document.getElementById('footer-save-btn')
+      try {
+        btn.disabled = true
+        const payload = readFooterEditorForm()
+        const result = await API.patch('/admin/footer', payload)
+        fillFooterEditor(result)
+        if (statusEl) statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      } finally {
+        btn.disabled = false
+      }
+    })
+
+    function readHomepageLayoutForm() {
+      const sections = {}
+      document.querySelectorAll('[data-layout-section]').forEach(el => {
+        sections[el.dataset.layoutSection] = el.checked
+      })
+      const nav = {}
+      document.querySelectorAll('[data-layout-nav]').forEach(el => {
+        nav[el.dataset.layoutNav] = el.checked
+      })
+      return { sections, nav }
+    }
+
+    function fillHomepageLayoutForm(layout) {
+      document.querySelectorAll('[data-layout-section]').forEach(el => {
+        const key = el.dataset.layoutSection
+        el.checked = layout?.sections?.[key] !== false
+      })
+      document.querySelectorAll('[data-layout-nav]').forEach(el => {
+        const key = el.dataset.layoutNav
+        el.checked = layout?.nav?.[key] !== false
+      })
+    }
+
+    async function loadHomepageLayoutSettings() {
+      const statusEl = document.getElementById('homepage-layout-status')
+      try {
+        const layout = await API.get('/admin/homepage-layout')
+        fillHomepageLayoutForm(layout)
+        if (statusEl && layout.updated_at) {
+          statusEl.textContent = '마지막 저장: ' + layout.updated_at.slice(0, 16).replace('T', ' ')
+        } else if (statusEl) {
+          statusEl.textContent = ''
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = '노출 설정을 불러오지 못했습니다.'
+      }
+    }
+
+    document.getElementById('homepage-layout-save')?.addEventListener('click', async () => {
+      const statusEl = document.getElementById('homepage-layout-status')
+      const btn = document.getElementById('homepage-layout-save')
+      try {
+        btn.disabled = true
+        const payload = readHomepageLayoutForm()
+        const result = await API.patch('/admin/homepage-layout', payload)
+        fillHomepageLayoutForm(result)
+        if (statusEl) {
+          statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+        }
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      } finally {
+        btn.disabled = false
+      }
+    })
+
+    document.getElementById('editor-apply-img-input')?.addEventListener('change', async e => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      if (file.size > 2 * 1024 * 1024) { alert('2MB 이하 이미지만 업로드할 수 있습니다.'); e.target.value = ''; return }
+      try {
+        _editorApplyPendingImage = await resizeEditorApplyImage(file)
+        updateEditorApplyImgPreview(_editorApplyPendingImage)
+      } catch (err) {
+        alert(err.message)
+      }
+      e.target.value = ''
+    })
+
+    document.getElementById('editor-apply-img-save')?.addEventListener('click', async () => {
+      const statusEl = document.getElementById('editor-apply-img-status')
+      try {
+        const result = await API.patch('/admin/site-settings/editor-apply', {
+          pending_review_image: _editorApplyPendingImage,
+        })
+        if (statusEl) statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+        alert('저장되었습니다.')
+      } catch (e) {
+        alert(e.message || '저장 중 오류가 발생했습니다.')
+      }
+    })
+
+    document.getElementById('editor-apply-img-remove')?.addEventListener('click', async () => {
+      if (!confirm('배경 이미지를 제거하시겠습니까?')) return
+      _editorApplyPendingImage = null
+      updateEditorApplyImgPreview(null)
+      try {
+        await API.patch('/admin/site-settings/editor-apply', { pending_review_image: null })
+        const statusEl = document.getElementById('editor-apply-img-status')
+        if (statusEl) statusEl.textContent = '이미지가 제거되었습니다.'
+        alert('제거되었습니다.')
+      } catch (e) {
+        alert(e.message || '제거 중 오류가 발생했습니다.')
+      }
+    })
+
+    let _epConfig = null
+    let _epEditingMailId = null
+    let _epWorkbooksFull = []
+    let _epCurrentTab = 'stages'
+
+    function switchEpTab(tab) {
+      _epCurrentTab = tab
+      ;['stages','guide','mails'].forEach(t => {
+        document.getElementById('ep-tab-' + t)?.classList.toggle('active', t === tab)
+        document.getElementById('ep-panel-' + t)?.classList.toggle('active', t === tab)
+      })
+    }
+
+    function epCalcTotal(stages) {
+      return (stages || []).reduce((s, st) => s + (parseInt(st.mail_count, 10) || 0), 0)
+    }
+
+    function renderEpStagesTable(stages) {
+      document.getElementById('ep-stages-tbody').innerHTML = stages.map((s, i) => `
+        <tr>
+          <td style="font-weight:700;color:var(--text-primary)">${s.order}단계</td>
+          <td><input type="text" data-ep-stage-title="${i}" value="${esc(s.title||'')}" style="width:100%;min-width:140px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg-soft);outline:none" /></td>
+          <td><input type="number" min="1" max="20" data-ep-mail-count="${i}" value="${s.mail_count}" style="width:70px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg-soft);outline:none;text-align:center" /></td>
+          <td><input type="number" min="5" max="180" data-ep-minutes="${i}" value="${s.minutes}" style="width:70px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg-soft);outline:none;text-align:center" /></td>
+        </tr>`).join('')
+      document.getElementById('ep-total-mails').textContent = epCalcTotal(stages)
+    }
+
+    function renderEpGuideCards(cards) {
+      document.getElementById('ep-guide-cards').innerHTML = cards.map((c, i) => `
+        <div style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--bg-soft)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span style="font-size:12px;font-weight:700;color:var(--text-hint);text-transform:uppercase">카드 ${i + 1}</span>
+            <button type="button" class="btn-sm-danger" onclick="removeEpGuideCard(${i})" style="font-size:11px;padding:3px 8px">삭제</button>
+          </div>
+          <div class="form-group"><label>아이콘 (이모지)</label><input type="text" data-ep-guide-icon="${i}" value="${esc(c.icon||'')}" style="width:80px" /></div>
+          <div class="form-group"><label>제목</label><input type="text" data-ep-guide-title="${i}" value="${esc(c.title||'')}" /></div>
+          <div class="form-group"><label>내용 (줄바꿈 지원)</label><textarea data-ep-guide-body="${i}" rows="4" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:#fff;resize:vertical">${c.body||''}</textarea></div>
+        </div>`).join('')
+    }
+
+    window.removeEpGuideCard = function(idx) {
+      if (!_epConfig) return
+      if (!confirm(`안내 카드 ${idx+1}을 삭제하시겠습니까?`)) return
+      const current = collectEpGuideCards()
+      current.splice(idx, 1)
+      _epConfig.guide_cards = current
+      renderEpGuideCards(current)
+    }
+
+    function renderEpMailsTable(workbooks) {
+      const tbody = document.getElementById('ep-mails-tbody')
+      if (!workbooks.length) {
+        tbody.innerHTML = '<tr class="empty-state-row"><td colspan="6">메일이 없습니다. 단계 설정을 저장하세요.</td></tr>'
+        return
+      }
+      tbody.innerHTML = workbooks.map(w => `
+        <tr>
+          <td style="font-weight:700">${w.order_num}</td>
+          <td><span class="pill pending">${w.stage_num}단계-${w.position_in_stage}</span></td>
+          <td><span style="font-size:13px">${esc(w.from_company||'')} · ${esc(w.from_name||'')}</span></td>
+          <td class="td-review" style="max-width:200px">${esc(w.subject||'')}</td>
+          <td class="td-review" style="max-width:140px">${esc(w.mission_title||'')}</td>
+          <td><button type="button" class="btn-sm" onclick="openEpMailEditor('${w.id}')">편집</button></td>
+        </tr>`).join('')
+    }
+
+    async function loadEditorProgramDesign() {
+      try {
+        const data = await API.get('/admin/editor-program/config')
+        _epConfig = data
+        _epWorkbooksFull = data.workbooks || []
+        renderEpStagesTable(data.stages || [])
+        renderEpGuideCards(data.guide_cards || [])
+        renderEpMailsTable(_epWorkbooksFull)
+      } catch (e) {
+        document.getElementById('ep-stage-status').textContent = e.message || '불러오기 실패'
+      }
+    }
+
+    function collectEpStages() {
+      return (_epConfig?.stages || []).map((s, i) => ({
+        order: i + 1,
+        title: document.querySelector(`[data-ep-stage-title="${i}"]`)?.value?.trim() || `${i + 1}단계`,
+        mail_count: parseInt(document.querySelector(`[data-ep-mail-count="${i}"]`)?.value, 10) || 1,
+        minutes: parseInt(document.querySelector(`[data-ep-minutes="${i}"]`)?.value, 10) || 40,
+      }))
+    }
+
+    function collectEpGuideCards() {
+      const container = document.getElementById('ep-guide-cards')
+      const count = container.querySelectorAll('[data-ep-guide-icon]').length
+      return Array.from({ length: count }, (_, i) => ({
+        icon: document.querySelector(`[data-ep-guide-icon="${i}"]`)?.value?.trim() || '📋',
+        title: document.querySelector(`[data-ep-guide-title="${i}"]`)?.value?.trim() || '',
+        body: document.querySelector(`[data-ep-guide-body="${i}"]`)?.value?.trim() || '',
+      })).filter(c => c.title && c.body)
+    }
+
+    window.openEpMailEditor = async function(id) {
+      _epEditingMailId = id
+      try {
+        const w = await API.get('/admin/editor-program/workbooks/' + id)
+        document.getElementById('ep-mail-modal-title').textContent = `#${w.order_num} · ${w.stage_num}단계-${w.position_in_stage} 메일 편집`
+        document.getElementById('epm-from-name').value = w.from_name || ''
+        document.getElementById('epm-from-company').value = w.from_company || ''
+        document.getElementById('epm-from-email').value = w.from_email || ''
+        document.getElementById('epm-subject').value = w.subject || ''
+        document.getElementById('epm-mission-title').value = w.mission_title || ''
+        document.getElementById('epm-mission-brief').value = w.mission_brief || ''
+        document.getElementById('epm-body').value = w.body || ''
+        document.getElementById('epm-keywords').value = Array.isArray(w.required_keywords) ? w.required_keywords.join(', ') : ''
+        document.getElementById('epm-pass-message').value = w.pass_message || ''
+        document.getElementById('ep-mail-modal').style.display = 'flex'
+      } catch (e) { alert(e.message || '메일 불러오기 실패') }
+    }
+
+    document.getElementById('ep-save-stages')?.addEventListener('click', async () => {
+      const statusEl = document.getElementById('ep-stage-status')
+      try {
+        const stages = collectEpStages()
+        const result = await API.patch('/admin/editor-program/config', { stages })
+        statusEl.textContent = `저장됨 · 총 ${result.total_mails}통 메일`
+        await loadEditorProgramDesign()
+      } catch (e) { alert(e.message || '저장 실패') }
+    })
+
+    document.getElementById('ep-sync-slots')?.addEventListener('click', async () => {
+      try {
+        const result = await API.post('/admin/editor-program/sync', {})
+        await loadEditorProgramDesign()
+        alert(`동기화 완료 · 총 ${result.total_mails}통`)
+      } catch (e) { alert(e.message || '동기화 실패') }
+    })
+
+    document.getElementById('ep-add-guide-btn')?.addEventListener('click', () => {
+      const current = collectEpGuideCards()
+      current.push({ icon: '📋', title: '새 안내 카드', body: '내용을 입력하세요.' })
+      if (_epConfig) _epConfig.guide_cards = current
+      renderEpGuideCards(current)
+    })
+
+    document.getElementById('ep-save-guide')?.addEventListener('click', async () => {
+      const statusEl = document.getElementById('ep-guide-status')
+      try {
+        const guide_cards = collectEpGuideCards()
+        if (!guide_cards.length) return alert('안내 카드가 1개 이상 있어야 합니다.')
+        await API.patch('/admin/editor-program/config', { guide_cards })
+        statusEl.textContent = `${guide_cards.length}개 카드 저장됨`
+        if (_epConfig) _epConfig.guide_cards = guide_cards
+      } catch (e) { alert(e.message || '저장 실패') }
+    })
+
+    document.getElementById('epm-save')?.addEventListener('click', async () => {
+      if (!_epEditingMailId) return
+      try {
+        await API.patch('/admin/editor-program/workbooks/' + _epEditingMailId, {
+          from_name: document.getElementById('epm-from-name').value,
+          from_company: document.getElementById('epm-from-company').value,
+          from_email: document.getElementById('epm-from-email').value,
+          subject: document.getElementById('epm-subject').value,
+          mission_title: document.getElementById('epm-mission-title').value,
+          mission_brief: document.getElementById('epm-mission-brief').value,
+          body: document.getElementById('epm-body').value,
+          required_keywords: document.getElementById('epm-keywords').value,
+          pass_message: document.getElementById('epm-pass-message').value,
+        })
+        document.getElementById('ep-mail-modal').style.display = 'none'
+        await loadEditorProgramDesign()
+      } catch (e) { alert(e.message || '저장 실패') }
+    })
 
     const sectionLoaders = {
       dashboard: loadDashboard,
@@ -869,8 +2219,15 @@
       students: loadStudents,
       orders: loadOrders,
       reviews: loadReviews,
+      instructors: loadInstructors,
       'editor-apps': () => loadEditorApps('pending'),
+      'editor-program': loadEditorProgramDesign,
       'projects': () => loadProjects('open'),
+      submissions: loadSubmissions,
+      notices: loadNotices,
+      tickets: () => loadTickets('open'),
+      faqs: loadFaqs,
+      settings: loadSettings,
     };
 
     // ── 의뢰 현황 ──
@@ -884,8 +2241,8 @@
       tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr>'
       try {
         const qs = status ? `?status=${status}` : ''
-        const projects = await API.get('/api/projects' + qs)
-        if (!projects.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">의뢰가 없습니다.</td></tr>'; return }
+        const projects = await API.get('/projects' + qs)
+        if (!projects.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">클라이언츠가 없습니다.</td></tr>'; return }
         const statusMap = { open:'<span class="status-tag done">모집중</span>', matched:'<span class="status-tag pending">매칭완료</span>', completed:'<span class="status-tag">완료</span>', cancelled:'<span class="status-tag refund">취소</span>' }
         tbody.innerHTML = projects.map(p => {
           const budget = p.budget_min||p.budget_max ? `${p.budget_min?'₩'+Number(p.budget_min).toLocaleString():''}${p.budget_max?'~₩'+Number(p.budget_max).toLocaleString():''}` : '협의'
@@ -893,7 +2250,7 @@
             <td><a href="/project-detail.html?id=${p.id}" target="_blank" style="color:#5c67f2">${p.title}</a></td>
             <td>${p.category}</td>
             <td>${p.client_name||'-'}</td>
-            <td style="font-size:12px">${budget}</td>
+            <td style="font-size: 14.4px">${budget}</td>
             <td style="text-align:center">${p.quote_count||0}</td>
             <td class="td-date">${p.deadline||'-'}</td>
             <td class="td-date">${(p.created_at||'').slice(0,10)}</td>
@@ -909,9 +2266,9 @@
     }
 
     async function cancelProject(id) {
-      if (!confirm('이 의뢰를 취소하시겠습니까?')) return
+      if (!confirm('이 클라이언츠를 취소하시겠습니까?')) return
       try {
-        await API.patch('/api/projects/' + id + '/status', { status: 'cancelled' })
+        await API.patch('/projects/' + id + '/status', { status: 'cancelled' })
         loadProjects('open')
       } catch(e) { alert(e.message||'처리 중 오류') }
     }
@@ -953,7 +2310,7 @@
       if (!title) { alert('강의 제목을 입력해주세요.'); return }
       if (!scheduleVal) { alert('라이브 일정을 선택해주세요.'); return }
       try {
-        await API.post('/api/admin/live-courses', {
+        await API.post('/admin/live-courses', {
           title, category, description, thumbnail_icon,
           live_schedule: new Date(scheduleVal).toLocaleString('ko-KR'),
           meet_code: meet_code || null,
@@ -970,6 +2327,254 @@
 
     // 초기 로드
     loadDashboard();
+
+    // ── 공지사항 ──
+    let _noticeEditId = null
+    async function loadNotices() {
+      const tbody = document.getElementById('notices-tbody')
+      try {
+        const notices = await API.get('/admin/notices')
+        if (!notices.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="5">등록된 공지가 없습니다.</td></tr>'; return }
+        tbody.innerHTML = notices.map(n => `
+          <tr>
+            <td>${n.is_pinned ? '<span class="status-tag done">고정</span>' : '-'}</td>
+            <td><strong style="font-size:14px">${esc(n.title)}</strong></td>
+            <td><span class="status-tag ${n.is_public ? 'done' : 'draft'}">${n.is_public ? '공개' : '비공개'}</span></td>
+            <td class="td-date">${(n.created_at||'').slice(0,10)}</td>
+            <td class="td-actions">
+              <button class="btn-sm" onclick="openNoticeEdit('${n.id}')">편집</button>
+              <button class="btn-sm-danger" onclick="deleteNotice('${n.id}')">삭제</button>
+            </td>
+          </tr>`).join('')
+      } catch(e) { tbody.innerHTML = `<tr class="empty-state-row"><td colspan="5">${e.message}</td></tr>` }
+    }
+
+    function openNoticeModal(n) {
+      _noticeEditId = n ? n.id : null
+      document.getElementById('notice-modal-title').textContent = n ? '공지 편집' : '새 공지 작성'
+      document.getElementById('nm-title').value = n ? n.title : ''
+      document.getElementById('nm-content').value = n ? n.content : ''
+      document.getElementById('nm-public').checked = n ? !!n.is_public : false
+      document.getElementById('nm-pin').checked = n ? !!n.is_pinned : false
+      document.getElementById('notice-modal').style.display = 'flex'
+    }
+    window.openNoticeEdit = async (id) => {
+      const n = await API.get('/admin/notices').then(list => list.find(x => x.id === id)).catch(() => null)
+      if (n) openNoticeModal(n)
+    }
+    window.deleteNotice = async (id) => {
+      if (!confirm('공지를 삭제하시겠습니까?')) return
+      await API.del('/admin/notices/' + id)
+      loadNotices()
+    }
+    document.getElementById('notice-create-btn').addEventListener('click', () => openNoticeModal(null))
+    document.getElementById('nm-save').addEventListener('click', async () => {
+      const title = document.getElementById('nm-title').value.trim()
+      const content = document.getElementById('nm-content').value.trim()
+      if (!title || !content) return alert('제목과 내용을 입력하세요.')
+      const body = { title, content, is_public: document.getElementById('nm-public').checked, is_pinned: document.getElementById('nm-pin').checked }
+      if (_noticeEditId) {
+        await API.patch('/admin/notices/' + _noticeEditId, body)
+      } else {
+        await API.post('/admin/notices', body)
+      }
+      document.getElementById('notice-modal').style.display = 'none'
+      loadNotices()
+    })
+
+    // ── 고객 문의 ──
+    let _ticketId = null
+    async function loadTickets(status) {
+      ['open','answered','closed','all'].forEach(t => {
+        const el = document.getElementById('ttab-' + t)
+        if (el) el.classList.toggle('active', (status||'open') === t)
+      })
+      const tbody = document.getElementById('tickets-tbody')
+      tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">불러오는 중...</td></tr>'
+      try {
+        const qs = (status && status !== 'all') ? `?status=${status}` : ''
+        const tickets = await API.get('/admin/tickets' + qs)
+        if (!tickets.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">문의가 없습니다.</td></tr>'; return }
+        const smap = { open: '미답변', answered: '답변완료', closed: '종료' }
+        const scls = { open: 'pending', answered: 'answered', closed: 'draft' }
+        tbody.innerHTML = tickets.map(t => `
+          <tr class="ticket-row" onclick="openTicket('${t.id}')">
+            <td><span class="pill ${scls[t.status]||'pending'}">${t.type||'일반'}</span></td>
+            <td>
+              <div class="ticket-subject">${esc(t.subject)}</div>
+              <div class="ticket-preview">${esc(t.content)}</div>
+            </td>
+            <td>${esc(t.name)}</td>
+            <td class="td-date">${esc(t.email)}</td>
+            <td><span class="status-tag ${scls[t.status]||'pending'}">${smap[t.status]||t.status}</span></td>
+            <td class="td-date">${(t.created_at||'').slice(0,10)}</td>
+            <td class="td-actions">
+              <button class="btn-sm-danger" onclick="event.stopPropagation();deleteTicket('${t.id}')">삭제</button>
+            </td>
+          </tr>`).join('')
+      } catch(e) { tbody.innerHTML = `<tr class="empty-state-row"><td colspan="7">${e.message}</td></tr>` }
+    }
+    window.openTicket = async (id) => {
+      _ticketId = id
+      try {
+        const t = await API.get('/admin/tickets/' + id)
+        document.getElementById('ticket-modal-title').textContent = `문의 — ${esc(t.subject)}`
+        document.getElementById('ticket-answer-input').value = t.answer || ''
+        document.getElementById('ticket-modal-body').innerHTML = `
+          <div class="review-panel">
+            <p><strong>이름:</strong> ${esc(t.name)} &nbsp;·&nbsp; <strong>이메일:</strong> ${esc(t.email)}</p>
+            <p><strong>유형:</strong> ${esc(t.type||'일반')} &nbsp;·&nbsp; <strong>접수:</strong> ${(t.created_at||'').slice(0,16).replace('T',' ')}</p>
+          </div>
+          <p style="font-size:15px;line-height:1.8;margin-top:8px;white-space:pre-line">${esc(t.content)}</p>
+          ${t.answer ? `<div class="review-panel" style="margin-top:16px;border-left:3px solid var(--primary)"><strong>이전 답변</strong><br>${esc(t.answer)}</div>` : ''}`
+        document.getElementById('ticket-modal').style.display = 'flex'
+      } catch(e) { alert(e.message) }
+    }
+    window.deleteTicket = async (id) => {
+      if (!confirm('문의를 삭제하시겠습니까?')) return
+      await API.del('/admin/tickets/' + id)
+      loadTickets('all')
+    }
+    document.getElementById('ticket-answer-btn').addEventListener('click', async () => {
+      if (!_ticketId) return
+      const answer = document.getElementById('ticket-answer-input').value.trim()
+      if (!answer) return alert('답변 내용을 입력하세요.')
+      await API.post('/admin/tickets/' + _ticketId + '/answer', { answer })
+      document.getElementById('ticket-modal').style.display = 'none'
+      loadTickets('open')
+    })
+    document.getElementById('ticket-close-btn').addEventListener('click', async () => {
+      if (!_ticketId || !confirm('이 문의를 종료 처리하시겠습니까?')) return
+      await API.patch('/admin/tickets/' + _ticketId + '/status', { status: 'closed' })
+      document.getElementById('ticket-modal').style.display = 'none'
+      loadTickets('open')
+    })
+
+    // ── FAQ ──
+    let _faqEditId = null
+    async function loadFaqs() {
+      const tbody = document.getElementById('faqs-tbody')
+      try {
+        const faqs = await API.get('/admin/faqs')
+        if (!faqs.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="5">등록된 FAQ가 없습니다.</td></tr>'; return }
+        tbody.innerHTML = faqs.map(f => `
+          <tr>
+            <td class="td-date">${f.sort_order ?? '-'}</td>
+            <td><span class="pill pending">${esc(f.category||'일반')}</span></td>
+            <td style="max-width:320px"><div style="font-size:14px;font-weight:600">${esc(f.question)}</div><div class="td-sub" style="margin-top:3px">${esc(f.answer).slice(0,60)}...</div></td>
+            <td><span class="status-tag ${f.is_public ? 'done' : 'draft'}">${f.is_public ? '공개' : '비공개'}</span></td>
+            <td class="td-actions">
+              <button class="btn-sm" onclick="openFaqEdit('${f.id}')">편집</button>
+              <button class="btn-sm-danger" onclick="deleteFaq('${f.id}')">삭제</button>
+            </td>
+          </tr>`).join('')
+      } catch(e) { tbody.innerHTML = `<tr class="empty-state-row"><td colspan="5">${e.message}</td></tr>` }
+    }
+    function openFaqModal(f) {
+      _faqEditId = f ? f.id : null
+      document.getElementById('faq-modal-title').textContent = f ? 'FAQ 편집' : 'FAQ 추가'
+      document.getElementById('fm-category').value = f ? (f.category||'일반') : '일반'
+      document.getElementById('fm-question').value = f ? f.question : ''
+      document.getElementById('fm-answer').value = f ? f.answer : ''
+      document.getElementById('fm-order').value = f ? (f.sort_order??'') : ''
+      document.getElementById('fm-public').checked = f ? !!f.is_public : true
+      document.getElementById('faq-modal').style.display = 'flex'
+    }
+    window.openFaqEdit = async (id) => {
+      const faqs = await API.get('/admin/faqs').catch(() => [])
+      const f = faqs.find(x => x.id === id)
+      if (f) openFaqModal(f)
+    }
+    window.deleteFaq = async (id) => {
+      if (!confirm('FAQ를 삭제하시겠습니까?')) return
+      await API.del('/admin/faqs/' + id)
+      loadFaqs()
+    }
+    document.getElementById('faq-create-btn').addEventListener('click', () => openFaqModal(null))
+    document.getElementById('fm-save').addEventListener('click', async () => {
+      const question = document.getElementById('fm-question').value.trim()
+      const answer = document.getElementById('fm-answer').value.trim()
+      if (!question || !answer) return alert('질문과 답변을 입력하세요.')
+      const body = {
+        question, answer,
+        category: document.getElementById('fm-category').value,
+        is_public: document.getElementById('fm-public').checked,
+        sort_order: parseInt(document.getElementById('fm-order').value) || undefined,
+      }
+      if (_faqEditId) {
+        await API.patch('/admin/faqs/' + _faqEditId, body)
+      } else {
+        await API.post('/admin/faqs', body)
+      }
+      document.getElementById('faq-modal').style.display = 'none'
+      loadFaqs()
+    })
+
+    // ── 미션 제출 검수 ──
+    let _subReviewId = null
+    async function loadSubmissions() {
+      const tbody = document.getElementById('submissions-tbody')
+      tbody.innerHTML = '<tr class="empty-state-row"><td colspan="8">불러오는 중...</td></tr>'
+      const statusFilter = document.getElementById('sub-filter-status')?.value || ''
+      try {
+        let subs = await API.get('/admin/workbook-submissions')
+        if (statusFilter) subs = subs.filter(s => s.status === statusFilter)
+        if (!subs.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="8">제출된 미션이 없습니다.</td></tr>'; return }
+        const statusMap = { passed: '<span class="sub-status passed">통과</span>', failed: '<span class="sub-status failed">실패</span>' }
+        tbody.innerHTML = subs.map(s => `
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">${(s.user_name||'?')[0]}</div>${esc(s.user_name)}</div></td>
+            <td class="td-review" style="max-width:160px">${esc(s.workbook_subject)}</td>
+            <td style="text-align:center"><span class="pill pending">${s.stage_num}단계</span></td>
+            <td><a href="${esc(s.deliverable_url)}" target="_blank" style="color:var(--primary);font-size:12px;text-decoration:underline">보기</a></td>
+            <td>${statusMap[s.status] || `<span class="sub-status pending">${s.status}</span>`}</td>
+            <td>${s.admin_reviewed ? '<span class="pill approved">수동</span>' : '<span style="font-size:12px;color:var(--text-hint)">자동</span>'}</td>
+            <td class="td-date">${(s.submitted_at||'').slice(0,10)}</td>
+            <td class="td-actions">
+              <button class="btn-sm" onclick="openSubReview('${s.id}')">검수</button>
+            </td>
+          </tr>`).join('')
+      } catch(e) { tbody.innerHTML = `<tr class="empty-state-row"><td colspan="8">${e.message}</td></tr>` }
+    }
+
+    window.openSubReview = async (id) => {
+      _subReviewId = id
+      try {
+        const subs = await API.get('/admin/workbook-submissions')
+        const s = subs.find(x => x.id === id)
+        if (!s) return
+        document.getElementById('sub-modal-title').textContent = `#${s.workbook_order} 미션 검수 — ${esc(s.user_name)}`
+        document.getElementById('sub-feedback-input').value = s.feedback || ''
+        document.getElementById('sub-modal-body').innerHTML = `
+          <div class="review-panel">
+            <p><strong>수강생:</strong> ${esc(s.user_name)} (${esc(s.user_email)})</p>
+            <p><strong>메일:</strong> ${esc(s.workbook_subject)}</p>
+            <p><strong>상태:</strong> ${s.status} · <strong>제출일:</strong> ${(s.submitted_at||'').slice(0,16).replace('T',' ')}</p>
+          </div>
+          <p style="margin:12px 0 6px;font-size:13px;font-weight:700;color:var(--text-hint)">제출 링크</p>
+          <a href="${esc(s.deliverable_url)}" target="_blank" style="color:var(--primary);font-size:14px;word-break:break-all">${esc(s.deliverable_url)}</a>
+          <p style="margin:14px 0 6px;font-size:13px;font-weight:700;color:var(--text-hint)">작업 설명</p>
+          <p style="font-size:14px;line-height:1.75;white-space:pre-line">${esc(s.work_notes)}</p>
+          ${s.feedback ? `<p style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-hint)">기존 피드백</p><p style="font-size:14px;line-height:1.75;color:var(--text-muted)">${esc(s.feedback)}</p>` : ''}`
+        document.getElementById('sub-modal').style.display = 'flex'
+      } catch(e) { alert(e.message) }
+    }
+
+    document.getElementById('sub-pass-btn').addEventListener('click', async () => {
+      if (!_subReviewId) return
+      const feedback = document.getElementById('sub-feedback-input').value.trim()
+      await API.post('/admin/workbook-submissions/' + _subReviewId + '/review', { verdict: 'passed', feedback })
+      document.getElementById('sub-modal').style.display = 'none'
+      loadSubmissions()
+    })
+    document.getElementById('sub-fail-btn').addEventListener('click', async () => {
+      if (!_subReviewId || !confirm('반려 처리하시겠습니까?')) return
+      const feedback = document.getElementById('sub-feedback-input').value.trim()
+      await API.post('/admin/workbook-submissions/' + _subReviewId + '/review', { verdict: 'failed', feedback })
+      document.getElementById('sub-modal').style.display = 'none'
+      loadSubmissions()
+    })
+    document.getElementById('sub-filter-status')?.addEventListener('change', loadSubmissions)
   </script>
 
 </body>

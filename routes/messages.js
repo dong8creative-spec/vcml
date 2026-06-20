@@ -9,7 +9,7 @@ router.get('/:projectId', auth, async (req, res) => {
     const { projectId } = req.params
     const { since } = req.query
     const project = await db.getProjectById(projectId)
-    if (!project) return res.status(404).json({ error: '의뢰를 찾을 수 없습니다.' })
+    if (!project) return res.status(404).json({ error: '클라이언츠를 찾을 수 없습니다.' })
 
     // 접근 권한: 의뢰인이거나 수락된 편집자
     const isClient = project.client_id === req.user.id
@@ -32,7 +32,7 @@ router.post('/:projectId', auth, async (req, res) => {
     if (!content || !content.trim()) return res.status(400).json({ error: '메시지 내용을 입력해주세요.' })
 
     const project = await db.getProjectById(projectId)
-    if (!project) return res.status(404).json({ error: '의뢰를 찾을 수 없습니다.' })
+    if (!project) return res.status(404).json({ error: '클라이언츠를 찾을 수 없습니다.' })
 
     const isClient = project.client_id === req.user.id
     const isMatchedEditor = project.matched_editor_id === req.user.id || req.user.role === 'admin'

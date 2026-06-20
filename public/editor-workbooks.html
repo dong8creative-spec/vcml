@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>의뢰 메일함 — 에디터즈 준비</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    .mail-app { max-width: 920px; margin: 32px auto; padding: 0 20px 80px; }
+    .mail-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .mail-top h1 { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+    .mail-top p { font-size: 15px; color: #666; line-height: 1.6; }
+    .progress-card {
+      background: linear-gradient(135deg, #1a1f3c, #3d4a8a); color: #fff;
+      border-radius: 14px; padding: 18px 22px; min-width: 240px;
+    }
+    .progress-card .label { font-size: 13px; opacity: .75; margin-bottom: 6px; }
+    .progress-card .count { font-size: 28px; font-weight: 900; }
+    .progress-bar { height: 6px; background: rgba(255,255,255,.2); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+    .progress-bar div { height: 100%; background: #7ee787; border-radius: 3px; transition: width .3s; }
+
+    .mail-layout { background: #fff; border: 1px solid #e8e8e8; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.04); }
+    .mail-toolbar {
+      display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+      border-bottom: 1px solid #eee; background: #fafafa; font-size: 14px; color: #666;
+    }
+    .mail-toolbar strong { color: #111; }
+
+    .mail-list { list-style: none; margin: 0; padding: 0; }
+    .mail-item {
+      display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: center;
+      padding: 16px 18px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: .12s;
+      text-decoration: none; color: inherit;
+    }
+    .mail-item:hover { background: #f8f9ff; }
+    .mail-item.locked { opacity: .45; cursor: not-allowed; pointer-events: none; }
+    .mail-item.cooldown { background: #fff8f0; }
+    .mail-item.passed { background: #fafffb; }
+    .mail-item.failed .mail-subject { color: #c62828; }
+
+    .mail-avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: #5c67f2; color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800;
+    }
+    .mail-avatar.locked { background: #ccc; }
+    .mail-avatar.passed { background: #2cae6b; }
+
+    .mail-from { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 2px; }
+    .mail-subject { font-size: 15px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mail-preview { font-size: 13px; color: #999; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mail-meta { text-align: right; font-size: 12px; color: #aaa; white-space: nowrap; }
+    .mail-badge {
+      display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; margin-top: 4px;
+    }
+    .mail-badge.available { background: #eef0ff; color: #5c67f2; }
+    .mail-badge.passed { background: #e8f8ef; color: #2cae6b; }
+    .mail-badge.failed { background: #ffebee; color: #c62828; }
+    .mail-badge.cooldown { background: #fff3e0; color: #e65100; }
+    .mail-badge.locked { background: #f0f0f0; color: #999; }
+    .mail-badge.retry { background: #fff3e0; color: #e65100; }
+
+    .stage-block { border-bottom: 1px solid #eee; }
+    .stage-block:last-child { border-bottom: none; }
+    .stage-head {
+      padding: 12px 18px; background: #f8f9fb; font-size: 13px; font-weight: 700; color: #555;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .stage-head.current { background: #eef0ff; color: #3d4a8a; }
+    .stage-head.done { background: #f0fff4; color: #2e7d32; }
+
+    .timer-banner {
+      background: linear-gradient(135deg, #1a1f3c, #3d4a8a); color: #fff;
+      border-radius: 12px; padding: 16px 20px; margin-bottom: 16px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    }
+    .timer-banner .time { font-size: 28px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .timer-banner.warn { background: linear-gradient(135deg, #b71c1c, #e53935); }
+
+    .apply-cta {
+      margin-top: 24px; padding: 20px; border-radius: 12px; border: 1px solid #dce0ff;
+      background: #f4f5ff; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .apply-cta a {
+      padding: 12px 20px; background: #5c67f2; color: #fff; border-radius: 8px; font-weight: 700; text-decoration: none;
+    }
+    .apply-cta a.disabled { background: #ccc; pointer-events: none; }
+
+    .youtube-notice {
+      background: #fff5f5; border: 1px solid #ffcdd2; border-radius: 12px;
+      padding: 14px 18px; margin-bottom: 16px; font-size: 14px; line-height: 1.7; color: #444;
+    }
+    .youtube-notice strong { display: flex; align-items: center; gap: 8px; color: #c62828; margin-bottom: 6px; font-size: 15px; }
+
+    .badge-shelf {
+      background: #fff; border: 1px solid #eee; border-radius: 14px;
+      padding: 16px 20px; margin-bottom: 16px;
+    }
+    .badge-shelf-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .badge-shelf-head strong { font-size: 15px; color: #111; }
+    .badge-shelf-head span { font-size: 13px; color: #888; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge-slot {
+      width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; color: #bbb; background: #f5f5f5; border: 2px dashed #ddd;
+      position: relative;
+    }
+    .badge-slot.earned {
+      background: linear-gradient(145deg, #ffe566 0%, #ffc107 45%, #e6a800 100%);
+      border: 2px solid #fff8dc; color: #6b4e00; box-shadow: 0 3px 12px rgba(230,168,0,.4);
+      border-style: solid;
+    }
+    .badge-slot.earned i { font-size: 20px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.15)); }
+    .mail-avatar.passed.gold {
+      background: linear-gradient(145deg, #ffe566, #e6a800); color: #6b4e00; box-shadow: 0 2px 8px rgba(230,168,0,.35);
+    }
+    .mail-badge.passed { background: #fff8e1; color: #b8860b; }
+
+    .mail-gold-medal {
+      display: inline-flex; width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(145deg, #ffe566 0%, #ffc107 45%, #e6a800 100%);
+      border: 2px solid #fff8dc; align-items: center; justify-content: center;
+      box-shadow: 0 3px 10px rgba(230,168,0,.45); margin-top: 4px;
+    }
+    .mail-gold-medal i { font-size: 18px; color: #6b4e00; filter: drop-shadow(0 1px 1px rgba(0,0,0,.12)); }
+    .mail-meta { min-width: 52px; }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo">타닥클래스</a>
+    <div class="header-right">
+      <a href="/editor-apply.html" class="nav-btn">에디터즈 신청</a>
+      <a href="/" class="nav-btn">← 홈</a>
+    </div>
+  </div>
+</header>
+
+<div class="mail-app">
+  <div class="mail-top">
+    <div>
+      <h1>📬 의뢰 메일함</h1>
+      <p>10단계 선발 프로그램 · 메일은 <strong>한 통씩</strong>만 공개됩니다.<br>이전 메일 통과 후 다음 메일이 열리며, 제한 시간 내 유튜브(일부공개) 제출이 필요합니다.</p>
+    </div>
+    <div class="progress-card" id="progress-card">
+      <div class="label">단계 완료</div>
+      <div class="count"><span id="passed-count">-</span> / <span id="required-count">10</span></div>
+      <div class="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div id="timer-banner" style="display:none"></div>
+
+  <div class="youtube-notice">
+    <strong><i class="ti ti-brand-youtube"></i> 납품 안내 (모든 미션 공통)</strong>
+    과제 결과물은 <b>반드시 유튜브에 업로드</b> 후 링크를 제출해주세요. 업로드한 영상의 공개 설정은 전부 <b>일부공개</b>여야 하며, 작업 설명에 「일부공개」 적용 사실을 꼭 적어주세요.
+  </div>
+
+  <div class="badge-shelf" id="badge-shelf" style="display:none">
+    <div class="badge-shelf-head">
+      <strong>🏅 금장 배지</strong>
+      <span id="badge-count">0 / 10</span>
+    </div>
+    <div class="badge-row" id="badge-row"></div>
+  </div>
+
+  <div class="mail-layout">
+    <div class="mail-toolbar">
+      <i class="ti ti-inbox"></i>
+      <strong>받은편지함</strong>
+      <span>· 에디터즈 준비 과정</span>
+    </div>
+    <ul class="mail-list" id="mail-list">
+      <li style="padding:40px;text-align:center;color:#aaa">불러오는 중...</li>
+    </ul>
+  </div>
+
+  <div class="apply-cta" id="apply-cta" style="display:none">
+    <div>
+      <strong id="cta-title">모든 미션을 통과하면 신청할 수 있습니다</strong>
+      <p style="font-size:14px;color:#666;margin-top:4px" id="cta-desc"></p>
+    </div>
+    <a href="/editor-apply.html" id="cta-btn" class="disabled">에디터즈 신청하기</a>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = API.user()
+if (!user) { alert('로그인이 필요합니다.'); location.href = '/login.html?next=/editor-workbooks.html' }
+
+function formatMailDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getMonth()+1}/${d.getDate()}`
+}
+
+function statusLabel(s, lockedUntil) {
+  if (s === 'cooldown' && lockedUntil) {
+    const d = new Date(lockedUntil)
+    return `${d.getMonth()+1}/${d.getDate()} 재도전`
+  }
+  return { available: '미션 대기', passed: '통과', failed: '재도전', retry: '재도전', cooldown: '5일 대기', locked: '잠김' }[s] || s
+}
+
+let timerInterval = null
+
+function renderTimer(deadlineAt, minutes) {
+  const el = document.getElementById('timer-banner')
+  if (!deadlineAt) { el.style.display = 'none'; return }
+  el.style.display = 'flex'
+  const mins = minutes || 40
+  function tick() {
+    const left = new Date(deadlineAt).getTime() - Date.now()
+    if (left <= 0) {
+      clearInterval(timerInterval)
+      alert('제한 시간이 초과되어 프로그램이 초기화됩니다.')
+      location.href = '/editor-program.html'
+      return
+    }
+    const m = Math.floor(left / 60000)
+    const s = Math.floor((left % 60000) / 1000)
+    el.className = 'timer-banner' + (left < 5 * 60 * 1000 ? ' warn' : '')
+    el.innerHTML = `
+      <div><div style="font-size:13px;opacity:.8;margin-bottom:4px">현재 메일 제한 시간</div>
+      <div style="font-size:15px">${mins}분 내 유튜브(일부공개) 업로드 · 통과 필요</div></div>
+      <div class="time">${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div>`
+  }
+  tick()
+  clearInterval(timerInterval)
+  timerInterval = setInterval(tick, 1000)
+}
+
+function renderMailItem(w) {
+  const canOpen = w.status === 'passed' || w.is_active_stage
+  const cls = [w.status === 'passed' ? 'passed' : '', w.status === 'retry' ? 'failed' : ''].filter(Boolean).join(' ')
+  const href = canOpen ? `/editor-workbook.html?id=${w.id}` : '#'
+  const avatar = w.status === 'passed'
+    ? `<div class="mail-avatar passed">${initial(w.from_name)}</div>`
+    : `<div class="mail-avatar available">${initial(w.from_name)}</div>`
+  const preview = w.mission_title
+    ? `<div class="mail-preview">${w.mission_title}</div>`
+    : ''
+  const rightMark = w.status === 'passed'
+    ? '<span class="mail-gold-medal" title="미션 통과 · 금장 배지"><i class="ti ti-medal"></i></span>'
+    : `<span class="mail-badge ${w.status}">${statusLabel(w.is_active_stage && w.status === 'locked' ? 'available' : w.status, w.locked_until)}</span>`
+  return `
+    <a class="mail-item ${cls}" href="${href}">
+      ${avatar}
+      <div>
+        <div class="mail-from">${w.from_company} · ${w.from_name}</div>
+        <div class="mail-subject">${w.subject}</div>
+        ${preview}
+      </div>
+      <div class="mail-meta">
+        ${formatMailDate(w.received_at)}<br>
+        ${rightMark}
+      </div>
+    </a>`
+}
+
+function renderMailList(data) {
+  const stages = data.stages || []
+  const workbooks = data.workbooks || []
+  if (!workbooks.length) {
+    return '<li style="padding:40px;text-align:center;color:#888">아직 열린 메일이 없습니다.</li>'
+  }
+  if (!stages.length) {
+    return workbooks.map(w => `<li>${renderMailItem(w)}</li>`).join('')
+  }
+  return stages.map(stage => {
+    const stageMails = workbooks.filter(w => w.stage_num === stage.order)
+    if (!stageMails.length) return ''
+    const headCls = stage.is_current ? 'current' : stage.is_complete ? 'done' : ''
+    return `
+      <li class="stage-block">
+        <div class="stage-head ${headCls}">
+          <span>${stage.order}단계 · ${stage.title}</span>
+          <span>${stage.is_complete ? '<span class="mail-gold-medal" style="width:28px;height:28px;margin:0"><i class="ti ti-medal" style="font-size:15px"></i></span>' : `${stage.passed}/${stage.mail_count} 메일 · ${stage.minutes}분`}</span>
+        </div>
+        ${stageMails.map(w => renderMailItem(w)).join('')}
+      </li>`
+  }).join('')
+}
+
+function formatRetryDate(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+function initial(name) {
+  return (name || '?').trim()[0]
+}
+
+async function load() {
+  try {
+    const data = await API.get('/editor/workbooks')
+    if (data.timed_out) {
+      alert(data.timeout_message || '시간 초과로 처음부터 다시 시작해야 합니다.')
+      location.href = '/editor-program.html'
+      return
+    }
+    if (data.needs_agreement) {
+      location.href = '/editor-program.html'
+      return
+    }
+    if (data.can_apply) {
+      location.href = '/editor-apply.html'
+      return
+    }
+
+    renderTimer(data.program?.deadline_at, data.program?.stage_minutes)
+
+    document.getElementById('passed-count').textContent = data.passed
+    document.getElementById('required-count').textContent = data.required
+    document.getElementById('progress-fill').style.width = Math.round((data.passed / data.required) * 100) + '%'
+
+    const shelf = document.getElementById('badge-shelf')
+    const badgeRow = document.getElementById('badge-row')
+    shelf.style.display = 'block'
+    document.getElementById('badge-count').textContent = `${data.passed} / ${data.required}`
+    const stageProgress = data.stage_progress || []
+    badgeRow.innerHTML = stageProgress.map(st => {
+      const earned = st.is_complete
+      return `<div class="badge-slot ${earned ? 'earned' : ''}" title="${earned ? st.title + ' 완료' : st.order + '단계'}">${earned ? '<i class="ti ti-medal"></i>' : st.order}</div>`
+    }).join('')
+
+    document.getElementById('mail-list').innerHTML = renderMailList(data)
+
+    const cta = document.getElementById('apply-cta')
+    cta.style.display = 'flex'
+    const btn = document.getElementById('cta-btn')
+    if (data.can_apply) {
+      document.getElementById('cta-title').textContent = '🎉 모든 미션 통과! 에디터즈 신청이 가능합니다'
+      document.getElementById('cta-desc').textContent = '신청서를 작성하고 심사를 요청하세요.'
+      btn.classList.remove('disabled')
+    } else {
+      document.getElementById('cta-title').textContent = '워크북 10단계를 모두 완료해야 신청할 수 있습니다'
+      document.getElementById('cta-desc').textContent = `현재 ${data.passed}/${data.required}단계 완료 · 메일은 한 통씩 순서대로 공개됩니다.`
+      btn.classList.add('disabled')
+    }
+  } catch (e) {
+    document.getElementById('mail-list').innerHTML = `<li style="padding:40px;text-align:center;color:#c62828">${e.message || '불러오기 실패'}</li>`
+  }
+}
+
+load()
+</script>
+</body>
+</html>

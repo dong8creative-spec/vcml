@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>에디터즈 선발 프로그램 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    .program-wrap { max-width: 560px; margin: 40px auto; padding: 0 24px 80px; }
+
+    .program-hero {
+      text-align: center; margin-bottom: 28px;
+    }
+    .program-hero h1 { font-size: 26px; font-weight: 900; margin-bottom: 8px; color: #111; }
+    .program-hero p { font-size: 15px; color: #666; line-height: 1.65; }
+
+    .step-dots {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 20px;
+    }
+    .step-dots span {
+      width: 8px; height: 8px; border-radius: 50%; background: #ddd;
+      transition: background .25s, transform .25s;
+    }
+    .step-dots span.active { background: #5c67f2; transform: scale(1.15); }
+    .step-dots span.done { background: #a5adf8; }
+
+    .step-label {
+      text-align: center; font-size: 13px; color: #888; margin-bottom: 16px; font-weight: 600;
+    }
+
+    .guide-card {
+      background: #fff; border: 1px solid #eee; border-radius: 20px;
+      padding: 32px 28px 28px; box-shadow: 0 8px 32px rgba(26,31,60,.06);
+      min-height: 320px; display: flex; flex-direction: column;
+      animation: cardIn .35s ease;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .guide-card .card-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; margin-bottom: 18px;
+    }
+    .guide-card .card-icon.blue { background: #eef0ff; }
+    .guide-card .card-icon.gold { background: #fff8e8; }
+    .guide-card .card-icon.red { background: #fff0f0; }
+    .guide-card .card-icon.green { background: #f0fff4; }
+    .guide-card .card-icon.purple { background: #f4f0ff; }
+
+    .guide-card h2 { font-size: 20px; font-weight: 800; margin-bottom: 14px; color: #111; line-height: 1.35; }
+    .guide-card p { font-size: 15px; line-height: 1.75; color: #555; margin-bottom: 12px; }
+    .guide-card ol, .guide-card ul { padding-left: 20px; line-height: 1.85; color: #444; font-size: 15px; margin: 0 0 8px; }
+    .guide-card li { margin-bottom: 8px; }
+    .guide-card .highlight {
+      background: #fff8e8; border: 1px solid #ffe58f; border-radius: 12px;
+      padding: 14px 16px; margin-top: 8px; font-size: 14px; line-height: 1.7; color: #664d00;
+    }
+    .guide-card .card-body { flex: 1; }
+
+    .card-actions { margin-top: 24px; display: flex; gap: 10px; }
+    .card-actions.single { flex-direction: column; }
+
+    .btn-next {
+      flex: 1; padding: 15px; background: #5c67f2; color: #fff; border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700; cursor: pointer; transition: background .2s;
+    }
+    .btn-next:hover { background: #4a54d4; }
+    .btn-next:disabled { background: #ccc; cursor: not-allowed; }
+
+    .btn-back {
+      padding: 15px 20px; background: #f0f0f0; color: #555; border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .btn-back:hover { background: #e5e5e5; }
+
+    .agree-row {
+      display: flex; align-items: flex-start; gap: 12px; padding: 16px;
+      background: #f8f9fb; border-radius: 12px; border: 1.5px solid #eee; margin-bottom: 16px; cursor: pointer;
+    }
+    .agree-row input { width: 18px; height: 18px; margin-top: 3px; accent-color: #5c67f2; flex-shrink: 0; }
+    .agree-row span { font-size: 14px; line-height: 1.65; color: #333; }
+
+    .status-banner {
+      border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; font-size: 15px; line-height: 1.65;
+    }
+    .status-banner.info { background: #f4f5ff; border: 1px solid #dce0ff; color: #333; }
+    .status-banner.success { background: #f0fff4; border: 1px solid #b7ebc8; color: #1b5e20; }
+    .status-banner.warn { background: #fff8e8; border: 1px solid #ffe58f; color: #664d00; }
+
+    .result-actions .start-btn {
+      display: block; width: 100%; padding: 16px; background: #5c67f2; color: #fff;
+      border: none; border-radius: 12px; font-size: 17px; font-weight: 700;
+      text-align: center; text-decoration: none; line-height: 1.4;
+    }
+    .result-actions .start-btn.dark { background: #1a1f3c; }
+
+    #wizard-area { display: none; }
+    #result-area { display: none; }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo">타닥클래스</a>
+    <div class="header-right">
+      <a href="/editors.html" class="nav-btn">에디터즈</a>
+      <a href="/" class="nav-btn">← 홈</a>
+    </div>
+  </div>
+</header>
+
+<div class="program-wrap">
+  <div class="program-hero">
+    <h1>🎬 에디터즈 선발 프로그램</h1>
+    <p id="hero-desc">안내 카드를 순서대로 확인해주세요</p>
+  </div>
+
+  <div id="status-banner"></div>
+
+  <!-- 카드형 안내 (신규·재시작) -->
+  <div id="wizard-area">
+    <div class="step-dots" id="step-dots"></div>
+    <div class="step-label" id="step-label"></div>
+    <div id="card-container"></div>
+  </div>
+
+  <!-- 이미 진행 중 / 완료 -->
+  <div id="result-area" class="result-actions"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = API.user()
+if (!user) { alert('로그인이 필요합니다.'); location.href = '/login.html?next=/editor-program.html' }
+
+const ICON_CLASSES = ['blue', 'blue', 'red', 'gold', 'green', 'purple']
+let STEPS = []
+let currentStep = 0
+let programData = null
+const viewedSteps = new Set()
+
+const wizardArea = document.getElementById('wizard-area')
+const resultArea = document.getElementById('result-area')
+const statusBanner = document.getElementById('status-banner')
+const cardContainer = document.getElementById('card-container')
+const stepDots = document.getElementById('step-dots')
+const stepLabel = document.getElementById('step-label')
+const heroDesc = document.getElementById('hero-desc')
+
+function formatGuideBody(text) {
+  if (!text) return ''
+  return text.split('\n').map(line => {
+    const html = line.trim().replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    if (!html) return ''
+    if (html.startsWith('• ') || html.startsWith('- ')) return `<li>${html.slice(2)}</li>`
+    return `<p>${html}</p>`
+  }).join('')
+}
+
+async function loadGuideSteps() {
+  const data = await API.get('/editor/program/guide')
+  STEPS = (data.guide_cards || []).map((c, i) => ({
+    icon: c.icon || '📋',
+    iconClass: ICON_CLASSES[i % ICON_CLASSES.length],
+    title: c.title,
+    body: formatGuideBody(c.body),
+    isFinal: i === (data.guide_cards || []).length - 1,
+  }))
+  if (!STEPS.length) throw new Error('안내 카드가 설정되지 않았습니다.')
+}
+
+function renderDots() {
+  stepDots.innerHTML = STEPS.map((_, i) => {
+    let cls = ''
+    if (i === currentStep) cls = 'active'
+    else if (i < currentStep) cls = 'done'
+    return `<span class="${cls}"></span>`
+  }).join('')
+  stepLabel.textContent = `${currentStep + 1} / ${STEPS.length}`
+}
+
+function renderCard() {
+  const step = STEPS[currentStep]
+  const isFirst = currentStep === 0
+  const isFinal = step.isFinal
+
+  cardContainer.innerHTML = `
+    <div class="guide-card">
+      <div class="card-icon ${step.iconClass}">${step.icon}</div>
+      <div class="card-body">
+        <h2>${step.title}</h2>
+        ${step.body}
+        ${isFinal ? `
+          <label class="agree-row" id="agree-row">
+            <input type="checkbox" id="agree-check" />
+            <span>위 안내·납품 규칙·시간 제한·탈락 시 초기화 정책을 모두 확인했으며 동의합니다.</span>
+          </label>
+          <p id="view-hint" style="font-size:13px;color:#888;margin-top:8px"></p>
+        ` : ''}
+      </div>
+      <div class="card-actions ${isFirst ? 'single' : ''}">
+        ${!isFirst ? '<button type="button" class="btn-back" id="btn-back">이전</button>' : ''}
+        ${isFinal
+          ? '<button type="button" class="btn-next" id="btn-start" disabled>동의하고 프로그램 시작 →</button>'
+          : '<button type="button" class="btn-next" id="btn-next">확인</button>'}
+      </div>
+    </div>`
+
+  renderDots()
+
+  if (!isFinal) {
+    document.getElementById('btn-next').addEventListener('click', () => {
+      viewedSteps.add(currentStep)
+      currentStep++
+      renderCard()
+    })
+    if (!isFirst) {
+      document.getElementById('btn-back').addEventListener('click', () => {
+        currentStep--
+        renderCard()
+      })
+    }
+  } else {
+    for (let i = 0; i < STEPS.length - 1; i++) {
+      if (i < currentStep) viewedSteps.add(i)
+    }
+    viewedSteps.add(currentStep)
+    const allViewed = STEPS.every((_, i) => i <= currentStep && (i < currentStep || viewedSteps.has(i)))
+    const agreeCheck = document.getElementById('agree-check')
+    const startBtn = document.getElementById('btn-start')
+    const viewHint = document.getElementById('view-hint')
+    const canAgree = currentStep === STEPS.length - 1 && [...Array(STEPS.length - 1).keys()].every(i => viewedSteps.has(i))
+    if (viewHint) {
+      viewHint.textContent = canAgree ? '' : `앞 카드 ${STEPS.length - 1}개를 모두 「확인」해야 동의할 수 있습니다.`
+    }
+    agreeCheck.disabled = !canAgree
+    startBtn.disabled = true
+    agreeCheck.addEventListener('change', () => { startBtn.disabled = !agreeCheck.checked || !canAgree })
+    document.getElementById('agree-row').addEventListener('click', e => {
+      if (!canAgree) return
+      if (e.target !== agreeCheck) {
+        agreeCheck.checked = !agreeCheck.checked
+        startBtn.disabled = !agreeCheck.checked
+      }
+    })
+    startBtn.addEventListener('click', startProgram)
+    document.getElementById('btn-back').addEventListener('click', () => {
+      currentStep--
+      renderCard()
+    })
+  }
+}
+
+function showWizard(warnMessage) {
+  wizardArea.style.display = 'block'
+  resultArea.style.display = 'none'
+  heroDesc.textContent = '안내 카드를 순서대로 확인해주세요'
+  if (warnMessage) {
+    statusBanner.innerHTML = `<div class="status-banner warn">${warnMessage}</div>`
+  } else {
+    statusBanner.innerHTML = `<div class="status-banner info">모든 카드를 「확인」한 뒤 마지막에서 동의해야 시작할 수 있습니다.</div>`
+  }
+  currentStep = 0
+  viewedSteps.clear()
+  renderCard()
+}
+
+function showResult(html, bannerHtml) {
+  wizardArea.style.display = 'none'
+  resultArea.style.display = 'block'
+  resultArea.innerHTML = html
+  if (bannerHtml) statusBanner.innerHTML = bannerHtml
+  else statusBanner.innerHTML = ''
+}
+
+async function startProgram() {
+  const startBtn = document.getElementById('btn-start')
+  if (!document.getElementById('agree-check').checked) return
+  startBtn.disabled = true
+  startBtn.textContent = '시작 중...'
+  try {
+    await API.post('/editor/program/agree', { guide_steps_completed: STEPS.length })
+    location.href = '/editor-workbooks.html'
+  } catch (e) {
+    alert(e.message || '시작 중 오류가 발생했습니다.')
+    startBtn.disabled = false
+    startBtn.textContent = '동의하고 프로그램 시작 →'
+  }
+}
+
+async function loadStatus() {
+  try {
+    programData = await API.get('/editor/program')
+
+    if (programData.can_apply) {
+      heroDesc.textContent = '모든 단계를 완료했습니다'
+      showResult(
+        `<a href="/editor-apply.html" class="start-btn">최종 신청서 작성하기 →</a>`,
+        `<div class="status-banner success">✅ 10단계를 모두 통과했습니다! 최종 신청서를 작성해주세요.</div>`
+      )
+      return
+    }
+
+    if (programData.timed_out) {
+      showWizard(programData.timeout_message || '시간 초과로 프로그램이 초기화되었습니다.<br>안내를 다시 확인하고 동의해주세요.')
+      return
+    }
+
+    if (programData.needs_agreement) {
+      showWizard('')
+      return
+    }
+
+    heroDesc.textContent = '프로그램 진행 중입니다'
+    showResult(
+      `<a href="/editor-workbooks.html" class="start-btn dark">의뢰 메일함 계속하기 →</a>`,
+      `<div class="status-banner info">진행 중: <strong>${programData.passed}/${programData.required}</strong>단계 완료 · 현재 <strong>${programData.program?.active_stage || programData.passed + 1}단계</strong></div>`
+    )
+  } catch (e) {
+    statusBanner.innerHTML = `<div class="status-banner warn">${e.message || '상태를 불러오지 못했습니다.'}</div>`
+  }
+}
+
+async function init() {
+  try {
+    await loadGuideSteps()
+    await loadStatus()
+  } catch (e) {
+    statusBanner.innerHTML = `<div class="status-banner warn">${e.message || '안내를 불러오지 못했습니다.'}</div>`
+  }
+}
+init()
+</script>
+</body>
+</html>

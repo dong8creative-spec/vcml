@@ -7,28 +7,32 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     .orders-table { width: 100%; border-collapse: collapse; }
-    .orders-table th { font-size: 12px; color: #aaa; font-weight: 500; text-align: left; padding: 10px 14px; border-bottom: 0.5px solid #eee; }
-    .orders-table td { font-size: 14px; color: #333; padding: 16px 14px; border-bottom: 0.5px solid #f5f5f5; vertical-align: middle; }
+    .orders-table th { font-size: 14.4px; color: #aaa; font-weight: 500; text-align: left; padding: 10px 14px; border-bottom: 0.5px solid #eee; }
+    .orders-table td { font-size: 16.8px; color: #333; padding: 16px 14px; border-bottom: 0.5px solid #f5f5f5; vertical-align: middle; }
     .orders-table tr:last-child td { border-bottom: none; }
     .order-course-title { font-weight: 500; color: #111; margin-bottom: 3px; }
-    .order-course-cat { font-size: 12px; color: #aaa; }
-    .order-amount { font-size: 15px; font-weight: 600; color: #111; }
-    .order-method { font-size: 13px; color: #666; }
-    .order-date { font-size: 12px; color: #aaa; }
-    .order-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; padding: 3px 9px; border-radius: 20px; background: #e8f5e9; color: #2e7d32; }
-    .order-go { font-size: 12px; color: #111; border: 0.5px solid #ddd; border-radius: 6px; padding: 5px 12px; background: #fff; transition: background 0.15s; white-space: nowrap; text-decoration: none; display: inline-block; }
+    .order-course-cat { font-size: 14.4px; color: #aaa; }
+    .order-amount { font-size: 18px; font-weight: 600; color: #111; }
+    .order-method { font-size: 15.6px; color: #666; }
+    .order-date { font-size: 14.4px; color: #aaa; }
+    .order-status { display: inline-flex; align-items: center; gap: 4px; font-size: 14.4px; font-weight: 500; padding: 3px 9px; border-radius: 20px; background: #e8f5e9; color: #2e7d32; }
+    .order-go { font-size: 14.4px; color: #111; border: 0.5px solid #ddd; border-radius: 6px; padding: 5px 12px; background: #fff; transition: background 0.15s; white-space: nowrap; text-decoration: none; display: inline-block; }
     .order-go:hover { background: #f5f5f5; }
     .orders-card { background: #fff; border: 0.5px solid #e8e8e8; border-radius: 12px; overflow: hidden; }
-    .orders-empty { padding: 60px 20px; text-align: center; color: #aaa; font-size: 14px; line-height: 2; }
-    .orders-empty i { font-size: 36px; display: block; margin-bottom: 12px; }
+    .orders-empty { padding: 60px 20px; text-align: center; color: #aaa; font-size: 16.8px; line-height: 2; }
+    .orders-empty i { font-size: 43.2px; display: block; margin-bottom: 12px; }
   </style>
 </head>
 <body>
-  <header class="nav"><div class="nav-inner">
-    <a href="/" class="nav-logo">타닥클래스 <span>TADAK CLASS</span></a>
-    <nav class="nav-links"><a href="/#courses">강의</a></nav>
-    <div class="nav-right" id="nav-right"></div>
-  </div></header>
+  <header class="header">
+    <div class="header-inner">
+      <a href="/" class="logo">타닥클래스</a>
+      <nav class="gnb">
+        <a href="/#courses">강의</a>
+      </nav>
+      <div class="header-right" id="nav-right"></div>
+    </div>
+  </header>
 
   <div class="mypage-wrap">
     <aside class="my-sidebar">
@@ -36,7 +40,7 @@
       <nav class="my-nav">
         <a class="my-nav-item" href="/mypage.html"><i class="ti ti-book"></i> 내 강의</a>
         <a class="my-nav-item active" href="/orders.html"><i class="ti ti-receipt"></i> 결제 내역</a>
-        <a class="my-nav-item" href="#" onclick="comingSoon(event)"><i class="ti ti-settings"></i> 계정 설정</a>
+        <a class="my-nav-item" href="/mypage.html?tab=settings"><i class="ti ti-user-circle"></i> 프로필 · 설정</a>
         <a class="my-nav-item" href="#" onclick="API.logout()"><i class="ti ti-logout"></i> 로그아웃</a>
       </nav>
     </aside>

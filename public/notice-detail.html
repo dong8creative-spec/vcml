@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공지사항 상세 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    .detail-wrap { max-width: 800px; margin: 0 auto; padding: 48px 24px 80px; }
+    .detail-back { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
+    .detail-back:hover { color: var(--primary); }
+    .detail-badge { display: inline-block; background: var(--primary); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 4px; margin-bottom: 12px; }
+    .detail-title { font-size: 26px; font-weight: 900; color: var(--text-primary); margin-bottom: 10px; line-height: 1.35; }
+    .detail-meta { font-size: 13px; color: var(--text-hint); padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+    .detail-body { font-size: 16px; line-height: 1.85; color: var(--text-secondary); white-space: pre-line; }
+    .detail-nav { display: flex; gap: 12px; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .detail-nav a { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; color: var(--text-secondary); text-decoration: none; }
+    .detail-nav a:hover { border-color: var(--primary); color: var(--primary); }
+  </style>
+</head>
+<body data-legal-page="notices">
+
+<div data-chrome="header"></div>
+
+<div class="detail-wrap" id="detail-wrap">
+  <p style="padding:60px 0;text-align:center;color:#aaa">불러오는 중...</p>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const id = new URLSearchParams(location.search).get('id')
+if (!id) { location.href = '/notices.html' }
+
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function fmtDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()}.`
+}
+
+async function load() {
+  const wrap = document.getElementById('detail-wrap')
+  try {
+    const n = await API.get('/notices/' + id)
+    document.title = esc(n.title) + ' — 타닥클래스'
+    wrap.innerHTML = `
+      <a href="/notices.html" class="detail-back"><i class="ti ti-arrow-left"></i> 공지사항 목록</a>
+      ${n.is_pinned ? '<div class="detail-badge">공지</div>' : ''}
+      <h1 class="detail-title">${esc(n.title)}</h1>
+      <div class="detail-meta">타닥클래스 &nbsp;·&nbsp; ${fmtDate(n.created_at)}</div>
+      <div class="detail-body">${esc(n.content)}</div>
+      <div class="detail-nav">
+        <a href="/notices.html"><i class="ti ti-list"></i> 목록으로</a>
+      </div>`
+  } catch (e) {
+    wrap.innerHTML = `<p style="text-align:center;padding:60px;color:#c62828">${e.message || '공지를 불러올 수 없습니다.'}<br><br><a href="/notices.html" style="color:var(--primary)">목록으로</a></p>`
+  }
+}
+load()
+</script>
+
+<div data-chrome="footer"></div>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/legal-page.js"></script>
+</body>
+</html>

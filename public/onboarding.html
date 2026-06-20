@@ -7,14 +7,19 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body class="login-body">
-  <a href="/" class="login-logo">타닥클래스</a>
+  <header class="header header--logo-only">
+    <div class="header-inner">
+      <a href="/" class="logo">타닥클래스</a>
+    </div>
+  </header>
+  <div class="login-body-content">
   <div class="login-card">
     <div style="text-align:center;margin-bottom:24px">
       <div style="width:48px;height:48px;background:#FEE500;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
         <svg width="24" height="24" viewBox="0 0 18 18" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1C4.582 1 1 3.925 1 7.5c0 2.286 1.417 4.294 3.563 5.467L3.67 16.14a.25.25 0 0 0 .37.278L8.13 13.96c.288.027.58.04.87.04 4.418 0 8-2.925 8-6.5S13.418 1 9 1z" fill="#3A1D1D"/></svg>
       </div>
-      <div style="font-size:17px;font-weight:600;color:#111">카카오 연동 완료</div>
-      <div style="font-size:13px;color:#888;margin-top:4px">서비스 이용을 위해 정보를 확인해 주세요</div>
+      <div style="font-size: 20.4px;font-weight:600;color:#111">카카오 연동 완료</div>
+      <div style="font-size: 15.6px;color:#888;margin-top:4px">서비스 이용을 위해 정보를 확인해 주세요</div>
     </div>
 
     <!-- 스텝 인디케이터 -->
@@ -24,14 +29,28 @@
       <div class="step-item" id="si-2"><span class="step-num">2</span><span class="step-label">혜택·동의</span></div>
     </div>
 
-    <!-- Step 1: 이름 + 이메일 -->
+    <!-- Step 1: 가입 유형 + 기본 정보 -->
     <div id="step-1">
+      <div class="member-type-label">가입 유형 <span class="hint">(가입 후 변경 불가)</span></div>
+      <div class="member-type-row">
+        <label class="member-type-card">
+          <input type="radio" name="member-type" value="student" checked />
+          <div class="member-type-title">수강생</div>
+          <div class="member-type-desc">온라인 강의 수강·학습</div>
+        </label>
+        <label class="member-type-card">
+          <input type="radio" name="member-type" value="client" />
+          <div class="member-type-title">의뢰인</div>
+            <div class="member-type-desc">클라이언츠 · 매칭</div>
+          <div class="member-type-benefit">20만원↑ 강의 수강 시 1만원 쿠폰 10장</div>
+        </label>
+      </div>
       <div class="form-field">
         <label>이름 <span class="hint">(카카오에서 불러온 이름)</span></label>
         <input type="text" id="ob-name" placeholder="이름을 입력해주세요" required />
       </div>
       <div class="form-field">
-        <label>이메일 <span style="color:#c62828;font-size:11px">필수</span></label>
+        <label>이메일 <span style="color:#c62828;font-size: 13.2px">필수</span></label>
         <input type="email" id="ob-email" placeholder="example@email.com" required />
         <div class="code-hint" id="email-hint" style="display:none;color:#c62828"></div>
       </div>
@@ -45,8 +64,8 @@
     <!-- Step 2: 마케팅 동의 -->
     <div id="step-2" style="display:none">
       <div style="background:#fffbe6;border:0.5px solid #ffe066;border-radius:10px;padding:16px;margin-bottom:20px">
-        <div style="font-size:13px;font-weight:600;color:#7a5c00;margin-bottom:6px">🎁 마케팅 동의 시 혜택</div>
-        <div style="font-size:13px;color:#7a5c00;line-height:1.7">
+        <div style="font-size: 15.6px;font-weight:600;color:#7a5c00;margin-bottom:6px">🎁 마케팅 동의 시 혜택</div>
+        <div style="font-size: 15.6px;color:#7a5c00;line-height:1.7">
           • <b>5,000원 할인 쿠폰</b> 즉시 발급<br>
           • 신규 강의 오픈 알림<br>
           • 수강생 전용 할인 이벤트 안내
@@ -55,23 +74,24 @@
 
       <div class="terms-all-row" onclick="toggleMarketing()" id="marketing-all-row">
         <input type="checkbox" id="chk-marketing" style="accent-color:#111;width:16px;height:16px;flex-shrink:0" />
-        <span>마케팅 정보 수신 동의 <span style="font-size:11px;font-weight:400;color:#888">(선택)</span></span>
+        <span>마케팅 정보 수신 동의 <span style="font-size: 13.2px;font-weight:400;color:#888">(선택)</span></span>
       </div>
 
-      <div style="font-size:12px;color:#aaa;line-height:1.7;padding:0 4px;margin-bottom:20px">
+      <div style="font-size: 14.4px;color:#aaa;line-height:1.7;padding:0 4px;margin-bottom:20px">
         타닥클래스로부터 신규 강의, 이벤트, 할인 정보를 카카오 알림톡으로 받습니다.<br>
         동의하지 않아도 서비스 이용에 제한이 없으며, 마이페이지에서 언제든 철회할 수 있습니다.
       </div>
 
       <hr class="terms-divider" />
 
-      <div style="font-size:12px;color:#bbb;margin-bottom:20px;line-height:1.6">
+      <div style="font-size: 14.4px;color:#bbb;margin-bottom:20px;line-height:1.6">
         본 동의는 <b>개인정보보호법</b> 및 <b>정보통신망법 제50조</b>에 따른 선택적 동의 사항입니다. 동의 기록(일시·IP)은 법적 근거로 보관됩니다.
       </div>
 
       <button class="btn-submit" id="btn-complete" onclick="doComplete()">시작하기</button>
       <button class="btn-outline-step" onclick="goStep1()">이전</button>
     </div>
+  </div>
   </div>
 
   <script src="/js/api.js"></script>
@@ -127,11 +147,14 @@
       btn.disabled = true; btn.textContent = '처리 중...'
 
       const marketing_agreed = document.getElementById('chk-marketing').checked
+      const member_type = document.querySelector('input[name="member-type"]:checked')?.value
+      if (!member_type) { alert('가입 유형을 선택해주세요.'); btn.disabled = false; btn.textContent = '시작하기'; return }
       const body = {
         name: document.getElementById('ob-name').value.trim(),
         email: document.getElementById('ob-email').value.trim(),
         phone: document.getElementById('ob-phone').value.trim() || null,
         marketing_agreed,
+        member_type,
       }
 
       try {

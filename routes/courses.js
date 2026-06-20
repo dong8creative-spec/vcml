@@ -49,4 +49,19 @@ router.post('/:slug/enroll-free', require('../middleware/auth').authMiddleware, 
   res.json({ success: true })
 })
 
+router.post('/:slug/enroll-free-vod', require('../middleware/auth').authMiddleware, async (req, res) => {
+  const course = await db.getCourseBySlug(req.params.slug)
+  if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+  if (Number(course.sale_price) !== 0 || course.course_type === 'live') {
+    return res.status(400).json({ error: '무료 VOD 강의가 아닙니다.' })
+  }
+  if (await db.isEnrolled(req.user.id, course.id)) {
+    return res.json({ success: true, already: true })
+  }
+  await db.enroll(req.user.id, course.id)
+  await db.createOrder(req.user.id, course.id, 0, '무료', 0)
+  await db.updateCourse(course.id, { student_count: (course.student_count || 0) + 1 })
+  res.json({ success: true })
+})
+
 module.exports = router
