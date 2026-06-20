@@ -51,11 +51,24 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI
 
+function isKakaoConfigured() {
+  const id = KAKAO_CLIENT_ID || ''
+  return !!(id && KAKAO_REDIRECT_URI && !/여기에|입력|your_/i.test(id))
+}
+
+function isKakaoLoginEnabled() {
+  if (process.env.KAKAO_LOGIN_ENABLED === '0') return false
+  if (process.env.AUTH_BETA_MODE !== '0') return false
+  return isKakaoConfigured()
+}
+
 router.get('/providers', (req, res) => {
+  const beta = process.env.AUTH_BETA_MODE !== '0'
   res.json({
     google: !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_REDIRECT_URI),
-    kakao: !!(KAKAO_CLIENT_ID && KAKAO_REDIRECT_URI),
-    beta_mode: process.env.AUTH_BETA_MODE !== '0',
+    kakao: isKakaoLoginEnabled(),
+    kakao_locked: beta || process.env.KAKAO_LOGIN_ENABLED === '0',
+    beta_mode: beta,
   })
 })
 
@@ -85,8 +98,8 @@ router.post('/verify-code', (req, res) => {
 })
 
 router.get('/kakao', (req, res) => {
-  if (!KAKAO_CLIENT_ID || !KAKAO_REDIRECT_URI) {
-    return res.redirect('/login.html?kakao_error=' + encodeURIComponent('카카오 로그인이 설정되지 않았습니다.'))
+  if (!isKakaoLoginEnabled()) {
+    return res.redirect('/login.html?kakao_error=' + encodeURIComponent('카카오 로그인은 준비 중입니다. Google 계정으로 로그인해주세요.'))
   }
   const state = encodeOAuthState(req.query.next)
   const url = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}&response_type=code&state=${state}`

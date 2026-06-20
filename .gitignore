@@ -5,3 +5,4 @@ db/tadak.db.json
 .DS_Store
 .claude/
 firebase-service-account.json
+.vercel

@@ -45,6 +45,13 @@ body.login-body { background: var(--bg-soft); min-height: 100vh; display: flex; 
   margin-bottom: 16px;
 }
 .btn-kakao:hover { background: #F5DC00; }
+.btn-kakao.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: auto;
+  filter: grayscale(0.15);
+}
+.btn-kakao.is-disabled:hover { background: #FEE500; box-shadow: none; }
 
 /* Google 로그인 */
 .btn-google {
