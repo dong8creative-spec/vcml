@@ -91,6 +91,7 @@ if (!projectId) { alert('잘못된 접근입니다.'); location.href = '/project
 const user = API.user ? API.user() : null
 const statusLabel = { open:'모집중', matched:'매칭완료', in_progress:'진행중', completed:'완료', cancelled:'취소' }
 function fmt(n) { return n ? '₩' + Number(n).toLocaleString() : null }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
 
 async function load() {
   try {
@@ -162,7 +163,7 @@ async function load() {
       <div class="quote-box">
         <div class="qb-title">내 견적 현황</div>
         <div style="font-size:15px;font-weight:800;color:#5c67f2;margin-bottom:8px">${fmt(myQuote.amount)}</div>
-        <div style="font-size:13px;color:#666;margin-bottom:12px">${myQuote.message}</div>
+        <div style="font-size:13px;color:#666;margin-bottom:12px">${esc(myQuote.message)}</div>
         <div class="qi-status ${myQuote.status}">${statusMap[myQuote.status]||myQuote.status}</div>
       </div>`
     } else if (!user) {
@@ -205,7 +206,7 @@ async function load() {
                 </div>
                 <div class="qi-amount">${fmt(q.amount)}</div>
               </div>
-              <div class="qi-msg">${q.message}</div>
+              <div class="qi-msg">${esc(q.message)}</div>
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <span class="qi-date">${(q.created_at||'').slice(0,10)}</span>
                 ${isClient && p.status === 'open' && q.status === 'pending'
@@ -224,7 +225,7 @@ async function load() {
             <span class="dc-cat">${p.category}</span>
             <span class="dc-status ${p.status}">${statusLabel[p.status]||p.status}</span>
           </div>
-          <div class="dc-title">${p.title}</div>
+          <div class="dc-title">${esc(p.title)}</div>
           <div class="dc-meta">
             <span><i class="ti ti-user"></i> ${p.client_name}</span>
             ${p.deadline?`<span><i class="ti ti-calendar"></i> 납품 ${p.deadline}</span>`:''}
@@ -232,8 +233,8 @@ async function load() {
           </div>
           ${stageHTML}
           <div class="section-label">의뢰 설명</div>
-          <div class="dc-body">${p.description}</div>
-          ${p.requirements ? `<div class="section-label">세부 요구사항</div><div class="dc-body">${p.requirements}</div>` : ''}
+          <div class="dc-body">${esc(p.description)}</div>
+          ${p.requirements ? `<div class="section-label">세부 요구사항</div><div class="dc-body">${esc(p.requirements)}</div>` : ''}
           ${quotesHTML}
         </div>
       </div>

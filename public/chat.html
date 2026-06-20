@@ -88,6 +88,8 @@
 
 <script src="/js/api.js"></script>
 <script>
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
 const params = new URLSearchParams(location.search)
 const projectId = params.get('id')
 if (!projectId) { alert('잘못된 접근입니다.'); location.href = '/projects.html' }
@@ -182,7 +184,7 @@ async function loadMessages(scroll = true) {
         <div class="msg-avatar">${m.sender_name?.[0] || '?'}</div>
         <div class="msg-bubble-wrap">
           ${!mine ? `<div class="msg-sender">${m.sender_name}</div>` : ''}
-          <div class="msg-bubble">${m.content.replace(/\n/g,'<br>')}</div>
+          <div class="msg-bubble">${esc(m.content).replace(/\n/g,'<br>')}</div>
           <div class="msg-time">${fmtTime(m.created_at)}</div>
         </div>
       </div>`

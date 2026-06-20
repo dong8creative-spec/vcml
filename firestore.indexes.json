@@ -50,6 +50,14 @@
       ]
     },
     {
+      "collectionGroup": "chapters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_id", "order": "ASCENDING" },
+        { "fieldPath": "order_num", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "editor_applications",
       "queryScope": "COLLECTION",
       "fields": [

@@ -19,10 +19,17 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 
   const finalAmount = Math.max(0, course.sale_price - discount)
-  const order = await db.createOrder(req.user.id, course_id, finalAmount, method, discount)
-  if (coupon) await db.useCoupon(coupon.id, order.id)
-  await db.enroll(req.user.id, course_id)
-  await db.updateCourse(course_id, { student_count: (course.student_count || 0) + 1 })
+  let order
+  try {
+    order = await db.createOrder(req.user.id, course_id, finalAmount, method, discount)
+    if (coupon) await db.useCoupon(coupon.id, order.id)
+    await db.enroll(req.user.id, course_id)
+    await db.updateCourse(course_id, { student_count: (course.student_count || 0) + 1 })
+  } catch (e) {
+    console.error('결제/수강 등록 오류:', e)
+    if (order?.id) await db.cancelOrder(order.id).catch(() => {})
+    return res.status(500).json({ error: '결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.' })
+  }
   res.json({ success: true, order_id: order.id, course_slug: course.slug, final_amount: finalAmount, discount })
 })
 

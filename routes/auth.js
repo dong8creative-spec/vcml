@@ -12,7 +12,8 @@ function generateCode() {
 }
 
 router.post('/send-code', async (req, res) => {
-  const { email } = req.body
+  const { email: rawEmail } = req.body
+  const email = (rawEmail || '').toLowerCase().trim()
   if (!email) return res.status(400).json({ error: '이메일을 입력해주세요.' })
   if (await db.findUserByEmail(email)) return res.status(409).json({ error: '이미 가입된 이메일입니다.' })
   const code = generateCode()
@@ -22,7 +23,8 @@ router.post('/send-code', async (req, res) => {
 })
 
 router.post('/verify-code', (req, res) => {
-  const { email, code } = req.body
+  const { email: rawEmail, code } = req.body
+  const email = (rawEmail || '').toLowerCase().trim()
   const entry = verificationCodes.get(email)
   if (!entry) return res.status(400).json({ error: '인증 코드를 먼저 요청해주세요.' })
   if (Date.now() > entry.expiresAt) {
@@ -82,7 +84,10 @@ router.get('/kakao/callback', async (req, res) => {
     )
 
     let nextUrl = '/'
-    try { nextUrl = JSON.parse(Buffer.from(state, 'base64').toString()).next || '/' } catch {}
+    try {
+      const parsed = JSON.parse(Buffer.from(state, 'base64').toString()).next || '/'
+      nextUrl = parsed.startsWith('/') && !parsed.startsWith('//') ? parsed : '/'
+    } catch {}
 
     if (isNew || !user.profile_complete) {
       const userJson = encodeURIComponent(JSON.stringify({ id: user.id, email: user.email, name: user.name, role: user.role }))
@@ -123,7 +128,8 @@ router.post('/complete-profile', authMiddleware, async (req, res) => {
 })
 
 router.post('/register', async (req, res) => {
-  const { email, password, name } = req.body
+  const { email: rawEmail, password, name } = req.body
+  const email = (rawEmail || '').toLowerCase().trim()
   if (!email || !password || !name) return res.status(400).json({ error: '모든 항목을 입력해주세요.' })
   if (password.length < 8) return res.status(400).json({ error: '비밀번호는 8자 이상이어야 합니다.' })
   const entry = verificationCodes.get(email)
@@ -137,7 +143,8 @@ router.post('/register', async (req, res) => {
 })
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body
+  const { email: rawEmail, password } = req.body
+  const email = (rawEmail || '').toLowerCase().trim()
   if (!email || !password) return res.status(400).json({ error: '이메일과 비밀번호를 입력해주세요.' })
   const user = await db.findUserByEmail(email)
   if (!user || !bcrypt.compareSync(password, user.password)) return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' })

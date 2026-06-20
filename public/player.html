@@ -47,7 +47,7 @@
 
         const firstId = chapterParam === 'first' || !chapterParam
           ? courseData.chapters[0]?.id
-          : parseInt(chapterParam)
+          : chapterParam
         if (firstId) loadChapter(firstId)
       } catch(e) {
         document.getElementById('player-main').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`
@@ -56,7 +56,7 @@
 
     function renderChapterList(chapters) {
       document.getElementById('chapter-list').innerHTML = chapters.map((ch, i) => `
-        <div class="chapter-item ${ch.id==currentChapterId?'active':''}" id="ch-item-${ch.id}" onclick="loadChapter(${ch.id})">
+        <div class="chapter-item ${ch.id==currentChapterId?'active':''}" id="ch-item-${ch.id}" onclick="loadChapter('${ch.id}')">
           <span class="ch-num">${String(i+1).padStart(2,'0')}</span>
           <span class="ch-title">${ch.title}</span>
           <span class="ch-dur">${ch.duration||''}</span>

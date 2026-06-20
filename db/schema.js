@@ -206,6 +206,9 @@ const db = {
     const ref = await fs.collection('orders').add(data)
     return { id: ref.id, ...data }
   },
+  async cancelOrder(orderId) {
+    await fs.collection('orders').doc(orderId).update({ status: 'cancelled' })
+  },
   async getOrdersByUser(userId) {
     const snap = await fs.collection('orders').where('user_id', '==', userId).get()
     return snapToArr(snap)

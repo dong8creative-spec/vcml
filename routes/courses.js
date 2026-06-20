@@ -8,18 +8,22 @@ router.get('/', async (req, res) => {
 })
 
 router.get('/:slug', async (req, res) => {
-  const course = await db.getCourseBySlug(req.params.slug)
-  if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
-  const chapters = await db.getChaptersByCourse(course.id)
-  let enrolled = false
   try {
-    const h = req.headers.authorization
-    if (h?.startsWith('Bearer ')) {
-      const u = jwt.verify(h.slice(7), process.env.JWT_SECRET)
-      enrolled = await db.isEnrolled(u.id, course.id)
-    }
-  } catch {}
-  res.json({ ...course, chapters, enrolled })
+    const course = await db.getCourseBySlug(req.params.slug)
+    if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    const chapters = await db.getChaptersByCourse(course.id)
+    let enrolled = false
+    try {
+      const h = req.headers.authorization
+      if (h?.startsWith('Bearer ')) {
+        const u = jwt.verify(h.slice(7), process.env.JWT_SECRET)
+        enrolled = await db.isEnrolled(u.id, course.id)
+      }
+    } catch {}
+    res.json({ ...course, chapters, enrolled })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
 })
 
 router.get('/:slug/chapters/:chapterId', require('../middleware/auth').authMiddleware, async (req, res) => {
