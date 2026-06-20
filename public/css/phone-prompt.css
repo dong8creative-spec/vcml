@@ -1,0 +1,42 @@
+.phone-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.phone-prompt-overlay.hidden { display: none; }
+.phone-prompt {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+.phone-prompt h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.phone-prompt p { font-size: 14.5px; color: #555; line-height: 1.65; margin-bottom: 16px; }
+.phone-prompt input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+.phone-prompt input:focus { outline: none; border-color: var(--primary); }
+.phone-prompt-actions { display: flex; gap: 10px; }
+.phone-prompt-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+.phone-prompt-actions .primary { background: var(--primary); color: #fff; }
+.phone-prompt-actions .secondary { background: #f5f5f5; color: #555; }

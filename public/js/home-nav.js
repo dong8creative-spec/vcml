@@ -176,7 +176,19 @@ function initSearch() {
       handleSearch()
     }
   })
-  // 아이콘 클릭도 검색
   const searchIcon = input.closest('.search-bar')?.querySelector('.ti-search')?.parentElement
   if (searchIcon && searchIcon.tagName === 'I') searchIcon.parentElement.addEventListener('click', handleSearch)
+}
+
+function bootHomeNavHeader() {
+  initGnbCatLinks()
+  if (location.pathname === '/' || location.pathname === '/index.html') {
+    initSearch()
+  }
+}
+
+if (document.getElementById('header-right')) {
+  bootHomeNavHeader()
+} else {
+  document.addEventListener('site-header-ready', bootHomeNavHeader, { once: true })
 }

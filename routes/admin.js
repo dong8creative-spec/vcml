@@ -58,7 +58,8 @@ router.post('/courses/sync-catalog', async (req, res) => {
 router.patch('/courses/:id', async (req, res) => {
   const allowed = [
     'title', 'description', 'category', 'price', 'sale_price', 'is_published',
-    'course_type', 'live_schedule', 'meet_code', 'live_status',
+    'course_type', 'live_schedule', 'live_starts_at', 'meet_code', 'live_status',
+    'live_curriculum_text', 'live_curriculum_image',
     'badge', 'thumbnail_icon', 'thumb_style', 'sort_order', 'is_offline',
   ]
   const update = {}
@@ -73,9 +74,9 @@ router.patch('/courses/:id', async (req, res) => {
 })
 
 router.post('/live-courses', async (req, res) => {
-  const { title, description, category, thumbnail_icon, live_schedule, meet_code } = req.body
+  const { title, description, category, thumbnail_icon, live_schedule, live_starts_at, meet_code } = req.body
   if (!title || !category) return res.status(400).json({ error: '제목과 카테고리는 필수입니다.' })
-  const course = await db.createLiveCourse({ title, description, category, thumbnail_icon, live_schedule, meet_code })
+  const course = await db.createLiveCourse({ title, description, category, thumbnail_icon, live_schedule, live_starts_at, meet_code })
   res.json({ success: true, course })
 })
 

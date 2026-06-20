@@ -21,6 +21,7 @@
         { label: 'AI 콘텐츠 제작', href: '/?cat=ai#all' },
       ]},
       { title: '고객지원', links: [
+        { label: '강의 기대평 · 20% 쿠폰', href: '/#all' },
         { label: '1:1 문의하기', href: '/inquiry.html' },
         { label: '자주 묻는 질문', href: '/faq.html' },
         { label: '환불 및 취소 정책', href: '/refund.html' },
@@ -60,6 +61,19 @@
     return ''
   }
 
+  function renderChromeAuth() {
+    const hr = document.getElementById('chrome-header-right')
+    if (!hr || !window.API) return
+    const next = encodeURIComponent(location.pathname + location.search)
+    const user = API.user()
+    if (user) {
+      hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${esc(user.name)}</a><a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>`
+    } else {
+      const icon = typeof GOOGLE_ICON_SVG !== 'undefined' ? GOOGLE_ICON_SVG : ''
+      hr.innerHTML = `<a href="/login.html?next=${next}" class="nav-btn">로그인</a><a href="/api/auth/google?next=${next}" class="nav-btn nav-btn-google">${icon} Google</a>`
+    }
+  }
+
   function renderHeader(activeKey) {
     const nav = SUBPAGE_NAV.map(item => {
       const active = item.key === activeKey ? ' is-active' : ''
@@ -70,7 +84,8 @@
   <div class="header-inner">
     <a href="/" class="logo">타닥클래스</a>
     <nav class="gnb gnb--legal" aria-label="정책 및 지원">${nav}</nav>
-    <div class="header-right">
+    <div class="header-right" id="chrome-header-right">
+      <a href="/login.html" class="nav-btn">로그인</a>
       <a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>
     </div>
   </div>
@@ -132,14 +147,18 @@
       const cfg = await fetchFooterConfig()
       footerEl.outerHTML = renderFooter(cfg)
     }
+    renderChromeAuth()
+    document.dispatchEvent(new Event('site-header-ready'))
   }
 
   window.renderSiteFooter = renderFooter
   window.fetchSiteFooterConfig = fetchFooterConfig
+  window.renderChromeAuth = renderChromeAuth
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', mount)
   } else {
     mount()
   }
+  window.addEventListener('load', renderChromeAuth)
 })()

@@ -7,11 +7,17 @@ const API = {
   token() { return localStorage.getItem('tc_token') },
   user()  { try { return JSON.parse(localStorage.getItem('tc_user')) } catch { return null } },
   isLoggedIn() { return !!this.token() },
-  isAdmin() { return this.user()?.role === 'admin' },
+  isAdmin() {
+    const u = this.user()
+    if (!u) return false
+    if (u.can_access_admin !== undefined) return !!u.can_access_admin
+    return u.role === 'admin'
+  },
 
   login(token, user) {
     localStorage.setItem('tc_token', token)
     localStorage.setItem('tc_user', JSON.stringify(user))
+    if (typeof renderHeaderAuth === 'function') renderHeaderAuth()
   },
   logout() {
     localStorage.removeItem('tc_token')
@@ -44,25 +50,6 @@ const API = {
   del(path)         { return this.req('DELETE', path) },
 }
 
-// 공통 헤더 UI 업데이트
-function updateNav() {
-  const user = API.user()
-  const navRight = document.getElementById('nav-right')
-  if (!navRight) return
-  if (user) {
-    navRight.innerHTML = `
-      <a href="/mypage.html" class="btn-ghost">내 강의</a>
-      ${user.role === 'admin' ? '<a href="/admin.html" class="btn-ghost">관리자</a>' : ''}
-      <button class="btn-black" onclick="API.logout()">로그아웃</button>
-    `
-  } else {
-    navRight.innerHTML = `
-      <a href="/login.html" class="btn-ghost">로그인</a>
-      <a href="/api/auth/google?next=${encodeURIComponent(location.pathname + location.search)}" class="nav-btn nav-btn-google">${GOOGLE_ICON_SVG} Google로 시작</a>
-    `
-  }
-}
-
 function comingSoon(e) {
   if (e) e.preventDefault()
   toast('준비 중입니다. 곧 오픈할 예정이에요.', 'info')
@@ -77,4 +64,27 @@ function toast(msg, type = 'info') {
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300) }, 3000)
 }
 
-document.addEventListener('DOMContentLoaded', updateNav)
+;(function () {
+  const s = document.createElement('script')
+  s.src = '/js/live-reminder.js'
+  s.defer = true
+  document.head.appendChild(s)
+})()
+;(function () {
+  const s = document.createElement('script')
+  s.src = '/js/welcome-popup.js'
+  s.defer = true
+  document.head.appendChild(s)
+})()
+;(function () {
+  const s = document.createElement('script')
+  s.src = '/js/mobile-nav.js?v=6'
+  s.defer = true
+  document.head.appendChild(s)
+})()
+;(function () {
+  const s = document.createElement('script')
+  s.src = '/js/phone-prompt.js?v=6'
+  s.defer = true
+  document.head.appendChild(s)
+})()

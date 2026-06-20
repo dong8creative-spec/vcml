@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>의뢰 메일 — 에디터즈 준비</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     .mail-detail { max-width: 760px; margin: 32px auto; padding: 0 20px 80px; }
@@ -86,14 +86,7 @@
   </style>
 </head>
 <body>
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥클래스</a>
-    <div class="header-right">
-      <a href="/editor-workbooks.html" class="nav-btn">← 메일함</a>
-    </div>
-  </div>
-</header>
+<div data-site-header></div>
 
 <div class="mail-detail">
   <a href="/editor-workbooks.html" class="back-link"><i class="ti ti-arrow-left"></i> 받은편지함</a>
@@ -101,6 +94,8 @@
 </div>
 
 <script src="/js/api.js"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=6"></script>
 <script>
 const user = API.user()
 if (!user) { alert('로그인이 필요합니다.'); location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.search) }

@@ -59,6 +59,7 @@
 /* 강의 썸네일 — 16:9 (카드·상세·마이페이지 공통) */
 .course-thumb,
 .ccard-thumb,
+.fcard-thumb,
 .buy-thumb,
 .mc-thumb {
   width: 100%;
@@ -74,6 +75,7 @@
 }
 .course-thumb > img,
 .ccard-thumb > img,
+.fcard-thumb > img,
 .buy-thumb > img,
 .mc-thumb > img {
   position: absolute;

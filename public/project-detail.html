@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>클라이언츠 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     .detail-wrap { max-width:860px; margin:40px auto; padding:0 24px 80px; display:grid; grid-template-columns:1fr 320px; gap:24px; align-items:start; }
@@ -69,20 +69,15 @@
   </style>
 </head>
 <body>
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥클래스</a>
-    <div class="header-right">
-      <a href="/projects.html" class="nav-btn">← 클라이언츠</a>
-    </div>
-  </div>
-</header>
+<div data-site-header></div>
 
 <div class="detail-wrap" id="detail-wrap">
   <div class="spinner" style="grid-column:1/-1;margin:60px auto"></div>
 </div>
 
 <script src="/js/api.js"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=6"></script>
 <script>
 const params = new URLSearchParams(location.search)
 const projectId = params.get('id')

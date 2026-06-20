@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>의뢰 메일함 — 에디터즈 준비</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     .mail-app { max-width: 920px; margin: 32px auto; padding: 0 20px 80px; }
@@ -126,15 +126,7 @@
   </style>
 </head>
 <body>
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥클래스</a>
-    <div class="header-right">
-      <a href="/editor-apply.html" class="nav-btn">에디터즈 신청</a>
-      <a href="/" class="nav-btn">← 홈</a>
-    </div>
-  </div>
-</header>
+<div data-site-header></div>
 
 <div class="mail-app">
   <div class="mail-top">
@@ -185,6 +177,8 @@
 </div>
 
 <script src="/js/api.js"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=6"></script>
 <script>
 const user = API.user()
 if (!user) { alert('로그인이 필요합니다.'); location.href = '/login.html?next=/editor-workbooks.html' }

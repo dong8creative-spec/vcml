@@ -26,6 +26,10 @@ const CLIENT_COURSE_REWARD_COUNT = 10
 const CLIENT_COURSE_REWARD_MIN_COURSE_PRICE = 200000
 const CLIENT_PROJECT_COUPON_MIN_AMOUNT = 30000
 const CLIENT_COURSE_REWARD_REASON = 'client_course_reward'
+const ANTICIPATION_COUPON_REASON = 'anticipation_review'
+const ANTICIPATION_DISCOUNT_PERCENT = 20
+const ANTICIPATION_MIN_LENGTH = 20
+const ANTICIPATION_MAX_LENGTH = 150
 const EDITOR_FEATURED_REASON = 'editor_featured'
 const EDITOR_FEATURED_DAYS = 7
 const EDITOR_APPLY_FEATURED_REASON = 'editor_apply_featured'
@@ -489,6 +493,7 @@ function userPayload(user) {
     name: user.name,
     role: user.role,
     member_type: user.member_type || 'student',
+    phone: user.phone || null,
     bio: user.bio || '',
     profile_image: user.profile_image || null,
     social_links: Array.isArray(user.social_links) ? user.social_links : [],
@@ -571,11 +576,11 @@ const DEFAULT_HOMEPAGE_LAYOUT = {
     purchase_ticker: true,
   },
   nav: {
-    search: true,
     all: true,
     capcut: true,
     premiere: true,
     ai: true,
+    anticipation: true,
     editors: true,
     projects: true,
   },
@@ -796,12 +801,13 @@ const db = {
     await fs.collection('users').doc(userId).update({ marketing_agreed: 0 })
     await fs.collection('consent_logs').add({ user_id: userId, type: 'marketing_sms', agreed: 0, agreed_at: new Date().toISOString(), ip: ip || null })
   },
-  async updateUserProfile(userId, { name, bio, profile_image, social_links }) {
+  async updateUserProfile(userId, { name, bio, profile_image, social_links, phone }) {
     const update = { profile_updated_at: now() }
     if (name !== undefined) update.name = String(name).trim()
     if (bio !== undefined) update.bio = String(bio).trim().slice(0, 500)
     if (profile_image !== undefined) update.profile_image = profile_image || null
     if (social_links !== undefined) update.social_links = social_links
+    if (phone !== undefined) update.phone = phone ? String(phone).trim() : null
     await fs.collection('users').doc(userId).update(update)
     return db.findUserById(userId)
   },
@@ -825,9 +831,9 @@ const db = {
   async updateCourse(id, data) {
     await fs.collection('courses').doc(id).update(data)
   },
-  async createLiveCourse({ title, description, category, thumbnail_icon, live_schedule, meet_code }) {
+  async createLiveCourse({ title, description, category, thumbnail_icon, live_schedule, live_starts_at, meet_code }) {
     const slug = 'live-' + Date.now()
-    const data = { slug, title, description: description || '', category, thumbnail_icon: thumbnail_icon || 'ti-broadcast', thumb_style: 'dark', price: 0, sale_price: 0, badge: 'LIVE', rating: 0, review_count: 0, student_count: 0, is_published: 1, course_type: 'live', live_schedule: live_schedule || null, meet_code: meet_code || null, live_status: 'upcoming', created_at: now() }
+    const data = { slug, title, description: description || '', category, thumbnail_icon: thumbnail_icon || 'ti-broadcast', thumb_style: 'dark', price: 0, sale_price: 0, badge: 'LIVE', rating: 0, review_count: 0, student_count: 0, is_published: 1, course_type: 'live', live_schedule: live_schedule || null, live_starts_at: live_starts_at || null, meet_code: meet_code || null, live_status: 'upcoming', created_at: now() }
     const ref = await fs.collection('courses').add(data)
     return { id: ref.id, ...data }
   },
@@ -1002,6 +1008,146 @@ const db = {
     }
     const ref = await fs.collection('platform_reviews').add({ seed_key: seedKey, created_at: now(), is_public: 1, ...data })
     return ref.id
+  },
+
+  // anticipation_reviews (강의별 기대평)
+  maskAuthorName(name) {
+    const n = String(name || '회원').trim()
+    if (n.length <= 1) return n
+    if (n.length === 2) return n[0] + '*'
+    return n[0] + '*'.repeat(n.length - 2) + n[n.length - 1]
+  },
+  maskUserLoginId(user) {
+    const email = user?.email
+    if (email && email.includes('@')) {
+      const [local, domain] = email.split('@')
+      if (local.length <= 2) return `${local[0]}***@${domain}`
+      return `${local.slice(0, 2)}***@${domain}`
+    }
+    const id = String(user?.id || '회원')
+    if (id.length <= 4) return id[0] + '***'
+    return id.slice(0, 3) + '***'
+  },
+  async getAnticipationReviewByUser(userId) {
+    const snap = await fs.collection('anticipation_reviews').where('user_id', '==', userId).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+  },
+  async getAnticipationReviewByUserAndCourse(userId, courseId) {
+    const snap = await fs.collection('anticipation_reviews').where('user_id', '==', userId).get()
+    const found = snapToArr(snap).find(r => r.course_id === courseId)
+    return found || null
+  },
+  async getPublicAnticipationReviews() {
+    const snap = await fs.collection('anticipation_reviews').where('is_public', '==', 1).get()
+    return snapToArr(snap).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+  },
+  async getCourseAnticipationReviews(courseId) {
+    const snap = await fs.collection('anticipation_reviews').where('course_id', '==', courseId).get()
+    return snapToArr(snap)
+      .filter(r => r.is_public === 1)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+  },
+  async createCourseAnticipationReview(userId, courseId, content, { enroll = false } = {}) {
+    const existing = await db.getAnticipationReviewByUserAndCourse(userId, courseId)
+    if (existing) return { error: 'already_submitted', review: existing }
+
+    const user = await db.findUserById(userId)
+    if (!user) return { error: 'user_not_found' }
+
+    const course = await db.getCourseById(courseId)
+    if (!course) return { error: 'course_not_found' }
+
+    const text = String(content || '').trim()
+    if (text.length < ANTICIPATION_MIN_LENGTH) return { error: 'too_short' }
+    if (text.length > ANTICIPATION_MAX_LENGTH) return { error: 'too_long' }
+
+    if (enroll && await db.isEnrolled(userId, courseId)) {
+      return { error: 'already_enrolled' }
+    }
+
+    const authorDisplay = db.maskAuthorName(user.name)
+    const authorIdDisplay = db.maskUserLoginId(user)
+    const createdAt = now()
+    const ref = await fs.collection('anticipation_reviews').add({
+      user_id: userId,
+      course_id: courseId,
+      author_display: authorDisplay,
+      author_id_display: authorIdDisplay,
+      content: text,
+      is_public: 1,
+      created_at: createdAt,
+    })
+    const review = {
+      id: ref.id,
+      user_id: userId,
+      course_id: courseId,
+      author_display: authorDisplay,
+      author_id_display: authorIdDisplay,
+      content: text,
+      is_public: 1,
+      created_at: createdAt,
+    }
+
+    const existingCoupon = (await db.getCouponsByUser(userId)).find(
+      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available'
+    )
+    let coupon = existingCoupon || null
+    if (!coupon) {
+      coupon = await db.createCoupon(userId, 0, ANTICIPATION_COUPON_REASON, {
+        discount_percent: ANTICIPATION_DISCOUNT_PERCENT,
+        coupon_type: 'percent',
+        first_course_only: true,
+      })
+    }
+
+    let enrolled = false
+    if (enroll) {
+      await db.enroll(userId, courseId)
+      const isFree = course.course_type === 'live' || Number(course.sale_price) === 0
+      if (isFree) {
+        await db.createOrder(userId, courseId, 0, course.course_type === 'live' ? '무료' : '무료', 0)
+      }
+      await db.updateCourse(courseId, { student_count: (course.student_count || 0) + 1 })
+      enrolled = true
+    }
+
+    return { review, coupon, enrolled }
+  },
+  /** @deprecated 글로벌 오픈베타 기대평 — createCourseAnticipationReview 사용 */
+  async createAnticipationReview(userId, content) {
+    const existing = await db.getAnticipationReviewByUser(userId)
+    if (existing) return { error: 'already_submitted', review: existing }
+
+    const user = await db.findUserById(userId)
+    if (!user) return { error: 'user_not_found' }
+
+    const text = String(content || '').trim()
+    if (text.length < 10) return { error: 'too_short' }
+    if (text.length > 500) return { error: 'too_long' }
+
+    const authorDisplay = db.maskAuthorName(user.name)
+    const ref = await fs.collection('anticipation_reviews').add({
+      user_id: userId,
+      author_display: authorDisplay,
+      content: text,
+      is_public: 1,
+      created_at: now(),
+    })
+    const review = { id: ref.id, user_id: userId, author_display: authorDisplay, content: text, is_public: 1, created_at: now() }
+
+    const existingCoupon = (await db.getCouponsByUser(userId)).find(
+      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available'
+    )
+    let coupon = existingCoupon || null
+    if (!coupon) {
+      coupon = await db.createCoupon(userId, 0, ANTICIPATION_COUPON_REASON, {
+        discount_percent: ANTICIPATION_DISCOUNT_PERCENT,
+        coupon_type: 'percent',
+        first_course_only: true,
+      })
+    }
+
+    return { review, coupon }
   },
 
   // coupons
@@ -2052,6 +2198,10 @@ module.exports.userPayload = userPayload
 module.exports.EDITOR_WORK_TYPES = EDITOR_WORK_TYPES
 module.exports.EDITOR_FEATURED_REASON = EDITOR_FEATURED_REASON
 module.exports.CLIENT_COURSE_REWARD_REASON = CLIENT_COURSE_REWARD_REASON
+module.exports.ANTICIPATION_COUPON_REASON = ANTICIPATION_COUPON_REASON
+module.exports.ANTICIPATION_DISCOUNT_PERCENT = ANTICIPATION_DISCOUNT_PERCENT
+module.exports.ANTICIPATION_MIN_LENGTH = ANTICIPATION_MIN_LENGTH
+module.exports.ANTICIPATION_MAX_LENGTH = ANTICIPATION_MAX_LENGTH
 module.exports.CLIENT_PROJECT_COUPON_MIN_AMOUNT = CLIENT_PROJECT_COUPON_MIN_AMOUNT
 module.exports.getTotalMailCountFromConfig = getTotalMailCountFromConfig
 module.exports.DEFAULT_EDITOR_PROGRAM_CONFIG = DEFAULT_EDITOR_PROGRAM_CONFIG

@@ -3,31 +3,13 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타닥클래스 — 영상제작 전문 온라인 강의</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" />
   <link rel="stylesheet" href="/css/common.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
 
-<!-- HEADER -->
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥클래스</a>
-    <div class="search-bar" data-nav-key="search">
-      <i class="ti ti-search"></i>
-      <input type="text" placeholder="강의를 검색해보세요" id="search-input" />
-    </div>
-    <nav class="gnb">
-      <a href="#all" data-gnb-all data-nav-key="all">전체강의</a>
-      <a href="/?cat=capcut" data-gnb-cat="capcut" data-nav-key="capcut">캡컷 PRO</a>
-      <a href="/?cat=premiere" data-gnb-cat="premiere" data-nav-key="premiere">프리미어 PRO</a>
-      <a href="/?cat=ai" data-gnb-cat="ai" data-nav-key="ai">AI 콘텐츠 제작</a>
-      <a href="/editors.html" data-nav-key="editors">에디터즈</a>
-      <a href="/projects.html" data-nav-key="projects">클라이언츠</a>
-    </nav>
-    <div class="header-right" id="header-right"></div>
-  </div>
-</header>
+<div data-site-header></div>
 
 <!-- HERO -->
 <section class="hero">
@@ -38,7 +20,7 @@
       <p id="hero-subtitle">편집·모션·촬영·색보정 — 유튜브부터 방송까지<br>현장에서 실제로 쓰는 방식을 알려드립니다.</p>
       <div class="hero-btns" id="hero-btns">
         <a href="#all" class="btn-hero-primary" id="hero-primary-btn">전체 강의 보기</a>
-        <a href="/course.html?slug=capcut-beginner-free" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-player-play-filled"></i> 무료 맛보기</a>
+        <a href="#all" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-message-heart"></i> 강의 기대평 쓰고 20% 쿠폰</a>
       </div>
     </div>
   </div>
@@ -97,16 +79,16 @@
 <!-- 무료 베스트 -->
 <section class="shelf-section shelf-section-gray" data-home-section="free_courses">
   <div class="container">
-    <div class="shelf-header">
+    <div class="shelf-header shelf-header--left">
       <div>
-        <h2 class="shelf-title">무료 강의</h2>
-        <p class="shelf-sub">부담 없이 시작해보세요</p>
+        <h2 class="shelf-title">무료강의</h2>
+        <p class="shelf-sub">무료지만 기본기를 탄탄하게!</p>
       </div>
       <a href="#" class="shelf-more" onclick="shelfShowAll('free');return false">전부보기 <i class="ti ti-chevron-right"></i></a>
     </div>
-    <div class="shelf-wrap">
+    <div class="shelf-wrap shelf-wrap--free">
       <button class="shelf-arrow left" onclick="scroll_shelf('free',-1)"><i class="ti ti-chevron-left"></i></button>
-      <div class="shelf" id="shelf-free"></div>
+      <div class="shelf shelf--free" id="shelf-free"></div>
       <button class="shelf-arrow right" onclick="scroll_shelf('free',1)"><i class="ti ti-chevron-right"></i></button>
     </div>
   </div>
@@ -155,9 +137,10 @@
 <div data-chrome="footer"></div>
 
 <script src="/js/api.js"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=6"></script>
 <script src="/js/site-chrome.js"></script>
 <script src="/js/auth-redirect.js"></script>
-<script src="/js/site-layout.js"></script>
 <script src="/js/home-nav.js"></script>
 <script>
 // 강의 카드 HTML 생성
@@ -197,6 +180,44 @@ function courseCard(c) {
   </a>`
 }
 
+function freeCourseCard(c) {
+  const isLive = c.course_type === 'live'
+  const isFree = isLive || c.sale_price === 0
+  const rating = parseFloat(c.rating) || 0
+  const reviewCount = Number(c.review_count) || 0
+  const stars = reviewCount > 0
+    ? '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating))
+    : ''
+  const liveStatusMap = { upcoming: '신청 가능', live: '진행 중', ended: '종료' }
+  const thumbImg = c.thumbnail_url || c.thumbnail_image
+  const thumbInner = thumbImg
+    ? `<img src="${thumbImg.replace(/"/g, '&quot;')}" alt="" />`
+    : `<i class="ti ${c.thumbnail_icon || 'ti-video'}"></i>`
+  return `
+  <a href="/course.html?slug=${c.slug}" class="fcard">
+    <div class="fcard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
+      ${isLive ? '<span class="badge-live"><i class="ti ti-broadcast"></i> LIVE</span>' : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
+      ${thumbInner}
+    </div>
+    <div class="fcard-body">
+      <div class="fcard-cat">${c.category || ''}</div>
+      <div class="fcard-title">${c.title}</div>
+      ${isLive
+        ? `<div class="fcard-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule || '일정 공지 예정'}</div>`
+        : (reviewCount > 0
+            ? `<div class="fcard-rating"><span class="fcard-stars">${stars}</span><span class="fcard-rnum">${rating} (${reviewCount.toLocaleString()})</span></div>`
+            : `<div class="fcard-rating"><span class="fcard-rnum fcard-rnum--muted">후기 없음</span></div>`)}
+      <div class="fcard-foot">
+        ${isLive
+          ? `<span class="price-free">무료</span><span class="live-badge ${c.live_status || 'upcoming'}">${liveStatusMap[c.live_status] || '신청 가능'}</span>`
+          : (isFree
+              ? `<span class="price-free">무료</span><span class="fcard-cta">강의 보기 <i class="ti ti-arrow-right"></i></span>`
+              : `<span class="price-sale">₩${Number(c.sale_price).toLocaleString()}</span>`)}
+      </div>
+    </div>
+  </a>`
+}
+
 // 강의 정렬 · 카테고리 필터 — home-nav.js에서 로드됨
 
 function renderCourseGrid332(courses) {
@@ -227,7 +248,7 @@ async function loadAll() {
       updateCourseGrid(filterCourses())
     }
     if (isHomeSectionEnabled('free_courses')) {
-      document.getElementById('shelf-free').innerHTML = [...free, ...live].slice(0, 8).map(courseCard).join('') || '<p class="empty">무료 강의가 없습니다.</p>'
+      document.getElementById('shelf-free').innerHTML = [...free, ...live].slice(0, 8).map(freeCourseCard).join('') || '<p class="empty">무료 강의가 없습니다.</p>'
     }
     if (isHomeSectionEnabled('new_courses')) {
       document.getElementById('shelf-new').innerHTML = all.slice().reverse().map(courseCard).join('') || '<p class="empty">강의가 없습니다.</p>'
@@ -392,19 +413,12 @@ async function loadLiveReviews() {
 
 function scroll_shelf(id, dir) {
   const el = document.getElementById('shelf-' + id)
-  if (el) el.scrollBy({ left: dir * 320, behavior: 'smooth' })
+  if (!el) return
+  const step = id === 'free' ? (el.querySelector('.fcard')?.offsetWidth || 640) + 16 : 320
+  el.scrollBy({ left: dir * step, behavior: 'smooth' })
 }
 
-// Nav auth
-const user = API.user ? API.user() : null
-const hr = document.getElementById('header-right')
-if (hr) {
-  if (user) {
-    hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${user.name}</a><a href="#" class="nav-btn nav-btn-outline" onclick="API.logout()">로그아웃</a>`
-  } else {
-    hr.innerHTML = `<a href="/api/auth/google?next=${encodeURIComponent(location.pathname + location.search)}" class="nav-btn nav-btn-google"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 시작</a>`
-  }
-}
+// Nav auth — site-header.js에서 처리
 
 initFromUrl()
 applyHomepageLayout().then(() => {

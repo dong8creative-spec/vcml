@@ -3,15 +3,11 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>프로필 완성 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body class="login-body">
-  <header class="header header--logo-only">
-    <div class="header-inner">
-      <a href="/" class="logo">타닥클래스</a>
-    </div>
-  </header>
+  <div data-site-header="logo-only"></div>
   <div class="login-body-content">
   <div class="login-card">
     <div style="text-align:center;margin-bottom:24px">
@@ -95,6 +91,7 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/site-header.js?v=6"></script>
   <script>
     const params = new URLSearchParams(location.search)
     const kakaoToken = params.get('kakao_token')
@@ -176,6 +173,7 @@
           alert(`✅ 마케팅 동의 완료!\n5,000원 할인 쿠폰이 발급되었습니다.\n쿠폰번호: ${data.coupon.code}\n\n마이페이지 > 내 쿠폰에서 확인하세요.`)
         }
 
+        sessionStorage.setItem('tc_welcome', '1')
         location.href = nextUrl
       } catch (e) {
         alert(e.message)

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>클라이언츠 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     .proj-hero { background:linear-gradient(135deg,#111827,#1e2d4a); padding:52px 24px; text-align:center; color:#fff; }
@@ -45,17 +45,7 @@
   </style>
 </head>
 <body>
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥클래스</a>
-    <nav class="gnb">
-      <a href="/">강의</a>
-      <a href="/editors.html">에디터즈</a>
-      <a href="/projects.html" style="color:#5c67f2;font-weight:700">클라이언츠</a>
-    </nav>
-    <div class="header-right" id="header-right"></div>
-  </div>
-</header>
+<div data-site-header></div>
 
 <div class="proj-hero">
   <h1>🎬 클라이언츠</h1>
@@ -81,6 +71,8 @@
 </div>
 
 <script src="/js/api.js"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=6"></script>
 <script>
 let allProjects = []
 const statusLabel = { open:'모집중', matched:'매칭완료', in_progress:'진행중', completed:'완료', cancelled:'취소' }
@@ -131,12 +123,6 @@ document.querySelector('.filter-row').addEventListener('click', e => {
 
 const user = API.user ? API.user() : null
 const canPostProject = user && (user.member_type === 'client' || user.role === 'admin')
-const hr = document.getElementById('header-right')
-if (hr) {
-  hr.innerHTML = user
-    ? `<a href="/mypage.html" class="nav-btn">${user.name}</a>${canPostProject ? '<a href="/project-post.html" class="nav-btn nav-btn-primary">+ 클라이언츠 등록</a>' : ''}`
-    : `<a href="/login.html" class="nav-btn">로그인</a><a href="/login.html?tab=register" class="nav-btn nav-btn-primary">의뢰인 가입</a>`
-}
 if (user && !canPostProject) {
   const postBtn = document.querySelector('.btn-post')
   if (postBtn) postBtn.style.display = 'none'

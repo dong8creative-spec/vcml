@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken')
+const { isAllowedAdmin } = require('../utils/adminAccess')
 
 function authMiddleware(req, res, next) {
   const header = req.headers.authorization
@@ -17,7 +18,9 @@ function authMiddleware(req, res, next) {
 
 function adminMiddleware(req, res, next) {
   authMiddleware(req, res, () => {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: '권한이 없습니다.' })
+    if (!isAllowedAdmin(req.user)) {
+      return res.status(403).json({ error: '관리자 접근 권한이 없습니다.' })
+    }
     next()
   })
 }

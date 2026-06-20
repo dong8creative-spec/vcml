@@ -3,18 +3,11 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>수강 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
-  <header class="header">
-    <div class="header-inner">
-      <a href="/" class="logo">타닥클래스</a>
-      <div class="header-right">
-        <a href="/mypage.html" class="nav-btn">내 강의</a>
-      </div>
-    </div>
-  </header>
+  <div data-site-header></div>
   <header class="player-nav">
     <div class="player-course-title" id="player-course-title"></div>
     <a href="/mypage.html" class="player-nav-link"><i class="ti ti-layout-dashboard"></i> 내 강의</a>
@@ -34,6 +27,8 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/site-layout.js"></script>
+  <script src="/js/site-header.js?v=6"></script>
   <script src="/js/auth-redirect.js"></script>
   <script>
     if (!requireLogin()) { /* 리다이렉트 중 */ }
@@ -44,14 +39,29 @@
     const chapterParam = params.get('chapter')
     let courseData = null
     let currentChapterId = null
-    let progressTimer = null
 
     async function load() {
       try {
         courseData = await API.get('/courses/' + slug)
+
+        if (courseData.course_type === 'live') {
+          document.getElementById('player-main').innerHTML = `
+            <div class="player-beta-notice player-live-notice">
+              <i class="ti ti-broadcast"></i>
+              <h2>라이브 강의입니다</h2>
+              <p>이 강의는 Google Meet 라이브로 진행됩니다.<br>일정·입장 링크는 <strong>마이페이지 &gt; 내 강의</strong>에서 확인하세요.</p>
+              ${courseData.live_schedule ? `<p class="player-live-schedule"><i class="ti ti-calendar"></i> ${courseData.live_schedule}</p>` : ''}
+              <a href="/mypage.html" class="player-live-btn">내 강의에서 Meet 입장하기</a>
+              <a href="/course.html?slug=${slug}" class="player-live-link">강의 상세로 돌아가기</a>
+            </div>`
+          document.getElementById('player-course-title').textContent = courseData.title
+          document.getElementById('sidebar-title').textContent = '라이브 안내'
+          document.getElementById('chapter-list').innerHTML = `<div class="chapter-item active"><span class="ch-num">01</span><span class="ch-title">라이브 세션</span></div>`
+          return
+        }
+
         document.getElementById('player-course-title').textContent = courseData.title
         document.getElementById('sidebar-title').textContent = courseData.title
-
         renderChapterList(courseData.chapters)
 
         const firstId = chapterParam === 'first' || !chapterParam
@@ -89,11 +99,15 @@
     function renderPlayer(ch) {
       const isCompleted = ch.progress?.completed === 1
       document.getElementById('player-main').innerHTML = `
+        <div class="player-beta-banner">
+          <i class="ti ti-info-circle"></i>
+          <span>오픈 베타: 영상 업로드 전 시뮬레이션 모드입니다. 실제 영상은 정식 오픈 후 연결됩니다.</span>
+        </div>
         <div class="video-area">
           <div class="video-placeholder">
             <div class="vp-icon"><i class="ti ti-player-play-filled"></i></div>
             <div class="vp-title">${ch.title}</div>
-            <div class="vp-note">실제 서비스에서는 이 영역에 강의 영상이 재생됩니다.<br>영상 파일을 업로드하면 자동으로 연결됩니다.</div>
+            <div class="vp-note">영상 파일 업로드 후 이 영역에서 자동 재생됩니다.<br>현재는 수강 완료 처리만 가능합니다.</div>
             <button class="vp-play-btn" onclick="simulateWatch(${ch.id}, ${ch.next_id})">
               <i class="ti ti-player-play-filled"></i> 수강 완료 처리하기
             </button>

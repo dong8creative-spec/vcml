@@ -44,5 +44,28 @@ a { text-decoration: none; color: inherit; }
 
 .btn-back { margin-top: 12px; display: inline-block; padding: 9px 18px; background: #fff; color: var(--text-primary); border-radius: 6px; font-size: 20.4px; font-weight: 500; }
 
+.player-beta-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px; background: rgba(70, 129, 134, 0.25);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 14px; color: rgba(255,255,255,0.75); line-height: 1.5;
+}
+.player-beta-banner i { font-size: 18px; color: #9BC1BC; flex-shrink: 0; }
+
+.player-live-notice {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 48px 24px; min-height: 360px; gap: 14px;
+}
+.player-live-notice > i { font-size: 56px; color: rgba(255,255,255,0.35); }
+.player-live-notice h2 { font-size: 24px; font-weight: 700; color: #fff; }
+.player-live-notice p { font-size: 16px; color: rgba(255,255,255,0.55); line-height: 1.7; max-width: 420px; }
+.player-live-schedule { font-size: 15px; color: rgba(255,255,255,0.45); }
+.player-live-btn {
+  margin-top: 8px; padding: 12px 24px; background: #fff; color: var(--text-primary);
+  border-radius: 8px; font-size: 16px; font-weight: 700;
+}
+.player-live-link { font-size: 14px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+.player-live-link:hover { color: rgba(255,255,255,0.7); }
+
 /* spinner on dark bg */
 .spinner { border-color: rgba(255,255,255,0.1); border-top-color: rgba(255,255,255,0.5); }

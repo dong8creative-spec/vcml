@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>마이페이지 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" />
   <link rel="stylesheet" href="/css/common.css" />
   <link rel="stylesheet" href="/css/mypage.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
@@ -133,16 +133,6 @@
     .featured-banner.active { background:linear-gradient(135deg,#f0f2ff,#e8ebff); border-color:#c5ceff; }
     .featured-banner h4 { font-size:16.8px; font-weight:800; margin-bottom:6px; color:#1a1a1a; }
     .featured-banner p { font-size:14.4px; color:#666; line-height:1.6; margin:0; }
-    .welcome-banner {
-      background: linear-gradient(135deg, #f0f7ff, #e8f4ff);
-      border: 1px solid #c5ddf8;
-      border-radius: 12px;
-      padding: 18px 20px;
-      margin-bottom: 20px;
-    }
-    .welcome-banner h4 { font-size: 17px; font-weight: 800; margin-bottom: 8px; color: #0d3a66; }
-    .welcome-banner p { font-size: 14.4px; color: #1a4a7a; line-height: 1.65; margin: 0; }
-    .welcome-banner a { color: #0d3a66; font-weight: 700; text-decoration: underline; }
     .settings-divider { border:none; border-top:1px solid #eee; margin:24px 0; }
     .my-avatar.has-photo { background:#eee; padding:0; }
     .my-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
@@ -164,19 +154,7 @@
   </style>
 </head>
 <body>
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥클래스</a>
-    <nav class="gnb">
-      <a href="/">강의</a>
-      <a href="/editors.html">에디터즈</a>
-      <a href="/projects.html">클라이언츠</a>
-    </nav>
-    <div class="header-right">
-      <a href="/mypage.html" class="nav-btn nav-btn-primary">마이페이지</a>
-    </div>
-  </div>
-</header>
+<div data-site-header></div>
 
 <div class="mypage-wrap">
   <aside class="my-sidebar">
@@ -187,14 +165,6 @@
     <!-- 내 강의 -->
     <div class="my-section" id="sec-courses">
       <div class="section-title">내 강의</div>
-      <div class="welcome-banner" id="welcome-banner">
-        <h4><span id="welcome-name"></span>님, 가입해 주셔서 정말 감사합니다!</h4>
-        <p>
-          오픈 베타에 함께해 주셔서 반갑습니다. 타닥클래스는 <strong>6월 30일(월) 정식 오픈</strong>을 준비하고 있으며,
-          캡컷 PRO 강의 4종(초보자반·기초반·초고속 영상제작반·영상납품 수익화)을 순차적으로 제공할 예정입니다.
-          <a href="/notices.html">공지사항</a>에서 자세한 내용을 확인해 주세요.
-        </p>
-      </div>
       <div id="my-courses"><div class="spinner"></div></div>
     </div>
     <!-- 내 클라이언츠 (의뢰인) -->
@@ -237,6 +207,11 @@
         </div>
 
         <div class="pf-field">
+          <label>휴대폰 번호 <span class="pf-hint">라이브·알림톡 수신용</span></label>
+          <input type="tel" id="pf-phone" maxlength="13" placeholder="010-0000-0000" oninput="formatPhoneInput(this)" />
+        </div>
+
+        <div class="pf-field">
           <label>자기소개 <span class="pf-hint">공개 프로필에 표시됩니다</span></label>
           <textarea id="pf-bio" maxlength="500" placeholder="간단한 자기소개를 작성해주세요. (에디터즈·클라이언츠 매칭 시 도움이 됩니다)"></textarea>
           <div class="pf-char-count"><span id="pf-bio-count">0</span>/500</div>
@@ -271,6 +246,8 @@
 </div>
 
 <script src="/js/api.js"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=6"></script>
 <script>
 if (!API.isLoggedIn()) { location.href = '/login.html?next=/mypage.html' }
 const user = API.user()
@@ -310,8 +287,6 @@ function renderSidebar(profile) {
     <div class="my-email">${escapeHtml(p.email || '')}</div>
     ${bioBlock}
     ${roleBadges}`
-  const wn = document.getElementById('welcome-name')
-  if (wn) wn.textContent = p.name || '회원'
 }
 
 renderSidebar(user)
@@ -449,6 +424,7 @@ async function loadSettings() {
     profileData = await API.get('/my/profile')
     pendingProfileImage = undefined
     document.getElementById('pf-name').value = profileData.name || ''
+    document.getElementById('pf-phone').value = profileData.phone || ''
     document.getElementById('pf-bio').value = profileData.bio || ''
     document.getElementById('pf-bio-count').textContent = (profileData.bio || '').length
     updatePhotoPreview(profileData.profile_image, profileData.name?.[0])
@@ -477,6 +453,7 @@ async function saveProfile() {
   try {
     const body = {
       name: document.getElementById('pf-name').value.trim(),
+      phone: document.getElementById('pf-phone').value.trim(),
       bio: document.getElementById('pf-bio').value.trim(),
       social_links: collectLinks(),
     }
@@ -484,7 +461,8 @@ async function saveProfile() {
     const res = await API.patch('/my/profile', body)
     profileData = res.user
     pendingProfileImage = undefined
-    const stored = { ...API.user(), ...userPayloadFromProfile(res.user) }
+    if (typeof invalidatePhoneCache === 'function') invalidatePhoneCache()
+    const stored = { ...API.user(), ...userPayloadFromProfile(res.user), phone: res.user.phone }
     localStorage.setItem('tc_user', JSON.stringify(stored))
     renderSidebar(profileData)
     toast('프로필이 저장되었습니다.', 'success')
@@ -496,7 +474,7 @@ async function saveProfile() {
 }
 
 function userPayloadFromProfile(p) {
-  return { name: p.name, bio: p.bio, profile_image: p.profile_image, social_links: p.social_links, member_type: p.member_type, role: p.role }
+  return { name: p.name, phone: p.phone, bio: p.bio, profile_image: p.profile_image, social_links: p.social_links, member_type: p.member_type, role: p.role }
 }
 
 async function initProfile() {
@@ -513,6 +491,33 @@ const initTab = new URLSearchParams(location.search).get('tab') || visibleTabs[0
 showSection(typeof initTab === 'string' ? initTab : initTab.id)
 
 // ── 내 강의 ──
+function renderLiveCourseCard(c) {
+  const LS = window.LiveSession
+  const start = LS ? LS.parseLiveStart(c) : null
+  const startMs = start ? start.getTime() : ''
+  const ended = c.live_status === 'ended'
+  const meetPayload = encodeURIComponent(JSON.stringify({
+    meet_code: c.meet_code,
+    live_status: c.live_status,
+    live_starts_at: c.live_starts_at,
+    live_schedule: c.live_schedule,
+  }))
+  const meetBtn = LS ? LS.meetButtonHtml(c, start, true) : ''
+  return `<div class="my-course-card my-course-card--live">
+    <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
+      <span class="mc-live-badge">LIVE</span>
+      <i class="ti ${c.thumbnail_icon || 'ti-broadcast'}"></i>
+    </div>
+    <div class="mc-body">
+      <div class="mc-cat">${escapeHtml(c.category)}</div>
+      <div class="mc-title">${escapeHtml(c.title)}</div>
+      ${c.live_schedule ? `<div class="mc-meta" style="color:#e65100;margin-bottom:4px"><i class="ti ti-calendar"></i> ${escapeHtml(c.live_schedule)}</div>` : ''}
+      <div class="live-countdown${ended ? ' is-ended' : ''}" data-live-countdown data-live-starts-at="${startMs}" data-live-ended="${ended ? '1' : '0'}">${ended ? '종료된 라이브' : (startMs ? '시작까지 계산 중…' : '일정 미정')}</div>
+      <div data-live-meet-wrap data-live-course="${meetPayload}">${meetBtn}</div>
+    </div>
+  </div>`
+}
+
 async function loadCourses() {
   const el = document.getElementById('my-courses')
   if (el.dataset.loaded) return
@@ -524,6 +529,7 @@ async function loadCourses() {
       return
     }
     el.innerHTML = `<div class="my-course-grid">${courses.map(c => {
+      if (c.course_type === 'live') return renderLiveCourseCard(c)
       const pct = c.total_chapters > 0 ? Math.round((c.completed_chapters / c.total_chapters) * 100) : 0
       return `<a href="/player.html?slug=${c.slug}&chapter=${c.last_chapter_id || 'first'}" class="my-course-card">
         <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
@@ -531,8 +537,8 @@ async function loadCourses() {
           ${pct === 100 ? '<div class="mc-done"><i class="ti ti-check"></i> 완료</div>' : ''}
         </div>
         <div class="mc-body">
-          <div class="mc-cat">${c.category}</div>
-          <div class="mc-title">${c.title}</div>
+          <div class="mc-cat">${escapeHtml(c.category)}</div>
+          <div class="mc-title">${escapeHtml(c.title)}</div>
           <div class="mc-progress-row">
             <div class="mc-bar-wrap"><div class="mc-bar" style="width:${pct}%"></div></div>
             <span class="mc-pct">${pct}%</span>
@@ -541,6 +547,7 @@ async function loadCourses() {
         </div>
       </a>`
     }).join('')}</div>`
+    if (window.LiveSession) LiveSession.startCountdownTicker()
   } catch(e) {
     el.innerHTML = '<p style="color:#aaa;text-align:center">강의를 불러오지 못했습니다.</p>'
   }
@@ -701,16 +708,20 @@ async function loadCoupons() {
       const isFeatured = c.reason === 'editor_featured' || c.coupon_type === 'editor_featured'
         || c.reason === 'editor_apply_featured' || c.coupon_type === 'editor_apply_featured'
       const isApplyFeatured = c.reason === 'editor_apply_featured'
+      const isPercent = c.discount_percent > 0 || c.reason === 'anticipation_review'
       const amountHtml = isFeatured
         ? (c.amount > 0
           ? `<div class="coupon-amount">${c.amount.toLocaleString()}원 · 상위노출 7일</div>`
           : '<div class="coupon-amount">상위노출 7일</div>')
-        : `<div class="coupon-amount">${c.amount.toLocaleString()}원 할인</div>`
+        : isPercent
+        ? `<div class="coupon-amount">${c.discount_percent || 20}% 할인</div>`
+        : `<div class="coupon-amount">${(c.amount || 0).toLocaleString()}원 할인</div>`
       const reasonHtml = isApplyFeatured
         ? '에디터즈 승격 혜택 · 명단 상단 노출'
         : isFeatured
         ? '에디터즈 승인 혜택 · 명단 상단 노출'
         : c.reason === 'marketing_consent' ? '마케팅 동의 혜택'
+        : c.reason === 'anticipation_review' ? '강의 기대평 작성 혜택 · 최초 강의 결제 20% 할인'
         : c.reason === 'client_course_reward' ? '의뢰인 수강 혜택 · 3만원 이상 의뢰 시 1만원 할인' : c.reason
       const useBtn = isFeatured && c.status === 'available'
         ? `<button type="button" class="btn-settings-action" style="margin-top:6px" onclick="useFeaturedCoupon('${c.id}')">상위노출 적용</button>`

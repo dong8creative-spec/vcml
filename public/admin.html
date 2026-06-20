@@ -250,6 +250,16 @@
                   <option value="ended">종료</option>
                 </select>
               </div>
+              <div class="form-group">
+                <label>커리큘럼 (텍스트) <span style="font-size: 13.2px;color:#aaa">이미지가 없을 때 표시</span></label>
+                <textarea id="live-curriculum-text" rows="5" placeholder="라이브 강의 진행 순서, 다룰 내용 등"></textarea>
+              </div>
+              <div class="form-group">
+                <label>커리큘럼 이미지 (16:9) <span style="font-size: 13.2px;color:#aaa">URL 또는 파일 업로드</span></label>
+                <input type="url" id="live-curriculum-image-url" placeholder="https://..." />
+                <input type="file" id="live-curriculum-image-file" accept="image/*" style="margin-top:8px" />
+                <div id="live-curriculum-preview" style="margin-top:10px"></div>
+              </div>
             </div>
             <button class="btn-save" onclick="saveLiveSettings()">설정 저장</button>
           </div>
@@ -1100,9 +1110,20 @@
     function fmtD(iso) { return iso ? iso.slice(0,10) : '-' }
 
     // ── 어드민 인증 체크 ──
-    (function() {
-      const u = API.user();
-      if (!u || u.role !== 'admin') { location.href = '/login.html?next=/admin.html'; }
+    (async function () {
+      if (!API.isLoggedIn()) {
+        location.href = '/login.html?next=/admin.html'
+        return
+      }
+      try {
+        const { allowed } = await API.get('/auth/admin-access')
+        if (!allowed) {
+          alert('관리자 접근 권한이 없는 계정입니다.')
+          location.href = '/'
+        }
+      } catch {
+        location.href = '/login.html?next=/admin.html'
+      }
     })();
 
     // ── 데이터 로드 함수들 ──
@@ -1291,13 +1312,43 @@
       document.getElementById('live-type').value = c.course_type || 'recorded'
       document.getElementById('live-meet-code').value = c.meet_code || ''
       document.getElementById('live-status').value = c.live_status || 'upcoming'
+      document.getElementById('live-curriculum-text').value = c.live_curriculum_text || ''
+      document.getElementById('live-curriculum-image-url').value = (c.live_curriculum_image || '').startsWith('http') ? (c.live_curriculum_image || '') : ''
+      _liveCurriculumImageData = (c.live_curriculum_image && !String(c.live_curriculum_image).startsWith('http')) ? c.live_curriculum_image : null
+      renderLiveCurriculumPreview(c.live_curriculum_image || '')
       if (c.live_schedule) {
-        // datetime-local 형식으로 변환
-        try { document.getElementById('live-schedule').value = new Date(c.live_schedule).toISOString().slice(0,16) } catch {}
+        const raw = c.live_starts_at || c.live_schedule
+        try { document.getElementById('live-schedule').value = new Date(raw).toISOString().slice(0,16) } catch {}
       }
       onLiveTypeChange()
       document.getElementById('live-panel').scrollIntoView({ behavior: 'smooth' })
     }
+
+    let _liveCurriculumImageData = null
+
+    function renderLiveCurriculumPreview(src) {
+      const el = document.getElementById('live-curriculum-preview')
+      if (!el) return
+      if (!src) { el.innerHTML = ''; return }
+      el.innerHTML = `<img src="${src.replace(/"/g, '&quot;')}" alt="커리큘럼 미리보기" style="width:100%;max-width:360px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;border:1px solid #eee" />`
+    }
+
+    document.getElementById('live-curriculum-image-url')?.addEventListener('input', e => {
+      _liveCurriculumImageData = null
+      renderLiveCurriculumPreview(e.target.value.trim())
+    })
+    document.getElementById('live-curriculum-image-file')?.addEventListener('change', e => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      if (file.size > 900000) { alert('이미지는 900KB 이하로 업로드해주세요.'); e.target.value = ''; return }
+      const reader = new FileReader()
+      reader.onload = () => {
+        _liveCurriculumImageData = reader.result
+        document.getElementById('live-curriculum-image-url').value = ''
+        renderLiveCurriculumPreview(_liveCurriculumImageData)
+      }
+      reader.readAsDataURL(file)
+    })
 
     function onLiveTypeChange() {
       const isLive = document.getElementById('live-type').value === 'live'
@@ -1312,11 +1363,17 @@
       const scheduleVal = document.getElementById('live-schedule').value
       const meet_code = document.getElementById('live-meet-code').value.trim()
       const live_status = document.getElementById('live-status').value
+      const live_curriculum_text = document.getElementById('live-curriculum-text').value.trim()
+      const imageUrl = document.getElementById('live-curriculum-image-url').value.trim()
+      const live_curriculum_image = _liveCurriculumImageData || imageUrl || null
       await API.patch(`/admin/courses/${_selectedCourseId}`, {
         course_type,
         live_schedule: scheduleVal ? new Date(scheduleVal).toLocaleString('ko-KR') : null,
+        live_starts_at: scheduleVal ? new Date(scheduleVal).toISOString() : null,
         meet_code: meet_code || null,
         live_status,
+        live_curriculum_text: live_curriculum_text || null,
+        live_curriculum_image,
       })
       alert('설정이 저장되었습니다.')
       loadCourses()
@@ -2313,6 +2370,7 @@
         await API.post('/admin/live-courses', {
           title, category, description, thumbnail_icon,
           live_schedule: new Date(scheduleVal).toLocaleString('ko-KR'),
+          live_starts_at: new Date(scheduleVal).toISOString(),
           meet_code: meet_code || null,
         })
         alert('라이브 강의가 등록되었습니다.')

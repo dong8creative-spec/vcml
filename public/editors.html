@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>에디터즈 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     .editors-hero { background:linear-gradient(135deg,#1a1f3c,#3d4a8a); padding:56px 24px; text-align:center; color:#fff; }
@@ -51,12 +51,7 @@
   </style>
 </head>
 <body>
-<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥클래스</a>
-    <div class="header-right" id="header-right"></div>
-  </div>
-</header>
+<div data-site-header></div>
 
 <!-- 히어로 -->
 <div class="editors-hero">
@@ -84,6 +79,8 @@
 </div>
 
 <script src="/js/api.js"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=6"></script>
 <script>
 let allEditors = []
 
@@ -153,15 +150,6 @@ document.getElementById('filter-bar').addEventListener('click', e => {
     return String(s || '').split(',').map(x => x.trim()).includes(skill)
   }))
 })
-
-// 헤더 인증
-const user = API.user ? API.user() : null
-const hr = document.getElementById('header-right')
-if (hr) {
-  hr.innerHTML = user
-    ? `<a href="/mypage.html" class="nav-btn">${user.name}</a><a href="/editor-program.html" class="nav-btn nav-btn-primary">에디터즈 신청</a>`
-    : `<a href="/login.html" class="nav-btn">로그인</a><a href="/editor-program.html" class="nav-btn nav-btn-primary">에디터즈 신청</a>`
-}
 
 load()
 </script>

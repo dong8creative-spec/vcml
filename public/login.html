@@ -3,15 +3,11 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>로그인 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body class="login-body">
-  <header class="header header--logo-only">
-    <div class="header-inner">
-      <a href="/" class="logo">타닥클래스</a>
-    </div>
-  </header>
+  <div data-site-header="logo-only"></div>
   <div class="login-body-content">
   <div class="login-card">
     <div style="text-align:center;margin-bottom:20px">
@@ -151,14 +147,16 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/site-header.js?v=6"></script>
   <script>
     const params = new URLSearchParams(location.search)
     const nextUrl = params.get('next') || '/'
 
     function finishOAuthLogin(token, userJson, prefix) {
       try {
+        if (params.get('welcome') === '1') sessionStorage.setItem('tc_welcome', '1')
         API.login(token, JSON.parse(decodeURIComponent(userJson)))
-        location.replace(params.get('next') || (JSON.parse(decodeURIComponent(userJson)).role === 'admin' ? '/admin.html' : '/'))
+        location.replace(params.get('next') || (JSON.parse(decodeURIComponent(userJson)).can_access_admin ? '/admin.html' : '/'))
       } catch {
         toast(prefix + ' 로그인 처리 중 오류가 발생했습니다.', 'error')
       }
@@ -288,7 +286,7 @@
       try {
         const { token, user } = await API.post('/auth/login', { email, password })
         API.login(token, user)
-        location.href = params.get('next') || (user.role === 'admin' ? '/admin.html' : '/')
+        location.href = params.get('next') || (user.can_access_admin ? '/admin.html' : '/')
       } catch(err) {
         toast(err.message, 'error')
         btn.disabled = false; btn.textContent = '이메일 로그인'
@@ -371,6 +369,7 @@
           member_type: document.querySelector('input[name="member-type"]:checked')?.value,
         })
         API.login(token, user)
+        sessionStorage.setItem('tc_welcome', '1')
         location.href = params.get('next') || '/'
       } catch(err) {
         toast(err.message, 'error')

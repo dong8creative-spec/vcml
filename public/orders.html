@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>결제 내역 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/mypage.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/mypage.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     .orders-table { width: 100%; border-collapse: collapse; }
@@ -24,15 +24,7 @@
   </style>
 </head>
 <body>
-  <header class="header">
-    <div class="header-inner">
-      <a href="/" class="logo">타닥클래스</a>
-      <nav class="gnb">
-        <a href="/#courses">강의</a>
-      </nav>
-      <div class="header-right" id="nav-right"></div>
-    </div>
-  </header>
+  <div data-site-header></div>
 
   <div class="mypage-wrap">
     <aside class="my-sidebar">
@@ -52,6 +44,8 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/site-layout.js"></script>
+  <script src="/js/site-header.js?v=6"></script>
   <script>
     if (!API.isLoggedIn()) { location.href = '/login.html?next=/orders.html'; }
 

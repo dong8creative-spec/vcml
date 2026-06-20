@@ -5,6 +5,7 @@ const db = require('../db/schema')
 const userPayload = require('../db/schema').userPayload
 const { sendCouponIssuedMessage } = require('../utils/kakaoMessage')
 const { authMiddleware } = require('../middleware/auth')
+const { isAllowedAdmin } = require('../utils/adminAccess')
 
 const verificationCodes = new Map()
 
@@ -25,6 +26,10 @@ function encodeOAuthState(next) {
   return Buffer.from(JSON.stringify({ next: next || '/' })).toString('base64')
 }
 
+function clientUser(user) {
+  return { ...userPayload(user), can_access_admin: isAllowedAdmin(user) }
+}
+
 function signUserToken(user, { profileComplete } = {}) {
   return jwt.sign(
     {
@@ -40,9 +45,10 @@ function signUserToken(user, { profileComplete } = {}) {
   )
 }
 
-function redirectOAuthLogin(res, { token, user, nextUrl, paramPrefix = 'oauth' }) {
-  const userJson = encodeURIComponent(JSON.stringify(userPayload(user)))
-  res.redirect(`/login.html?${paramPrefix}_token=${token}&${paramPrefix}_user=${userJson}&next=${encodeURIComponent(nextUrl)}`)
+function redirectOAuthLogin(res, { token, user, nextUrl, paramPrefix = 'oauth', welcome = false }) {
+  const userJson = encodeURIComponent(JSON.stringify(clientUser(user)))
+  const welcomeQ = welcome ? '&welcome=1' : ''
+  res.redirect(`/login.html?${paramPrefix}_token=${token}&${paramPrefix}_user=${userJson}&next=${encodeURIComponent(nextUrl)}${welcomeQ}`)
 }
 
 const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID
@@ -212,8 +218,10 @@ router.get('/google/callback', async (req, res) => {
         user = await db.findUserById(user.id)
       }
     }
+    let isNew = false
     if (!user) {
       user = await db.createGoogleUser(googleId, googleEmail, googleName, googlePicture)
+      isNew = true
     } else {
       const profileUpdate = {}
       if (googlePicture && !user.profile_image) profileUpdate.profile_image = googlePicture
@@ -226,7 +234,7 @@ router.get('/google/callback', async (req, res) => {
     // 베타: Google 로그인은 온보딩 없이 바로 이용 (Google OAuth 범위 내 정보만 사용)
     const token = signUserToken(user, { profileComplete: true })
     const nextUrl = parseOAuthNext(state)
-    redirectOAuthLogin(res, { token, user, nextUrl, paramPrefix: 'google' })
+    redirectOAuthLogin(res, { token, user, nextUrl, paramPrefix: 'google', welcome: isNew })
   } catch (err) {
     console.error('Google 로그인 오류:', err)
     res.redirect('/login.html?google_error=' + encodeURIComponent('Google 로그인 중 오류가 발생했습니다.'))
@@ -258,7 +266,7 @@ router.post('/complete-profile', authMiddleware, async (req, res) => {
   }
 
   const token = signUserToken(user, { profileComplete: true })
-  res.json({ token, user: userPayload(user), coupon })
+  res.json({ token, user: clientUser(user), coupon })
 })
 
 router.post('/register', async (req, res) => {
@@ -276,7 +284,12 @@ router.post('/register', async (req, res) => {
   const user = await db.createUser(email, hash, name, member_type)
   verificationCodes.delete(email)
   const token = jwt.sign({ id: user.id, email, name, role: 'student', member_type }, process.env.JWT_SECRET, { expiresIn: '7d' })
-  res.json({ token, user: userPayload(user) })
+  res.json({ token, user: clientUser(user) })
+})
+
+router.get('/admin-access', authMiddleware, async (req, res) => {
+  const user = await db.findUserById(req.user.id)
+  res.json({ allowed: isAllowedAdmin(user) })
 })
 
 router.post('/login', async (req, res) => {
@@ -292,7 +305,7 @@ router.post('/login', async (req, res) => {
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   )
-  res.json({ token, user: userPayload(user) })
+  res.json({ token, user: clientUser(user) })
 })
 
 module.exports = router

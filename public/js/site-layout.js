@@ -11,11 +11,11 @@
       purchase_ticker: true,
     },
     nav: {
-      search: true,
       all: true,
       capcut: true,
       premiere: true,
       ai: true,
+      anticipation: true,
       editors: true,
       projects: true,
     },
