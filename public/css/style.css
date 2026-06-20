@@ -69,6 +69,20 @@ img { display: block; max-width: 100%; }
 .nav-btn-outline { border: 1.5px solid var(--border); }
 .nav-btn-primary { background: var(--primary); color: #fff !important; }
 .nav-btn-primary:hover { background: var(--primary-dark); }
+.nav-btn-google {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff !important;
+  color: #3c4043 !important;
+  border: 1px solid #dadce0;
+  font-weight: 500;
+}
+.nav-btn-google:hover {
+  background: #f8f9fa !important;
+  box-shadow: 0 1px 3px rgba(60,64,67,.15);
+}
+.nav-btn-google svg { flex-shrink: 0; }
 
 /* ── HERO ── */
 .hero { background: linear-gradient(135deg, var(--dark-bg) 0%, #1e3d40 60%, var(--primary-dark) 100%); padding: 64px 24px; }

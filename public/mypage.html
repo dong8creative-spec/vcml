@@ -133,6 +133,16 @@
     .featured-banner.active { background:linear-gradient(135deg,#f0f2ff,#e8ebff); border-color:#c5ceff; }
     .featured-banner h4 { font-size:16.8px; font-weight:800; margin-bottom:6px; color:#1a1a1a; }
     .featured-banner p { font-size:14.4px; color:#666; line-height:1.6; margin:0; }
+    .welcome-banner {
+      background: linear-gradient(135deg, #f0f7ff, #e8f4ff);
+      border: 1px solid #c5ddf8;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .welcome-banner h4 { font-size: 17px; font-weight: 800; margin-bottom: 8px; color: #0d3a66; }
+    .welcome-banner p { font-size: 14.4px; color: #1a4a7a; line-height: 1.65; margin: 0; }
+    .welcome-banner a { color: #0d3a66; font-weight: 700; text-decoration: underline; }
     .settings-divider { border:none; border-top:1px solid #eee; margin:24px 0; }
     .my-avatar.has-photo { background:#eee; padding:0; }
     .my-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
@@ -177,6 +187,14 @@
     <!-- 내 강의 -->
     <div class="my-section" id="sec-courses">
       <div class="section-title">내 강의</div>
+      <div class="welcome-banner" id="welcome-banner">
+        <h4><span id="welcome-name"></span>님, 가입해 주셔서 정말 감사합니다!</h4>
+        <p>
+          오픈 베타에 함께해 주셔서 반갑습니다. 타닥클래스는 <strong>6월 30일(월) 정식 오픈</strong>을 준비하고 있으며,
+          캡컷 PRO 강의 4종(초보자반·기초반·초고속 영상제작반·영상납품 수익화)을 순차적으로 제공할 예정입니다.
+          <a href="/notices.html">공지사항</a>에서 자세한 내용을 확인해 주세요.
+        </p>
+      </div>
       <div id="my-courses"><div class="spinner"></div></div>
     </div>
     <!-- 내 클라이언츠 (의뢰인) -->
@@ -292,6 +310,8 @@ function renderSidebar(profile) {
     <div class="my-email">${escapeHtml(p.email || '')}</div>
     ${bioBlock}
     ${roleBadges}`
+  const wn = document.getElementById('welcome-name')
+  if (wn) wn.textContent = p.name || '회원'
 }
 
 renderSidebar(user)
