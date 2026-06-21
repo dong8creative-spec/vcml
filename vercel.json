@@ -23,17 +23,17 @@
     {
       "src": "/js/(.*)\\.js",
       "dest": "/public/js/$1",
-      "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }
+      "headers": { "Cache-Control": "private, no-cache, no-store, must-revalidate" }
     },
     {
       "src": "/(.*\\.html)",
       "dest": "/public/$1",
-      "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }
+      "headers": { "Cache-Control": "private, no-cache, no-store, must-revalidate" }
     },
     {
       "src": "/",
       "dest": "/public/index.html",
-      "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }
+      "headers": { "Cache-Control": "private, no-cache, no-store, must-revalidate" }
     },
     {
       "src": "/favicon\\.ico",
