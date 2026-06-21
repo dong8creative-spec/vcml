@@ -21,7 +21,7 @@
       "headers": { "Cache-Control": "public, max-age=31536000, immutable" }
     },
     {
-      "src": "/js/(.*)\\.js",
+      "src": "/js/(.*)",
       "dest": "/public/js/$1",
       "headers": { "Cache-Control": "private, no-cache, no-store, must-revalidate" }
     },
