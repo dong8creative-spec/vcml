@@ -10,26 +10,6 @@
       "use": "@vercel/static"
     }
   ],
-  "headers": [
-    {
-      "source": "/(.*\\.html)",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
-      ]
-    },
-    {
-      "source": "/js/(.*)\\.js",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
-      ]
-    },
-    {
-      "source": "/css/(.*)\\.css",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
-      ]
-    }
-  ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -37,23 +17,27 @@
     },
     {
       "src": "/css/(.*)",
-      "dest": "/public/css/$1"
+      "dest": "/public/css/$1",
+      "headers": { "Cache-Control": "public, max-age=31536000, immutable" }
     },
     {
-      "src": "/js/(.*)",
-      "dest": "/public/js/$1"
+      "src": "/js/(.*)\\.js",
+      "dest": "/public/js/$1",
+      "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }
     },
     {
       "src": "/(.*\\.html)",
-      "dest": "server.js"
+      "dest": "/public/$1",
+      "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }
+    },
+    {
+      "src": "/",
+      "dest": "/public/index.html",
+      "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }
     },
     {
       "src": "/favicon\\.ico",
       "dest": "/public/favicon.ico"
-    },
-    {
-      "src": "/",
-      "dest": "/public/index.html"
     },
     {
       "src": "/(.*)",
