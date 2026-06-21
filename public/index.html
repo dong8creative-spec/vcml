@@ -3,44 +3,33 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타닥클래스 — 영상제작 전문 온라인 강의</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" />
+  <link rel="stylesheet" href="/css/style.css?v=10" />
   <link rel="stylesheet" href="/css/common.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
 
+<script>
+if (new URLSearchParams(location.search).get('preview') === '1') {
+  document.body.classList.add('home-preview')
+}
+</script>
+
 <div data-site-header></div>
 
 <!-- HERO -->
 <section class="hero" data-home-section="hero">
-  <div class="hero-inner hero-inner--solo" id="hero-inner">
+  <div class="hero-bg" id="hero-bg" aria-hidden="true"></div>
+  <div class="hero-overlay" aria-hidden="true"></div>
+  <div class="hero-inner" id="hero-inner">
     <div class="hero-text" id="hero-content">
       <div class="hero-badge" id="hero-badge"><i class="ti ti-star-filled"></i> 실무 중심 영상 강의</div>
       <h1 id="hero-title">현업 20년 전문가에게 배우는<br><em id="hero-title-em">영상 제작 실전 강의</em></h1>
       <p id="hero-subtitle">편집·모션·촬영·색보정 — 유튜브부터 방송까지<br>현장에서 실제로 쓰는 방식을 알려드립니다.</p>
       <div class="hero-btns" id="hero-btns">
         <a href="#all" class="btn-hero-primary" id="hero-primary-btn">전체 강의 보기</a>
-        <a href="#all" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-message-heart"></i> 강의 기대평 쓰고 20% 쿠폰</a>
+        <a href="#all" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-message-heart"></i> 강의 기대평 남기기</a>
       </div>
-    </div>
-    <div class="hero-media" id="hero-media" hidden>
-      <img id="hero-image" alt="" />
-    </div>
-  </div>
-</section>
-
-<!-- 강사 소개 -->
-<section class="instructors-section shelf-section" id="instructors" data-home-section="instructors">
-  <div class="container">
-    <div class="shelf-header">
-      <div>
-        <h2 class="shelf-title" id="instructors-section-title">강사 소개</h2>
-        <p class="shelf-sub" id="instructors-section-sub">현업에서 검증된 전문가가 직접 알려드립니다.</p>
-      </div>
-      <a href="/instructors.html" class="shelf-more">전체보기 <i class="ti ti-chevron-right"></i></a>
-    </div>
-    <div class="instructors-grid" id="instructors-grid">
-      <div class="spinner"></div>
     </div>
   </div>
 </section>
@@ -140,11 +129,13 @@
 <div data-chrome="footer"></div>
 
 <script src="/js/api.js"></script>
+<script src="/js/hero-button-actions.js"></script>
 <script src="/js/site-layout.js"></script>
-<script src="/js/site-header.js?v=7"></script>
+<script src="/js/site-header.js?v=9"></script>
 <script src="/js/site-chrome.js"></script>
 <script src="/js/auth-redirect.js"></script>
 <script src="/js/home-nav.js"></script>
+<script src="/js/course-enrollment-ui.js"></script>
 <script>
 // 강의 카드 HTML 생성
 function courseCard(c) {
@@ -161,13 +152,14 @@ function courseCard(c) {
     ? `<img src="${thumbImg.replace(/"/g, '&quot;')}" alt="" />`
     : `<i class="ti ${c.thumbnail_icon || 'ti-video'}"></i>`
   return `
-  <a href="/course.html?slug=${c.slug}" class="ccard">
+  <a href="/course.html?slug=${c.slug}" class="ccard${CourseEnrollmentUI.catalogCardPanelClass(c)}">
+    ${CourseEnrollmentUI.catalogCardPanelOpen(c)}
     <div class="ccard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
       ${isLive ? googleMeetBadgeHtml('badge-live') : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
       ${thumbInner}
     </div>
     <div class="ccard-body">
-      <div class="ccard-cat">${c.category || ''}</div>
+      ${CourseEnrollmentUI.catRowHtml(c, 'ccard-cat')}
       <div class="ccard-title">${c.title}</div>
       ${isLive
         ? `<div class="ccard-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule || '일정 공지 예정'}</div>`
@@ -175,8 +167,8 @@ function courseCard(c) {
             ? `<div class="ccard-rating"><span class="ccard-stars">${stars}</span><span class="ccard-rnum">${rating} (${reviewCount.toLocaleString()})</span></div>`
             : `<div class="ccard-rating"><span class="ccard-rnum" style="color:#aaa;font-size:13px">후기 없음</span></div>`)}
       <div class="ccard-price-row">
-        ${isLive
-          ? `<span class="price-free">무료</span><span class="live-badge ${c.live_status || 'upcoming'}">${liveStatusMap[c.live_status] || '신청 가능'}</span>`
+        ${isLive || (c.enrollment_has_limit && c.enrollment_full)
+          ? CourseEnrollmentUI.cardEnrollBtnHtml(c, liveStatusMap)
           : (isFree
               ? `<span class="price-free">무료</span>`
               : `${c.price !== c.sale_price ? `<span class="price-ori">₩${Number(c.price).toLocaleString()}</span>` : ''}
@@ -184,6 +176,7 @@ function courseCard(c) {
                  ${c.price !== c.sale_price ? `<span class="disc-badge">${Math.round((1 - c.sale_price / c.price) * 100)}%</span>` : ''}`)}
       </div>
     </div>
+    ${CourseEnrollmentUI.catalogCardPanelClose(c)}
   </a>`
 }
 
@@ -201,27 +194,25 @@ function freeCourseCard(c) {
     ? `<img src="${thumbImg.replace(/"/g, '&quot;')}" alt="" />`
     : `<i class="ti ${c.thumbnail_icon || 'ti-video'}"></i>`
   return `
-  <a href="/course.html?slug=${c.slug}" class="fcard">
+  <a href="/course.html?slug=${c.slug}" class="fcard${CourseEnrollmentUI.catalogCardPanelClass(c)}">
+    ${CourseEnrollmentUI.catalogCardPanelOpen(c)}
     <div class="fcard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
       ${isLive ? googleMeetBadgeHtml('badge-live') : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
       ${thumbInner}
     </div>
     <div class="fcard-body">
-      <div class="fcard-cat">${c.category || ''}</div>
+      ${CourseEnrollmentUI.catRowHtml(c, 'fcard-cat')}
       <div class="fcard-title">${c.title}</div>
       ${isLive
         ? `<div class="fcard-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule || '일정 공지 예정'}</div>`
         : (reviewCount > 0
             ? `<div class="fcard-rating"><span class="fcard-stars">${stars}</span><span class="fcard-rnum">${rating} (${reviewCount.toLocaleString()})</span></div>`
             : `<div class="fcard-rating"><span class="fcard-rnum fcard-rnum--muted">후기 없음</span></div>`)}
-      <div class="fcard-foot">
-        ${isLive
-          ? `<span class="price-free">무료</span><span class="live-badge ${c.live_status || 'upcoming'}">${liveStatusMap[c.live_status] || '신청 가능'}</span>`
-          : (isFree
-              ? `<span class="price-free">무료</span><span class="fcard-cta">강의 보기 <i class="ti ti-arrow-right"></i></span>`
-              : `<span class="price-sale">₩${Number(c.sale_price).toLocaleString()}</span>`)}
+      <div class="fcard-foot fcard-foot--btn">
+        ${CourseEnrollmentUI.cardEnrollBtnHtml(c, liveStatusMap)}
       </div>
     </div>
+    ${CourseEnrollmentUI.catalogCardPanelClose(c)}
   </a>`
 }
 
@@ -258,12 +249,12 @@ async function loadAll() {
       document.getElementById('shelf-free').innerHTML = [...free, ...live].slice(0, 8).map(freeCourseCard).join('') || '<p class="empty">무료 강의가 없습니다.</p>'
     }
     if (isHomeSectionEnabled('new_courses')) {
-      document.getElementById('shelf-new').innerHTML = all.slice().reverse().map(courseCard).join('') || '<p class="empty">강의가 없습니다.</p>'
+      const newest = [...published].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      document.getElementById('shelf-new').innerHTML = newest.map(courseCard).join('') || '<p class="empty">강의가 없습니다.</p>'
     }
 
     if (isHomeSectionEnabled('purchase_ticker')) loadPurchaseTicker()
     if (isHomeSectionEnabled('reviews')) loadLiveReviews()
-    if (isHomeSectionEnabled('instructors')) loadInstructors()
   } catch(e) {
     console.error(e)
   }
@@ -284,72 +275,37 @@ async function loadHero() {
     if (sub) sub.innerHTML = escHtml(h.subtitle).replace(/\n/g, '<br>')
     const primary = document.getElementById('hero-primary-btn')
     if (primary && h.primary_btn) {
-      primary.textContent = h.primary_btn.label
-      primary.href = h.primary_btn.href || '#all'
+      const resolved = typeof resolveHeroButton === 'function'
+        ? resolveHeroButton(h.primary_btn)
+        : h.primary_btn
+      primary.textContent = resolved.label || resolved.defaultLabel || '전체 강의 보기'
+      primary.href = resolved.href || '#all'
     }
     const secondary = document.getElementById('hero-secondary-btn')
     if (secondary && h.secondary_btn) {
-      secondary.href = h.secondary_btn.href || '#'
-      secondary.innerHTML = `${h.secondary_btn.show_icon !== false ? '<i class="ti ti-player-play-filled"></i> ' : ''}${escHtml(h.secondary_btn.label)}`
+      const resolved = typeof resolveHeroButton === 'function'
+        ? resolveHeroButton(h.secondary_btn)
+        : h.secondary_btn
+      secondary.href = resolved.href || '#'
+      secondary.innerHTML = `${h.secondary_btn.show_icon !== false ? '<i class="ti ti-player-play-filled"></i> ' : ''}${escHtml(resolved.label || resolved.defaultLabel || '')}`
     }
-    const heroInner = document.getElementById('hero-inner')
-    const heroMedia = document.getElementById('hero-media')
-    const heroImg = document.getElementById('hero-image')
-    if (heroInner && heroMedia && heroImg) {
+    const heroSection = document.querySelector('.hero')
+    const heroBg = document.getElementById('hero-bg')
+    if (heroSection && heroBg) {
       if (h.image) {
-        heroImg.src = h.image
-        heroImg.alt = h.image_alt || ''
-        heroMedia.hidden = false
-        heroInner.classList.remove('hero-inner--solo')
-        heroInner.classList.add('hero-inner--with-media')
+        const safeUrl = String(h.image).replace(/"/g, '%22').replace(/'/g, '%27')
+        heroBg.style.backgroundImage = `url("${safeUrl}")`
+        heroSection.classList.add('hero--has-image')
+        if (h.image_alt) heroSection.setAttribute('aria-label', h.image_alt)
+        else heroSection.removeAttribute('aria-label')
       } else {
-        heroImg.removeAttribute('src')
-        heroImg.alt = ''
-        heroMedia.hidden = true
-        heroInner.classList.add('hero-inner--solo')
-        heroInner.classList.remove('hero-inner--with-media')
+        heroBg.style.backgroundImage = ''
+        heroSection.classList.remove('hero--has-image')
+        heroSection.removeAttribute('aria-label')
       }
     }
   } catch (e) {
     console.error(e)
-  }
-}
-
-function instructorCard(i) {
-  const initial = (i.name || '?')[0]
-  const avatar = i.profile_image
-    ? `<div class="instructor-avatar"><img src="${escHtml(i.profile_image)}" alt="" /></div>`
-    : `<div class="instructor-avatar instructor-avatar--placeholder">${escHtml(initial)}</div>`
-  const tags = (i.tags || []).map(t => `<span>${escHtml(t)}</span>`).join('')
-  return `<article class="instructor-card">
-    ${avatar}
-    <div class="instructor-body">
-      <h3 class="instructor-name">${escHtml(i.name)}</h3>
-      ${i.role_title ? `<p class="instructor-role">${escHtml(i.role_title)}</p>` : ''}
-      ${tags ? `<div class="instructor-tags">${tags}</div>` : ''}
-      ${i.bio ? `<p class="instructor-bio">${escHtml(i.bio)}</p>` : ''}
-    </div>
-  </article>`
-}
-
-async function loadInstructors() {
-  const grid = document.getElementById('instructors-grid')
-  const titleEl = document.getElementById('instructors-section-title')
-  const subEl = document.getElementById('instructors-section-sub')
-  if (!grid) return
-  try {
-    const data = await API.get('/instructors')
-    if (titleEl && data.intro?.section_title) titleEl.textContent = data.intro.section_title
-    if (subEl && data.intro?.section_subtitle) subEl.textContent = data.intro.section_subtitle
-    const list = data.instructors || []
-    if (!list.length) {
-      grid.innerHTML = '<p class="empty">등록된 강사가 없습니다.</p>'
-      return
-    }
-    grid.innerHTML = list.slice(0, 3).map(instructorCard).join('')
-  } catch (e) {
-    console.error(e)
-    grid.innerHTML = '<p class="empty">강사 정보를 불러오지 못했습니다.</p>'
   }
 }
 

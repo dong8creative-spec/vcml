@@ -111,6 +111,15 @@
         background: #e8f0fe; color: #1a73e8; border: 1px solid #c5d9f7;
         cursor: default;
       }
+      .btn-meet--material-active {
+        background: #111; color: #fff; border: none;
+      }
+      .btn-meet--material-active:hover { background: #333; }
+      .btn-meet--material-waiting {
+        background: #f5f5f5; color: #888; border: 1px solid #e8e8e8;
+        cursor: default; font-weight: 600;
+      }
+      .btn-meet--material { margin: 8px 0; }
       .btn-meet__icon { display: inline-flex; align-items: center; flex-shrink: 0; line-height: 0; }
       .btn-meet .meet-google-icon { display: block; width: 18px; height: 18px; }
       .live-remind-overlay {
@@ -146,18 +155,21 @@
       .live-remind-dismiss:hover { color: #666; }
       .my-course-card--live { cursor: default; }
       .my-course-card--live:hover { transform: none; }
-      .mc-live-badge {
-        position: absolute; top: 8px; left: 8px;
-        background: #fff; color: #1a1a1a;
-        font-size: 24px; font-weight: 700;
-        padding: 8px 18px 8px 12px; border-radius: 12px;
-        display: inline-flex; align-items: center; gap: 10px;
-        box-shadow: 0 4px 16px rgba(0,0,0,.12);
-        border: 1px solid rgba(0,0,0,.08);
-        line-height: 1; white-space: nowrap;
+      .live-extra-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; width: 100%; }
+      .btn-live-extra {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        width: 100%; padding: 10px 12px; border-radius: 8px; font-size: 14px;
+        font-weight: 700; text-decoration: none; border: none; cursor: pointer;
+        box-sizing: border-box; transition: .15s;
       }
-      .mc-live-badge .meet-google-icon { display: block; width: 28px; height: 28px; flex-shrink: 0; }
-      .mc-live-badge .badge-meet-label { font-size: 22px; font-weight: 700; }
+      .btn-live-extra--replay { background: #111; color: #fff; }
+      .btn-live-extra--replay:hover { background: #333; }
+      .btn-live-extra--material { background: #f5f5f5; color: #111; border: 1px solid #ddd; }
+      .btn-live-extra--material:hover { background: #eee; }
+      .btn-live-extra--locked {
+        background: #f5f5f5; color: #999; border: 1px solid #e8e8e8;
+        cursor: default; font-weight: 600;
+      }
     `
     document.head.appendChild(style)
   }
@@ -215,6 +227,65 @@
     }
     const label = compact ? MEET_WAIT_LABEL : `Google Meet (${MEET_WAIT_LABEL})`
     return `<span class="btn-meet btn-meet--waiting">${icon} ${label}</span>`
+  }
+
+  function materialButtonHtml(course) {
+    const r = course?.live_resources
+    if (!r?.material_configured) {
+      return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 대기중</span>`
+    }
+    if (r.material_available) {
+      return `<button type="button" class="btn-meet btn-meet--material btn-meet--material-active" onclick="LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</button>`
+    }
+    const hint = r.live_lecture_date ? ` (${r.live_lecture_date} 당일)` : ' (강의 당일)'
+    return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 다운로드${hint}</span>`
+  }
+
+  function liveResourceButtonsHtml(course, { includeMaterial = true } = {}) {
+    const r = course?.live_resources
+    if (!r) return ''
+    const parts = []
+    if (r.replay_available) {
+      parts.push(`<button type="button" class="btn-live-extra btn-live-extra--replay" onclick="LiveSession.openReplay('${escapeHtml(course.id)}')"><i class="ti ti-player-play"></i> 다시보기</button>`)
+    }
+    if (includeMaterial && r.material_configured) {
+      if (r.material_available) {
+        parts.push(`<button type="button" class="btn-live-extra btn-live-extra--material" onclick="LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 자료 다운로드</button>`)
+      } else {
+        const hint = r.live_lecture_date ? ` (${r.live_lecture_date} 당일)` : ' (강의 당일)'
+        parts.push(`<span class="btn-live-extra btn-live-extra--material btn-live-extra--locked"><i class="ti ti-download"></i> 자료 다운로드${hint}</span>`)
+      }
+    }
+    if (!parts.length) return ''
+    return `<div class="live-extra-actions">${parts.join('')}</div>`
+  }
+
+  async function openReplay(courseId) {
+    if (!window.API?.isLoggedIn?.()) {
+      location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.search)
+      return
+    }
+    try {
+      const { url } = await API.get('/my/courses/' + courseId + '/live-replay')
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch (e) {
+      if (typeof toast === 'function') toast(e.message || '다시보기를 열 수 없습니다.', 'error')
+      else alert(e.message || '다시보기를 열 수 없습니다.')
+    }
+  }
+
+  async function openMaterial(courseId) {
+    if (!window.API?.isLoggedIn?.()) {
+      location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.search)
+      return
+    }
+    try {
+      const { url } = await API.get('/my/courses/' + courseId + '/live-material')
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch (e) {
+      if (typeof toast === 'function') toast(e.message || '자료를 다운로드할 수 없습니다.', 'error')
+      else alert(e.message || '자료를 다운로드할 수 없습니다.')
+    }
   }
 
   function showReminderPopup(course, start) {
@@ -284,6 +355,10 @@
     formatCountdown,
     canJoinMeet,
     meetButtonHtml,
+    materialButtonHtml,
+    liveResourceButtonsHtml,
+    openReplay,
+    openMaterial,
     startCountdownTicker,
   }
 

@@ -54,11 +54,47 @@
     }
     .my-role.editor { background:#f0f2ff; color:#5c67f2; border:1px solid #d8dcff; }
     .my-role.client { background:#fff4e8; color:#c96a1a; border:1px solid #f0dcc8; }
-    .my-nav { display:flex; flex-direction:column; gap:4px; text-align:center; }
-    .my-nav-item { display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border-radius:8px; font-size: 15.6px; font-weight:600; color:#555; cursor:pointer; transition:.15s; text-decoration:none; }
-    .my-nav-item:hover { background:#f5f6fa; color:#1a1a1a; }
-    .my-nav-item.active { background:#f0f2ff; color:#5c67f2; }
-    .my-nav-item i { font-size: 19.2px; }
+    .my-nav-panel,
+    .my-nav-logout-panel {
+      background: #f9fafb;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 6px;
+    }
+    .my-sidebar-menus {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+      text-align: left;
+    }
+    .my-nav { display:flex; flex-direction:column; gap:2px; }
+    .my-nav-item {
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:10px;
+      padding:11px 12px;
+      border-radius:8px;
+      font-size:15.6px;
+      font-weight:600;
+      color:#555;
+      cursor:pointer;
+      transition:.15s;
+      text-decoration:none;
+      text-align:left;
+      width:100%;
+      box-sizing:border-box;
+    }
+    .my-nav-item:hover { background:#fff; color:#1a1a1a; }
+    .my-nav-item.active { background:#fff; color:#5c67f2; box-shadow:0 0 0 1px #e8ecff; }
+    .my-nav-item i { font-size:19.2px; flex-shrink:0; width:20px; text-align:center; }
+    .my-nav-item--logout {
+      background:#e53935;
+      color:#fff !important;
+      justify-content:center;
+    }
+    .my-nav-item--logout:hover { background:#c62828; color:#fff !important; }
 
     /* 메인 */
     .my-main { min-width:0; }
@@ -74,6 +110,47 @@
     .mc-thumb.thumb-dark { background:linear-gradient(135deg,#111827,#1e2d4a); color:#fff; }
     .mc-thumb.thumb-light { background:linear-gradient(135deg,#f5f5f5,#eeeeee); color:#111111; }
     .mc-done { position:absolute; bottom:8px; right:8px; background:#333333; color:#fff; font-size: 12px; font-weight:700; padding:2px 8px; border-radius:10px; display:flex; align-items:center; gap:4px; }
+    /* 내 강의 썸네일 딱지 — 유형 뱃지는 축소, Meet는 2배·우측 */
+    .my-course-card .mc-thumb-badge {
+      transform: scale(0.25);
+      transform-origin: top left;
+      z-index: 2;
+    }
+    .my-course-card .mc-live-badge.mc-thumb-badge {
+      left: auto;
+      right: 8px;
+      top: 8px;
+      transform: scale(0.5);
+      transform-origin: top right;
+    }
+    .my-course-card .mc-type-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 16.8px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+    .my-course-card .mc-type-badge--vod { background: #f5f5f5; color: #555; border: 1px solid #e8e8e8; }
+    .my-course-card .mc-type-badge--stream { background: #ffebee; color: #e53935; border: 1px solid #ffcdd2; }
+    .my-course-card .mc-type-badge--offline { background: var(--badge-offline); color: #fff; }
+    .my-course-card .mc-promo-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 16.8px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      line-height: 1.1;
+      color: #fff;
+    }
+    .my-course-card .mc-promo-badge--new { background: var(--badge-new); }
+    .my-course-card .mc-promo-badge--best { background: var(--badge-best); }
+    .my-course-card .mc-promo-badge--free { background: var(--badge-free); }
     .mc-body { padding:12px; }
     .mc-cat { font-size: 13.2px; color:#111111; font-weight:700; margin-bottom:4px; }
     .mc-title { font-size: 15.6px; font-weight:700; color:#1a1a1a; margin-bottom:10px; line-height:1.4; }
@@ -125,15 +202,108 @@
     .qs-badge.accepted { background:#f5f5f5; color:#333333; }
     .qs-badge.rejected { background:#f0f0f0; color:#aaa; }
 
-    /* 쿠폰 */
-    .coupon-list { display:flex; flex-direction:column; gap:10px; }
-    .coupon-item { background:#fff; border:1px solid #eee; border-radius:10px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; }
-    .coupon-item.used { opacity:.5; }
-    .coupon-amount { font-size: 21.6px; font-weight:900; color:#111111; }
-    .coupon-reason { font-size: 14.4px; color:#aaa; margin-top:2px; }
-    .coupon-code { font-size: 15.6px; font-weight:700; font-family:monospace; color:#333; margin-bottom:4px; }
-    .coupon-status.available { color:#333333; font-size: 14.4px; font-weight:700; }
-    .coupon-status.used { color:#aaa; font-size: 14.4px; font-weight:700; }
+    /* 쿠폰 — 티켓형 */
+    .coupon-list { display:flex; flex-direction:column; gap:14px; }
+    .coupon-ticket {
+      --coupon-page-bg: #f5f6fa;
+      --coupon-stub-w: 152px;
+      --coupon-notch: 11px;
+      display:flex;
+      align-items:stretch;
+      position:relative;
+      border-radius:12px;
+      background:#fff;
+      border:1px solid #e3e6ec;
+      box-shadow:0 2px 10px rgba(0,0,0,.06);
+      overflow:hidden;
+    }
+    .coupon-ticket::before,
+    .coupon-ticket::after {
+      content:'';
+      position:absolute;
+      right:calc(var(--coupon-stub-w) - var(--coupon-notch));
+      width:calc(var(--coupon-notch) * 2);
+      height:calc(var(--coupon-notch) * 2);
+      border-radius:50%;
+      background:var(--coupon-page-bg);
+      z-index:2;
+    }
+    .coupon-ticket::before { top:calc(var(--coupon-notch) * -1); }
+    .coupon-ticket::after { bottom:calc(var(--coupon-notch) * -1); }
+    .coupon-ticket--used,
+    .coupon-ticket--expired { opacity:.52; filter:grayscale(.2); }
+    .coupon-ticket__main {
+      flex:1;
+      min-width:0;
+      padding:18px 20px 18px 24px;
+      position:relative;
+    }
+    .coupon-ticket__main::before {
+      content:'';
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      width:5px;
+      background:linear-gradient(180deg,#111 0%,#444 100%);
+    }
+    .coupon-ticket--used .coupon-ticket__main::before,
+    .coupon-ticket--expired .coupon-ticket__main::before {
+      background:linear-gradient(180deg,#bbb 0%,#ddd 100%);
+    }
+    .coupon-ticket__tear {
+      flex-shrink:0;
+      width:0;
+      border-left:2px dashed #d1d5db;
+      margin:16px 0;
+      position:relative;
+      z-index:1;
+    }
+    .coupon-ticket__stub {
+      flex-shrink:0;
+      width:var(--coupon-stub-w);
+      padding:16px 14px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      gap:6px;
+      background:linear-gradient(180deg,#fafafa 0%,#f3f4f6 100%);
+    }
+    .coupon-amount { font-size:22px; font-weight:900; color:#111; line-height:1.25; letter-spacing:-.02em; }
+    .coupon-reason { font-size:14px; color:#888; margin-top:6px; line-height:1.5; }
+    .coupon-until { font-size:12px; color:#888; margin-top:6px; }
+    .coupon-usage { font-size:12px; color:#666; margin-top:8px; line-height:1.5; }
+    .coupon-code {
+      font-size:13px;
+      font-weight:700;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+      color:#222;
+      letter-spacing:.06em;
+      word-break:break-all;
+    }
+    .coupon-status { font-size:13px; font-weight:700; }
+    .coupon-status.available { color:#111; }
+    .coupon-status.used,
+    .coupon-status.expired { color:#aaa; }
+    .coupon-ticket__stub .btn-settings-action { margin-top:4px; font-size:12px; padding:6px 10px; width:100%; max-width:130px; }
+    @media (max-width:560px) {
+      .coupon-ticket {
+        flex-direction:column;
+        --coupon-stub-w: 100%;
+      }
+      .coupon-ticket::before,
+      .coupon-ticket::after { display:none; }
+      .coupon-ticket__tear {
+        width:auto;
+        height:0;
+        border-left:none;
+        border-top:2px dashed #d1d5db;
+        margin:0 16px;
+      }
+      .coupon-ticket__stub { width:100%; border-radius:0 0 12px 12px; }
+    }
 
     /* 설정 */
     .settings-card { background:#fff; border:1px solid #eee; border-radius:12px; padding:20px; }
@@ -177,7 +347,15 @@
     .settings-divider { border:none; border-top:1px solid #eee; margin:24px 0; }
     .my-avatar.has-photo { background:#eee; padding:0; }
     .my-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-    .my-bio-preview { font-size:13.2px; color:#888; line-height:1.5; margin:8px 0 12px; word-break:break-word; text-align:center; }
+    .mc-review { padding: 0 16px 14px; border-top: 1px solid #f0f0f0; margin-top: -4px; }
+    .mc-review summary { cursor: pointer; font-size: 13.2px; font-weight: 700; color: #333; padding: 12px 0 8px; list-style: none; }
+    .mc-review summary::-webkit-details-marker { display: none; }
+    .mc-review-stars { display: flex; gap: 4px; margin-bottom: 8px; }
+    .mc-review-star { border: none; background: none; font-size: 22px; color: #ddd; cursor: pointer; padding: 0; line-height: 1; }
+    .mc-review-star.on { color: #f5a623; }
+    .mc-review textarea { width: 100%; min-height: 72px; border: 1px solid #eee; border-radius: 8px; padding: 10px; font-size: 13px; resize: vertical; box-sizing: border-box; }
+    .mc-review-btn { margin-top: 8px; width: 100%; padding: 10px; border: none; border-radius: 8px; background: #111; color: #fff; font-weight: 700; cursor: pointer; font-size: 13px; }
+    .mc-review-note { font-size: 11.5px; color: #888; margin-top: 6px; line-height: 1.45; }
 
     /* 공통 */
     .empty-state { text-align:center; padding:48px 0; color:#bbb; }
@@ -200,7 +378,10 @@
 <div class="mypage-wrap">
   <aside class="my-sidebar">
     <div id="my-profile"></div>
-    <nav class="my-nav" id="my-nav"></nav>
+    <div class="my-sidebar-menus">
+      <nav class="my-nav-panel" id="my-nav" aria-label="마이페이지 메뉴"></nav>
+      <div class="my-nav-logout-panel" id="my-nav-logout"></div>
+    </div>
   </aside>
   <main class="my-main" id="my-main">
     <!-- 내 강의 -->
@@ -352,10 +533,12 @@ const visibleTabs = tabs.filter(t => {
 
 document.getElementById('my-nav').innerHTML = visibleTabs.map(t => `
   <a class="my-nav-item" data-sec="${t.id}" href="#" onclick="showSection('${t.id}');return false">
-    <i class="ti ${t.icon}"></i> ${t.label}
-  </a>`).join('') +
-  `<a class="my-nav-item" href="#" onclick="API.logout();return false" style="color:#e63946;margin-top:8px">
-    <i class="ti ti-logout"></i> 로그아웃
+    <i class="ti ${t.icon}"></i><span>${t.label}</span>
+  </a>`).join('')
+
+document.getElementById('my-nav-logout').innerHTML = `
+  <a class="my-nav-item my-nav-item--logout" href="#" onclick="API.logout();return false">
+    <i class="ti ti-logout"></i><span>로그아웃</span>
   </a>`
 
 let currentSection = ''
@@ -534,11 +717,34 @@ const initTab = new URLSearchParams(location.search).get('tab') || visibleTabs[0
 showSection(typeof initTab === 'string' ? initTab : initTab.id)
 
 // ── 내 강의 ──
+function renderCourseThumbBadge(c) {
+  if (c.course_type === 'live') {
+    return `<span class="mc-live-badge mc-thumb-badge">${googleMeetIconHtml(28)}<span class="badge-meet-label">Meet</span></span>`
+  }
+  if (c.course_type === 'offline' || c.is_offline) {
+    return '<span class="mc-type-badge mc-thumb-badge mc-type-badge--offline">OFFLINE</span>'
+  }
+  if (c.course_type === 'streaming') {
+    return '<span class="mc-type-badge mc-thumb-badge mc-type-badge--stream">STREAM</span>'
+  }
+  const promo = String(c.badge || '').trim().toLowerCase()
+  if (promo === 'new' || promo === 'best' || promo === 'free') {
+    return `<span class="mc-promo-badge mc-thumb-badge mc-promo-badge--${promo}">${String(c.badge).toUpperCase()}</span>`
+  }
+  return '<span class="mc-type-badge mc-thumb-badge mc-type-badge--vod">VOD</span>'
+}
+
+function renderCourseThumbInner(c, defaultIcon = 'ti-video') {
+  const thumbImg = c.thumbnail_url || c.thumbnail_image
+  if (thumbImg) {
+    return `<img src="${escapeHtml(thumbImg)}" alt="" />`
+  }
+  return `<i class="ti ${escapeHtml(c.thumbnail_icon || defaultIcon)}"></i>`
+}
+
 function renderLiveCourseCard(c) {
   const LS = window.LiveSession
   const start = LS ? LS.parseLiveStart(c) : null
-  const startMs = start ? start.getTime() : ''
-  const ended = c.live_status === 'ended'
   const meetPayload = encodeURIComponent(JSON.stringify({
     meet_code: c.meet_code,
     live_status: c.live_status,
@@ -546,20 +752,23 @@ function renderLiveCourseCard(c) {
     live_schedule: c.live_schedule,
   }))
   const meetBtn = LS ? LS.meetButtonHtml(c, start, true) : ''
+  const materialBtn = LS ? LS.materialButtonHtml(c) : ''
+  const replayExtras = LS ? LS.liveResourceButtonsHtml(c, { includeMaterial: false }) : ''
   return `<div class="my-course-card my-course-card--live my-course-card--wrap">
     <a href="/course.html?slug=${escapeHtml(c.slug)}" class="mc-link">
     <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
-      ${googleMeetBadgeHtml('mc-live-badge')}
-      <i class="ti ${c.thumbnail_icon || 'ti-broadcast'}"></i>
+      ${renderCourseThumbBadge(c)}
+      ${renderCourseThumbInner(c, 'ti-broadcast')}
     </div>
     <div class="mc-body">
       <div class="mc-cat">${escapeHtml(c.category)}</div>
       <div class="mc-title">${escapeHtml(c.title)}</div>
       ${c.live_schedule ? `<div class="mc-meta" style="color:#555555;margin-bottom:4px"><i class="ti ti-calendar"></i> ${escapeHtml(c.live_schedule)}</div>` : ''}
-      <div class="live-countdown${ended ? ' is-ended' : ''}" data-live-countdown data-live-starts-at="${startMs}" data-live-ended="${ended ? '1' : '0'}">${ended ? '종료된 라이브' : (startMs ? '시작까지 계산 중…' : '일정 미정')}</div>
+      ${materialBtn}
       <div data-live-meet-wrap data-live-course="${meetPayload}">${meetBtn}</div>
     </div>
     </a>
+    ${replayExtras ? `<div class="mc-actions mc-actions--live">${replayExtras}</div>` : ''}
     ${renderCancelAction(c)}
   </div>`
 }
@@ -592,7 +801,7 @@ async function cancelEnrollment(courseId) {
   const refundLine = isRefund && preview.refund_amount > 0
     ? `\n예상 환불액: ₩${Number(preview.refund_amount).toLocaleString()}`
     : ''
-  const msg = `${courseTitle}\n\n${isRefund ? '환불' : '수강 신청 취소'}를 진행할까요?${refundLine}\n\n· 작성한 기대평이 삭제됩니다.\n· 발급된 기대평 20% 쿠폰이 회수됩니다.\n· 수강 진도가 초기화됩니다.`
+  const msg = `${courseTitle}\n\n${isRefund ? '환불' : '수강 신청 취소'}를 진행할까요?${refundLine}\n\n· 작성한 기대평이 삭제됩니다.\n· 발급된 기대평·후기 할인 쿠폰이 회수됩니다.\n· 수강 진도가 초기화됩니다.`
   if (!confirm(msg)) return
   try {
     const res = await API.post('/my/courses/' + courseId + '/cancel', {})
@@ -608,12 +817,64 @@ async function cancelEnrollment(courseId) {
   }
 }
 
+function renderCourseReviewBlock(c) {
+  if (c.course_type === 'live') return ''
+  const rating = c.my_review?.rating || 0
+  const content = escapeHtml(c.my_review?.content || '')
+  const stars = [1, 2, 3, 4, 5].map(n =>
+    `<button type="button" class="mc-review-star ${n <= rating ? 'on' : ''}" data-star="${n}" onclick="setReviewStar('${c.id}', ${n})">★</button>`
+  ).join('')
+  const doneNote = c.my_review?.rating === 5
+    ? '<div class="mc-review-note">5점 후기가 저장되었습니다.</div>'
+    : ''
+  return `<details class="mc-review">
+    <summary>${c.my_review ? '수강 후기 수정' : '수강 후기 작성'}</summary>
+    <div class="mc-review-stars" id="review-stars-${c.id}">${stars}</div>
+    <textarea id="review-content-${c.id}" placeholder="수강 후기를 남겨주세요.">${content}</textarea>
+    ${doneNote}
+    <button type="button" class="mc-review-btn" onclick="submitCourseReview('${c.id}')">후기 저장</button>
+  </details>`
+}
+
+const reviewRatings = {}
+
+function setReviewStar(courseId, rating) {
+  reviewRatings[courseId] = rating
+  const wrap = document.getElementById('review-stars-' + courseId)
+  if (!wrap) return
+  wrap.querySelectorAll('.mc-review-star').forEach(btn => {
+    btn.classList.toggle('on', Number(btn.dataset.star) <= rating)
+  })
+}
+
+async function submitCourseReview(courseId) {
+  const stars = document.getElementById('review-stars-' + courseId)
+  const active = stars?.querySelectorAll('.mc-review-star.on').length || reviewRatings[courseId] || 0
+  const rating = reviewRatings[courseId] || active
+  if (!rating) {
+    toast('별점을 선택해주세요.', 'error')
+    return
+  }
+  const content = document.getElementById('review-content-' + courseId)?.value?.trim() || ''
+  try {
+    const res = await API.post('/my/reviews', { course_id: courseId, rating, content })
+    toast('후기가 저장되었습니다.', 'success')
+    document.getElementById('my-courses').dataset.loaded = ''
+    loadCourses()
+  } catch (e) {
+    toast(e.message || '후기 저장 중 오류가 발생했습니다.', 'error')
+  }
+}
+
 async function loadCourses() {
   const el = document.getElementById('my-courses')
   if (el.dataset.loaded) return
   try {
     const courses = await API.get('/my/courses')
     el.dataset.loaded = '1'
+    courses.forEach(c => {
+      if (c.my_review?.rating) reviewRatings[c.id] = c.my_review.rating
+    })
     if (!courses.length) {
       el.innerHTML = `<div class="empty-state"><i class="ti ti-book-off"></i><p>아직 수강 중인 강의가 없습니다.<br><a href="/">강의 둘러보기 →</a></p></div>`
       return
@@ -624,7 +885,8 @@ async function loadCourses() {
       return `<div class="my-course-card my-course-card--wrap">
         <a href="/player.html?slug=${c.slug}&chapter=${c.last_chapter_id || 'first'}" class="mc-link">
         <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
-          <i class="ti ${c.thumbnail_icon}"></i>
+          ${renderCourseThumbBadge(c)}
+          ${renderCourseThumbInner(c)}
           ${pct === 100 ? '<div class="mc-done"><i class="ti ti-check"></i> 완료</div>' : ''}
         </div>
         <div class="mc-body">
@@ -637,6 +899,7 @@ async function loadCourses() {
           <div class="mc-meta">${c.completed_chapters}/${c.total_chapters}강 완료</div>
         </div>
         </a>
+        ${renderCourseReviewBlock(c)}
         ${renderCancelAction(c)}
       </div>`
     }).join('')}</div>`
@@ -802,46 +1065,53 @@ async function loadCoupons() {
       const isFeatured = c.reason === 'editor_featured' || c.coupon_type === 'editor_featured'
         || c.reason === 'editor_apply_featured' || c.coupon_type === 'editor_apply_featured'
       const isApplyFeatured = c.reason === 'editor_apply_featured'
-      const isPercent = c.discount_percent > 0 || c.reason === 'anticipation_review'
+      const isPercent = c.discount_percent > 0 || c.reason === 'anticipation_review' || c.reason === 'course_review_five_star'
       const amountHtml = isFeatured
         ? (c.amount > 0
           ? `<div class="coupon-amount">${c.amount.toLocaleString()}원 · 상위노출 7일</div>`
           : '<div class="coupon-amount">상위노출 7일</div>')
         : isPercent
-        ? `<div class="coupon-amount">${c.discount_percent || 20}% 할인</div>`
+        ? `<div class="coupon-amount">${c.discount_percent || 10}% 할인</div>`
         : `<div class="coupon-amount">${(c.amount || 0).toLocaleString()}원 할인</div>`
       const reasonHtml = isApplyFeatured
         ? '에디터즈 승격 혜택 · 명단 상단 노출'
         : isFeatured
         ? '에디터즈 승인 혜택 · 명단 상단 노출'
         : c.reason === 'marketing_consent' ? '마케팅 동의 혜택'
-        : c.reason === 'anticipation_review' ? '강의 기대평 작성 혜택 · 최초 강의 결제 20% 할인'
+        : c.reason === 'anticipation_review' ? '강의 기대평 작성 혜택 · 최초 강의 결제 10% 할인'
+        : c.reason === 'course_review_five_star' ? '수강 후기 5점 혜택 · 기대평 쿠폰과 중첩 10% 할인'
         : c.reason === 'client_course_reward' ? '의뢰인 수강 혜택 · 3만원 이상 의뢰 시 1만원 할인' : c.reason
       const useBtn = isFeatured && c.status === 'available'
-        ? `<button type="button" class="btn-settings-action" style="margin-top:6px" onclick="useFeaturedCoupon('${c.id}')">상위노출 적용</button>`
+        ? `<button type="button" class="btn-settings-action" onclick="useFeaturedCoupon('${c.id}')">상위노출 적용</button>`
         : ''
-      const untilNote = c.reason === 'anticipation_review' && c.expires_at
-        ? `<div style="font-size:12px;color:#888;margin-top:4px">~ ${c.expires_at.slice(0, 10)}까지</div>`
+      const statusClass = c.status === 'available'
+        ? 'coupon-ticket--available'
+        : c.status === 'expired'
+          ? 'coupon-ticket--expired'
+          : 'coupon-ticket--used'
+      const untilNote = (c.reason === 'anticipation_review' || c.reason === 'course_review_five_star') && c.expires_at
+        ? `<div class="coupon-until">~ ${c.expires_at.slice(0, 10)}까지</div>`
         : isFeatured && c.featured_until
-        ? `<div style="font-size:12px;color:#888;margin-top:4px">~ ${c.featured_until.slice(0,10)}</div>`
+        ? `<div class="coupon-until">~ ${c.featured_until.slice(0,10)}</div>`
         : ''
       const statusLabel = c.status === 'available' ? '사용 가능' : c.status === 'expired' ? '만료됨' : '사용 완료'
       const usageHtml = c.status === 'used' && c.usage
-        ? `<div style="font-size:12px;color:#666;margin-top:6px">
+        ? `<div class="coupon-usage">
             ${c.usage.context_label}${c.usage.target_title ? ` · ${c.usage.target_title}` : ''}
             ${c.usage.detail ? `<br><span style="color:#999">${c.usage.detail}</span>` : ''}
             ${c.usage.used_at ? `<br><span style="color:#999">${c.usage.used_at.slice(0, 10)} 사용</span>` : ''}
           </div>`
         : ''
       return `
-      <div class="coupon-item ${c.status === 'used' || c.status === 'expired' ? 'used' : ''}">
-        <div>
+      <div class="coupon-ticket ${statusClass}">
+        <div class="coupon-ticket__main">
           ${amountHtml}
           <div class="coupon-reason">${reasonHtml}</div>
           ${untilNote}
           ${usageHtml}
         </div>
-        <div style="text-align:right">
+        <div class="coupon-ticket__tear" aria-hidden="true"></div>
+        <div class="coupon-ticket__stub">
           <div class="coupon-code">${c.code}</div>
           <div class="coupon-status ${c.status}">${statusLabel}</div>
           ${useBtn}
@@ -881,5 +1151,6 @@ async function withdrawMarketing() {
   }
 }
 </script>
+<script src="/js/coupon-guide-popup.js"></script>
 </body>
 </html>

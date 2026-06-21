@@ -71,7 +71,7 @@
         if (!preview.allowed) { toast(preview.message || '환불할 수 없습니다.', 'error'); return }
         const title = preview.course_title || '강의'
         const refundLine = preview.refund_amount > 0 ? `\n예상 환불액: ₩${Number(preview.refund_amount).toLocaleString()}` : ''
-        if (!confirm(`${title}\n\n환불을 진행할까요?${refundLine}\n\n· 작성한 기대평이 삭제됩니다.\n· 발급된 기대평 20% 쿠폰이 회수됩니다.`)) return
+        if (!confirm(`${title}\n\n환불을 진행할까요?${refundLine}\n\n· 작성한 기대평이 삭제됩니다.\n· 발급된 기대평·후기 할인 쿠폰이 회수됩니다.`)) return
         const res = await API.post('/my/courses/' + courseId + '/cancel', {})
         toast(`환불 처리되었습니다.${res.refund_amount ? ' ₩' + Number(res.refund_amount).toLocaleString() : ''}`, 'success')
         load()

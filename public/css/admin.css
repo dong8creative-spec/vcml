@@ -423,6 +423,36 @@ button, input, select, textarea { font-family: inherit; cursor: pointer; }
   background: #fff; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.18);
   max-height: 92vh; overflow-y: auto; width: 520px; max-width: 95vw;
 }
+.modal--enrollments {
+  width: min(980px, 96vw);
+  max-width: 96vw;
+}
+.modal-body--flush { padding: 0; }
+.enrollments-summary {
+  padding: 16px 24px 0;
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.enrollments-table-wrap {
+  padding: 16px 24px 24px;
+  max-height: 62vh;
+  overflow: auto;
+}
+.enrollments-table {
+  min-width: 860px;
+  table-layout: auto;
+}
+.enrollments-table th,
+.enrollments-table td {
+  white-space: nowrap;
+}
+.enrollments-col-name { min-width: 88px; }
+.enrollments-col-email { min-width: 220px; white-space: normal; word-break: break-all; }
+.enrollments-col-phone { min-width: 128px; }
+.enrollments-col-type { min-width: 72px; }
+.enrollments-col-pay { min-width: 96px; }
+.enrollments-col-date { min-width: 140px; }
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 22px 16px; border-bottom: 1px solid var(--border);

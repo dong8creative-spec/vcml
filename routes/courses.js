@@ -27,6 +27,9 @@ function anticipationError(res, result) {
   if (result.error === 'course_not_found') {
     return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
   }
+  if (result.error === 'enrollment_full') {
+    return res.status(409).json({ error: '모집 정원이 마감되었습니다.', code: 'enrollment_full' })
+  }
   return null
 }
 
@@ -42,7 +45,8 @@ async function optionalUser(req) {
 
 router.get('/', async (req, res) => {
   const courses = await db.getCourses()
-  res.json(courses)
+  const enriched = await Promise.all(courses.map(c => db.enrichCourseEnrollment(c)))
+  res.json(enriched)
 })
 
 router.get('/:slug/anticipation-reviews', async (req, res) => {
@@ -93,6 +97,9 @@ router.post('/:slug/apply-with-anticipation', authMiddleware, async (req, res) =
 
     if (isLive && course.live_status === 'ended') {
       return res.status(400).json({ error: '종료된 강의입니다.' })
+    }
+    if (!await db.isEnrolled(req.user.id, course.id) && await db.isCourseEnrollmentFullAsync(course)) {
+      return res.status(409).json({ error: '모집 정원이 마감되었습니다.', code: 'enrollment_full' })
     }
 
     const shouldEnroll = isLive || isFreeVod
@@ -146,7 +153,17 @@ router.get('/:slug', async (req, res) => {
         }
       }
     }
-    res.json({ ...course, chapters, enrolled, my_anticipation })
+    const payload = {
+      ...(await db.enrichCourseEnrollment(db.stripLiveResourceUrls(course))),
+      chapters,
+      enrolled,
+      my_anticipation,
+    }
+    if (!enrolled) delete payload.live_chat_url
+    if (enrolled && course.course_type === 'live') {
+      payload.live_resources = db.getLiveResourceAccess(course, { enrolled: true })
+    }
+    res.json(payload)
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -174,9 +191,12 @@ router.post('/:slug/enroll-free', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: '기대평 작성 후 신청할 수 있습니다.', code: 'anticipation_required' })
   }
   if (await db.isEnrolled(req.user.id, course.id)) return res.status(409).json({ error: '이미 신청한 강의입니다.' })
+  if (await db.isCourseEnrollmentFullAsync(course)) {
+    return res.status(409).json({ error: '모집 정원이 마감되었습니다.', code: 'enrollment_full' })
+  }
   await db.enroll(req.user.id, course.id)
   await db.createOrder(req.user.id, course.id, 0, '무료', 0)
-  await db.updateCourse(course.id, { student_count: (course.student_count || 0) + 1 })
+  await db.syncCourseStudentCount(course.id)
   res.json({ success: true })
 })
 
@@ -194,9 +214,12 @@ router.post('/:slug/enroll-free-vod', authMiddleware, async (req, res) => {
   if (await db.isEnrolled(req.user.id, course.id)) {
     return res.json({ success: true, already: true })
   }
+  if (await db.isCourseEnrollmentFullAsync(course)) {
+    return res.status(409).json({ error: '모집 정원이 마감되었습니다.', code: 'enrollment_full' })
+  }
   await db.enroll(req.user.id, course.id)
   await db.createOrder(req.user.id, course.id, 0, '무료', 0)
-  await db.updateCourse(course.id, { student_count: (course.student_count || 0) + 1 })
+  await db.syncCourseStudentCount(course.id)
   res.json({ success: true })
 })
 

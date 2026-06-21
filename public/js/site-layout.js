@@ -1,10 +1,11 @@
-/** 홈페이지 섹션·상단 메뉴·문구·카테고리 노출 설정 (어드민에서 관리) */
+/** 홈페이지 섹션·상단 메뉴·문구·카테고리 노출 설정 (어드민에서 관리)
+ *  기본값은 lib/homepage-layout-defaults.js 와 동기화 */
 (function () {
   const DEFAULT = {
     sections: {
       hero: true,
       categories: true,
-      instructors: true,
+      instructors: false,
       all_courses: true,
       free_courses: true,
       new_courses: true,
@@ -13,10 +14,10 @@
     },
     nav: {
       all: true,
+      instructors: true,
       capcut: true,
       premiere: true,
       ai: true,
-      anticipation: true,
       editors: true,
       projects: true,
     },
@@ -103,9 +104,21 @@
     })
   }
 
+  function applyNavLabels() {
+    const categories = layout?.categories || DEFAULT.categories
+    const catLabels = Object.fromEntries(categories.map(c => [c.key, c.label]))
+    document.querySelectorAll('[data-gnb-cat]').forEach(el => {
+      const label = catLabels[el.dataset.gnbCat]
+      if (label) el.textContent = label
+    })
+  }
+
   function applySiteBrand() {
     const brand = layout?.site?.brand_name || DEFAULT.site.brand_name
     document.querySelectorAll('.logo').forEach(el => {
+      if (brand) el.textContent = brand
+    })
+    document.querySelectorAll('[data-site-brand]').forEach(el => {
       if (brand) el.textContent = brand
     })
   }
@@ -113,6 +126,7 @@
   window.applyHomepageLayout = async function () {
     await fetchLayout()
     applyNav()
+    applyNavLabels()
     applySections()
     applyCopy()
     applyCategories()

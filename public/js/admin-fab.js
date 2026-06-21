@@ -21,7 +21,7 @@
   }
 
   function mountFab() {
-    if (document.getElementById(FAB_ID) || isAdminPage()) return
+    if (document.getElementById(FAB_ID) || skipAdminFab()) return
     const iconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 9-8 9s-8-4-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg>'
     const link = document.createElement('a')
     link.id = FAB_ID
@@ -32,8 +32,15 @@
     document.body.appendChild(link)
   }
 
+  function skipAdminFab() {
+    if (isAdminPage()) return true
+    if (window.self !== window.top) return true
+    if (new URLSearchParams(location.search).get('preview') === '1') return true
+    return false
+  }
+
   async function syncAdminFab() {
-    if (isAdminPage()) {
+    if (skipAdminFab()) {
       removeFab()
       return
     }

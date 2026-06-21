@@ -249,6 +249,22 @@
                 <input type="text" id="live-meet-code" placeholder="meet.google.com/ 뒤 코드 입력" />
               </div>
               <div class="form-group">
+                <label>수강생 단톡방 링크 <span style="font-size: 13.2px;color:#aaa">(신청자만 입장 버튼 노출)</span></label>
+                <input type="url" id="live-chat-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>다시보기 링크 <span style="font-size: 13.2px;color:#aaa">신청자 무제한 시청</span></label>
+                <input type="url" id="live-replay-url" placeholder="https://..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>강의 자료 다운로드 링크 <span style="font-size: 13.2px;color:#aaa">강의 당일(1일)만 다운로드 가능</span></label>
+                <input type="url" id="live-material-url" placeholder="https://..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label id="live-enrollment-limit-label">모집 정원 <span style="font-size: 13.2px;color:#aaa">0 = 제한 없음</span></label>
+                <input type="number" id="live-enrollment-limit" min="0" step="1" placeholder="0" />
+              </div>
+              <div class="form-group">
                 <label>라이브 상태</label>
                 <select id="live-status">
                   <option value="upcoming">예정</option>
@@ -268,19 +284,6 @@
               </div>
             </div>
             <button class="btn-save" onclick="saveLiveSettings()">설정 저장</button>
-          </div>
-          <div id="live-send-section" style="display:none">
-            <div style="background:#f5f5f5;border:0.5px solid #ffcc80;border-radius:10px;padding:16px;margin-bottom:16px">
-              <div style="font-size: 15.6px;font-weight:600;color:#555555;margin-bottom:8px">📣 알림톡 발송</div>
-              <div style="font-size: 15.6px;color:#bf360c;line-height:1.7">
-                수강 등록된 학생 전원에게<br>Google Meet 참여 코드를<br>카카오 알림톡으로 발송합니다.<br>
-                <span style="font-size: 13.2px;color:#aaa">(전화번호 미등록 수강생 제외)</span>
-              </div>
-            </div>
-            <button class="btn-primary-sm" style="width:100%;padding:12px;font-size: 16.8px" onclick="sendLiveInvite()">
-              <i class="ti ti-brand-kakao"></i> 수강생에게 Meet 코드 발송
-            </button>
-            <div id="send-result" style="margin-top:12px;font-size: 15.6px;display:none"></div>
           </div>
         </div>
       </div>
@@ -316,9 +319,15 @@
             </div>
             <div class="two-col" style="gap:12px">
               <div class="form-group">
+                <label>모집 정원 <span style="font-size:12px;color:#888">0 = 제한 없음</span></label>
+                <input type="number" id="cm-enrollment-limit" min="0" step="1" placeholder="0" />
+              </div>
+              <div class="form-group">
                 <label>노출 순서</label>
                 <input type="number" id="cm-sort-order" min="1" />
               </div>
+            </div>
+            <div class="two-col" style="gap:12px">
               <div class="form-group">
                 <label>뱃지</label>
                 <select id="cm-badge">
@@ -362,10 +371,40 @@
                 </select>
               </div>
             </div>
+            <div class="form-group">
+              <label>히어로 갤러리 <span style="font-size:12px;color:#888">썸네일 포함 최대 10장 · 2초 간격 (추가 이미지 최대 9장)</span></label>
+              <div id="cm-hero-gallery-list" style="display:flex;flex-direction:column;gap:8px"></div>
+              <button type="button" class="btn-sm" id="cm-hero-gallery-add" style="margin-top:8px;width:fit-content">+ 이미지 추가</button>
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn-sm" onclick="document.getElementById('course-modal').style.display='none'">취소</button>
             <button class="btn-primary-sm" id="cm-save-btn">저장</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="course-enrollments-modal" style="display:none">
+        <div class="modal modal--enrollments">
+          <div class="modal-header">
+            <div class="modal-title" id="course-enrollments-title">수강생 목록</div>
+            <button class="modal-close" onclick="document.getElementById('course-enrollments-modal').style.display='none'">✕</button>
+          </div>
+          <div class="modal-body modal-body--flush">
+            <p id="course-enrollments-summary" class="enrollments-summary"></p>
+            <div class="enrollments-table-wrap">
+              <table class="data-table enrollments-table">
+                <thead>
+                  <tr><th>이름</th><th>이메일</th><th>연락처</th><th>유형</th><th>결제</th><th>신청일</th></tr>
+                </thead>
+                <tbody id="course-enrollments-body">
+                  <tr><td colspan="6" style="text-align:center;color:#888;padding:24px">로딩 중...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-sm" onclick="document.getElementById('course-enrollments-modal').style.display='none'">닫기</button>
           </div>
         </div>
       </div>
@@ -529,16 +568,16 @@
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
           <div class="card-title">강사 소개란 문구</div>
-          <p class="sec-sub" style="margin:0">홈 섹션 제목·부제, 강사 소개 페이지 상단 문구입니다.</p>
+          <p class="sec-sub" style="margin:0">강사 소개 페이지 제목·부제 및 상단 문구입니다. (상단 메뉴 → /instructors.html)</p>
         </div>
         <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:12px">
           <div class="two-col" style="gap:12px">
             <div class="form-group">
-              <label>섹션 제목 (홈·강사 페이지)</label>
+              <label>페이지 제목</label>
               <input type="text" id="instructors-intro-title" />
             </div>
             <div class="form-group">
-              <label>섹션 부제 (홈만)</label>
+              <label>페이지 부제</label>
               <input type="text" id="instructors-intro-subtitle" />
             </div>
           </div>
@@ -948,14 +987,118 @@
     <!-- ===== SECTION: HOMEPAGE ===== -->
     <section class="section" id="sec-homepage">
       <div style="display:flex;flex-direction:column;gap:20px">
-        <div class="card" style="background:linear-gradient(135deg,#f8f8f8,#fff);border:1px solid var(--border)">
-          <div class="card-header">
+        <div class="card" id="hp-preview-card">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
             <div class="card-title">홈페이지 미리보기</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button type="button" class="btn-sm" id="hp-preview-refresh">새로고침</button>
+              <a href="/index.html" target="_blank" rel="noopener noreferrer" class="btn-sm" style="display:inline-flex;align-items:center;text-decoration:none">새 탭에서 열기</a>
+            </div>
           </div>
-          <p style="padding:0 20px 16px;font-size:14px;color:#666;line-height:1.6;margin:0">
-            메인 페이지(<a href="/index.html" target="_blank">index.html</a>)에 노출되는 Hero·카테고리·강의 선반·실시간 후기 등을 한곳에서 관리합니다.
-            Hero·푸터 상세 편집은 <a href="#" onclick="showSection('settings');return false">사이트 설정</a>에서 할 수 있습니다.
+          <p style="padding:0 20px 12px;font-size:14px;color:#666;line-height:1.6;margin:0">
+            Hero·섹션·GNB·카테고리·강의·후기를 <strong>이 화면</strong>에서 편집합니다. 저장하면 아래 미리보기가 자동으로 갱신됩니다. 푸터는 <a href="#" onclick="showSection('settings');return false">사이트 설정</a>에서 편집합니다.
           </p>
+          <div style="padding:0 20px 20px">
+            <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.03)">
+              <iframe id="hp-preview-frame" title="홈페이지 미리보기" src="/index.html?preview=1" style="width:100%;height:min(720px,70vh);min-height:480px;border:0;display:block;background:#fff" loading="lazy"></iframe>
+            </div>
+            <p id="hp-preview-status" style="font-size:13px;color:#888;margin:10px 0 0;line-height:1.5"></p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">메인 히어로 영역</div>
+            <p class="sec-sub" style="margin:0">홈 상단 배너의 이미지·뱃지·제목·부제·버튼 문구를 수정합니다.</p>
+          </div>
+          <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:12px">
+            <div class="layout-toggle-group-title">히어로 배경 이미지 <span style="font-size:12px;color:#888;font-weight:400">섹션 전체 배경 · 텍스트 위에 표시</span></div>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+              <div style="flex:0 0 280px">
+                <div id="hero-img-preview" style="width:280px;aspect-ratio:21/9;border-radius:12px;border:1.5px dashed #ddd;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:14px;overflow:hidden;background-size:cover;background-position:center">
+                  미리보기 없음
+                </div>
+                <p style="font-size:12px;color:#666;margin-top:8px;line-height:1.6">
+                  <strong>권장 크기</strong> 1920×720px (가로:세로 ≈ 8:3)<br>
+                  최소 1200×500px · JPG/PNG/WebP · 2MB 이하<br>
+                  업로드 시 긴 변 1200px로 자동 축소 · <code style="font-size:11px">cover</code>로 화면에 맞게 잘림<br>
+                  텍스트가 왼쪽에 올라가므로 인물·포인트는 <strong>오른쪽·중앙</strong>에 두세요.
+                </p>
+              </div>
+              <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:12px">
+                <div class="form-group">
+                  <label>이미지 파일</label>
+                  <input type="file" id="hero-img-input" accept="image/jpeg,image/png,image/webp" />
+                </div>
+                <div class="form-group">
+                  <label>이미지 URL (선택)</label>
+                  <input type="url" id="hero-img-url" placeholder="https://..." maxlength="500" />
+                  <p style="font-size:12px;color:#888;margin-top:6px">파일 업로드 대신 외부 URL을 쓸 수 있습니다. 저장 시 URL이 우선 적용됩니다.</p>
+                </div>
+                <div class="form-group">
+                  <label>대체 텍스트 (alt)</label>
+                  <input type="text" id="hero-img-alt" maxlength="120" placeholder="예: 타닥클래스 메인 비주얼" />
+                </div>
+                <button type="button" class="btn-sm" id="hero-img-remove" style="display:none;width:fit-content">이미지 제거</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>뱃지 텍스트</label>
+              <input type="text" id="hero-badge-text" maxlength="60" />
+            </div>
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>제목 (첫 줄)</label>
+                <input type="text" id="hero-title" maxlength="120" />
+              </div>
+              <div class="form-group">
+                <label>제목 강조 (두 번째 줄)</label>
+                <input type="text" id="hero-title-emphasis" maxlength="120" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>부제 (줄바꿈 가능)</label>
+              <textarea id="hero-subtitle" rows="3" maxlength="400" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
+            </div>
+            <div class="layout-toggle-group-title" style="margin-top:4px">주요 버튼</div>
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>연결 기능</label>
+                <select id="hero-primary-action"></select>
+              </div>
+              <div class="form-group">
+                <label>버튼 문구 <span style="font-size:12px;color:#888">비우면 기본 문구</span></label>
+                <input type="text" id="hero-primary-label" maxlength="40" />
+              </div>
+            </div>
+            <div class="form-group" id="hero-primary-custom-wrap" style="display:none">
+              <label>직접 URL (주요 버튼)</label>
+              <input type="text" id="hero-primary-href-custom" maxlength="300" placeholder="/course.html?slug=... 또는 https://..." />
+            </div>
+            <div class="layout-toggle-group-title">보조 버튼</div>
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>연결 기능</label>
+                <select id="hero-secondary-action"></select>
+              </div>
+              <div class="form-group">
+                <label>버튼 문구 <span style="font-size:12px;color:#888">비우면 기본 문구</span></label>
+                <input type="text" id="hero-secondary-label" maxlength="40" />
+              </div>
+            </div>
+            <div class="form-group" id="hero-secondary-custom-wrap" style="display:none">
+              <label>직접 URL (보조 버튼)</label>
+              <input type="text" id="hero-secondary-href-custom" maxlength="300" placeholder="/course.html?slug=... 또는 https://..." />
+            </div>
+            <label class="layout-toggle" style="max-width:280px">
+              <input type="checkbox" id="hero-secondary-icon" checked />
+              <span>보조 버튼에 재생 아이콘 표시</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:12px;padding-top:8px;border-top:1px solid var(--border)">
+              <button type="button" class="btn-save" id="hero-save-btn">히어로 저장</button>
+              <span id="hero-save-status" style="font-size:14px;color:#888"></span>
+            </div>
+          </div>
         </div>
 
         <div class="card">
@@ -967,6 +1110,10 @@
             <div class="form-group">
               <label>사이트명 (헤더 로고)</label>
               <input type="text" id="hp-brand-name" maxlength="40" />
+              <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:13px;color:#666;cursor:pointer">
+                <input type="checkbox" id="hp-brand-sync-footer" checked />
+                푸터 브랜드명도 함께 변경
+              </label>
             </div>
             <div class="layout-toggle-group-title">섹션 제목 · 부제</div>
             <div class="two-col" style="gap:12px">
@@ -989,7 +1136,6 @@
                 <div class="layout-toggle-list" id="hp-section-toggles">
                   <label class="layout-toggle"><input type="checkbox" data-hp-section="hero" checked /><span>히어로</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-section="categories" checked /><span>카테고리 타일</span></label>
-                  <label class="layout-toggle"><input type="checkbox" data-hp-section="instructors" checked /><span>강사 소개</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-section="all_courses" checked /><span>전체 강의</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-section="free_courses" checked /><span>무료 강의</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-section="new_courses" checked /><span>최신 강의</span></label>
@@ -1001,6 +1147,7 @@
                 <div class="layout-toggle-group-title" style="font-size:12px">상단 메뉴</div>
                 <div class="layout-toggle-list" id="hp-nav-toggles">
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="all" checked /><span>전체강의</span></label>
+                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="instructors" checked /><span>강사 소개</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="capcut" checked /><span>캡컷 PRO</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="premiere" checked /><span>프리미어 PRO</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="ai" checked /><span>AI 콘텐츠</span></label>
@@ -1019,7 +1166,7 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title">카테고리 타일</div>
-            <p class="sec-sub" style="margin:0">메인 상단 3분할 카테고리 버튼의 라벨·배경 이미지를 설정합니다.</p>
+            <p class="sec-sub" style="margin:0">메인 상단 3분할 타일과 GNB(캡컷·프리미어·AI) 메뉴 라벨·배경 이미지를 설정합니다.</p>
           </div>
           <div id="hp-categories-editor" style="padding:0 20px 20px;display:flex;flex-direction:column;gap:16px"></div>
         </div>
@@ -1027,7 +1174,7 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title">홈 노출 강의</div>
-            <p class="sec-sub" style="margin:0">공개 강의의 순서·썸네일·공개 여부를 관리합니다. 순서 숫자가 작을수록 앞에 노출됩니다.</p>
+            <p class="sec-sub" style="margin:0">공개 강의의 순서·썸네일·공개 여부를 관리합니다. 전체 그리드는 순서 숫자(작을수록 앞), 최신 강의 선반은 등록일 기준입니다.</p>
           </div>
           <div style="padding:0 20px 12px;display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" class="btn-sm" onclick="showSection('courses')">강의 목록 전체 보기</button>
@@ -1055,7 +1202,7 @@
           <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
             <div>
               <div class="card-title">실시간 후기 (홈 노출)</div>
-              <p class="sec-sub" style="margin:0">메인 「실시간 후기」 섹션에 표시되는 플랫폼 후기입니다. (수강 후기와 별도)</p>
+              <p class="sec-sub" style="margin:0">메인 「실시간 후기」 섹션에 표시되는 플랫폼 후기입니다. 유형별로 로그인 상태에 따라 노출됩니다.</p>
             </div>
             <button type="button" class="btn-primary-sm" id="hp-pr-add">+ 후기 추가</button>
           </div>
@@ -1064,6 +1211,7 @@
               <thead>
                 <tr>
                   <th>유형</th>
+                  <th>노출 대상</th>
                   <th>작성자</th>
                   <th>내용</th>
                   <th>별점</th>
@@ -1071,7 +1219,7 @@
                   <th>관리</th>
                 </tr>
               </thead>
-              <tbody id="hp-platform-reviews-tbody"><tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr></tbody>
+              <tbody id="hp-platform-reviews-tbody"><tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1079,7 +1227,7 @@
         <div class="card">
           <div class="card-header"><div class="card-title">기타 홈 콘텐츠</div></div>
           <div style="padding:0 20px 20px;display:flex;gap:8px;flex-wrap:wrap">
-            <button type="button" class="btn-sm" onclick="showSection('settings')">히어로 · 푸터 설정</button>
+            <button type="button" class="btn-sm" onclick="showSection('settings')">푸터 (사이트 설정)</button>
             <button type="button" class="btn-sm" onclick="showSection('instructors')">강사 관리</button>
             <button type="button" class="btn-sm" onclick="showSection('notices')">공지사항</button>
             <button type="button" class="btn-sm" onclick="showSection('faqs')">FAQ</button>
@@ -1124,143 +1272,70 @@
     <!-- ===== SECTION: SETTINGS ===== -->
     <section class="section" id="sec-settings">
       <div class="two-col">
-        <div class="card">
-          <div class="card-header"><div class="card-title">사이트 기본 정보</div></div>
+        <div class="card" style="opacity:0.72">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div class="card-title">사이트 기본 정보</div>
+            <span style="font-size:12px;color:#888;background:#f0f0f0;padding:4px 10px;border-radius:6px;white-space:nowrap">준비 중</span>
+          </div>
+          <p style="padding:0 20px 12px;font-size:13px;color:#888;line-height:1.6;margin:0">헤더 사이트명은 <a href="#" onclick="showSection('homepage');return false">홈페이지 관리</a>에서 수정합니다.</p>
           <div class="form-group">
             <label>사이트명</label>
-            <input type="text" value="타닥클래스" />
+            <input type="text" value="타닥클래스" disabled />
           </div>
           <div class="form-group">
             <label>슬로건</label>
-            <input type="text" value="핵심만 배우고 바로 씁니다." />
+            <input type="text" value="핵심만 배우고 바로 씁니다." disabled />
           </div>
           <div class="form-group">
             <label>대표 이메일</label>
-            <input type="text" value="hello@tadakclass.com" />
+            <input type="text" value="hello@tadakclass.com" disabled />
           </div>
           <div class="form-group">
             <label>고객센터 전화</label>
-            <input type="text" value="02-0000-0000" />
+            <input type="text" value="02-0000-0000" disabled />
           </div>
-          <button class="btn-save">저장</button>
+          <button class="btn-save" type="button" disabled title="준비 중">저장</button>
         </div>
 
-        <div class="card">
-          <div class="card-header"><div class="card-title">결제 설정</div></div>
+        <div class="card" style="opacity:0.72">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div class="card-title">결제 설정</div>
+            <span style="font-size:12px;color:#888;background:#f0f0f0;padding:4px 10px;border-radius:6px;white-space:nowrap">준비 중</span>
+          </div>
+          <p style="padding:0 20px 12px;font-size:13px;color:#888;line-height:1.6;margin:0">결제 연동 전까지는 .env 또는 서버 설정으로 관리합니다.</p>
           <div class="form-group">
             <label>KG이니시스 상점 ID</label>
-            <input type="text" placeholder="INIpay 상점 ID 입력" />
+            <input type="text" placeholder="INIpay 상점 ID 입력" disabled />
           </div>
           <div class="form-group">
             <label>네이버페이 파트너 ID</label>
-            <input type="text" placeholder="네이버페이 파트너 ID" />
+            <input type="text" placeholder="네이버페이 파트너 ID" disabled />
           </div>
           <div class="form-group">
             <label>카카오페이 CID</label>
-            <input type="text" placeholder="카카오페이 CID" />
+            <input type="text" placeholder="카카오페이 CID" disabled />
           </div>
           <div class="form-group">
             <label>운영 모드</label>
-            <select>
+            <select disabled>
               <option>테스트 (sandbox)</option>
               <option>실운영 (production)</option>
             </select>
           </div>
-          <button class="btn-save">저장</button>
-        </div>
-
-        <div class="card" style="grid-column:1/-1">
-          <div class="card-header">
-            <div class="card-title">메인 히어로 영역</div>
-            <p class="sec-sub" style="margin:0">홈 상단 배너의 이미지·뱃지·제목·부제·버튼 문구를 수정합니다.</p>
-          </div>
-          <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:12px">
-            <div class="layout-toggle-group-title">히어로 이미지</div>
-            <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
-              <div style="flex:0 0 280px">
-                <div id="hero-img-preview" style="width:280px;aspect-ratio:4/3;border-radius:12px;border:1.5px dashed #ddd;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:14px;overflow:hidden;background-size:cover;background-position:center">
-                  미리보기 없음
-                </div>
-                <p style="font-size:13px;color:#aaa;margin-top:8px">JPG, PNG, WebP · 2MB 이하 · 가로 1200px 권장</p>
-              </div>
-              <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:12px">
-                <div class="form-group">
-                  <label>이미지 파일</label>
-                  <input type="file" id="hero-img-input" accept="image/jpeg,image/png,image/webp" />
-                </div>
-                <div class="form-group">
-                  <label>이미지 URL (선택)</label>
-                  <input type="url" id="hero-img-url" placeholder="https://..." maxlength="500" />
-                  <p style="font-size:12px;color:#888;margin-top:6px">파일 업로드 대신 외부 URL을 쓸 수 있습니다. 저장 시 URL이 우선 적용됩니다.</p>
-                </div>
-                <div class="form-group">
-                  <label>대체 텍스트 (alt)</label>
-                  <input type="text" id="hero-img-alt" maxlength="120" placeholder="예: 타닥클래스 메인 비주얼" />
-                </div>
-                <button type="button" class="btn-sm" id="hero-img-remove" style="display:none;width:fit-content">이미지 제거</button>
-              </div>
-            </div>
-            <div class="form-group">
-              <label>뱃지 텍스트</label>
-              <input type="text" id="hero-badge-text" maxlength="60" />
-            </div>
-            <div class="two-col" style="gap:12px">
-              <div class="form-group">
-                <label>제목 (첫 줄)</label>
-                <input type="text" id="hero-title" maxlength="120" />
-              </div>
-              <div class="form-group">
-                <label>제목 강조 (두 번째 줄)</label>
-                <input type="text" id="hero-title-emphasis" maxlength="120" />
-              </div>
-            </div>
-            <div class="form-group">
-              <label>부제 (줄바꿈 가능)</label>
-              <textarea id="hero-subtitle" rows="3" maxlength="400" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
-            </div>
-            <div class="layout-toggle-group-title" style="margin-top:4px">주요 버튼</div>
-            <div class="two-col" style="gap:12px">
-              <div class="form-group">
-                <label>버튼 문구</label>
-                <input type="text" id="hero-primary-label" maxlength="40" />
-              </div>
-              <div class="form-group">
-                <label>링크 (예: #all, /course.html?slug=...)</label>
-                <input type="text" id="hero-primary-href" maxlength="300" />
-              </div>
-            </div>
-            <div class="layout-toggle-group-title">보조 버튼</div>
-            <div class="two-col" style="gap:12px">
-              <div class="form-group">
-                <label>버튼 문구</label>
-                <input type="text" id="hero-secondary-label" maxlength="40" />
-              </div>
-              <div class="form-group">
-                <label>링크</label>
-                <input type="text" id="hero-secondary-href" maxlength="300" />
-              </div>
-            </div>
-            <label class="layout-toggle" style="max-width:280px">
-              <input type="checkbox" id="hero-secondary-icon" checked />
-              <span>보조 버튼에 재생 아이콘 표시</span>
-            </label>
-            <div style="display:flex;align-items:center;gap:12px;padding-top:8px;border-top:1px solid var(--border)">
-              <button type="button" class="btn-save" id="hero-save-btn">히어로 저장</button>
-              <span id="hero-save-status" style="font-size:14px;color:#888"></span>
-            </div>
-          </div>
+          <button class="btn-save" type="button" disabled title="준비 중">저장</button>
         </div>
 
         <div class="card" style="grid-column:1/-1">
           <div class="card-header">
             <div class="card-title">푸터 설정</div>
-            <p class="sec-sub" style="margin:0">사이트 하단 푸터 링크·문구를 수정합니다. 저장 즉시 전체 페이지에 반영됩니다.</p>
+            <p class="sec-sub" style="margin:0">사이트 하단 푸터 링크·문구를 수정합니다. 헤더 로고명은 <a href="#" onclick="showSection('homepage');return false">홈페이지 관리</a>의 사이트명이 기본입니다.</p>
           </div>
           <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:16px">
             <div class="two-col" style="gap:12px">
               <div class="form-group">
-                <label>브랜드명 (로고 텍스트)</label>
+                <label>브랜드명 (푸터 로고)</label>
                 <input type="text" id="footer-brand-name" />
+                <p style="font-size:12px;color:#888;margin-top:6px;line-height:1.5">홈페이지 관리에서 「푸터 브랜드명도 함께 변경」을 켜면 자동으로 맞춰집니다.</p>
               </div>
               <div class="form-group">
                 <label>슬로건</label>
@@ -1293,44 +1368,6 @@
               <button type="button" class="btn-save" id="footer-save-btn">푸터 저장</button>
               <span id="footer-save-status" style="font-size:14px;color:#888"></span>
             </div>
-          </div>
-        </div>
-
-        <div class="card" style="grid-column:1/-1">
-          <div class="card-header">
-            <div class="card-title">메인 페이지 노출 설정</div>
-            <p class="sec-sub" style="margin:0">홈페이지 섹션과 상단 메뉴(GNB)의 노출 여부를 설정합니다.</p>
-          </div>
-          <div class="layout-toggle-grid">
-            <div>
-              <div class="layout-toggle-group-title">홈 섹션</div>
-              <div class="layout-toggle-list" id="home-section-toggles">
-                <label class="layout-toggle"><input type="checkbox" data-layout-section="hero" checked /><span>히어로</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-section="categories" checked /><span>카테고리 타일</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-section="instructors" checked /><span>강사 소개</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-section="all_courses" checked /><span>전체 강의</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-section="free_courses" checked /><span>무료 강의</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-section="new_courses" checked /><span>최신 강의</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-section="reviews" checked /><span>실시간 후기</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-section="purchase_ticker" checked /><span>구매현황 LIVE</span></label>
-              </div>
-            </div>
-            <div>
-              <div class="layout-toggle-group-title">상단 메뉴 (GNB)</div>
-              <div class="layout-toggle-list" id="home-nav-toggles">
-                <label class="layout-toggle"><input type="checkbox" data-layout-nav="search" checked /><span>검색창</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-nav="all" checked /><span>전체강의</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-nav="capcut" checked /><span>캡컷 PRO</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-nav="premiere" checked /><span>프리미어 PRO</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-nav="ai" checked /><span>AI 콘텐츠 제작</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-nav="editors" checked /><span>에디터즈</span></label>
-                <label class="layout-toggle"><input type="checkbox" data-layout-nav="projects" checked /><span>클라이언츠</span></label>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-            <button type="button" class="btn-save" id="homepage-layout-save">노출 설정 저장</button>
-            <span id="homepage-layout-status" style="font-size:14px;color:#888"></span>
           </div>
         </div>
 
@@ -1372,7 +1409,7 @@
         <button onclick="closeLiveCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
       </div>
       <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#555555;margin-bottom:20px;line-height:1.6">
-        라이브 강의는 <b>무료</b>로 제공됩니다.<br>수강 신청한 학생에게 카카오 알림톡으로 Google Meet 코드를 발송합니다.
+        라이브 강의는 <b>무료</b>로 제공됩니다.<br>신청 수강생에게는 단톡방 링크·Google Meet로 안내합니다.
       </div>
       <div class="form-group">
         <label>강의 제목 <span style="color:#111111">*</span></label>
@@ -1420,6 +1457,7 @@
   </div>
 
   <script src="js/api.js"></script>
+  <script src="js/hero-button-actions.js"></script>
   <script>
     // ── 헬퍼 ──
     function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
@@ -1542,9 +1580,10 @@
           <td>${esc(c.category || '-')}</td>
           <td>${typeBadge}</td>
           <td>${(c.sale_price||0).toLocaleString()}원</td>
-          <td>${c.student_count||0}</td>
+          <td>${(c.enrollment_count ?? c.student_count ?? 0)}</td>
           <td><span class="badge-status ${c.is_published?'paid':'refund'}">${c.is_published?'공개':'비공개'}</span></td>
           <td style="display:flex;gap:4px;flex-wrap:wrap">
+            <button class="btn-sm" onclick="openCourseEnrollmentsModal('${c.id}')">수강생</button>
             <button class="btn-sm" onclick="openCourseModal('${c.id}')">편집</button>
             <button class="btn-sm" onclick="togglePublish('${c.id}', ${c.is_published})">${c.is_published?'비공개':'공개'}</button>
             <button class="btn-sm" onclick="openLivePanel('${c.id}')">라이브</button>
@@ -1556,6 +1595,63 @@
     async function loadCourses() {
       _courses = await API.get('/admin/courses')
       renderCoursesTable()
+    }
+
+    const memberTypeLabel = { student: '수강생', client: '의뢰인' }
+
+    function formatAdminDate(value) {
+      if (!value) return '-'
+      const s = String(value)
+      return s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s
+    }
+
+    function formatEnrollmentPayment(row) {
+      const amountLabel = row.paid_amount > 0 ? `${Number(row.paid_amount).toLocaleString()}원` : '무료'
+      const method = String(row.method || '').trim()
+      if (!method || method === '-' || (row.paid_amount <= 0 && method === '무료')) return amountLabel
+      if (row.paid_amount > 0 && method === amountLabel) return amountLabel
+      return `${amountLabel} · ${method}`
+    }
+
+    async function openCourseEnrollmentsModal(courseId) {
+      const c = _courses.find(x => String(x.id) === String(courseId))
+      const modal = document.getElementById('course-enrollments-modal')
+      const titleEl = document.getElementById('course-enrollments-title')
+      const summaryEl = document.getElementById('course-enrollments-summary')
+      const tbody = document.getElementById('course-enrollments-body')
+      if (!modal || !tbody) return
+      titleEl.textContent = '수강생 목록 — ' + (c?.title || '')
+      summaryEl.textContent = '신청자 정보를 불러오는 중...'
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">로딩 중...</td></tr>'
+      modal.style.display = 'flex'
+      try {
+        const data = await API.get('/admin/courses/' + courseId + '/enrollments')
+        const rows = data.enrollments || []
+        summaryEl.textContent = `현재 수강 중 ${data.count || rows.length}명 · 취소·환불 완료 신청자는 제외됩니다.`
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">신청한 수강생이 없습니다.</td></tr>'
+          return
+        }
+        tbody.innerHTML = rows.map(row => `
+          <tr>
+            <td class="enrollments-col-name">${esc(row.name)}</td>
+            <td class="td-sub enrollments-col-email">${esc(row.email)}</td>
+            <td class="enrollments-col-phone">${esc(row.phone || '-')}</td>
+            <td class="enrollments-col-type">${esc(memberTypeLabel[row.member_type] || row.member_type || '-')}</td>
+            <td class="enrollments-col-pay">${esc(formatEnrollmentPayment(row))}</td>
+            <td class="td-date enrollments-col-date">${formatAdminDate(row.enrolled_at || row.paid_at)}</td>
+          </tr>
+        `).join('')
+        const course = _courses.find(x => String(x.id) === String(courseId))
+        if (course) {
+          course.student_count = data.count
+          course.enrollment_count = data.count
+          renderCoursesTable()
+        }
+      } catch (e) {
+        summaryEl.textContent = '목록을 불러오지 못했습니다.'
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#c00;padding:24px">${esc(e.message || '오류')}</td></tr>`
+      }
     }
 
     document.getElementById('course-filter-tabs')?.addEventListener('click', e => {
@@ -1592,6 +1688,7 @@
       document.getElementById('cm-price').value = c.price ?? 0
       document.getElementById('cm-sale-price').value = c.sale_price ?? 0
       document.getElementById('cm-sort-order').value = c.sort_order ?? ''
+      document.getElementById('cm-enrollment-limit').value = c.enrollment_limit ?? 0
       document.getElementById('cm-badge').value = c.badge || ''
       document.getElementById('cm-published').value = c.is_published ? '1' : '0'
       document.getElementById('cm-thumb-icon').value = c.thumbnail_icon || 'ti-video'
@@ -1599,6 +1696,8 @@
       _cmThumbPending = undefined
       document.getElementById('cm-thumb-url').value = (c.thumbnail_url && String(c.thumbnail_url).startsWith('http')) ? c.thumbnail_url : ''
       renderCmThumbPreview(c.thumbnail_url || null)
+      _cmHeroGallery = Array.isArray(c.hero_gallery) ? [...c.hero_gallery] : []
+      renderCmHeroGalleryList()
       document.getElementById('course-modal').style.display = 'flex'
     }
 
@@ -1612,6 +1711,7 @@
         price: parseInt(document.getElementById('cm-price').value, 10) || 0,
         sale_price: parseInt(document.getElementById('cm-sale-price').value, 10) || 0,
         sort_order: parseInt(document.getElementById('cm-sort-order').value, 10) || undefined,
+        enrollment_limit: Math.max(0, parseInt(document.getElementById('cm-enrollment-limit').value, 10) || 0),
         badge: badge || null,
         is_published: parseInt(document.getElementById('cm-published').value, 10),
         thumbnail_icon: document.getElementById('cm-thumb-icon').value.trim() || 'ti-video',
@@ -1620,15 +1720,20 @@
       const thumbUrl = document.getElementById('cm-thumb-url').value.trim()
       if (_cmThumbPending !== undefined) payload.thumbnail_url = _cmThumbPending
       else if (thumbUrl) payload.thumbnail_url = thumbUrl
+      payload.hero_gallery = _cmHeroGallery.map(s => String(s || '').trim()).filter(Boolean).slice(0, 9)
       await API.patch('/admin/courses/' + _courseEditId, payload)
       document.getElementById('course-modal').style.display = 'none'
       loadCourses()
-      if (document.getElementById('sec-homepage')?.classList.contains('active')) loadHpCourses()
+      if (document.getElementById('sec-homepage')?.classList.contains('active')) {
+        loadHpCourses()
+        reloadHomePreview()
+      }
     })
 
     async function togglePublish(id, current) {
       await API.patch(`/admin/courses/${id}`, { is_published: current ? 0 : 1 });
       loadCourses();
+      if (document.getElementById('sec-homepage')?.classList.contains('active')) reloadHomePreview()
     }
 
     function openLivePanel(courseId) {
@@ -1639,7 +1744,15 @@
       document.getElementById('live-panel-title').textContent = c.title
       document.getElementById('live-type').value = c.course_type || 'recorded'
       document.getElementById('live-meet-code').value = c.meet_code || ''
+      document.getElementById('live-chat-url').value = c.live_chat_url || ''
+      document.getElementById('live-replay-url').value = c.live_replay_url || ''
+      document.getElementById('live-material-url').value = c.live_material_url || ''
       document.getElementById('live-status').value = c.live_status || 'upcoming'
+      document.getElementById('live-enrollment-limit').value = c.enrollment_limit ?? 0
+      const limitLabel = document.getElementById('live-enrollment-limit-label')
+      if (limitLabel) {
+        limitLabel.innerHTML = `모집 정원 <span style="font-size: 13.2px;color:#aaa">0 = 제한 없음 · 현재 ${c.enrollment_count ?? c.student_count ?? 0}명</span>`
+      }
       document.getElementById('live-curriculum-text').value = c.live_curriculum_text || ''
       document.getElementById('live-curriculum-image-url').value = (c.live_curriculum_image || '').startsWith('http') ? (c.live_curriculum_image || '') : ''
       _liveCurriculumImageData = (c.live_curriculum_image && !String(c.live_curriculum_image).startsWith('http')) ? c.live_curriculum_image : null
@@ -1692,8 +1805,6 @@
     function onLiveTypeChange() {
       const isLive = document.getElementById('live-type').value === 'live'
       document.getElementById('live-fields').style.display = isLive ? '' : 'none'
-      document.getElementById('live-send-section').style.display = isLive ? '' : 'none'
-      document.getElementById('send-result').style.display = 'none'
     }
 
     async function saveLiveSettings() {
@@ -1701,44 +1812,28 @@
       const course_type = document.getElementById('live-type').value
       const scheduleVal = document.getElementById('live-schedule').value
       const meet_code = document.getElementById('live-meet-code').value.trim()
+      const live_chat_url = document.getElementById('live-chat-url').value.trim()
+      const live_replay_url = document.getElementById('live-replay-url').value.trim()
+      const live_material_url = document.getElementById('live-material-url').value.trim()
       const live_status = document.getElementById('live-status').value
       const live_curriculum_text = document.getElementById('live-curriculum-text').value.trim()
       const imageUrl = document.getElementById('live-curriculum-image-url').value.trim()
       const live_curriculum_image = _liveCurriculumImageData || imageUrl || null
       await API.patch(`/admin/courses/${_selectedCourseId}`, {
         course_type,
+        enrollment_limit: Math.max(0, parseInt(document.getElementById('live-enrollment-limit').value, 10) || 0),
         live_schedule: scheduleVal ? new Date(scheduleVal).toLocaleString('ko-KR') : null,
         live_starts_at: scheduleVal ? new Date(scheduleVal).toISOString() : null,
         meet_code: meet_code || null,
+        live_chat_url: live_chat_url || null,
+        live_replay_url: live_replay_url || null,
+        live_material_url: live_material_url || null,
         live_status,
         live_curriculum_text: live_curriculum_text || null,
         live_curriculum_image,
       })
       alert('설정이 저장되었습니다.')
       loadCourses()
-    }
-
-    async function sendLiveInvite() {
-      if (!_selectedCourseId) return
-      const meetCode = document.getElementById('live-meet-code').value.trim()
-      const schedule = document.getElementById('live-schedule').value
-      if (!meetCode) { alert('Google Meet 코드를 입력해주세요.'); return }
-      if (!schedule) { alert('라이브 일정을 입력해주세요.'); return }
-      if (!confirm('수강생 전원에게 카카오 알림톡을 발송할까요?')) return
-
-      // 저장 후 발송
-      await saveLiveSettings()
-      const result = await API.post(`/admin/courses/${_selectedCourseId}/send-live-invite`, {})
-      const el = document.getElementById('send-result')
-      el.style.display = 'block'
-      el.innerHTML = `
-        <div style="background:#f0f0f0;border-radius:8px;padding:12px;line-height:1.8">
-          ✅ 발송 완료<br>
-          발송 성공: <b>${result.sent}명</b><br>
-          전화번호 미등록(스킵): <b>${result.skipped}명</b>
-          ${result.skipped_users?.length ? `<br><span style="font-size: 13.2px;color:#aaa">${result.skipped_users.join(', ')}</span>` : ''}
-          ${result.failed ? `<br>발송 실패: <b style="color:#111111">${result.failed}명</b>` : ''}
-        </div>`
     }
 
     async function loadStudents() {
@@ -2049,13 +2144,12 @@
       } catch (e) {
         if (statusEl) statusEl.textContent = '설정을 불러오지 못했습니다.'
       }
-      await loadHomepageLayoutSettings()
       await loadFooterSettings()
-      await loadHeroSettings()
     }
 
     let _heroPendingImage = undefined
     let _cmThumbPending = undefined
+    let _cmHeroGallery = []
     let _hpLayout = null
     let _hpCategoryImages = {}
     let _hpPrEditId = null
@@ -2098,6 +2192,67 @@
         reader.readAsDataURL(file)
       })
     }
+
+    function renderCmHeroGalleryList() {
+      const list = document.getElementById('cm-hero-gallery-list')
+      const addBtn = document.getElementById('cm-hero-gallery-add')
+      if (!list) return
+      list.innerHTML = _cmHeroGallery.map((src, i) => `
+        <div class="cm-hero-gallery-row" data-idx="${i}" style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+          <div class="cm-hero-gallery-preview" style="width:96px;height:60px;border-radius:8px;border:1px dashed #ddd;background:#f5f5f5;background-size:cover;background-position:center;flex-shrink:0;${src ? `background-image:url('${String(src).replace(/'/g, '%27')}')` : ''}"></div>
+          <div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:6px">
+            <input type="url" class="cm-hero-gallery-url" data-idx="${i}" placeholder="https://... (선택)" maxlength="500" value="${String(src || '').startsWith('http') ? String(src).replace(/"/g, '&quot;') : ''}" />
+            <input type="file" class="cm-hero-gallery-file" data-idx="${i}" accept="image/jpeg,image/png,image/webp" />
+          </div>
+          <button type="button" class="btn-sm cm-hero-gallery-remove" data-idx="${i}">삭제</button>
+        </div>
+      `).join('')
+      if (addBtn) addBtn.style.display = _cmHeroGallery.length >= 9 ? 'none' : ''
+    }
+
+    document.getElementById('cm-hero-gallery-add')?.addEventListener('click', () => {
+      if (_cmHeroGallery.length >= 9) return
+      _cmHeroGallery.push('')
+      renderCmHeroGalleryList()
+    })
+
+    document.getElementById('cm-hero-gallery-list')?.addEventListener('click', e => {
+      const btn = e.target.closest('.cm-hero-gallery-remove')
+      if (!btn) return
+      const idx = parseInt(btn.dataset.idx, 10)
+      if (Number.isNaN(idx)) return
+      _cmHeroGallery.splice(idx, 1)
+      renderCmHeroGalleryList()
+    })
+
+    document.getElementById('cm-hero-gallery-list')?.addEventListener('input', e => {
+      const input = e.target.closest('.cm-hero-gallery-url')
+      if (!input) return
+      const idx = parseInt(input.dataset.idx, 10)
+      if (Number.isNaN(idx)) return
+      _cmHeroGallery[idx] = input.value.trim()
+      const row = input.closest('.cm-hero-gallery-row')
+      const preview = row?.querySelector('.cm-hero-gallery-preview')
+      if (preview) {
+        const url = input.value.trim()
+        preview.style.backgroundImage = url ? `url("${url.replace(/"/g, '%22')}")` : ''
+      }
+    })
+
+    document.getElementById('cm-hero-gallery-list')?.addEventListener('change', async e => {
+      const input = e.target.closest('.cm-hero-gallery-file')
+      if (!input) return
+      const file = input.files?.[0]
+      if (!file) return
+      const idx = parseInt(input.dataset.idx, 10)
+      if (Number.isNaN(idx)) return
+      if (file.size > 2 * 1024 * 1024) { alert('2MB 이하만 업로드할 수 있습니다.'); input.value = ''; return }
+      try {
+        _cmHeroGallery[idx] = await resizeSiteImage(file, 800)
+        renderCmHeroGalleryList()
+      } catch (err) { alert(err.message) }
+      input.value = ''
+    })
 
     function renderCmThumbPreview(src) {
       const el = document.getElementById('cm-thumb-preview')
@@ -2275,7 +2430,10 @@
             <td>${thumbHtml}</td>
             <td><strong>${(c.title||'').replace(/</g,'&lt;')}</strong><br><span style="font-size:12px;color:#888">${c.slug||''}</span></td>
             <td>${c.category||'-'}</td>
-            <td>${c.sort_order ?? '-'}</td>
+            <td style="white-space:nowrap">
+              <input type="number" id="hp-sort-${c.id}" value="${c.sort_order ?? ''}" min="1" style="width:56px;padding:4px 6px;font-size:13px;border:1px solid var(--border);border-radius:6px" />
+              <button class="btn-sm" onclick="saveHpCourseOrder('${c.id}')">저장</button>
+            </td>
             <td>${c.course_type==='live' ? '무료(라이브)' : (c.sale_price||0).toLocaleString()+'원'}</td>
             <td><span class="badge-status ${c.is_published?'paid':'refund'}">${c.is_published?'공개':'비공개'}</span></td>
             <td style="display:flex;gap:4px;flex-wrap:wrap">
@@ -2289,20 +2447,39 @@
       }
     }
 
+    async function saveHpCourseOrder(id) {
+      const input = document.getElementById('hp-sort-' + id)
+      const sort_order = parseInt(input?.value, 10)
+      if (!sort_order || sort_order < 1) {
+        alert('순서는 1 이상 숫자로 입력해주세요.')
+        return
+      }
+      try {
+        await API.patch('/admin/courses/' + id, { sort_order })
+        loadHpCourses()
+        reloadHomePreview()
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      }
+    }
+    window.saveHpCourseOrder = saveHpCourseOrder
+
     const PR_TYPE_LABEL = { student: '수강생', client: '의뢰인', editor: '에디터즈' }
+    const PR_VISIBILITY = { student: '모든 방문자', client: '의뢰인 로그인', editor: '에디터즈 로그인' }
 
     async function loadHpPlatformReviews() {
       const tbody = document.getElementById('hp-platform-reviews-tbody')
       if (!tbody) return
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr>'
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr>'
       try {
         const reviews = await API.get('/admin/platform-reviews')
         if (!reviews.length) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">등록된 실시간 후기가 없습니다.</td></tr>'
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">등록된 실시간 후기가 없습니다.</td></tr>'
           return
         }
         tbody.innerHTML = reviews.map(r => `<tr>
           <td>${PR_TYPE_LABEL[r.review_type]||r.review_type}</td>
+          <td style="font-size:12px;color:#666">${PR_VISIBILITY[r.review_type]||'-'}</td>
           <td>${(r.author_name||'').replace(/</g,'&lt;')} (${r.author_initial||'?'})</td>
           <td style="max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(r.content||'').replace(/</g,'&lt;')}</td>
           <td>${r.rating||5}</td>
@@ -2313,7 +2490,7 @@
           </td>
         </tr>`).join('')
       } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#c00;padding:24px">불러오기 실패</td></tr>'
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#c00;padding:24px">불러오기 실패</td></tr>'
       }
     }
 
@@ -2349,10 +2526,33 @@
       try {
         await API.del('/admin/platform-reviews/' + id)
         loadHpPlatformReviews()
+        reloadHomePreview()
       } catch (e) { alert(e.message || '삭제 실패') }
     }
     window.openHpPrModal = openHpPrModal
     window.deleteHpPlatformReview = deleteHpPlatformReview
+
+    function hpPreviewTimeLabel(d = new Date()) {
+      return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+    }
+
+    function reloadHomePreview() {
+      const frame = document.getElementById('hp-preview-frame')
+      const status = document.getElementById('hp-preview-status')
+      if (!frame) return
+      if (status) status.textContent = '미리보기 갱신 중…'
+      frame.onload = () => {
+        if (status) status.textContent = '미리보기 반영됨 (' + hpPreviewTimeLabel() + ')'
+      }
+      frame.onerror = () => {
+        if (status) status.textContent = '미리보기를 불러오지 못했습니다.'
+      }
+      const base = '/index.html?preview=1'
+      frame.src = base + '&_=' + Date.now()
+    }
+    window.reloadHomePreview = reloadHomePreview
+
+    document.getElementById('hp-preview-refresh')?.addEventListener('click', reloadHomePreview)
 
     async function loadHomepage() {
       try {
@@ -2363,7 +2563,17 @@
       } catch (e) {
         document.getElementById('hp-layout-status').textContent = '설정을 불러오지 못했습니다.'
       }
-      await Promise.all([loadHpCourses(), loadHpPlatformReviews()])
+      await Promise.all([loadHeroSettings(), loadHpCourses(), loadHpPlatformReviews()])
+      reloadHomePreview()
+    }
+
+    async function syncFooterBrandFromHomepage(brandName) {
+      const brand = String(brandName || '').trim()
+      if (!brand) return
+      const footer = await API.get('/admin/footer')
+      await API.patch('/admin/footer', { ...footer, brand_name: brand })
+      const footerBrandEl = document.getElementById('footer-brand-name')
+      if (footerBrandEl) footerBrandEl.value = brand
     }
 
     document.getElementById('hp-layout-save')?.addEventListener('click', async () => {
@@ -2371,10 +2581,17 @@
       const statusEl = document.getElementById('hp-layout-status')
       try {
         btn.disabled = true
-        const result = await API.patch('/admin/homepage-layout', readHpLayoutForm())
+        const payload = readHpLayoutForm()
+        const result = await API.patch('/admin/homepage-layout', payload)
         fillHpLayoutForm(result)
         _hpCategoryImages = {}
-        if (statusEl) statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+        let statusMsg = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+        if (document.getElementById('hp-brand-sync-footer')?.checked && payload.site?.brand_name) {
+          await syncFooterBrandFromHomepage(payload.site.brand_name)
+          statusMsg += ' · 푸터 브랜드명 반영'
+        }
+        if (statusEl) statusEl.textContent = statusMsg
+        reloadHomePreview()
       } catch (e) {
         alert(e.message || '저장 실패')
       } finally {
@@ -2399,6 +2616,7 @@
         else await API.post('/admin/platform-reviews', payload)
         document.getElementById('hp-pr-modal').style.display = 'none'
         loadHpPlatformReviews()
+        reloadHomePreview()
       } catch (e) { alert(e.message || '저장 실패') }
     })
 
@@ -2427,6 +2645,71 @@
       })
     }
 
+    let _heroCourseActions = []
+
+    function populateHeroActionSelects(courseActions) {
+      _heroCourseActions = courseActions || []
+      const staticOpts = (typeof HERO_BUTTON_ACTIONS !== 'undefined' ? HERO_BUTTON_ACTIONS : [])
+        .map(a => `<option value="${a.id}">${a.label}</option>`).join('')
+      const courseOpts = _heroCourseActions.length
+        ? `<optgroup label="강의 상세">${_heroCourseActions.map(a => `<option value="${a.id}">${a.label.replace(/</g, '&lt;')}</option>`).join('')}</optgroup>`
+        : ''
+      const html = staticOpts + courseOpts
+      ;['primary', 'secondary'].forEach(prefix => {
+        const sel = document.getElementById(`hero-${prefix}-action`)
+        if (sel) sel.innerHTML = html
+      })
+    }
+
+    function updateHeroActionUi(prefix) {
+      const sel = document.getElementById(`hero-${prefix}-action`)
+      const customWrap = document.getElementById(`hero-${prefix}-custom-wrap`)
+      const labelInput = document.getElementById(`hero-${prefix}-label`)
+      if (!sel) return
+      const def = typeof findHeroAction === 'function'
+        ? findHeroAction(sel.value, _heroCourseActions)
+        : null
+      if (labelInput && def) labelInput.placeholder = def.label || ''
+      if (customWrap) customWrap.style.display = sel.value === 'custom' ? '' : 'none'
+    }
+
+    function readHeroButtonForm(prefix) {
+      const action = document.getElementById(`hero-${prefix}-action`)?.value || 'all_courses'
+      const label = document.getElementById(`hero-${prefix}-label`)?.value.trim() || ''
+      const customHref = document.getElementById(`hero-${prefix}-href-custom`)?.value.trim() || ''
+      const def = typeof findHeroAction === 'function' ? findHeroAction(action, _heroCourseActions) : null
+      let href = customHref
+      if (def && !def.custom) href = def.href
+      else if (action === 'custom') href = customHref || '#'
+      return {
+        action,
+        label: label || def?.label || '',
+        href,
+      }
+    }
+
+    function fillHeroButtonForm(prefix, btn) {
+      const action = btn?.action || (typeof inferHeroAction === 'function'
+        ? inferHeroAction(btn?.href, _heroCourseActions)
+        : 'custom')
+      const sel = document.getElementById(`hero-${prefix}-action`)
+      if (sel) {
+        const hasOption = action && [...sel.options].some(o => o.value === action)
+        if (action && !hasOption) {
+          const opt = document.createElement('option')
+          opt.value = action
+          opt.textContent = btn?.label || action
+          sel.appendChild(opt)
+        }
+        sel.value = action
+      }
+      const labelEl = document.getElementById(`hero-${prefix}-label`)
+      if (labelEl) labelEl.value = btn?.label || ''
+      const customEl = document.getElementById(`hero-${prefix}-href-custom`)
+      if (customEl) customEl.value = action === 'custom' ? (btn?.href || '') : ''
+      updateHeroActionUi(prefix)
+    }
+
     function resolveHeroImageForSave() {
       const urlInput = document.getElementById('hero-img-url')?.value.trim()
       if (urlInput) return urlInput
@@ -2440,10 +2723,8 @@
       document.getElementById('hero-title').value = cfg.title || ''
       document.getElementById('hero-title-emphasis').value = cfg.title_emphasis || ''
       document.getElementById('hero-subtitle').value = cfg.subtitle || ''
-      document.getElementById('hero-primary-label').value = cfg.primary_btn?.label || ''
-      document.getElementById('hero-primary-href').value = cfg.primary_btn?.href || ''
-      document.getElementById('hero-secondary-label').value = cfg.secondary_btn?.label || ''
-      document.getElementById('hero-secondary-href').value = cfg.secondary_btn?.href || ''
+      fillHeroButtonForm('primary', cfg.primary_btn)
+      fillHeroButtonForm('secondary', cfg.secondary_btn)
       document.getElementById('hero-secondary-icon').checked = cfg.secondary_btn?.show_icon !== false
       const urlEl = document.getElementById('hero-img-url')
       if (urlEl) {
@@ -2459,13 +2740,9 @@
         title: document.getElementById('hero-title').value.trim(),
         title_emphasis: document.getElementById('hero-title-emphasis').value.trim(),
         subtitle: document.getElementById('hero-subtitle').value.trim(),
-        primary_btn: {
-          label: document.getElementById('hero-primary-label').value.trim(),
-          href: document.getElementById('hero-primary-href').value.trim(),
-        },
+        primary_btn: readHeroButtonForm('primary'),
         secondary_btn: {
-          label: document.getElementById('hero-secondary-label').value.trim(),
-          href: document.getElementById('hero-secondary-href').value.trim(),
+          ...readHeroButtonForm('secondary'),
           show_icon: document.getElementById('hero-secondary-icon').checked,
         },
         image_alt: document.getElementById('hero-img-alt').value.trim(),
@@ -2478,6 +2755,14 @@
     async function loadHeroSettings() {
       const statusEl = document.getElementById('hero-save-status')
       try {
+        let courseActions = []
+        try {
+          const courses = _courses?.length ? _courses : await API.get('/admin/courses')
+          if (typeof buildHeroCourseActions === 'function') {
+            courseActions = buildHeroCourseActions(courses)
+          }
+        } catch (_) {}
+        populateHeroActionSelects(courseActions)
         const cfg = await API.get('/admin/hero')
         fillHeroEditor(cfg)
         if (statusEl && cfg.updated_at) {
@@ -2489,6 +2774,9 @@
         if (statusEl) statusEl.textContent = '히어로 설정을 불러오지 못했습니다.'
       }
     }
+
+    document.getElementById('hero-primary-action')?.addEventListener('change', () => updateHeroActionUi('primary'))
+    document.getElementById('hero-secondary-action')?.addEventListener('change', () => updateHeroActionUi('secondary'))
 
     document.getElementById('hero-img-input')?.addEventListener('change', async e => {
       const file = e.target.files?.[0]
@@ -2532,6 +2820,7 @@
         if (statusEl) {
           statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
         }
+        reloadHomePreview()
       } catch (e) {
         alert(e.message || '저장 실패')
       } finally {
@@ -2849,62 +3138,6 @@
         const result = await API.patch('/admin/footer', payload)
         fillFooterEditor(result)
         if (statusEl) statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
-      } catch (e) {
-        alert(e.message || '저장 실패')
-      } finally {
-        btn.disabled = false
-      }
-    })
-
-    function readHomepageLayoutForm() {
-      const sections = {}
-      document.querySelectorAll('[data-layout-section]').forEach(el => {
-        sections[el.dataset.layoutSection] = el.checked
-      })
-      const nav = {}
-      document.querySelectorAll('[data-layout-nav]').forEach(el => {
-        nav[el.dataset.layoutNav] = el.checked
-      })
-      return { sections, nav }
-    }
-
-    function fillHomepageLayoutForm(layout) {
-      document.querySelectorAll('[data-layout-section]').forEach(el => {
-        const key = el.dataset.layoutSection
-        el.checked = layout?.sections?.[key] !== false
-      })
-      document.querySelectorAll('[data-layout-nav]').forEach(el => {
-        const key = el.dataset.layoutNav
-        el.checked = layout?.nav?.[key] !== false
-      })
-    }
-
-    async function loadHomepageLayoutSettings() {
-      const statusEl = document.getElementById('homepage-layout-status')
-      try {
-        const layout = await API.get('/admin/homepage-layout')
-        fillHomepageLayoutForm(layout)
-        if (statusEl && layout.updated_at) {
-          statusEl.textContent = '마지막 저장: ' + layout.updated_at.slice(0, 16).replace('T', ' ')
-        } else if (statusEl) {
-          statusEl.textContent = ''
-        }
-      } catch (e) {
-        if (statusEl) statusEl.textContent = '노출 설정을 불러오지 못했습니다.'
-      }
-    }
-
-    document.getElementById('homepage-layout-save')?.addEventListener('click', async () => {
-      const statusEl = document.getElementById('homepage-layout-status')
-      const btn = document.getElementById('homepage-layout-save')
-      try {
-        btn.disabled = true
-        const payload = readHomepageLayoutForm()
-        const result = await API.patch('/admin/homepage-layout', payload)
-        fillHomepageLayoutForm(result)
-        if (statusEl) {
-          statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
-        }
       } catch (e) {
         alert(e.message || '저장 실패')
       } finally {

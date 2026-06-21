@@ -42,13 +42,6 @@
           캡컷 PRO 강의 4종(초보자반·기초반·초고속 영상제작반·영상납품 수익화)을 순차적으로 제공할 예정입니다.
           <a href="/notices.html">공지사항</a>에서 자세한 내용을 확인해 주세요.
         </p>
-        <div class="welcome-popup-coupon">
-          <i class="ti ti-ticket"></i>
-          <div>
-            <strong>강의 수강 신청 시 기대평을 작성해 주시면</strong> 최초 유료 강의 결제 시 사용할 수 있는
-            <strong>20% 할인 쿠폰</strong>을 드립니다.
-          </div>
-        </div>
         <div class="welcome-popup-actions">
           <a href="/#all" class="welcome-popup-btn primary">강의 보러 가기</a>
           <button type="button" class="welcome-popup-btn secondary" onclick="WelcomePopup.close()">닫기</button>

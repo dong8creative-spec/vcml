@@ -51,7 +51,29 @@ router.delete('/reviews/:id', async (req, res) => {
 router.get('/courses', async (req, res) => {
   const { TARGET_SLUGS } = require('../db/course-catalog')
   const courses = await db.getCourses(false)
-  res.json(courses.map(c => ({ ...c, is_catalog: TARGET_SLUGS.has(c.slug) })))
+  const enriched = await Promise.all(courses.map(async c => {
+    const row = {
+      ...(await db.enrichCourseEnrollment(c)),
+      is_catalog: TARGET_SLUGS.has(c.slug),
+    }
+    if (Number(c.student_count || 0) !== Number(row.student_count || 0)) {
+      await db.updateCourse(c.id, { student_count: row.student_count })
+    }
+    return row
+  }))
+  res.json(enriched)
+})
+
+router.get('/courses/:id/enrollments', async (req, res) => {
+  const course = await db.getCourseById(req.params.id)
+  if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+  const enrollments = await db.getActiveEnrolleesByCourse(course.id)
+  await db.syncCourseStudentCount(course.id)
+  res.json({
+    course: { id: course.id, title: course.title },
+    count: enrollments.length,
+    enrollments,
+  })
 })
 
 router.post('/courses/sync-catalog', async (req, res) => {
@@ -59,12 +81,19 @@ router.post('/courses/sync-catalog', async (req, res) => {
   res.json({ success: true, ...result })
 })
 
+router.post('/courses/delete-legacy', async (req, res) => {
+  const includeLive = !!req.body?.include_live
+  const result = await db.deleteLegacyCourses({ includeLive })
+  res.json({ success: true, ...result })
+})
+
 router.patch('/courses/:id', async (req, res) => {
   const allowed = [
     'title', 'description', 'category', 'price', 'sale_price', 'is_published',
     'course_type', 'live_schedule', 'live_starts_at', 'meet_code', 'live_status',
-    'live_curriculum_text', 'live_curriculum_image',
-    'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'sort_order', 'is_offline',
+    'live_curriculum_text', 'live_curriculum_image', 'live_chat_url',
+    'live_replay_url', 'live_material_url',
+    'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'hero_gallery', 'sort_order', 'is_offline', 'enrollment_limit',
   ]
   const update = {}
   for (const key of allowed) {
@@ -73,10 +102,44 @@ router.patch('/courses/:id', async (req, res) => {
   if (update.thumbnail_url !== undefined && update.thumbnail_url !== null && update.thumbnail_url !== '' && !isValidImage(update.thumbnail_url)) {
     return res.status(400).json({ error: '썸네일은 URL 또는 JPG/PNG/WebP(base64)만 사용할 수 있습니다.' })
   }
+  if (update.hero_gallery !== undefined) {
+    if (update.hero_gallery === null || update.hero_gallery === '') {
+      update.hero_gallery = null
+    } else if (!Array.isArray(update.hero_gallery)) {
+      return res.status(400).json({ error: '히어로 갤러리는 배열 형식이어야 합니다.' })
+    } else {
+      const cleaned = []
+      for (const item of update.hero_gallery.slice(0, 9)) {
+        const url = String(item || '').trim()
+        if (!url) continue
+        if (!isValidImage(url)) {
+          return res.status(400).json({ error: '히어로 갤러리 이미지는 URL 또는 JPG/PNG/WebP(base64)만 사용할 수 있습니다.' })
+        }
+        cleaned.push(url)
+      }
+      update.hero_gallery = cleaned.length ? cleaned : null
+    }
+  }
+  for (const key of ['live_chat_url', 'live_replay_url', 'live_material_url']) {
+    if (update[key] === undefined) continue
+    if (update[key] === null || update[key] === '') {
+      update[key] = null
+      continue
+    }
+    const url = String(update[key]).trim()
+    if (!/^https?:\/\/.+/i.test(url)) {
+      const label = key === 'live_chat_url' ? '단톡방' : key === 'live_replay_url' ? '다시보기' : '자료 다운로드'
+      return res.status(400).json({ error: `${label} 링크는 http:// 또는 https:// 로 시작해야 합니다.` })
+    }
+    update[key] = url.slice(0, 500)
+  }
   if (Object.keys(update).length === 0) return res.status(400).json({ error: '변경할 항목이 없습니다.' })
+  if (update.enrollment_limit !== undefined) {
+    update.enrollment_limit = Math.max(0, parseInt(update.enrollment_limit, 10) || 0)
+  }
   update.updated_at = new Date().toISOString()
   await db.updateCourse(req.params.id, update)
-  const course = await db.getCourseById(req.params.id)
+  const course = await db.enrichCourseEnrollment(await db.getCourseById(req.params.id))
   res.json({ success: true, course })
 })
 

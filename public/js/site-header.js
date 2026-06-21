@@ -7,7 +7,7 @@
     const loginLink = SHOW_LOGIN_LINK
       ? `<a href="/login.html?next=${next}" class="nav-btn">로그인</a>`
       : ''
-    return `${loginLink}<a href="/api/auth/google?next=${next}" class="nav-btn nav-btn-google">${icon} Google로 시작</a>`
+    return `${loginLink}<a href="#" class="nav-btn nav-btn-google" onclick="startGoogleLogin('${next}');return false">${icon} Google로 시작</a>`
   }
 
   const DEFAULT_AUTH_HTML = guestAuthHtml(encodeURIComponent('/'))
@@ -17,6 +17,7 @@
     <a href="/" class="logo">타닥클래스</a>
     <nav class="gnb" aria-label="주요 메뉴">
       <a href="/#all" data-gnb-all data-nav-key="all">전체강의</a>
+      <a href="/instructors.html" data-nav-key="instructors">강사 소개</a>
       <a href="/?cat=capcut#all" data-gnb-cat="capcut" data-nav-key="capcut">캡컷 PRO</a>
       <a href="/?cat=premiere#all" data-gnb-cat="premiere" data-nav-key="premiere">프리미어 PRO</a>
       <a href="/?cat=ai#all" data-gnb-cat="ai" data-nav-key="ai">AI 콘텐츠 제작</a>

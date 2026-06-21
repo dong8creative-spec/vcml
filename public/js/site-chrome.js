@@ -6,7 +6,7 @@
     const loginLink = SHOW_LOGIN_LINK
       ? `<a href="/login.html?next=${next}" class="nav-btn">로그인</a>`
       : ''
-    return `${loginLink}<a href="/api/auth/google?next=${next}" class="nav-btn nav-btn-google">${icon} Google</a>`
+    return `${loginLink}<a href="#" class="nav-btn nav-btn-google" onclick="startGoogleLogin('${next}');return false">${icon} Google</a>`
   }
   const SUBPAGE_NAV = [
     { href: '/notices.html', key: 'notices', label: '공지사항' },
@@ -30,7 +30,7 @@
         { label: 'AI 콘텐츠 제작', href: '/?cat=ai#all' },
       ]},
       { title: '고객지원', links: [
-        { label: '강의 기대평 · 20% 쿠폰', href: '/#all' },
+        { label: '강의 기대평 남기기', href: '/#all' },
         { label: '1:1 문의하기', href: '/inquiry.html' },
         { label: '자주 묻는 질문', href: '/faq.html' },
         { label: '환불 및 취소 정책', href: '/refund.html' },

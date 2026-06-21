@@ -105,3 +105,54 @@
 }
 .empty-state .ti { font-size: 62.4px; display: block; margin-bottom: 12px; }
 .empty-state p { font-size: 24px; }
+
+/* Google 가입 유형 선택 모달 */
+.google-member-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.google-member-modal.is-open { display: flex; }
+.google-member-dialog {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px 22px 22px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+.google-member-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: none;
+  font-size: 28px;
+  line-height: 1;
+  color: #aaa;
+  cursor: pointer;
+}
+.google-member-close:hover { color: #666; }
+.google-member-title { font-size: 22px; font-weight: 800; color: #111; margin-bottom: 6px; }
+.google-member-sub { font-size: 14px; color: #666; margin-bottom: 16px; line-height: 1.5; }
+.google-member-sub .hint { color: #aaa; }
+.google-member-type-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.google-member-type-card {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.google-member-type-card input { position: absolute; opacity: 0; pointer-events: none; }
+.google-member-type-card:has(input:checked) { border-color: var(--text-primary); background: var(--bg-soft); }
+.google-member-type-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.google-member-type-desc { font-size: 13px; color: var(--text-muted); line-height: 1.45; }
+.google-member-continue { width: 100%; margin-top: 4px; }

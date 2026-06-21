@@ -13,17 +13,29 @@ function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000))
 }
 
-function parseOAuthNext(state) {
+function parseOAuthState(state) {
   try {
-    const parsed = JSON.parse(Buffer.from(state, 'base64').toString()).next || '/'
-    return parsed.startsWith('/') && !parsed.startsWith('//') ? parsed : '/'
+    const parsed = JSON.parse(Buffer.from(state, 'base64').toString())
+    const next = parsed.next || '/'
+    return {
+      nextUrl: next.startsWith('/') && !next.startsWith('//') ? next : '/',
+      memberType: ['student', 'client'].includes(parsed.member_type) ? parsed.member_type : null,
+    }
   } catch {
-    return '/'
+    return { nextUrl: '/', memberType: null }
   }
 }
 
-function encodeOAuthState(next) {
-  return Buffer.from(JSON.stringify({ next: next || '/' })).toString('base64')
+function parseOAuthNext(state) {
+  return parseOAuthState(state).nextUrl
+}
+
+function encodeOAuthState(next, memberType) {
+  const payload = { next: next || '/' }
+  if (memberType && ['student', 'client'].includes(memberType)) {
+    payload.member_type = memberType
+  }
+  return Buffer.from(JSON.stringify(payload)).toString('base64')
 }
 
 function clientUser(user) {
@@ -162,7 +174,12 @@ router.get('/google', (req, res) => {
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
     return res.redirect('/login.html?google_error=' + encodeURIComponent('Google 로그인이 설정되지 않았습니다. 관리자에게 문의해주세요.'))
   }
-  const state = encodeOAuthState(req.query.next)
+  const member_type = req.query.member_type
+  if (!member_type || !['student', 'client'].includes(member_type)) {
+    const nextQ = req.query.next ? '&next=' + encodeURIComponent(req.query.next) : ''
+    return res.redirect('/login.html?google_error=' + encodeURIComponent('가입 유형(수강생/의뢰인)을 선택해주세요.') + nextQ)
+  }
+  const state = encodeOAuthState(req.query.next, member_type)
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: GOOGLE_REDIRECT_URI,
@@ -219,8 +236,9 @@ router.get('/google/callback', async (req, res) => {
       }
     }
     let isNew = false
+    const { nextUrl, memberType } = parseOAuthState(state)
     if (!user) {
-      user = await db.createGoogleUser(googleId, googleEmail, googleName, googlePicture)
+      user = await db.createGoogleUser(googleId, googleEmail, googleName, googlePicture, memberType || 'student')
       isNew = true
     } else {
       const profileUpdate = {}
@@ -229,11 +247,17 @@ router.get('/google/callback', async (req, res) => {
       if (Object.keys(profileUpdate).length) {
         user = await db.updateUserProfile(user.id, profileUpdate)
       }
+      if (memberType && !user.member_type) {
+        user = await db.completeProfile(user.id, {
+          name: user.name,
+          email: user.email || googleEmail,
+          member_type: memberType,
+        })
+      }
     }
 
     // 베타: Google 로그인은 온보딩 없이 바로 이용 (Google OAuth 범위 내 정보만 사용)
     const token = signUserToken(user, { profileComplete: true })
-    const nextUrl = parseOAuthNext(state)
     redirectOAuthLogin(res, { token, user, nextUrl, paramPrefix: 'google', welcome: isNew })
   } catch (err) {
     console.error('Google 로그인 오류:', err)

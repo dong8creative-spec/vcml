@@ -69,6 +69,90 @@ function googleMeetBadgeHtml(className = 'badge-live') {
 window.googleMeetBadgeHtml = googleMeetBadgeHtml
 window.googleMeetIconHtml = googleMeetIconHtml
 
+function buildGoogleAuthUrl(next, memberType) {
+  const params = new URLSearchParams()
+  const safeNext = next && String(next).startsWith('/') && !String(next).startsWith('//') ? next : '/'
+  params.set('next', safeNext)
+  params.set('member_type', memberType)
+  return '/api/auth/google?' + params.toString()
+}
+
+function readGoogleMemberTypeFromPage() {
+  return document.querySelector('input[name="google-member-type"]:checked')?.value
+    || document.querySelector('input[name="member-type"]:checked')?.value
+    || null
+}
+
+function decodeNextPath(nextPath) {
+  if (nextPath == null || nextPath === '') return location.pathname + location.search
+  try {
+    return decodeURIComponent(String(nextPath))
+  } catch {
+    return String(nextPath)
+  }
+}
+
+function showGoogleMemberTypeModal(nextPath) {
+  let overlay = document.getElementById('google-member-modal')
+  if (!overlay) {
+    overlay = document.createElement('div')
+    overlay.id = 'google-member-modal'
+    overlay.className = 'google-member-modal'
+    overlay.innerHTML = `
+      <div class="google-member-dialog" role="dialog" aria-labelledby="google-member-title">
+        <button type="button" class="google-member-close" aria-label="닫기">&times;</button>
+        <div class="google-member-title" id="google-member-title">가입 유형 선택</div>
+        <div class="google-member-sub">Google 계정 연결 전에 선택해주세요. <span class="hint">(가입 후 변경 불가)</span></div>
+        <div class="google-member-type-row">
+          <label class="google-member-type-card">
+            <input type="radio" name="google-member-modal-type" value="student" checked />
+            <div class="google-member-type-title">수강생</div>
+            <div class="google-member-type-desc">온라인 강의 수강·학습</div>
+          </label>
+          <label class="google-member-type-card">
+            <input type="radio" name="google-member-modal-type" value="client" />
+            <div class="google-member-type-title">의뢰인</div>
+            <div class="google-member-type-desc">클라이언츠 · 매칭</div>
+          </label>
+        </div>
+        <button type="button" class="google-member-continue btn-google">Google 계정 선택하기</button>
+      </div>`
+    document.body.appendChild(overlay)
+    overlay.querySelector('.google-member-close').onclick = () => overlay.classList.remove('is-open')
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('is-open')
+    })
+    overlay.querySelector('.google-member-continue').onclick = () => {
+      const mt = overlay.querySelector('input[name="google-member-modal-type"]:checked')?.value
+      if (!mt) {
+        toast('가입 유형을 선택해주세요.', 'error')
+        return
+      }
+      const next = overlay.dataset.next || '/'
+      location.href = buildGoogleAuthUrl(next, mt)
+    }
+  }
+  overlay.dataset.next = decodeNextPath(nextPath)
+  overlay.classList.add('is-open')
+}
+
+function startGoogleLogin(nextPath) {
+  const next = decodeNextPath(nextPath)
+  if (document.getElementById('google-member-type-section')) {
+    const mt = readGoogleMemberTypeFromPage()
+    if (!mt) {
+      toast('가입 유형(수강생/의뢰인)을 선택해주세요.', 'error')
+      return
+    }
+    location.href = buildGoogleAuthUrl(next, mt)
+    return
+  }
+  showGoogleMemberTypeModal(next)
+}
+
+window.buildGoogleAuthUrl = buildGoogleAuthUrl
+window.startGoogleLogin = startGoogleLogin
+
 function comingSoon(e) {
   if (e) e.preventDefault()
   toast('준비 중입니다. 곧 오픈할 예정이에요.', 'info')
@@ -94,7 +178,7 @@ window.comingSoon = comingSoon
 })()
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/live-reminder.js?v=7'
+  s.src = '/js/live-reminder.js?v=11'
   s.defer = true
   document.head.appendChild(s)
 })()

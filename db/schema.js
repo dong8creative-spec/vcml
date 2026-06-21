@@ -27,9 +27,13 @@ const CLIENT_COURSE_REWARD_MIN_COURSE_PRICE = 200000
 const CLIENT_PROJECT_COUPON_MIN_AMOUNT = 30000
 const CLIENT_COURSE_REWARD_REASON = 'client_course_reward'
 const ANTICIPATION_COUPON_REASON = 'anticipation_review'
-const ANTICIPATION_DISCOUNT_PERCENT = 20
+const ANTICIPATION_DISCOUNT_PERCENT = 10
 const ANTICIPATION_MIN_LENGTH = 20
 const ANTICIPATION_MAX_LENGTH = 150
+const COURSE_REVIEW_FIVE_STAR_REASON = 'course_review_five_star'
+const COURSE_REVIEW_FIVE_STAR_DISCOUNT_PERCENT = 10
+const STACKABLE_COURSE_COUPON_REASONS = [ANTICIPATION_COUPON_REASON, COURSE_REVIEW_FIVE_STAR_REASON]
+const TIMED_PERCENT_COUPON_REASONS = new Set(STACKABLE_COURSE_COUPON_REASONS)
 
 function addOneMonthFrom(iso) {
   const d = new Date(iso)
@@ -38,13 +42,13 @@ function addOneMonthFrom(iso) {
   return d.toISOString()
 }
 
-function getAnticipationCouponExpiresAt(coupon) {
-  if (!coupon || coupon.reason !== ANTICIPATION_COUPON_REASON) return null
+function getTimedPercentCouponExpiresAt(coupon) {
+  if (!coupon || !TIMED_PERCENT_COUPON_REASONS.has(coupon.reason)) return null
   return coupon.expires_at || (coupon.created_at ? addOneMonthFrom(coupon.created_at) : null)
 }
 
-function isAnticipationCouponExpired(coupon, atMs = Date.now()) {
-  const exp = getAnticipationCouponExpiresAt(coupon)
+function isTimedPercentCouponExpired(coupon, atMs = Date.now()) {
+  const exp = getTimedPercentCouponExpiresAt(coupon)
   if (!exp) return false
   return atMs > new Date(exp).getTime()
 }
@@ -63,6 +67,7 @@ const COUPON_USED_CONTEXT_LABELS = {
 }
 const COUPON_REASON_LABELS = {
   anticipation_review: '강의 기대평',
+  course_review_five_star: '수강 후기 5점',
   marketing_consent: '마케팅 동의',
   client_course_reward: '의뢰인 수강 혜택',
   editor_featured: '에디터 승인 혜택',
@@ -544,6 +549,19 @@ function now() {
   return new Date().toISOString()
 }
 
+async function deleteFirestoreDocs(docsOrRefs) {
+  const refs = docsOrRefs.map(d => (d.ref ? d.ref : d))
+  if (!refs.length) return 0
+  let deleted = 0
+  for (let i = 0; i < refs.length; i += 500) {
+    const batch = fs.batch()
+    refs.slice(i, i + 500).forEach(ref => batch.delete(ref))
+    await batch.commit()
+    deleted += Math.min(500, refs.length - i)
+  }
+  return deleted
+}
+
 // ── 시드 데이터 (최초 1회) ──
 async function seed() {
   const snap = await fs.collection('courses').limit(1).get()
@@ -601,42 +619,7 @@ function maskPublicName(name) {
   return n[0] + '**'
 }
 
-const DEFAULT_HOMEPAGE_LAYOUT = {
-  sections: {
-    hero: true,
-    categories: true,
-    instructors: true,
-    all_courses: true,
-    free_courses: true,
-    new_courses: true,
-    reviews: true,
-    purchase_ticker: true,
-  },
-  nav: {
-    all: true,
-    capcut: true,
-    premiere: true,
-    ai: true,
-    anticipation: true,
-    editors: true,
-    projects: true,
-  },
-  copy: {
-    all_courses: { title: '전체 강의' },
-    free_courses: { title: '무료강의', subtitle: '무료지만 기본기를 탄탄하게!', more_label: '전부보기' },
-    new_courses: { title: '최신 강의', subtitle: '새롭게 업데이트된 강의', more_label: '전부보기' },
-    reviews: { title: '실시간 후기', subtitle: '실제 회원 후기를 실시간으로 확인하세요' },
-    purchase_ticker: { label: '⚡ 구매현황', live_text: 'LIVE' },
-  },
-  categories: [
-    { key: 'capcut', label: '캡컷 PRO', style: 'capcut', image: null },
-    { key: 'premiere', label: '프리미어 PRO', style: 'premiere', image: null },
-    { key: 'ai', label: 'AI 콘텐츠 제작', style: 'ai', image: null },
-  ],
-  site: {
-    brand_name: '타닥클래스',
-  },
-}
+const DEFAULT_HOMEPAGE_LAYOUT = require('../lib/homepage-layout-defaults')
 
 const DEFAULT_HOMEPAGE_COPY = DEFAULT_HOMEPAGE_LAYOUT.copy
 const DEFAULT_HOMEPAGE_CATEGORIES = DEFAULT_HOMEPAGE_LAYOUT.categories
@@ -695,6 +678,7 @@ function normalizeHomepageLayout(data = {}) {
   if (data.site?.brand_name != null) {
     layout.site.brand_name = String(data.site.brand_name).trim().slice(0, 40) || layout.site.brand_name
   }
+  layout.sections.instructors = false
   return layout
 }
 
@@ -773,8 +757,8 @@ const DEFAULT_HERO_CONFIG = {
   title: '현업 20년 전문가에게 배우는',
   title_emphasis: '영상 제작 실전 강의',
   subtitle: '편집·모션·촬영·색보정 — 유튜브부터 방송까지\n현장에서 실제로 쓰는 방식을 알려드립니다.',
-  primary_btn: { label: '전체 강의 보기', href: '#all' },
-  secondary_btn: { label: '무료 맛보기', href: '/course.html?slug=capcut-beginner-free', show_icon: true },
+  primary_btn: { label: '전체 강의 보기', href: '#all', action: 'all_courses' },
+  secondary_btn: { label: '무료 맛보기', href: '/course.html?slug=capcut-beginner-free', show_icon: true, action: 'custom' },
   image: null,
   image_alt: '',
 }
@@ -804,6 +788,9 @@ function normalizeHeroConfig(data = {}) {
     base.primary_btn = {
       label: String(data.primary_btn.label || base.primary_btn.label).trim().slice(0, 40),
       href: String(data.primary_btn.href || base.primary_btn.href).trim().slice(0, 300),
+      action: data.primary_btn.action != null
+        ? String(data.primary_btn.action).trim().slice(0, 80) || null
+        : (base.primary_btn.action || null),
     }
   }
   if (data.secondary_btn) {
@@ -811,6 +798,9 @@ function normalizeHeroConfig(data = {}) {
       label: String(data.secondary_btn.label || base.secondary_btn.label).trim().slice(0, 40),
       href: String(data.secondary_btn.href || base.secondary_btn.href).trim().slice(0, 300),
       show_icon: data.secondary_btn.show_icon !== false,
+      action: data.secondary_btn.action != null
+        ? String(data.secondary_btn.action).trim().slice(0, 80) || null
+        : (base.secondary_btn.action || null),
     }
   }
   if (data.image !== undefined) {
@@ -839,6 +829,62 @@ function normalizeInstructorTags(tags) {
 // ── 헬퍼 ──
 function docToObj(doc) { return doc.exists ? { id: doc.id, ...doc.data() } : null }
 function snapToArr(snap) { return snap.docs.map(d => ({ id: d.id, ...d.data() })) }
+
+function parseLiveStart(course) {
+  if (course?.live_starts_at) {
+    const d = new Date(course.live_starts_at)
+    if (!isNaN(d.getTime())) return d
+  }
+  const s = String(course?.live_schedule || '').trim()
+  if (s) {
+    const m = s.match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*(오전|오후)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/)
+    if (m) {
+      let hour = parseInt(m[5], 10)
+      const minute = parseInt(m[6], 10)
+      const second = parseInt(m[7] || '0', 10)
+      if (m[4] === '오후' && hour !== 12) hour += 12
+      if (m[4] === '오전' && hour === 12) hour = 0
+      const d = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), hour, minute, second)
+      if (!isNaN(d.getTime())) return d
+    }
+    const d = new Date(s)
+    if (!isNaN(d.getTime())) return d
+  }
+  return null
+}
+
+function kstDateKey(date) {
+  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' })
+}
+
+function isLiveLectureDay(course, at = new Date()) {
+  const start = parseLiveStart(course)
+  if (!start) return false
+  return kstDateKey(at) === kstDateKey(start)
+}
+
+function getLiveResourceAccess(course, { enrolled = false } = {}) {
+  const replayUrl = String(course?.live_replay_url || '').trim()
+  const materialUrl = String(course?.live_material_url || '').trim()
+  const lectureDay = isLiveLectureDay(course)
+  const start = parseLiveStart(course)
+  return {
+    replay_configured: !!replayUrl,
+    replay_available: enrolled && !!replayUrl,
+    material_configured: !!materialUrl,
+    material_available: enrolled && !!materialUrl && lectureDay,
+    material_lecture_day: lectureDay,
+    live_lecture_date: start
+      ? start.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric' })
+      : null,
+  }
+}
+
+function stripLiveResourceUrls(course) {
+  if (!course || typeof course !== 'object') return course
+  const { live_replay_url, live_material_url, ...rest } = course
+  return rest
+}
 
 // ── DB API ──
 const db = {
@@ -872,14 +918,14 @@ const db = {
     const snap = await fs.collection('users').where('google_id', '==', String(googleId)).limit(1).get()
     return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
   },
-  async createGoogleUser(googleId, email, name, profileImage) {
+  async createGoogleUser(googleId, email, name, profileImage, memberType = 'student') {
     const data = {
       google_id: String(googleId),
       email: email || null,
       password: null,
       name: name || 'Google 사용자',
       role: 'student',
-      member_type: 'student',
+      member_type: ['student', 'client'].includes(memberType) ? memberType : 'student',
       profile_complete: true,
       profile_image: profileImage || null,
       auth_provider: 'google',
@@ -940,6 +986,90 @@ const db = {
     const doc = await fs.collection('courses').doc(id).get()
     return docToObj(doc)
   },
+  getCourseEnrollmentStats(course, countOverride) {
+    const limit = Math.max(0, parseInt(course?.enrollment_limit, 10) || 0)
+    const count = countOverride != null
+      ? Math.max(0, parseInt(countOverride, 10) || 0)
+      : Math.max(0, parseInt(course?.student_count, 10) || 0)
+    if (limit <= 0) {
+      return { limit: 0, count, ratio: 0, full: false, hasLimit: false, remaining: null }
+    }
+    const ratio = Math.min(1, count / limit)
+    return {
+      limit,
+      count,
+      ratio,
+      full: count >= limit,
+      hasLimit: true,
+      remaining: Math.max(0, limit - count),
+    }
+  },
+  isCourseEnrollmentFull(course, countOverride) {
+    return db.getCourseEnrollmentStats(course, countOverride).full
+  },
+  getCourseEnrollmentPublic(course, countOverride) {
+    const s = db.getCourseEnrollmentStats(course, countOverride)
+    return {
+      enrollment_limit: s.limit,
+      enrollment_count: s.count,
+      enrollment_ratio: s.ratio,
+      enrollment_full: s.full,
+      enrollment_has_limit: s.hasLimit,
+      enrollment_remaining: s.remaining,
+    }
+  },
+  async countEnrollmentsByCourse(courseId) {
+    const enrollees = await db.getActiveEnrolleesByCourse(courseId)
+    return enrollees.length
+  },
+  async getActiveEnrolleesByCourse(courseId) {
+    const enrollments = await db.getEnrollmentsByCourse(courseId)
+    const rowsByUser = new Map()
+    for (const e of enrollments) {
+      const order = await db.getActiveOrderForCourse(e.user_id, courseId)
+      if (!order) continue
+      const user = await db.findUserById(e.user_id)
+      if (!user) continue
+      const enrolledAt = e.enrolled_at || order.paid_at || null
+      const prev = rowsByUser.get(e.user_id)
+      if (!prev || String(enrolledAt) > String(prev.enrolled_at)) {
+        rowsByUser.set(e.user_id, {
+          user_id: e.user_id,
+          name: user.name || '-',
+          email: user.email || '-',
+          phone: user.phone || null,
+          member_type: user.member_type || 'student',
+          enrolled_at: enrolledAt,
+          paid_amount: Number(order.amount || 0),
+          method: order.method || '-',
+          paid_at: order.paid_at || null,
+        })
+      }
+    }
+    const rows = [...rowsByUser.values()]
+    rows.sort((a, b) => String(b.enrolled_at || '').localeCompare(String(a.enrolled_at || '')))
+    return rows
+  },
+  async syncCourseStudentCount(courseId) {
+    const count = await db.countEnrollmentsByCourse(courseId)
+    await db.updateCourse(courseId, { student_count: count })
+    return count
+  },
+  async isCourseEnrollmentFullAsync(course) {
+    const count = await db.countEnrollmentsByCourse(course.id)
+    return db.isCourseEnrollmentFull(course, count)
+  },
+  async getCourseEnrollmentPublicAsync(course) {
+    const count = await db.countEnrollmentsByCourse(course.id)
+    return {
+      student_count: count,
+      ...db.getCourseEnrollmentPublic(course, count),
+    }
+  },
+  async enrichCourseEnrollment(course) {
+    const pub = await db.getCourseEnrollmentPublicAsync(course)
+    return { ...course, ...pub }
+  },
   async updateCourse(id, data) {
     await fs.collection('courses').doc(id).update(data)
   },
@@ -998,6 +1128,64 @@ const db = {
     }
 
     return { updated, unpublished, created, catalog_count: COURSES.length, catalog_slugs: [...TARGET_SLUGS] }
+  },
+
+  /** 카탈로그에 없는 구버전 강의와 연관 데이터 삭제 (라이브 강의는 기본 제외) */
+  async deleteCourseCascade(courseId) {
+    const counts = {
+      chapters: 0,
+      enrollments: 0,
+      reviews: 0,
+      anticipation_reviews: 0,
+      progress: 0,
+      orders: 0,
+    }
+
+    const chaptersSnap = await fs.collection('chapters').where('course_id', '==', courseId).get()
+    const chapterIds = chaptersSnap.docs.map(d => d.id)
+    counts.chapters = await deleteFirestoreDocs(chaptersSnap.docs)
+
+    for (let i = 0; i < chapterIds.length; i += 10) {
+      const chunk = chapterIds.slice(i, i + 10)
+      const progSnap = await fs.collection('progress').where('chapter_id', 'in', chunk).get()
+      counts.progress += await deleteFirestoreDocs(progSnap.docs)
+    }
+
+    for (const col of ['enrollments', 'reviews', 'anticipation_reviews', 'orders']) {
+      const snap = await fs.collection(col).where('course_id', '==', courseId).get()
+      counts[col] = await deleteFirestoreDocs(snap.docs)
+    }
+
+    await fs.collection('courses').doc(courseId).delete()
+    return counts
+  },
+
+  async deleteLegacyCourses({ includeLive = false } = {}) {
+    const { TARGET_SLUGS } = require('./course-catalog')
+    const snap = await fs.collection('courses').get()
+    const legacy = snap.docs.filter(d => {
+      const data = d.data()
+      if (TARGET_SLUGS.has(data.slug)) return false
+      if (!includeLive && data.course_type === 'live') return false
+      return true
+    })
+
+    const deleted = []
+    const totals = { courses: 0, chapters: 0, enrollments: 0, reviews: 0, anticipation_reviews: 0, progress: 0, orders: 0 }
+
+    for (const doc of legacy) {
+      const counts = await db.deleteCourseCascade(doc.id)
+      deleted.push({
+        id: doc.id,
+        slug: doc.data().slug,
+        title: doc.data().title,
+        ...counts,
+      })
+      totals.courses++
+      for (const key of Object.keys(counts)) totals[key] += counts[key]
+    }
+
+    return { deleted_count: deleted.length, deleted, totals, catalog_slugs: [...TARGET_SLUGS] }
   },
 
   // chapters
@@ -1082,8 +1270,11 @@ const db = {
     }
     return false
   },
-  async recallAnticipationCoupons(userId, { refundedOrderId } = {}) {
-    const coupons = (await db.getCouponsByUser(userId)).filter(c => c.reason === ANTICIPATION_COUPON_REASON)
+  async recallEnrollmentCoupons(userId, courseId, { refundedOrderId } = {}) {
+    const coupons = (await db.getCouponsByUser(userId)).filter(c => {
+      if (c.reason === ANTICIPATION_COUPON_REASON) return true
+      return c.reason === COURSE_REVIEW_FIVE_STAR_REASON && c.course_id === courseId
+    })
     let recalled = 0
     for (const c of coupons) {
       if (c.status === 'available') {
@@ -1159,10 +1350,6 @@ const db = {
     if (!plan.allowed) return { error: 'not_allowed', message: plan.error }
 
     await db.unenroll(userId, courseId)
-    const nextCount = Math.max(0, (course.student_count || 0) - 1)
-    await db.updateCourse(courseId, { student_count: nextCount })
-
-    let refundedOrderId = null
     if (order && plan.type === 'refund') {
       await db.refundOrder(order.id, plan.refund_amount)
       refundedOrderId = order.id
@@ -1171,9 +1358,11 @@ const db = {
       refundedOrderId = order.id
     }
 
+    await db.syncCourseStudentCount(courseId)
+
     await db.deleteProgressByCourse(userId, courseId)
     const anticipationDeleted = await db.deleteAnticipationReviewByUserAndCourse(userId, courseId)
-    const couponsRecalled = await db.recallAnticipationCoupons(userId, { refundedOrderId })
+    const couponsRecalled = await db.recallEnrollmentCoupons(userId, courseId, { refundedOrderId })
 
     return {
       success: true,
@@ -1234,16 +1423,50 @@ const db = {
     const snap = await fs.collection('reviews').orderBy('created_at', 'desc').get()
     return snapToArr(snap)
   },
+  async getReviewByUserAndCourse(userId, courseId) {
+    const snap = await fs.collection('reviews').where('user_id', '==', userId).where('course_id', '==', courseId).limit(1).get()
+    if (snap.empty) return null
+    return { id: snap.docs[0].id, ...snap.docs[0].data() }
+  },
   async upsertReview(userId, courseId, rating, content) {
     const snap = await fs.collection('reviews').where('user_id', '==', userId).where('course_id', '==', courseId).limit(1).get()
+    const numRating = Math.max(1, Math.min(5, parseInt(rating, 10) || 0))
     if (!snap.empty) {
-      await fs.collection('reviews').doc(snap.docs[0].id).update({ rating, content })
+      await fs.collection('reviews').doc(snap.docs[0].id).update({ rating: numRating, content })
     } else {
-      await fs.collection('reviews').add({ user_id: userId, course_id: courseId, rating, content, is_public: 1, created_at: now() })
+      await fs.collection('reviews').add({ user_id: userId, course_id: courseId, rating: numRating, content, is_public: 1, created_at: now() })
     }
     const pub = await db.getReviews(courseId)
     const avg = pub.reduce((s, r) => s + r.rating, 0) / (pub.length || 1)
     await db.updateCourse(courseId, { rating: Math.round(avg * 10) / 10, review_count: pub.length })
+
+    let coupon = null
+    if (numRating === 5) {
+      const userCoupons = await db.getCouponsByUser(userId)
+      const existingAvailable = userCoupons.find(
+        c => c.reason === COURSE_REVIEW_FIVE_STAR_REASON
+          && c.course_id === courseId
+          && c.status === 'available'
+          && !isTimedPercentCouponExpired(c)
+      )
+      const alreadyIssued = userCoupons.some(
+        c => c.reason === COURSE_REVIEW_FIVE_STAR_REASON && c.course_id === courseId
+      )
+      if (existingAvailable) {
+        coupon = db.enrichCoupon(existingAvailable)
+      } else if (!alreadyIssued) {
+        const issuedAt = now()
+        coupon = await db.createCoupon(userId, 0, COURSE_REVIEW_FIVE_STAR_REASON, {
+          discount_percent: COURSE_REVIEW_FIVE_STAR_DISCOUNT_PERCENT,
+          coupon_type: 'percent',
+          stackable: true,
+          first_course_only: true,
+          course_id: courseId,
+          expires_at: addOneMonthFrom(issuedAt),
+        })
+      }
+    }
+    return { rating: numRating, coupon }
   },
   async deleteReview(id) {
     await fs.collection('reviews').doc(id).delete()
@@ -1388,6 +1611,9 @@ const db = {
     if (enroll && await db.isEnrolled(userId, courseId)) {
       return { error: 'already_enrolled' }
     }
+    if (enroll && await db.isCourseEnrollmentFullAsync(course)) {
+      return { error: 'enrollment_full' }
+    }
 
     const authorDisplay = db.maskAuthorName(user.name)
     const authorIdDisplay = db.maskUserLoginId(user)
@@ -1413,7 +1639,7 @@ const db = {
     }
 
     const existingCoupon = (await db.getCouponsByUser(userId)).find(
-      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available' && !isAnticipationCouponExpired(c)
+      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available' && !isTimedPercentCouponExpired(c)
     )
     let coupon = existingCoupon || null
     if (!coupon) {
@@ -1433,7 +1659,7 @@ const db = {
       if (isFree) {
         await db.createOrder(userId, courseId, 0, course.course_type === 'live' ? '무료' : '무료', 0)
       }
-      await db.updateCourse(courseId, { student_count: (course.student_count || 0) + 1 })
+      await db.syncCourseStudentCount(courseId)
       enrolled = true
     }
 
@@ -1462,7 +1688,7 @@ const db = {
     const review = { id: ref.id, user_id: userId, author_display: authorDisplay, content: text, is_public: 1, created_at: now() }
 
     const existingCoupon = (await db.getCouponsByUser(userId)).find(
-      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available' && !isAnticipationCouponExpired(c)
+      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available' && !isTimedPercentCouponExpired(c)
     )
     let coupon = existingCoupon || null
     if (!coupon) {
@@ -1481,7 +1707,7 @@ const db = {
   // coupons
   isCouponExpired(coupon) {
     if (!coupon || coupon.status !== 'available') return coupon?.status === 'expired'
-    if (coupon.reason === ANTICIPATION_COUPON_REASON) return isAnticipationCouponExpired(coupon)
+    if (TIMED_PERCENT_COUPON_REASONS.has(coupon.reason)) return isTimedPercentCouponExpired(coupon)
     return false
   },
   async expireCouponIfNeeded(coupon) {
@@ -1492,10 +1718,38 @@ const db = {
   },
   enrichCoupon(coupon) {
     if (!coupon) return coupon
-    const expires_at = coupon.reason === ANTICIPATION_COUPON_REASON
-      ? getAnticipationCouponExpiresAt(coupon)
+    const expires_at = TIMED_PERCENT_COUPON_REASONS.has(coupon.reason)
+      ? getTimedPercentCouponExpiresAt(coupon)
       : (coupon.expires_at || null)
     return { ...coupon, expires_at }
+  },
+  async resolveStackableCourseDiscount(userId, salePrice, isFirstPurchase) {
+    const coupons = await db.getCouponsByUser(userId)
+    const applicable = []
+    for (const raw of coupons) {
+      const c = db.enrichCoupon(raw)
+      if (c.status !== 'available') continue
+      if (db.isCouponExpired(c)) continue
+      if (!STACKABLE_COURSE_COUPON_REASONS.includes(c.reason)) continue
+      if (c.first_course_only && !isFirstPurchase) continue
+      if (!c.discount_percent) continue
+      applicable.push(c)
+    }
+    const anticipation = applicable.filter(c => c.reason === ANTICIPATION_COUPON_REASON).slice(0, 1)
+    const reviewCandidates = applicable
+      .filter(c => c.reason === COURSE_REVIEW_FIVE_STAR_REASON)
+      .sort((a, b) => (a.expires_at || a.created_at || '').localeCompare(b.expires_at || b.created_at || ''))
+    const reviewPick = reviewCandidates.length ? [reviewCandidates[0]] : []
+    const toApply = [...anticipation, ...reviewPick]
+    const applied = []
+    let totalDiscount = 0
+    for (const c of toApply) {
+      const discount = Math.floor(Number(salePrice) * Number(c.discount_percent) / 100)
+      if (discount <= 0) continue
+      totalDiscount += discount
+      applied.push({ coupon: c, discount })
+    }
+    return { totalDiscount, applied }
   },
   inferCouponUsedContext(coupon) {
     if (!coupon) return null
@@ -2404,7 +2658,8 @@ const db = {
     return Promise.all(courses.map(async c => {
       const snap = await fs.collection('orders').where('course_id', '==', c.id).where('status', '==', 'paid').get()
       const revenue = snap.docs.reduce((s, d) => s + (d.data().amount || 0), 0)
-      return { id: c.id, title: c.title, sale_price: c.sale_price, student_count: c.student_count || 0, revenue }
+      const student_count = await db.countEnrollmentsByCourse(c.id)
+      return { id: c.id, title: c.title, sale_price: c.sale_price, student_count, revenue }
     }))
   },
 
@@ -2692,12 +2947,21 @@ const db = {
   async deleteInstructor(id) {
     await fs.collection('instructors').doc(id).delete()
   },
+
+  parseLiveStart,
+  isLiveLectureDay,
+  getLiveResourceAccess,
+  stripLiveResourceUrls,
 }
 
 seed().catch(console.error)
 seedEditorWorkbooks().catch(console.error)
 
 module.exports = db
+module.exports.parseLiveStart = parseLiveStart
+module.exports.isLiveLectureDay = isLiveLectureDay
+module.exports.getLiveResourceAccess = getLiveResourceAccess
+module.exports.stripLiveResourceUrls = stripLiveResourceUrls
 module.exports.userPayload = userPayload
 module.exports.EDITOR_WORK_TYPES = EDITOR_WORK_TYPES
 module.exports.EDITOR_FEATURED_REASON = EDITOR_FEATURED_REASON
@@ -2706,6 +2970,9 @@ module.exports.ANTICIPATION_COUPON_REASON = ANTICIPATION_COUPON_REASON
 module.exports.ANTICIPATION_DISCOUNT_PERCENT = ANTICIPATION_DISCOUNT_PERCENT
 module.exports.ANTICIPATION_MIN_LENGTH = ANTICIPATION_MIN_LENGTH
 module.exports.ANTICIPATION_MAX_LENGTH = ANTICIPATION_MAX_LENGTH
+module.exports.COURSE_REVIEW_FIVE_STAR_REASON = COURSE_REVIEW_FIVE_STAR_REASON
+module.exports.COURSE_REVIEW_FIVE_STAR_DISCOUNT_PERCENT = COURSE_REVIEW_FIVE_STAR_DISCOUNT_PERCENT
+module.exports.STACKABLE_COURSE_COUPON_REASONS = STACKABLE_COURSE_COUPON_REASONS
 module.exports.CLIENT_PROJECT_COUPON_MIN_AMOUNT = CLIENT_PROJECT_COUPON_MIN_AMOUNT
 module.exports.getTotalMailCountFromConfig = getTotalMailCountFromConfig
 module.exports.DEFAULT_EDITOR_PROGRAM_CONFIG = DEFAULT_EDITOR_PROGRAM_CONFIG

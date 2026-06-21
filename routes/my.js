@@ -124,8 +124,10 @@ router.get('/courses', authMiddleware, async (req, res) => {
     const completed = progress.filter(p => p.completed).length
     const order = await db.getActiveOrderForCourse(req.user.id, c.id)
     const cancelPlan = db.computeEnrollmentCancelPlan(c, order, progress, chapters)
-    return {
-      ...c,
+    const myReview = await db.getReviewByUserAndCourse(req.user.id, c.id)
+    const base = db.stripLiveResourceUrls(c)
+    const row = {
+      ...base,
       enrolled_at: e.enrolled_at,
       total_chapters: chapters.length,
       completed_chapters: completed,
@@ -135,9 +137,47 @@ router.get('/courses', authMiddleware, async (req, res) => {
       cancel_label: cancelPlan.label || (Number(order?.amount || 0) > 0 ? '환불 신청' : '신청 취소'),
       cancel_hint: cancelPlan.error || null,
       refund_preview: cancelPlan.refund_amount || 0,
+      my_review: myReview ? { rating: myReview.rating, content: myReview.content || '' } : null,
     }
+    if (c.course_type === 'live') {
+      row.live_resources = db.getLiveResourceAccess(c, { enrolled: true })
+    }
+    return row
   }))
   res.json(courses.filter(Boolean).reverse())
+})
+
+router.get('/courses/:courseId/live-replay', authMiddleware, async (req, res) => {
+  const course = await db.getCourseById(req.params.courseId)
+  if (!course || course.course_type !== 'live') {
+    return res.status(404).json({ error: '라이브 강의를 찾을 수 없습니다.' })
+  }
+  if (!await db.isEnrolled(req.user.id, course.id)) {
+    return res.status(403).json({ error: '수강 신청 후 이용할 수 있습니다.' })
+  }
+  const url = String(course.live_replay_url || '').trim()
+  if (!url || !/^https?:\/\/.+/i.test(url)) {
+    return res.status(404).json({ error: '다시보기 링크가 아직 준비되지 않았습니다.' })
+  }
+  res.json({ url })
+})
+
+router.get('/courses/:courseId/live-material', authMiddleware, async (req, res) => {
+  const course = await db.getCourseById(req.params.courseId)
+  if (!course || course.course_type !== 'live') {
+    return res.status(404).json({ error: '라이브 강의를 찾을 수 없습니다.' })
+  }
+  if (!await db.isEnrolled(req.user.id, course.id)) {
+    return res.status(403).json({ error: '수강 신청 후 이용할 수 있습니다.' })
+  }
+  if (!db.isLiveLectureDay(course)) {
+    return res.status(403).json({ error: '강의 자료는 강의 당일에만 다운로드할 수 있습니다.' })
+  }
+  const url = String(course.live_material_url || '').trim()
+  if (!url || !/^https?:\/\/.+/i.test(url)) {
+    return res.status(404).json({ error: '자료 다운로드 링크가 아직 준비되지 않았습니다.' })
+  }
+  res.json({ url })
 })
 
 router.get('/courses/:courseId/cancel-preview', authMiddleware, async (req, res) => {
@@ -195,8 +235,12 @@ router.post('/reviews', authMiddleware, async (req, res) => {
   const { course_id, rating, content } = req.body
   if (!course_id || !rating) return res.status(400).json({ error: '필수 항목 누락' })
   if (!await db.isEnrolled(req.user.id, course_id)) return res.status(403).json({ error: '수강생만 후기를 작성할 수 있습니다.' })
-  await db.upsertReview(req.user.id, course_id, rating, content)
-  res.json({ success: true })
+  const result = await db.upsertReview(req.user.id, course_id, rating, content)
+  res.json({
+    success: true,
+    coupon: result.coupon ? db.enrichCoupon(result.coupon) : null,
+    rating: result.rating,
+  })
 })
 
 router.get('/coupons', authMiddleware, async (req, res) => {

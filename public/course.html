@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>강의 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=6" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
@@ -20,8 +20,7 @@
       </div>
       <div style="padding: 0 22px 20px">
         <p class="anticipation-modal-note">
-          이 강의에 대한 기대평을 작성해 주세요. 기대평 작성 후 수강 신청이 완료됩니다.<br>
-          <strong>최초 유료 강의 결제 시 20% 할인 쿠폰</strong>이 발급됩니다. (1인 1회 · 발급일로부터 1개월 유효)
+          이 강의에 대한 기대평을 작성해 주세요. 기대평 작성 후 수강 신청이 완료됩니다.
         </p>
         <textarea id="anticipation-input" maxlength="150" placeholder="이 강의에서 배우고 싶은 점, 기대하는 내용을 20~150자로 작성해주세요."></textarea>
         <div class="anticipation-modal-meta">
@@ -57,8 +56,9 @@
   <script src="/js/api.js"></script>
   <script src="/js/auth-redirect.js"></script>
   <script src="/js/site-layout.js"></script>
-  <script src="/js/site-header.js?v=6"></script>
+  <script src="/js/site-header.js?v=9"></script>
   <script src="/js/home-nav.js"></script>
+  <script src="/js/course-enrollment-ui.js"></script>
   <script>
     const slug = new URLSearchParams(location.search).get('slug')
     let courseData = null
@@ -148,31 +148,20 @@
     }
 
     function renderBodySection(c) {
-      const isLive = c.course_type === 'live'
-      if (isLive) {
-        return `
-          <div class="course-curriculum-row">
+      return `
+        <div class="course-body-inner">
+          <div class="course-body-main">
             <div class="course-section">
               <h2>커리큘럼</h2>
               ${renderCurriculumSection(c)}
             </div>
+          </div>
+          <aside class="course-body-side" aria-label="수강 신청 기대평">
             <div class="course-section">
               <h2>수강 신청 기대평</h2>
               ${renderAnticipationFeed()}
-              <div class="anticipation-coupon-note">
-                기대평을 작성하고 신청하시면 <strong>최초 유료 강의 결제 20% 할인 쿠폰</strong>을 드립니다. (발급일로부터 1개월)
-              </div>
             </div>
-          </div>`
-      }
-      return `
-        <div class="course-section">
-          <h2>커리큘럼</h2>
-          ${renderCurriculumSection(c)}
-        </div>
-        <div class="course-section">
-          <h2>수강 신청 기대평</h2>
-          ${renderAnticipationFeed()}
+          </aside>
         </div>`
     }
 
@@ -182,32 +171,117 @@
       return '기대평 작성하고 수강 신청'
     }
 
+    function renderLiveEnrolledAction(c) {
+      const extras = window.LiveSession?.liveResourceButtonsHtml
+        ? LiveSession.liveResourceButtonsHtml(c)
+        : ''
+      const url = (c.live_chat_url || '').trim()
+      if (url) {
+        return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="btn-kakao-room">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1C4.582 1 1 3.925 1 7.5c0 2.286 1.417 4.294 3.563 5.467L3.67 16.14a.25.25 0 0 0 .37.278L8.13 13.96c.288.027.58.04.87.04 4.418 0 8-2.925 8-6.5S13.418 1 9 1z" fill="#3A1D1D"/></svg>
+          수강생 대기실로 입장
+        </a>${extras ? `<div class="buy-live-extras">${extras}</div>` : ''}`
+      }
+      return `<div class="btn-enroll enrolled buy-live-enrolled"><i class="ti ti-check"></i> 신청 완료</div>${extras ? `<div class="buy-live-extras">${extras}</div>` : ''}`
+    }
+
+    function renderApplyBtn(c, labelHtml, onclickAttr) {
+      return CourseEnrollmentUI.wrapBlockButton(labelHtml, c, onclickAttr)
+    }
+
+    function renderBuyEnrollmentNote(c) {
+      const m = CourseEnrollmentUI.meta(c)
+      if (!m.hasLimit) return ''
+      const fill = CourseEnrollmentUI.gaugeFillStyle(m.ratio)
+      const cap = CourseEnrollmentUI.gaugeCapacityStyle(m.ratio)
+      return `<div class="buy-enroll-status">
+        <span class="enroll-capacity" style="${cap}" aria-label="신청 ${m.count}명, 모집 정원 ${m.limit}명">${m.count}<span class="enroll-capacity-sep">/</span>${m.limit}</span>
+        <span class="enroll-gauge" role="meter" aria-valuenow="${m.count}" aria-valuemin="0" aria-valuemax="${m.limit}">
+          <span class="enroll-gauge-fill" style="${fill}"></span>
+        </span>
+      </div>`
+    }
+
+    function renderBuyThumb(c, thumbClass) {
+      const thumbImg = c.thumbnail_url || c.thumbnail_image
+      if (thumbImg) {
+        return `<div class="buy-thumb ${thumbClass}"><img src="${esc(thumbImg)}" alt="" /></div>`
+      }
+      return `<div class="buy-thumb ${thumbClass}"><i class="ti ${c.thumbnail_icon || 'ti-video'}"></i></div>`
+    }
+
+    function buildHeroGalleryUrls(c) {
+      const urls = []
+      const add = (url) => {
+        const s = String(url || '').trim()
+        if (!s || urls.includes(s) || urls.length >= 10) return
+        urls.push(s)
+      }
+      add(c.thumbnail_url || c.thumbnail_image)
+      const gallery = Array.isArray(c.hero_gallery) ? c.hero_gallery : []
+      gallery.forEach(add)
+      return urls
+    }
+
+    function renderHeroBackground(urls) {
+      if (!urls.length) {
+        return `<div class="course-hero-bg course-hero-bg--empty" aria-hidden="true"></div><div class="course-hero-overlay" aria-hidden="true"></div>`
+      }
+      const slides = urls.map((url, i) =>
+        `<div class="course-hero-slide${i === 0 ? ' is-active' : ''}" style="background-image:url('${esc(url).replace(/'/g, '%27')}')"></div>`
+      ).join('')
+      return `<div class="course-hero-bg" aria-hidden="true"><div class="course-hero-slides">${slides}</div></div><div class="course-hero-overlay" aria-hidden="true"></div>`
+    }
+
+    let _heroGalleryTimer = null
+    function startHeroGallery(heroEl) {
+      if (_heroGalleryTimer) {
+        clearInterval(_heroGalleryTimer)
+        _heroGalleryTimer = null
+      }
+      if (!heroEl) return
+      const slides = heroEl.querySelectorAll('.course-hero-slide')
+      if (slides.length <= 1) return
+      let idx = 0
+      _heroGalleryTimer = setInterval(() => {
+        slides[idx].classList.remove('is-active')
+        idx = (idx + 1) % slides.length
+        slides[idx].classList.add('is-active')
+      }, 2000)
+    }
+
     function render(c) {
       const totalChapters = c.chapters?.length || 0
       const freeChapters = c.chapters?.filter(ch=>ch.is_free).length || 0
       const thumbClass = c.thumb_style==='dark'?'thumb-dark':'thumb-light'
       const freeVod = isFreeVod(c)
       const salePriceLabel = formatSalePrice(c)
+      const badgeHtml = c.course_type === 'live'
+        ? googleMeetBadgeHtml('ch-badge ch-badge--meet')
+        : (c.badge ? `<span class="ch-badge ch-badge--${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')
 
+      const heroGalleryUrls = buildHeroGalleryUrls(c)
       document.title = c.title + ' — 타닥클래스'
       document.getElementById('course-wrap').innerHTML = `
-        <div class="course-hero ${thumbClass === 'thumb-dark' ? 'hero-dark' : 'hero-light'}">
+        <div class="course-hero course-hero--gallery">
+          ${renderHeroBackground(heroGalleryUrls)}
           <div class="container course-hero-inner">
             <div class="course-hero-text">
-              ${c.course_type === 'live'
-                ? googleMeetBadgeHtml('ch-badge ch-badge--meet')
-                : (c.badge ? `<span class="ch-badge ch-badge--${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
-              <h1>${c.title}</h1>
-              <p class="ch-desc">${c.description||''}</p>
-              <div class="ch-meta">
-                <span><i class="ti ti-star-filled"></i> ${Number(c.review_count) > 0 ? `${c.rating} (${Number(c.review_count).toLocaleString()}개 후기)` : '후기 없음'}</span>
-                <span><i class="ti ti-users"></i> ${Number(c.student_count).toLocaleString()}명 수강 중</span>
-                <span><i class="ti ti-list"></i> 총 ${totalChapters}강</span>
-                <span><i class="ti ti-player-play"></i> 무료 ${freeChapters}강 제공</span>
+              ${badgeHtml ? `<div class="course-hero-badges">${badgeHtml}</div>` : ''}
+              <div class="course-hero-copy">
+                <h1>${c.title}</h1>
+                <p class="ch-desc">${c.description||''}</p>
+                <div class="ch-meta">
+                  <span><i class="ti ti-star-filled"></i> ${Number(c.review_count) > 0 ? `${c.rating} (${Number(c.review_count).toLocaleString()}개 후기)` : '후기 없음'}</span>
+                  <span><i class="ti ti-users"></i> ${Number(c.student_count).toLocaleString()}명 수강 중</span>
+                  <span><i class="ti ti-list"></i> 총 ${totalChapters}강</span>
+                  <span><i class="ti ti-player-play"></i> 무료 ${freeChapters}강 제공</span>
+                </div>
               </div>
             </div>
-            <div class="course-buy-card">
-              <div class="buy-thumb ${thumbClass}"><i class="ti ${c.thumbnail_icon}"></i></div>
+            <div class="course-buy-card${CourseEnrollmentUI.buyCardPanelClass(c)}">
+              ${CourseEnrollmentUI.buyCardPanelOpen(c)}
+              ${renderBuyThumb(c, thumbClass)}
               <div class="buy-body">
                 ${c.course_type === 'live' ? `
                 <div class="buy-live-head">
@@ -215,19 +289,21 @@
                   <div class="buy-live-sub">라이브 강의 · 무료 참여</div>
                 </div>
                 ${c.live_schedule ? `<div class="buy-live-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule}</div>` : ''}
+                ${renderBuyEnrollmentNote(c)}
                 ${c.enrolled
-                  ? `<div class="btn-enroll enrolled buy-live-enrolled"><i class="ti ti-check"></i> 신청 완료 — 알림톡으로 안내 예정</div>`
+                  ? renderLiveEnrolledAction(c)
                   : c.live_status === 'ended'
                     ? `<div class="btn-enroll buy-live-ended">종료된 강의입니다</div>`
-                    : `<button class="btn-enroll" onclick="openAnticipationModal('live')"><i class="ti ti-message-heart"></i> ${enrollButtonLabel(c)}</button>`
+                    : renderApplyBtn(c, `<i class="ti ti-message-heart"></i> ${enrollButtonLabel(c)}`, `onclick="openAnticipationModal('live')"`)
                 }
                 <ul class="buy-features">
                   <li><span class="feat-icon feat-icon--live"><i class="ti ti-broadcast"></i></span> 라이브 실시간 강의</li>
                   <li><span class="feat-icon feat-icon--meet"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span> Google Meet 참여</li>
-                  <li><span class="feat-icon feat-icon--chat"><i class="ti ti-message-circle"></i></span> 실시간 질의응답</li>
-                  <li><span class="feat-icon feat-icon--kakao"><i class="ti ti-brand-kakao"></i></span> 카카오 알림톡 안내</li>
+                  <li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 다시보기 무제한 제공</li>
+                  <li><span class="feat-icon feat-icon--material"><i class="ti ti-download"></i></span> 자료 다운로드 강의 당일(1일)</li>
                 </ul>
               ` : `
+                ${renderBuyEnrollmentNote(c)}
                 <div class="buy-price-row">
                   ${!freeVod && c.price!==c.sale_price ? `<span class="buy-original">₩${Number(c.price).toLocaleString()}</span><span class="buy-disc">${Math.round((1-c.sale_price/c.price)*100)}%</span>` : ''}
                 </div>
@@ -235,10 +311,10 @@
                 ${c.enrolled
                   ? `<a href="/player.html?slug=${c.slug}&chapter=first" class="btn-enroll enrolled"><i class="ti ti-player-play"></i> 이어서 수강하기</a>`
                   : freeVod
-                    ? `<button class="btn-enroll" onclick="openAnticipationModal('free-vod')"><i class="ti ti-message-heart"></i> ${enrollButtonLabel(c)}</button>`
+                    ? renderApplyBtn(c, `<i class="ti ti-message-heart"></i> ${enrollButtonLabel(c)}`, `onclick="openAnticipationModal('free-vod')"`)
                     : c.my_anticipation
-                      ? `<button class="btn-enroll" onclick="openModal()"><i class="ti ti-shopping-cart"></i> 결제하고 수강 시작</button>`
-                      : `<button class="btn-enroll" onclick="openAnticipationModal('paid')"><i class="ti ti-message-heart"></i> ${enrollButtonLabel(c)}</button>`
+                      ? renderApplyBtn(c, `<i class="ti ti-shopping-cart"></i> 결제하고 수강 시작`, `onclick="openModal()"`)
+                      : renderApplyBtn(c, `<i class="ti ti-message-heart"></i> ${enrollButtonLabel(c)}`, `onclick="openAnticipationModal('paid')"`)
                 }
                 <ul class="buy-features">
                   <li><span class="feat-icon feat-icon--lifetime"><i class="ti ti-infinity"></i></span> 평생 소장</li>
@@ -248,18 +324,22 @@
                 </ul>
               `}
               </div>
+              ${CourseEnrollmentUI.buyCardPanelClose(c)}
             </div>
           </div>
         </div>
 
         <div class="container course-body-wrap">
-          <div class="course-main">
-            ${renderBodySection(c)}
-          </div>
+          ${renderBodySection(c)}
         </div>`
+      startHeroGallery(document.querySelector('.course-hero--gallery'))
     }
 
     function openAnticipationModal(mode) {
+      if (CourseEnrollmentUI.isClosedForApply(courseData)) {
+        toast('모집 정원이 마감되었습니다.', 'error')
+        return
+      }
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
       if (courseData?.my_anticipation) {
         if (mode === 'paid') openModal()
@@ -296,14 +376,6 @@
         toast(`기대평은 ${ANTICIPATION_MAX}자 이내로 입력해주세요.`, 'error')
         return
       }
-      if (pendingApplyMode === 'live' && typeof ensurePhone === 'function') {
-        const ok = await ensurePhone({
-          title: '라이브 안내를 받을 번호',
-          message: '무료 라이브 강의 일정·입장 안내는 카카오 알림톡으로 발송됩니다. 휴대폰 번호를 등록해주세요.',
-        })
-        if (!ok) return
-      }
-
       const btn = document.getElementById('btn-anticipation-submit')
       btn.disabled = true
       btn.textContent = '처리 중...'
@@ -311,13 +383,9 @@
         const res = await API.post('/courses/' + slug + '/apply-with-anticipation', { content })
         closeAnticipationModal()
         let msg = '기대평 작성 완료!'
-        if (res.coupon) {
-          const exp = res.coupon.expires_at ? ` (유효기간 ~${String(res.coupon.expires_at).slice(0, 10)})` : ''
-          msg += ` 20% 할인 쿠폰이 발급되었습니다.${exp}`
-        }
         if (res.enrolled) {
           msg += courseData.course_type === 'live'
-            ? ' 라이브 당일 카카오 알림톡으로 안내드립니다.'
+            ? ' 라이브 수강 신청이 완료되었습니다.'
             : ' 수강 신청이 완료되었습니다.'
         } else if (res.needs_payment) {
           msg += ' 결제를 진행해주세요.'
@@ -351,9 +419,14 @@
     }
 
     let selectedCouponCode = null
+    const STACKABLE_REASONS = ['anticipation_review', 'course_review_five_star']
 
     async function openModal() {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
+      if (CourseEnrollmentUI.isClosedForApply(courseData)) {
+        toast('모집 정원이 마감되었습니다.', 'error')
+        return
+      }
       if (!courseData.my_anticipation) {
         openAnticipationModal('paid')
         return
@@ -361,7 +434,6 @@
       document.getElementById('modal-course-info').innerHTML = `<div class="mci-title">${courseData.title}</div>`
       selectedCouponCode = null
       let total = Number(courseData.sale_price)
-      let discountHtml = ''
       try {
         const [coupons, orders] = await Promise.all([
           API.get('/my/coupons'),
@@ -376,22 +448,31 @@
           if (c.first_course_only && !isFirstPurchase) return false
           return true
         })
-        let best = null
-        let bestDiscount = 0
-        for (const c of applicable) {
-          const d = c.discount_percent
-            ? Math.floor(total * Number(c.discount_percent) / 100)
-            : Number(c.amount || 0)
-          if (d > bestDiscount) { bestDiscount = d; best = c }
+        const stackable = applicable.filter(c => STACKABLE_REASONS.includes(c.reason) && c.discount_percent)
+        const anticipation = stackable.filter(c => c.reason === 'anticipation_review').slice(0, 1)
+        const reviewPick = stackable
+          .filter(c => c.reason === 'course_review_five_star')
+          .sort((a, b) => (a.expires_at || a.created_at || '').localeCompare(b.expires_at || b.created_at || ''))
+          .slice(0, 1)
+        const stackCoupons = [...anticipation, ...reviewPick]
+        let totalDiscount = 0
+        for (const c of stackCoupons) {
+          totalDiscount += Math.floor(total * Number(c.discount_percent) / 100)
         }
-        if (best && bestDiscount > 0) {
-          selectedCouponCode = best.code
-          total = Math.max(0, total - bestDiscount)
-          const label = best.discount_percent ? `${best.discount_percent}% 할인 쿠폰` : `${bestDiscount.toLocaleString()}원 할인 쿠폰`
-          discountHtml = `<div style="font-size:14px;color:#2cae6b;margin-bottom:6px">${label} 적용 · -₩${bestDiscount.toLocaleString()}</div>`
+        if (totalDiscount <= 0) {
+          for (const c of applicable) {
+            const d = c.discount_percent
+              ? Math.floor(total * Number(c.discount_percent) / 100)
+              : Number(c.amount || 0)
+            if (d > totalDiscount) {
+              totalDiscount = d
+              selectedCouponCode = c.code
+            }
+          }
         }
+        if (totalDiscount > 0) total = Math.max(0, total - totalDiscount)
       } catch (_) {}
-      document.getElementById('modal-total').innerHTML = discountHtml + `총 결제금액 <b>₩${total.toLocaleString()}</b>`
+      document.getElementById('modal-total').innerHTML = `총 결제금액 <b>₩${total.toLocaleString()}</b>`
       document.getElementById('modal-overlay').classList.remove('hidden')
     }
     function closeModal() { document.getElementById('modal-overlay').classList.add('hidden') }
