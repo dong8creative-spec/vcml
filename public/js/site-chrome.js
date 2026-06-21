@@ -1,4 +1,13 @@
 (function () {
+  const SHOW_LOGIN_LINK = false // 임시: 「로그인」 텍스트 링크 숨김
+
+  function guestChromeAuthHtml(next) {
+    const icon = typeof GOOGLE_ICON_SVG !== 'undefined' ? GOOGLE_ICON_SVG : (window.GOOGLE_ICON_SVG || '')
+    const loginLink = SHOW_LOGIN_LINK
+      ? `<a href="/login.html?next=${next}" class="nav-btn">로그인</a>`
+      : ''
+    return `${loginLink}<a href="/api/auth/google?next=${next}" class="nav-btn nav-btn-google">${icon} Google</a>`
+  }
   const SUBPAGE_NAV = [
     { href: '/notices.html', key: 'notices', label: '공지사항' },
     { href: '/support.html', key: 'support', label: '고객지원' },
@@ -75,8 +84,11 @@
       const name = user?.name ? esc(user.name) : '마이페이지'
       hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${name}</a><a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>`
     } else {
-      const icon = typeof GOOGLE_ICON_SVG !== 'undefined' ? GOOGLE_ICON_SVG : (window.GOOGLE_ICON_SVG || '')
-      hr.innerHTML = `<a href="/login.html?next=${next}" class="nav-btn">로그인</a><a href="/api/auth/google?next=${next}" class="nav-btn nav-btn-google">${icon} Google</a>`
+      const auth = guestChromeAuthHtml(next)
+      const homeBtn = hr.id === 'chrome-header-right'
+        ? `<a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>`
+        : ''
+      hr.innerHTML = auth + homeBtn
     }
   }
 
@@ -91,7 +103,7 @@
     <a href="/" class="logo">타닥클래스</a>
     <nav class="gnb gnb--legal" aria-label="정책 및 지원">${nav}</nav>
     <div class="header-right" id="chrome-header-right">
-      <a href="/login.html" class="nav-btn">로그인</a>
+      ${guestChromeAuthHtml(encodeURIComponent('/'))}
       <a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>
     </div>
   </div>

@@ -16,11 +16,44 @@
     .my-avatar { width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#5c67f2,#7b84ff); color:#fff; font-size: 26.4px; font-weight:800; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
     .my-name { font-size: 19.2px; font-weight:800; margin-bottom:4px; }
     .my-email { font-size: 14.4px; color:#aaa; margin-bottom:6px; }
-    .my-role { font-size: 13.2px; font-weight:700; padding:3px 8px; border-radius:10px; display:inline-block; margin-bottom:20px; }
-    .my-role.editor { background:#f0f2ff; color:#5c67f2; }
-    .my-role.student { background:#f0f0f0; color:#888; }
-    .my-role.client { background:#fff4e8; color:#c96a1a; }
-    .my-role.admin { background:#fff0f0; color:#e63946; }
+    .my-role-badges { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:20px; }
+    .my-role {
+      position: relative;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 5px 16px;
+      letter-spacing: 0.03em;
+      display: inline-block;
+      border-radius: 4px;
+      line-height: 1.35;
+    }
+    .my-role::before,
+    .my-role::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 7px;
+      height: 7px;
+      background: #fff;
+      border-radius: 50%;
+      transform: translateY(-50%);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+    }
+    .my-role::before { left: -3.5px; }
+    .my-role::after { right: -3.5px; }
+    .my-role.admin {
+      background: linear-gradient(145deg, #f3d875 0%, #d4a017 38%, #b8860b 62%, #e8c84a 100%);
+      color: #3d2e00;
+      border: 1px solid #a67c00;
+      box-shadow: 0 1px 5px rgba(168, 124, 0, 0.35);
+    }
+    .my-role.student {
+      background: #111;
+      color: #fff;
+      border: 1px solid #222;
+    }
+    .my-role.editor { background:#f0f2ff; color:#5c67f2; border:1px solid #d8dcff; }
+    .my-role.client { background:#fff4e8; color:#c96a1a; border:1px solid #f0dcc8; }
     .my-nav { display:flex; flex-direction:column; gap:4px; text-align:center; }
     .my-nav-item { display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border-radius:8px; font-size: 15.6px; font-weight:600; color:#555; cursor:pointer; transition:.15s; text-decoration:none; }
     .my-nav-item:hover { background:#f5f6fa; color:#1a1a1a; }
@@ -285,9 +318,11 @@ function avatarHtml(profile) {
 function renderSidebar(profile) {
   const p = profile || profileData || user
   const mt = p.member_type || 'student'
-  const roleBadges = p.role === 'admin'
-    ? `<span class="my-role admin">${roleLabel.admin}</span>`
-    : `${p.role === 'editor' ? `<span class="my-role editor">${roleLabel.editor}</span>` : ''}<span class="my-role ${mt}">${memberTypeLabel[mt] || '수강생'}</span>`
+  const roleBadges = `<div class="my-role-badges">${
+    p.role === 'admin'
+      ? `<span class="my-role admin">${roleLabel.admin}</span>`
+      : `${p.role === 'editor' ? `<span class="my-role editor">${roleLabel.editor}</span>` : ''}<span class="my-role ${mt}">${memberTypeLabel[mt] || '수강생'}</span>`
+  }</div>`
   const bioBlock = p.bio ? `<div class="my-bio-preview">${escapeHtml(p.bio)}</div>` : ''
   document.getElementById('my-profile').innerHTML = `
     ${avatarHtml(p)}

@@ -1,6 +1,16 @@
 /** 앱 공통 상단 메뉴 — 1단 (로고 · GNB · 로그인) */
 ;(function () {
-  const DEFAULT_AUTH_HTML = `<a href="/login.html" class="nav-btn">로그인</a><a href="/api/auth/google" class="nav-btn nav-btn-google">Google로 시작</a>`
+  const SHOW_LOGIN_LINK = false // 임시: 「로그인」 텍스트 링크 숨김
+
+  const guestAuthHtml = (next) => {
+    const icon = typeof GOOGLE_ICON_SVG !== 'undefined' ? GOOGLE_ICON_SVG : (window.GOOGLE_ICON_SVG || '')
+    const loginLink = SHOW_LOGIN_LINK
+      ? `<a href="/login.html?next=${next}" class="nav-btn">로그인</a>`
+      : ''
+    return `${loginLink}<a href="/api/auth/google?next=${next}" class="nav-btn nav-btn-google">${icon} Google로 시작</a>`
+  }
+
+  const DEFAULT_AUTH_HTML = guestAuthHtml(encodeURIComponent('/'))
 
   const APP_HEADER_HTML = `<header class="header">
   <div class="header-inner">
@@ -45,8 +55,7 @@
       const name = user?.name ? esc(user.name) : '마이페이지'
       hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${name}</a><a href="#" class="nav-btn nav-btn-outline" onclick="API.logout();return false">로그아웃</a>`
     } else {
-      const icon = typeof GOOGLE_ICON_SVG !== 'undefined' ? GOOGLE_ICON_SVG : (window.GOOGLE_ICON_SVG || '')
-      hr.innerHTML = `<a href="/login.html?next=${next}" class="nav-btn">로그인</a><a href="/api/auth/google?next=${next}" class="nav-btn nav-btn-google">${icon} Google로 시작</a>`
+      hr.innerHTML = guestAuthHtml(next)
     }
   }
 
