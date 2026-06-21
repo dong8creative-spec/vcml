@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>강의 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=15" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=16" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
@@ -174,10 +174,21 @@
       }).join('')}</div>`
     }
 
+    function renderDetailIntro(c) {
+      const text = String(c.detail_intro_text || '').trim()
+      const image = String(c.detail_intro_image || '').trim()
+      if (!text && !image) return ''
+      return `<div class="course-detail-intro">
+        ${image ? `<figure class="course-detail-intro__figure"><img class="course-detail-intro__image" src="${esc(image)}" alt="" loading="lazy" /></figure>` : ''}
+        ${text ? `<div class="course-detail-intro__text">${esc(text)}</div>` : ''}
+      </div>`
+    }
+
     function renderBodySection(c) {
       return `
         <div class="course-body-inner">
           <div class="course-body-main">
+            ${renderDetailIntro(c)}
             <div class="course-section">
               <h2>커리큘럼</h2>
               ${renderCurriculumSection(c)}

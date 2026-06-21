@@ -97,6 +97,8 @@ router.get('/courses/:id/chapters', async (req, res) => {
       course_type: course.course_type,
       live_curriculum_text: course.live_curriculum_text || null,
       live_curriculum_image: course.live_curriculum_image || null,
+      detail_intro_text: course.detail_intro_text || null,
+      detail_intro_image: course.detail_intro_image || null,
     },
     chapters,
   })
@@ -148,7 +150,7 @@ router.patch('/courses/:id', async (req, res) => {
   const allowed = [
     'title', 'description', 'category', 'price', 'sale_price', 'is_published',
     'course_type', 'live_schedule', 'live_starts_at', 'meet_code', 'live_status',
-    'live_curriculum_text', 'live_curriculum_image', 'live_chat_url',
+    'live_curriculum_text', 'live_curriculum_image', 'detail_intro_text', 'detail_intro_image', 'live_chat_url',
     'live_replay_url', 'live_material_url',
     'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'hero_gallery', 'sort_order', 'is_offline', 'enrollment_limit',
   ]
@@ -189,6 +191,15 @@ router.patch('/courses/:id', async (req, res) => {
       return res.status(400).json({ error: `${label} 링크는 http:// 또는 https:// 로 시작해야 합니다.` })
     }
     update[key] = url.slice(0, 500)
+  }
+  if (update.detail_intro_image !== undefined && update.detail_intro_image !== null && update.detail_intro_image !== '' && !isValidImage(update.detail_intro_image)) {
+    return res.status(400).json({ error: '상세 소개 이미지는 URL 또는 JPG/PNG/WebP(base64)만 사용할 수 있습니다.' })
+  }
+  if (update.detail_intro_text !== undefined) {
+    update.detail_intro_text = String(update.detail_intro_text || '').trim() || null
+  }
+  if (update.detail_intro_image !== undefined && (update.detail_intro_image === null || update.detail_intro_image === '')) {
+    update.detail_intro_image = null
   }
   if (Object.keys(update).length === 0) return res.status(400).json({ error: '변경할 항목이 없습니다.' })
   if (update.enrollment_limit !== undefined) {

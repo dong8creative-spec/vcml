@@ -416,7 +416,7 @@
         <div class="card-header" style="flex-wrap:wrap;gap:12px">
           <div>
             <div class="card-title">커리큘럼 편집</div>
-            <p class="sec-sub" style="margin:4px 0 0">강의 상세 페이지 챕터 목록(제목·시간·무료 보기·영상 링크)을 관리합니다.</p>
+            <p class="sec-sub" style="margin:4px 0 0">커리큘럼 위 상세 소개와 챕터 목록(제목·시간·무료 보기·영상 링크)을 관리합니다.</p>
           </div>
           <button type="button" class="btn-primary-sm" id="curriculum-add-btn" onclick="openChapterModal()" disabled>+ 챕터 추가</button>
         </div>
@@ -427,8 +427,29 @@
               <option value="">강의를 선택하세요</option>
             </select>
           </div>
+          <div id="curriculum-detail-intro-panel" style="display:none;margin-top:16px;padding:16px;background:#fafafa;border:1px solid #eee;border-radius:10px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+              <div>
+                <h3 style="font-size:15px;font-weight:700;margin:0 0 4px">상세 소개 (커리큘럼 위)</h3>
+                <p class="sec-sub" style="margin:0">강의 상세 페이지에서 커리큘럼 섹션 <strong>위</strong>에 표시됩니다. 이미지 가로 최대 1000px.</p>
+              </div>
+              <button type="button" class="btn-primary-sm" id="detail-intro-save-btn" onclick="saveDetailIntro()">상세 소개 저장</button>
+            </div>
+            <div class="form-group">
+              <label>소개 텍스트</label>
+              <textarea id="detail-intro-text" rows="6" placeholder="강의 상세 설명, 진행 방식, 준비물 등"></textarea>
+            </div>
+            <div class="form-group">
+              <label>소개 이미지 <span style="font-size:12px;color:#888">URL 또는 파일 업로드 · 최대 너비 1000px</span></label>
+              <input type="url" id="detail-intro-image-url" placeholder="https://..." maxlength="500" />
+              <input type="file" id="detail-intro-image-file" accept="image/jpeg,image/png,image/webp" style="margin-top:8px" />
+              <div id="detail-intro-image-preview" style="margin-top:10px"></div>
+              <button type="button" class="btn-sm" id="detail-intro-image-remove" style="margin-top:8px;display:none">이미지 제거</button>
+            </div>
+          </div>
           <div id="curriculum-live-note" class="curriculum-live-note" style="display:none"></div>
-          <div class="table-wrap" style="margin-top:16px">
+          <div style="margin-top:20px;margin-bottom:8px;font-size:15px;font-weight:700">챕터 목록</div>
+          <div class="table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
@@ -1731,6 +1752,88 @@
 
     let _chapterEditId = null
     let _curriculumCourseMeta = null
+    let _detailIntroImageData = null
+
+    function renderDetailIntroPreview(src) {
+      const el = document.getElementById('detail-intro-image-preview')
+      const removeBtn = document.getElementById('detail-intro-image-remove')
+      if (!el) return
+      if (!src) {
+        el.innerHTML = ''
+        if (removeBtn) removeBtn.style.display = 'none'
+        return
+      }
+      if (removeBtn) removeBtn.style.display = 'inline-block'
+      el.innerHTML = `<img src="${String(src).replace(/"/g, '&quot;')}" alt="상세 소개 미리보기" style="width:100%;max-width:1000px;border-radius:8px;border:1px solid #eee;display:block" />`
+    }
+
+    function fillDetailIntroEditor(course) {
+      const panel = document.getElementById('curriculum-detail-intro-panel')
+      if (!panel) return
+      if (!course) {
+        panel.style.display = 'none'
+        _detailIntroImageData = null
+        return
+      }
+      panel.style.display = 'block'
+      document.getElementById('detail-intro-text').value = course.detail_intro_text || ''
+      const img = course.detail_intro_image || ''
+      _detailIntroImageData = img && !String(img).startsWith('http') ? img : null
+      document.getElementById('detail-intro-image-url').value = String(img).startsWith('http') ? img : ''
+      renderDetailIntroPreview(img)
+    }
+
+    async function saveDetailIntro() {
+      const courseId = document.getElementById('curriculum-course-select')?.value
+      if (!courseId) return
+      const btn = document.getElementById('detail-intro-save-btn')
+      const imageUrl = document.getElementById('detail-intro-image-url').value.trim()
+      const payload = {
+        detail_intro_text: document.getElementById('detail-intro-text').value.trim() || null,
+        detail_intro_image: _detailIntroImageData || imageUrl || null,
+      }
+      try {
+        btn.disabled = true
+        await API.patch('/admin/courses/' + courseId, payload)
+        alert('상세 소개가 저장되었습니다.')
+        await loadCurriculumChapters()
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      } finally {
+        btn.disabled = false
+      }
+    }
+
+    document.getElementById('detail-intro-image-url')?.addEventListener('input', e => {
+      const url = e.target.value.trim()
+      if (url) {
+        _detailIntroImageData = null
+        renderDetailIntroPreview(url)
+      } else if (!_detailIntroImageData) {
+        renderDetailIntroPreview('')
+      }
+    })
+
+    document.getElementById('detail-intro-image-file')?.addEventListener('change', async e => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      if (file.size > 2 * 1024 * 1024) { alert('2MB 이하 이미지만 업로드할 수 있습니다.'); e.target.value = ''; return }
+      try {
+        _detailIntroImageData = await resizeHeroImage(file)
+        document.getElementById('detail-intro-image-url').value = ''
+        renderDetailIntroPreview(_detailIntroImageData)
+      } catch (err) {
+        alert(err.message)
+      }
+      e.target.value = ''
+    })
+
+    document.getElementById('detail-intro-image-remove')?.addEventListener('click', () => {
+      _detailIntroImageData = null
+      document.getElementById('detail-intro-image-url').value = ''
+      document.getElementById('detail-intro-image-file').value = ''
+      renderDetailIntroPreview('')
+    })
 
     async function loadCurriculumAdmin() {
       if (!_courses?.length) {
@@ -1761,6 +1864,7 @@
       if (!tbody) return
       if (!courseId) {
         _curriculumCourseMeta = null
+        fillDetailIntroEditor(null)
         if (noteEl) noteEl.style.display = 'none'
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">강의를 선택하면 챕터 목록이 표시됩니다.</td></tr>'
         return
@@ -1769,6 +1873,7 @@
       try {
         const data = await API.get('/admin/courses/' + courseId + '/chapters')
         _curriculumCourseMeta = data.course
+        fillDetailIntroEditor(data.course)
         const chapters = data.chapters || []
         if (noteEl) {
           const c = data.course || {}
