@@ -573,42 +573,72 @@
     <section class="section" id="sec-instructors">
       <div class="sec-header">
         <div>
-          <div class="sec-title">강사 관리</div>
-          <div class="sec-sub">메인·강사 소개 페이지에 표시되는 강사 프로필을 등록·수정합니다.</div>
+          <div class="sec-title">강사 소개</div>
+          <div class="sec-sub">대표 강사 1인 기준 · 인사말·경력 연혁 페이지(/instructors.html)와 프로필을 관리합니다.</div>
         </div>
         <div class="sec-actions">
-          <button class="btn-primary-sm" id="instructor-create-btn"><i class="ti ti-plus"></i> 강사 등록</button>
+          <button class="btn-primary-sm" id="instructor-create-btn"><i class="ti ti-plus"></i> 프로필 등록</button>
         </div>
       </div>
 
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
-          <div class="card-title">강사 소개란 문구</div>
-          <p class="sec-sub" style="margin:0">강사 소개 페이지 제목·부제 및 상단 문구입니다. (상단 메뉴 → /instructors.html)</p>
+          <div class="card-title">강사 소개 페이지</div>
+          <p class="sec-sub" style="margin:0">페이지 상단 · 인사말 · 경력 연혁(타임라인) 문구를 편집합니다.</p>
         </div>
-        <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:16px">
           <div class="two-col" style="gap:12px">
             <div class="form-group">
               <label>페이지 제목</label>
-              <input type="text" id="instructors-intro-title" />
+              <input type="text" id="instructors-intro-title" placeholder="강사 소개" />
             </div>
             <div class="form-group">
               <label>페이지 부제</label>
-              <input type="text" id="instructors-intro-subtitle" />
+              <input type="text" id="instructors-intro-subtitle" placeholder="타닥클래스를 이끌어가는 대표 강사를 소개합니다." />
             </div>
           </div>
           <div class="form-group">
-            <label>강사 페이지 상단 소개</label>
-            <textarea id="instructors-intro-page" rows="3" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
+            <label>상단 소개 문구</label>
+            <textarea id="instructors-intro-page" rows="2" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="페이지 히어로 아래에 표시되는 한 줄 소개"></textarea>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:4px 0" />
+          <div class="two-col" style="gap:12px">
+            <div class="form-group">
+              <label>인사말 라벨 (영문 등)</label>
+              <input type="text" id="instructors-greeting-eyebrow" placeholder="Message" maxlength="40" />
+            </div>
+            <div class="form-group">
+              <label>인사말 제목</label>
+              <input type="text" id="instructors-greeting-heading" placeholder="인사말" maxlength="80" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>인사말 본문</label>
+            <textarea id="instructors-greeting-body" rows="10" maxlength="5000" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="이사장 인사말 형식의 본문 (줄바꿈 유지)"></textarea>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:4px 0" />
+          <div class="form-group">
+            <label>경력 · 연혁 섹션 제목</label>
+            <input type="text" id="instructors-timeline-heading" placeholder="주요 경력" maxlength="80" />
+          </div>
+          <div class="form-group">
+            <label>경력 · 연혁 항목</label>
+            <p class="sec-sub" style="margin:0 0 8px">왼쪽 ⋮⋮ 핸들을 드래그하면 항목 사이에 <strong>−</strong> 표시가 나타납니다. 표시된 위치에 놓으면 순서가 바뀝니다. 세부 업적 추가·수정 후 <strong>페이지 저장</strong>을 눌러주세요.</p>
+            <div id="instructors-timeline-list" class="instructors-timeline-editor"></div>
+            <button type="button" class="btn-sm" id="instructors-timeline-add" style="margin-top:8px;width:fit-content">+ 연혁 추가</button>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
-            <button type="button" class="btn-save" id="instructors-intro-save">소개란 저장</button>
+            <button type="button" class="btn-save" id="instructors-intro-save">페이지 저장</button>
             <span id="instructors-intro-status" style="font-size:14px;color:#888"></span>
           </div>
         </div>
       </div>
 
       <div class="card">
+        <div class="card-header" style="padding:16px 20px 0">
+          <div class="card-title">대표 강사 프로필</div>
+          <p class="sec-sub" style="margin:8px 0 0">사진·이름·한줄 소개·태그가 페이지 상단 프로필 영역에 표시됩니다.</p>
+        </div>
         <table class="data-table">
           <thead>
             <tr><th>순서</th><th>프로필</th><th>이름</th><th>한줄 소개</th><th>태그</th><th>공개</th><th>관리</th></tr>
@@ -1477,6 +1507,14 @@
   <script>
     // ── 헬퍼 ──
     function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+    function escAttr(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+    }
     function fmtD(iso) { return iso ? iso.slice(0,10) : '-' }
 
     // ── 어드민 인증 체크 ──
@@ -2092,7 +2130,7 @@
       orders: '결제 내역',
       coupons: '쿠폰 관리',
       refunds: '환불 요청',
-      instructors: '강사 관리',
+      instructors: '강사 소개',
       reviews: '수강 후기',
       notices: '공지사항',
       'editor-apps': '에디터즈 신청',
@@ -2928,6 +2966,366 @@
     // ── 강사 관리 ──
     let _instructorEditId = null
     let _instructorPendingImage = undefined
+    let _introTimeline = []
+    let _instructorsIntroLoaded = false
+    let _instructorsIntroDirty = false
+
+    function markInstructorsIntroDirty() {
+      _instructorsIntroDirty = true
+    }
+
+    function renderTimelineAchievementInputs(achievements) {
+      const list = Array.isArray(achievements) ? achievements : []
+      if (!list.length) {
+        return '<p class="it-achievements-empty">등록된 세부 업적이 없습니다.</p>'
+      }
+      return list.map((text, j) => `
+        <div class="it-achievement-row">
+          <input type="text" class="it-achievement" data-aidx="${j}" placeholder="세부 업적 (예: ○○ 강의 런칭)" maxlength="200" value="${escAttr(text)}" autocomplete="off" />
+          <button type="button" class="btn-sm it-remove-achievement" data-aidx="${j}">삭제</button>
+        </div>
+      `).join('')
+    }
+
+    function renderIntroTimelineEditor() {
+      const list = document.getElementById('instructors-timeline-list')
+      if (!list) return
+      if (!_introTimeline.length) {
+        list.innerHTML = '<p style="font-size:13px;color:#888;margin:0">등록된 연혁이 없습니다. 아래 버튼으로 추가하세요.</p>'
+        return
+      }
+      list.innerHTML = _introTimeline.map((row, i) => `
+        <div class="instructor-timeline-row" data-idx="${i}">
+          <div class="instructor-timeline-row__head">
+            <span class="it-drag-handle" data-idx="${i}" title="드래그하여 순서 변경" aria-label="순서 변경" role="button" tabindex="0">
+              <i class="ti ti-grip-vertical"></i>
+            </span>
+            <input type="text" class="it-year${!(row.year || '').trim() ? ' it-year--empty' : ''}" placeholder="연도" maxlength="20" value="${escAttr(row.year)}" inputmode="numeric" autocomplete="off" />
+            <input type="text" class="it-title" placeholder="대표 제목" maxlength="120" value="${escAttr(row.title)}" autocomplete="off" />
+            <button type="button" class="btn-sm it-remove" data-idx="${i}">연혁 삭제</button>
+          </div>
+          <div class="instructor-timeline-row__body">
+            <input type="text" class="it-desc" placeholder="한줄 요약 (선택)" maxlength="500" value="${escAttr(row.description)}" autocomplete="off" />
+            <div class="it-achievements-wrap">
+              <div class="it-achievements-label">세부 업적</div>
+              <div class="it-achievements-list">${renderTimelineAchievementInputs(row.achievements)}</div>
+              <button type="button" class="btn-sm it-add-achievement" data-idx="${i}">+ 세부 업적 추가</button>
+            </div>
+          </div>
+        </div>
+      `).join('')
+    }
+
+    function flushTimelineInputs() {
+      const list = document.getElementById('instructors-timeline-list')
+      if (!list) return
+      list.querySelectorAll('.it-year, .it-title, .it-desc, .it-achievement').forEach(el => {
+        if (typeof el.blur === 'function') el.blur()
+      })
+      syncTimelineFromDom()
+    }
+
+    async function flushTimelineInputsAsync() {
+      flushTimelineInputs()
+      await new Promise(resolve => requestAnimationFrame(resolve))
+      syncTimelineFromDom()
+    }
+
+    function syncTimelineFromDom() {
+      const list = document.getElementById('instructors-timeline-list')
+      if (!list) return
+      _introTimeline = [...list.querySelectorAll('.instructor-timeline-row')].map((row, i) => ({
+        year: row.querySelector('.it-year')?.value.trim() || '',
+        title: row.querySelector('.it-title')?.value.trim() || '',
+        description: row.querySelector('.it-desc')?.value.trim() || '',
+        achievements: [...row.querySelectorAll('.it-achievement')].map(el => el.value.trim()),
+        sort_order: i + 1,
+      }))
+    }
+
+    function timelineRowHasContent(row) {
+      return !!(row.year || row.title || row.description || (row.achievements || []).some(a => String(a || '').trim()))
+    }
+
+    function readIntroTimelineForSave() {
+      return _introTimeline
+        .filter(timelineRowHasContent)
+        .map((r, i) => ({
+          year: String(r.year || '').trim(),
+          title: String(r.title || '').trim(),
+          description: String(r.description || '').trim(),
+          achievements: (r.achievements || []).map(a => String(a || '').trim()).filter(Boolean).slice(0, 12),
+          sort_order: i + 1,
+        }))
+    }
+
+    function bindIntroTimelineInputs() {
+      const list = document.getElementById('instructors-timeline-list')
+      if (!list || list.dataset.inputBound) return
+      list.dataset.inputBound = '1'
+      const onEdit = () => {
+        syncTimelineFromDom()
+        markInstructorsIntroDirty()
+      }
+      list.addEventListener('input', e => {
+        if (!e.target.matches('.it-year, .it-title, .it-desc, .it-achievement')) return
+        onEdit()
+      })
+      list.addEventListener('change', e => {
+        if (!e.target.matches('.it-year, .it-title, .it-desc, .it-achievement')) return
+        onEdit()
+      })
+      list.addEventListener('blur', e => {
+        if (!e.target.matches('.it-year, .it-title, .it-desc, .it-achievement')) return
+        onEdit()
+      }, true)
+      list.addEventListener('compositionend', e => {
+        if (!e.target.matches('.it-year, .it-title, .it-desc, .it-achievement')) return
+        onEdit()
+      })
+    }
+
+    function getTimelineInsertIndex(list, clientY, fromIdx = -1) {
+      const rows = [...list.querySelectorAll('.instructor-timeline-row')]
+      if (!rows.length) return 0
+      if (fromIdx >= 0 && rows[fromIdx]) {
+        const dragRect = rows[fromIdx].getBoundingClientRect()
+        if (clientY > dragRect.top + dragRect.height / 2 && clientY <= dragRect.bottom + 4) {
+          return fromIdx + 1
+        }
+      }
+      for (let i = 0; i < rows.length; i++) {
+        const rect = rows[i].getBoundingClientRect()
+        if (clientY < rect.top + rect.height / 2) return i
+      }
+      return rows.length
+    }
+
+    function isTimelineInsertNoOp(fromIdx, insertIndex) {
+      return insertIndex === fromIdx || insertIndex === fromIdx + 1
+    }
+
+    function ensureTimelineDropIndicator(list) {
+      let indicator = list.querySelector('.it-drop-indicator')
+      if (!indicator) {
+        indicator = document.createElement('div')
+        indicator.className = 'it-drop-indicator'
+        indicator.setAttribute('aria-hidden', 'true')
+        indicator.innerHTML = '<div class="it-drop-indicator__line"></div><div class="it-drop-indicator__mark">−</div>'
+        list.appendChild(indicator)
+      }
+      return indicator
+    }
+
+    function showTimelineDropIndicator(list, insertIndex) {
+      const indicator = ensureTimelineDropIndicator(list)
+      const rows = [...list.querySelectorAll('.instructor-timeline-row')]
+      if (!rows.length) {
+        indicator.style.display = 'none'
+        return
+      }
+      const listRect = list.getBoundingClientRect()
+      let lineY
+      if (insertIndex <= 0) {
+        lineY = rows[0].getBoundingClientRect().top - 6
+      } else if (insertIndex >= rows.length) {
+        lineY = rows[rows.length - 1].getBoundingClientRect().bottom + 6
+      } else {
+        const prev = rows[insertIndex - 1].getBoundingClientRect()
+        const next = rows[insertIndex].getBoundingClientRect()
+        lineY = (prev.bottom + next.top) / 2
+      }
+      indicator.style.top = `${lineY - listRect.top + list.scrollTop}px`
+      indicator.style.display = 'block'
+    }
+
+    function hideTimelineDropIndicator(list) {
+      list.querySelector('.it-drop-indicator')?.style.setProperty('display', 'none')
+    }
+
+    function bindIntroTimelineDrag() {
+      const list = document.getElementById('instructors-timeline-list')
+      if (!list || list.dataset.dragBound) return
+      list.dataset.dragBound = '1'
+
+      let dragState = null
+
+      const clearDragUi = () => {
+        document.body.classList.remove('is-timeline-dragging')
+        list.querySelectorAll('.instructor-timeline-row').forEach(r => {
+          r.classList.remove('is-dragging')
+        })
+        hideTimelineDropIndicator(list)
+      }
+
+      const onMove = ev => {
+        if (!dragState || ev.pointerId !== dragState.pointerId) return
+        ev.preventDefault()
+        const insertIndex = getTimelineInsertIndex(list, ev.clientY, dragState.fromIdx)
+        dragState.insertIndex = insertIndex
+        if (isTimelineInsertNoOp(dragState.fromIdx, insertIndex)) {
+          hideTimelineDropIndicator(list)
+        } else {
+          showTimelineDropIndicator(list, insertIndex)
+        }
+      }
+
+      const finish = ev => {
+        if (!dragState || ev.pointerId !== dragState.pointerId) return
+        window.removeEventListener('pointermove', onMove, true)
+        window.removeEventListener('pointerup', finish, true)
+        window.removeEventListener('pointercancel', finish, true)
+
+        const { fromIdx, insertIndex, handle, pointerId } = dragState
+        dragState = null
+
+        try { handle.releasePointerCapture(pointerId) } catch (_) {}
+        clearDragUi()
+
+        if (fromIdx < 0 || isTimelineInsertNoOp(fromIdx, insertIndex)) return
+
+        syncTimelineFromDom()
+        const [moved] = _introTimeline.splice(fromIdx, 1)
+        if (!moved) return
+        let toIdx = insertIndex
+        if (fromIdx < insertIndex) toIdx -= 1
+        _introTimeline.splice(toIdx, 0, moved)
+        markInstructorsIntroDirty()
+        renderIntroTimelineEditor()
+      }
+
+      list.addEventListener('pointerdown', e => {
+        const handle = e.target.closest('.it-drag-handle')
+        if (!handle || !list.contains(handle)) return
+        if (e.button !== 0) return
+
+        e.preventDefault()
+        e.stopPropagation()
+
+        const row = handle.closest('.instructor-timeline-row')
+        if (!row) return
+
+        syncTimelineFromDom()
+        const fromIdx = [...list.querySelectorAll('.instructor-timeline-row')].indexOf(row)
+        if (fromIdx < 0) return
+
+        try { handle.setPointerCapture(e.pointerId) } catch (_) {}
+
+        row.classList.add('is-dragging')
+        document.body.classList.add('is-timeline-dragging')
+
+        dragState = {
+          pointerId: e.pointerId,
+          fromIdx,
+          insertIndex: fromIdx,
+          handle,
+        }
+
+        window.addEventListener('pointermove', onMove, true)
+        window.addEventListener('pointerup', finish, true)
+        window.addEventListener('pointercancel', finish, true)
+      })
+    }
+
+    function fillInstructorsIntroEditor(cfg) {
+      document.getElementById('instructors-intro-title').value = cfg.section_title || ''
+      document.getElementById('instructors-intro-subtitle').value = cfg.section_subtitle || ''
+      document.getElementById('instructors-intro-page').value = cfg.page_intro || ''
+      document.getElementById('instructors-greeting-eyebrow').value = cfg.greeting_eyebrow || ''
+      document.getElementById('instructors-greeting-heading').value = cfg.greeting_heading || ''
+      document.getElementById('instructors-greeting-body').value = cfg.greeting_body || ''
+      document.getElementById('instructors-timeline-heading').value = cfg.timeline_heading || ''
+      _introTimeline = Array.isArray(cfg.timeline) ? cfg.timeline.map(r => ({
+        year: r.year || '',
+        title: r.title || '',
+        description: r.description || '',
+        achievements: Array.isArray(r.achievements) ? [...r.achievements] : [],
+        sort_order: r.sort_order,
+      })) : []
+      renderIntroTimelineEditor()
+      _instructorsIntroDirty = false
+    }
+
+    document.getElementById('instructors-timeline-add')?.addEventListener('click', () => {
+      syncTimelineFromDom()
+      _introTimeline.push({ year: '', title: '', description: '', achievements: [], sort_order: _introTimeline.length + 1 })
+      markInstructorsIntroDirty()
+      renderIntroTimelineEditor()
+    })
+
+    document.getElementById('instructors-timeline-list')?.addEventListener('click', e => {
+      const addBtn = e.target.closest('.it-add-achievement')
+      if (addBtn) {
+        syncTimelineFromDom()
+        const row = addBtn.closest('.instructor-timeline-row')
+        const idx = Number(row?.dataset.idx)
+        if (Number.isNaN(idx) || !_introTimeline[idx]) return
+        if (!Array.isArray(_introTimeline[idx].achievements)) _introTimeline[idx].achievements = []
+        if (_introTimeline[idx].achievements.length >= 12) {
+          alert('세부 업적은 항목당 최대 12개까지 등록할 수 있습니다.')
+          return
+        }
+        _introTimeline[idx].achievements.push('')
+        markInstructorsIntroDirty()
+        renderIntroTimelineEditor()
+        const rows = document.querySelectorAll('#instructors-timeline-list .instructor-timeline-row')
+        const lastAchievement = rows[idx]?.querySelectorAll('.it-achievement')
+        lastAchievement?.[lastAchievement.length - 1]?.focus()
+        return
+      }
+      const removeAchievementBtn = e.target.closest('.it-remove-achievement')
+      if (removeAchievementBtn) {
+        syncTimelineFromDom()
+        const row = removeAchievementBtn.closest('.instructor-timeline-row')
+        const idx = Number(row?.dataset.idx)
+        const aIdx = Number(removeAchievementBtn.dataset.aidx)
+        if (Number.isNaN(idx) || Number.isNaN(aIdx) || !_introTimeline[idx]) return
+        _introTimeline[idx].achievements.splice(aIdx, 1)
+        markInstructorsIntroDirty()
+        renderIntroTimelineEditor()
+        return
+      }
+      const btn = e.target.closest('.it-remove')
+      if (!btn) return
+      syncTimelineFromDom()
+      const idx = Number(btn.dataset.idx)
+      _introTimeline.splice(idx, 1)
+      markInstructorsIntroDirty()
+      renderIntroTimelineEditor()
+    })
+
+    bindIntroTimelineDrag()
+    bindIntroTimelineInputs()
+    bindInstructorsIntroFields()
+
+    function readInstructorsIntroForm() {
+      return {
+        section_title: document.getElementById('instructors-intro-title').value.trim(),
+        section_subtitle: document.getElementById('instructors-intro-subtitle').value.trim(),
+        page_intro: document.getElementById('instructors-intro-page').value.trim(),
+        greeting_eyebrow: document.getElementById('instructors-greeting-eyebrow').value.trim(),
+        greeting_heading: document.getElementById('instructors-greeting-heading').value.trim(),
+        greeting_body: document.getElementById('instructors-greeting-body').value.trim(),
+        timeline_heading: document.getElementById('instructors-timeline-heading').value.trim(),
+        timeline: readIntroTimelineForSave(),
+      }
+    }
+
+    function bindInstructorsIntroFields() {
+      if (window._instructorsIntroFieldsBound) return
+      window._instructorsIntroFieldsBound = true
+      ;[
+        'instructors-intro-title',
+        'instructors-intro-subtitle',
+        'instructors-intro-page',
+        'instructors-greeting-eyebrow',
+        'instructors-greeting-heading',
+        'instructors-greeting-body',
+        'instructors-timeline-heading',
+      ].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', markInstructorsIntroDirty)
+      })
+    }
 
     function resizeInstructorImage(file) {
       return new Promise((resolve, reject) => {
@@ -2969,34 +3367,22 @@
       }
     }
 
-    function fillInstructorsIntroEditor(cfg) {
-      document.getElementById('instructors-intro-title').value = cfg.section_title || ''
-      document.getElementById('instructors-intro-subtitle').value = cfg.section_subtitle || ''
-      document.getElementById('instructors-intro-page').value = cfg.page_intro || ''
-    }
-
-    function readInstructorsIntroForm() {
-      return {
-        section_title: document.getElementById('instructors-intro-title').value.trim(),
-        section_subtitle: document.getElementById('instructors-intro-subtitle').value.trim(),
-        page_intro: document.getElementById('instructors-intro-page').value.trim(),
-      }
-    }
-
-    async function loadInstructorsIntroSettings() {
+    async function loadInstructorsIntroSettings(force = false) {
+      if (_instructorsIntroLoaded && !force) return
+      if (_instructorsIntroDirty && !force) return
       try {
         const cfg = await API.get('/admin/instructors-intro')
         fillInstructorsIntroEditor(cfg)
+        _instructorsIntroLoaded = true
       } catch (e) {
         console.error(e)
       }
     }
 
-    async function loadInstructors() {
+    async function loadInstructorTable() {
       const tbody = document.getElementById('instructors-tbody')
       if (!tbody) return
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>'
-      await loadInstructorsIntroSettings()
       try {
         const list = await API.get('/admin/instructors')
         if (!list.length) {
@@ -3024,6 +3410,13 @@
       } catch (e) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e00">오류: ' + esc(e.message || '불러오기 실패') + '</td></tr>'
       }
+    }
+
+    async function loadInstructors() {
+      if (!_instructorsIntroLoaded) {
+        await loadInstructorsIntroSettings(true)
+      }
+      await loadInstructorTable()
     }
 
     function openInstructorModal(data) {
@@ -3054,7 +3447,7 @@
       if (!confirm('이 강사 프로필을 삭제하시겠습니까?')) return
       try {
         await API.del('/admin/instructors/' + id)
-        loadInstructors()
+        loadInstructorTable()
       } catch (e) {
         alert(e.message || '삭제 실패')
       }
@@ -3099,7 +3492,7 @@
           await API.post('/admin/instructors', payload)
         }
         document.getElementById('instructor-modal').style.display = 'none'
-        loadInstructors()
+        loadInstructorTable()
       } catch (e) {
         alert(e.message || '저장 실패')
       }
@@ -3109,9 +3502,18 @@
       const statusEl = document.getElementById('instructors-intro-status')
       const btn = document.getElementById('instructors-intro-save')
       try {
+        await flushTimelineInputsAsync()
+        const missingYear = _introTimeline.find(t => timelineRowHasContent(t) && !String(t.year || '').trim())
+        if (missingYear) {
+          alert(`연혁 "${missingYear.title || '제목 없음'}" 항목에 연도가 비어 있습니다.\n연도 입력 후 다시 저장해주세요.`)
+          renderIntroTimelineEditor()
+          return
+        }
         btn.disabled = true
-        const result = await API.patch('/admin/instructors-intro', readInstructorsIntroForm())
+        const payload = readInstructorsIntroForm()
+        const result = await API.patch('/admin/instructors-intro', payload)
         fillInstructorsIntroEditor(result)
+        _instructorsIntroLoaded = true
         if (statusEl) {
           statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
         }

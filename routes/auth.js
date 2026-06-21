@@ -20,9 +20,10 @@ function parseOAuthState(state) {
     return {
       nextUrl: next.startsWith('/') && !next.startsWith('//') ? next : '/',
       memberType: ['student', 'client'].includes(parsed.member_type) ? parsed.member_type : null,
+      intent: parsed.intent === 'login' ? 'login' : 'signup',
     }
   } catch {
-    return { nextUrl: '/', memberType: null }
+    return { nextUrl: '/', memberType: null, intent: 'signup' }
   }
 }
 
@@ -30,11 +31,12 @@ function parseOAuthNext(state) {
   return parseOAuthState(state).nextUrl
 }
 
-function encodeOAuthState(next, memberType) {
+function encodeOAuthState(next, memberType, intent) {
   const payload = { next: next || '/' }
   if (memberType && ['student', 'client'].includes(memberType)) {
     payload.member_type = memberType
   }
+  if (intent === 'login') payload.intent = 'login'
   return Buffer.from(JSON.stringify(payload)).toString('base64')
 }
 
@@ -174,12 +176,15 @@ router.get('/google', (req, res) => {
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
     return res.redirect('/login.html?google_error=' + encodeURIComponent('Google 로그인이 설정되지 않았습니다. 관리자에게 문의해주세요.'))
   }
+  const intent = req.query.intent === 'login' ? 'login' : 'signup'
   const member_type = req.query.member_type
-  if (!member_type || !['student', 'client'].includes(member_type)) {
-    const nextQ = req.query.next ? '&next=' + encodeURIComponent(req.query.next) : ''
-    return res.redirect('/login.html?google_error=' + encodeURIComponent('가입 유형(수강생/의뢰인)을 선택해주세요.') + nextQ)
+  if (intent === 'signup') {
+    if (!member_type || !['student', 'client'].includes(member_type)) {
+      const nextQ = req.query.next ? '&next=' + encodeURIComponent(req.query.next) : ''
+      return res.redirect('/login.html?google_error=' + encodeURIComponent('가입 유형(수강생/의뢰인)을 선택해주세요.') + nextQ)
+    }
   }
-  const state = encodeOAuthState(req.query.next, member_type)
+  const state = encodeOAuthState(req.query.next, member_type, intent)
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: GOOGLE_REDIRECT_URI,
@@ -236,8 +241,11 @@ router.get('/google/callback', async (req, res) => {
       }
     }
     let isNew = false
-    const { nextUrl, memberType } = parseOAuthState(state)
+    const { nextUrl, memberType, intent } = parseOAuthState(state)
     if (!user) {
+      if (intent === 'login' || !memberType) {
+        return res.redirect('/login.html?google_error=' + encodeURIComponent('처음 이용하시는 경우 회원가입(가입 유형 선택)을 먼저 진행해주세요.') + (nextUrl !== '/' ? '&next=' + encodeURIComponent(nextUrl) : ''))
+      }
       user = await db.createGoogleUser(googleId, googleEmail, googleName, googlePicture, memberType || 'student')
       isNew = true
     } else {

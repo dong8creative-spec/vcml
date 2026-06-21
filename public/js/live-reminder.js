@@ -286,15 +286,15 @@
     </span>`
   }
 
-  function liveResourceButtonsHtml(course, { includeMaterial = true } = {}) {
+  function liveResourceButtonsHtml(course, { includeMaterial = true, enrolled } = {}) {
     const r = course?.live_resources
     if (!r) return ''
+    const isEnrolled = enrolled ?? course?.enrolled
+    if (isEnrolled === false) return ''
     const parts = []
     if (r.replay_available) {
       parts.push(`<button type="button" class="btn-live-extra btn-live-extra--replay" onclick="LiveSession.openReplay('${escapeHtml(course.id)}')">${replayButtonContentHtml()}</button>`)
     } else if (r.replay_pending) {
-      parts.push(replayPendingHtml(course))
-    } else if (r.replay_configured && r.live_ended) {
       parts.push(replayPendingHtml(course))
     }
     if (includeMaterial && r.material_configured) {

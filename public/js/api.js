@@ -69,11 +69,14 @@ function googleMeetBadgeHtml(className = 'badge-live') {
 window.googleMeetBadgeHtml = googleMeetBadgeHtml
 window.googleMeetIconHtml = googleMeetIconHtml
 
-function buildGoogleAuthUrl(next, memberType) {
+function buildGoogleAuthUrl(next, memberType, intent = 'signup') {
   const params = new URLSearchParams()
   const safeNext = next && String(next).startsWith('/') && !String(next).startsWith('//') ? next : '/'
   params.set('next', safeNext)
-  params.set('member_type', memberType)
+  if (memberType && ['student', 'client'].includes(memberType)) {
+    params.set('member_type', memberType)
+  }
+  if (intent === 'login') params.set('intent', 'login')
   return '/api/auth/google?' + params.toString()
 }
 
@@ -136,18 +139,33 @@ function showGoogleMemberTypeModal(nextPath) {
   overlay.classList.add('is-open')
 }
 
-function startGoogleLogin(nextPath) {
+function startGoogleLogin(nextPath, options = {}) {
   const next = decodeNextPath(nextPath)
-  if (document.getElementById('google-member-type-section')) {
+  if (options.intent === 'login') {
+    location.href = buildGoogleAuthUrl(next, null, 'login')
+    return
+  }
+  if (document.getElementById('google-signup-flow') && !document.getElementById('google-signup-flow').hidden) {
     const mt = readGoogleMemberTypeFromPage()
     if (!mt) {
       toast('가입 유형(수강생/의뢰인)을 선택해주세요.', 'error')
+      if (typeof goGoogleSignupStep === 'function') goGoogleSignupStep(1)
       return
     }
-    location.href = buildGoogleAuthUrl(next, mt)
+    location.href = buildGoogleAuthUrl(next, mt, 'signup')
     return
   }
-  showGoogleMemberTypeModal(next)
+  if (document.getElementById('google-signup-flow')) {
+    const mt = readGoogleMemberTypeFromPage()
+    if (mt && typeof goGoogleSignupStep === 'function') {
+      goGoogleSignupStep(3)
+      return
+    }
+  }
+  const q = new URLSearchParams()
+  if (next && next !== '/') q.set('next', next)
+  if (options.intent === 'login') q.set('mode', 'login')
+  location.href = '/login.html' + (q.toString() ? '?' + q.toString() : '')
 }
 
 window.buildGoogleAuthUrl = buildGoogleAuthUrl
@@ -170,6 +188,28 @@ function toast(msg, type = 'info') {
 window.toast = toast
 window.comingSoon = comingSoon
 
+/** 한 줄 텍스트 — 컨테이너 너비에 맞게 글자 크기 자동 축소 */
+function fitOneLineTexts(root = document) {
+  root.querySelectorAll('.login-card-notice-desc, .member-type-benefit').forEach(el => {
+    const max = el.classList.contains('member-type-benefit') ? 12 : 13
+    const min = 7.5
+    el.style.fontSize = max + 'px'
+    let size = max
+    while (el.scrollWidth > el.clientWidth && size > min) {
+      size -= 0.25
+      el.style.fontSize = size + 'px'
+    }
+  })
+}
+let fitOneLineTimer = null
+function scheduleFitOneLineTexts(root) {
+  clearTimeout(fitOneLineTimer)
+  fitOneLineTimer = setTimeout(() => fitOneLineTexts(root), 50)
+}
+window.fitOneLineTexts = fitOneLineTexts
+window.scheduleFitOneLineTexts = scheduleFitOneLineTexts
+window.addEventListener('resize', () => scheduleFitOneLineTexts())
+
 ;(function () {
   const s = document.createElement('script')
   s.src = '/js/admin-fab.js?v=1'
@@ -178,7 +218,7 @@ window.comingSoon = comingSoon
 })()
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/live-reminder.js?v=13'
+  s.src = '/js/live-reminder.js?v=14'
   s.defer = true
   document.head.appendChild(s)
 })()

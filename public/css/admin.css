@@ -647,3 +647,217 @@ html { font-size: 16px; }
 @media (max-width: 768px) {
   .footer-link-row { grid-template-columns: 1fr; }
 }
+
+/* 강사 연혁 편집 — 드래그 정렬 */
+.instructors-timeline-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.it-drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 24px;
+  pointer-events: none;
+  z-index: 10;
+  display: none;
+  transform: translateY(-50%);
+}
+
+.it-drop-indicator__line {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 3px;
+  background: #4169E1;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  box-shadow: 0 0 0 2px rgba(65, 105, 225, .15);
+}
+
+.it-drop-indicator__mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 28px;
+  height: 22px;
+  padding: 0 6px;
+  background: #4169E1;
+  color: #fff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 2px 10px rgba(65, 105, 225, .35);
+}
+
+.instructor-timeline-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-soft);
+  transition: border-color .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+
+.instructor-timeline-row__head {
+  display: grid;
+  grid-template-columns: 32px 88px 1fr auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.instructor-timeline-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 40px;
+}
+
+.it-achievements-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.it-achievements-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+}
+
+.it-achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.it-achievements-empty {
+  margin: 0;
+  font-size: 13px;
+  color: #999;
+}
+
+.it-achievement-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.it-add-achievement {
+  width: fit-content;
+}
+
+.instructor-timeline-row.is-dragging {
+  opacity: .45;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+}
+
+.instructor-timeline-row.is-dragging .instructor-timeline-row__body,
+.instructor-timeline-row.is-dragging .instructor-timeline-row__head input,
+.instructor-timeline-row.is-dragging .instructor-timeline-row__head .it-remove {
+  pointer-events: none;
+}
+
+.instructor-timeline-row input[type="text"] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.instructor-timeline-row input.it-year--empty {
+  border-color: #e03131;
+  background: #fff5f5;
+}
+
+.it-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-height: 36px;
+  height: 100%;
+  align-self: stretch;
+  margin: 0;
+  padding: 4px 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #aaa;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.it-drag-handle i {
+  pointer-events: none;
+  font-size: 18px;
+}
+
+.it-drag-handle:focus-visible {
+  outline: 2px solid var(--primary, #e03131);
+  outline-offset: 2px;
+}
+
+body.is-timeline-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+body.is-timeline-dragging .instructor-timeline-row.is-dragging {
+  cursor: grabbing;
+}
+
+.it-drag-handle:hover {
+  background: rgba(0, 0, 0, .05);
+  color: #666;
+}
+
+.it-drag-handle:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 900px) {
+  .instructor-timeline-row__head {
+    grid-template-columns: 32px 1fr auto;
+  }
+
+  .instructor-timeline-row__head .it-year {
+    grid-column: 2 / 3;
+  }
+
+  .instructor-timeline-row__head .it-title {
+    grid-column: 2 / 4;
+  }
+
+  .instructor-timeline-row__head .it-remove {
+    grid-column: 3 / 4;
+    grid-row: 1;
+  }
+
+  .instructor-timeline-row__body {
+    padding-left: 0;
+  }
+}

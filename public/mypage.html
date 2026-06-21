@@ -761,7 +761,7 @@ function renderLiveCourseCard(c) {
     ? `<span class="btn-meet btn-meet--waiting">라이브 종료</span>`
     : (LS ? LS.meetButtonHtml(c, start, true) : '')
   const materialBtn = LS ? LS.materialButtonHtml(c) : ''
-  const replayExtras = LS ? LS.liveResourceButtonsHtml(c, { includeMaterial: false }) : ''
+  const replayExtras = LS ? LS.liveResourceButtonsHtml(c, { includeMaterial: false, enrolled: true }) : ''
   return `<div class="my-course-card my-course-card--live my-course-card--wrap">
     <a href="/course.html?slug=${escapeHtml(c.slug)}" class="mc-link">
     <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
@@ -1106,6 +1106,8 @@ async function loadCoupons() {
           ? 'coupon-ticket--expired'
           : 'coupon-ticket--used'
       const untilNote = (c.reason === 'anticipation_review' || c.reason === 'course_review_five_star') && c.expires_at
+        ? `<div class="coupon-until">~ ${c.expires_at.slice(0, 10)}까지</div>`
+        : c.reason === 'client_course_reward' && c.expires_at
         ? `<div class="coupon-until">~ ${c.expires_at.slice(0, 10)}까지</div>`
         : isFeatured && c.featured_until
         ? `<div class="coupon-until">~ ${c.featured_until.slice(0,10)}</div>`

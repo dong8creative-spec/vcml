@@ -322,8 +322,12 @@ router.get('/instructors-intro', async (req, res) => {
 })
 
 router.patch('/instructors-intro', async (req, res) => {
-  const intro = await db.updateInstructorsIntro(req.body)
-  res.json({ success: true, ...intro })
+  try {
+    const intro = await db.updateInstructorsIntro(req.body)
+    res.json({ success: true, ...intro })
+  } catch (e) {
+    res.status(400).json({ error: e.message || '저장에 실패했습니다.' })
+  }
 })
 
 router.get('/instructors', async (req, res) => {

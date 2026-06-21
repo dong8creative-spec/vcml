@@ -3,117 +3,111 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>프로필 완성 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css?v=6" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body class="login-body">
   <div data-site-header="logo-only"></div>
   <div class="login-body-content">
   <div class="login-card">
-    <div style="text-align:center;margin-bottom:24px" id="oauth-header">
-      <div id="oauth-icon-wrap" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px"></div>
-      <div style="font-size: 20.4px;font-weight:600;color:#111" id="oauth-title">소셜 연동 완료</div>
-      <div style="font-size: 15.6px;color:#888;margin-top:4px">서비스 이용을 위해 정보를 확인해 주세요</div>
-    </div>
+    <header class="login-card-header" id="oauth-header">
+      <div class="oauth-header-icon" id="oauth-icon-wrap"></div>
+      <h1 class="login-card-title" id="oauth-title">소셜 연동 완료</h1>
+      <p class="login-card-sub">서비스 이용을 위해 정보를 확인해 주세요</p>
+    </header>
 
-    <!-- 스텝 인디케이터 -->
-    <div class="step-indicator">
-      <div class="step-item active" id="si-1"><span class="step-num">1</span><span class="step-label">기본 정보</span></div>
-      <div class="step-line"></div>
-      <div class="step-item" id="si-2"><span class="step-num">2</span><span class="step-label">혜택·동의</span></div>
-    </div>
+    <div class="login-card-main">
+      <div class="step-indicator">
+        <div class="step-item active" id="si-1"><span class="step-num">1</span><span class="step-label">기본 정보</span></div>
+        <div class="step-line"></div>
+        <div class="step-item" id="si-2"><span class="step-num">2</span><span class="step-label">혜택·동의</span></div>
+      </div>
 
-    <!-- Step 1: 가입 유형 + 기본 정보 -->
-    <div id="step-1">
-      <div id="google-privacy-notice" style="display:none;background:#f5f7ff;border:0.5px solid #d8dcff;border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:14.4px;color:#444;line-height:1.7">
-        <div style="font-weight:600;color:#333;margin-bottom:6px">Google 로그인 시 수집·이용하는 정보</div>
-        <ul style="margin:0;padding-left:18px">
-          <li><b>Google 고유 ID</b> — 계정 연동·중복 가입 방지</li>
-          <li><b>이름</b> — 회원 식별·프로필 표시</li>
-          <li><b>이메일</b> — 계정 식별·서비스 안내</li>
-          <li><b>프로필 사진</b> — 프로필 표시(선택적 노출)</li>
-        </ul>
-        <p style="margin:8px 0 0;font-size:13.2px;color:#666">
-          위 항목은 Google OAuth(<code style="font-size:12px">openid email profile</code>) 범위에서 제공되며, 회원 가입·서비스 제공 목적으로만 이용합니다.
-          <a href="/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a>에서 자세히 확인할 수 있습니다.
+      <div id="step-1" class="auth-card-step">
+        <div id="member-type-section">
+          <div class="member-type-label">가입 유형 <span class="hint">(가입 후 변경 불가)</span></div>
+          <div class="member-type-row">
+            <label class="member-type-card">
+              <input type="radio" name="member-type" value="student" checked />
+              <div class="member-type-title">수강생</div>
+              <div class="member-type-desc">온라인 강의 수강·학습</div>
+            </label>
+            <label class="member-type-card">
+              <input type="radio" name="member-type" value="client" />
+              <div class="member-type-title">의뢰인</div>
+              <div class="member-type-desc">클라이언츠 · 매칭</div>
+              <div class="member-type-benefit">20만원↑ 유료강의 수강 시 1만원 쿠폰 10장(건당 의뢰비 5만원 이상 시 사용가능)</div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>이름 <span class="hint" id="name-hint">(소셜 계정에서 불러온 이름)</span></label>
+          <input type="text" id="ob-name" placeholder="이름을 입력해주세요" required />
+        </div>
+        <div class="form-field">
+          <label>이메일 <span style="color:#111;font-size:13px">필수</span></label>
+          <input type="email" id="ob-email" placeholder="example@email.com" required />
+          <div class="code-hint" id="email-hint" style="display:none;color:#111"></div>
+        </div>
+        <div class="form-field">
+          <label>연락처 <span class="hint">(선택 — 알림톡·문자 수신 시 필요)</span></label>
+          <input type="tel" id="ob-phone" placeholder="010-0000-0000" maxlength="13" oninput="formatPhone(this)" />
+        </div>
+
+        <div id="ob-legal-checkboxes" class="terms-stack">
+          <div class="terms-row required">
+            <label><input type="checkbox" id="agree-privacy" /> [필수] <a href="/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a> 확인 및 동의</label>
+          </div>
+          <div class="terms-row required">
+            <label><input type="checkbox" id="agree-terms" /> [필수] <a href="/terms.html" target="_blank" rel="noopener">이용약관</a> 동의</label>
+          </div>
+        </div>
+
+        <div id="ob-legal-done" class="consent-done-banner" hidden>
+          <strong>약관·개인정보 동의 완료</strong>
+          회원가입 단계에서 Google 계정 연동 전 수집·이용 안내 및 필수 약관에 동의하셨습니다.
+          <a href="/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a> ·
+          <a href="/terms.html" target="_blank" rel="noopener">이용약관</a>
+        </div>
+
+        <button type="button" class="btn-submit" onclick="goStep2()">다음</button>
+      </div>
+
+      <div id="step-2" class="auth-card-step" hidden>
+        <div class="marketing-benefit-box">
+          <div class="marketing-benefit-box-title">🎁 마케팅 동의 시 혜택</div>
+          <div class="marketing-benefit-box-body">
+            • <b>5,000원 할인 쿠폰</b> 즉시 발급<br>
+            • 신규 강의 오픈 알림<br>
+            • 수강생 전용 할인 이벤트 안내
+          </div>
+        </div>
+
+        <div class="terms-all-row" onclick="toggleMarketing()" id="marketing-all-row">
+          <input type="checkbox" id="chk-marketing" style="accent-color:#111;width:16px;height:16px;flex-shrink:0" />
+          <span>마케팅 정보 수신 동의 <span style="font-size:13px;font-weight:400;color:#888">(선택)</span></span>
+        </div>
+
+        <p class="marketing-legal-note">
+          타닥클래스로부터 신규 강의, 이벤트, 할인 정보를 <b>이메일</b> 또는 등록하신 <b>연락처(알림톡·문자)</b>로 받습니다.
+          동의하지 않아도 서비스 이용에 제한이 없으며, 마이페이지에서 언제든 철회할 수 있습니다.
         </p>
-      </div>
 
-      <div id="member-type-section">
-        <div class="member-type-label">가입 유형 <span class="hint">(가입 후 변경 불가)</span></div>
-        <div class="member-type-row">
-          <label class="member-type-card">
-            <input type="radio" name="member-type" value="student" checked />
-            <div class="member-type-title">수강생</div>
-            <div class="member-type-desc">온라인 강의 수강·학습</div>
-          </label>
-          <label class="member-type-card">
-            <input type="radio" name="member-type" value="client" />
-            <div class="member-type-title">의뢰인</div>
-            <div class="member-type-desc">클라이언츠 · 매칭</div>
-            <div class="member-type-benefit">20만원↑ 강의 수강 시 1만원 쿠폰 10장</div>
-          </label>
-        </div>
-      </div>
+        <hr class="terms-divider" />
 
-      <div class="form-field">
-        <label>이름 <span class="hint" id="name-hint">(소셜 계정에서 불러온 이름)</span></label>
-        <input type="text" id="ob-name" placeholder="이름을 입력해주세요" required />
-      </div>
-      <div class="form-field">
-        <label>이메일 <span style="color:#111111;font-size: 13.2px">필수</span></label>
-        <input type="email" id="ob-email" placeholder="example@email.com" required />
-        <div class="code-hint" id="email-hint" style="display:none;color:#111111"></div>
-      </div>
-      <div class="form-field">
-        <label>연락처 <span class="hint">(선택 — 알림톡·문자 수신 시 필요)</span></label>
-        <input type="tel" id="ob-phone" placeholder="010-0000-0000" maxlength="13" oninput="formatPhone(this)" />
-      </div>
+        <p class="marketing-legal-note">
+          본 동의는 <b>개인정보보호법</b> 및 <b>정보통신망법 제50조</b>에 따른 선택적 동의 사항입니다. 동의 기록(일시·IP)은 법적 근거로 보관됩니다.
+        </p>
 
-      <div class="terms-row required" style="margin-top:4px">
-        <label><input type="checkbox" id="agree-privacy" /> [필수] <a href="/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a> 확인 및 동의</label>
+        <button type="button" class="btn-submit" id="btn-complete" onclick="doComplete()">시작하기</button>
+        <button type="button" class="btn-outline-step" onclick="goStep1()">이전</button>
       </div>
-      <div class="terms-row required">
-        <label><input type="checkbox" id="agree-terms" /> [필수] <a href="/terms.html" target="_blank" rel="noopener">이용약관</a> 동의</label>
-      </div>
-
-      <button class="btn-submit" onclick="goStep2()">다음</button>
-    </div>
-
-    <!-- Step 2: 마케팅 동의 -->
-    <div id="step-2" style="display:none">
-      <div style="background:#fffbe6;border:0.5px solid #ffe066;border-radius:10px;padding:16px;margin-bottom:20px">
-        <div style="font-size: 15.6px;font-weight:600;color:#7a5c00;margin-bottom:6px">🎁 마케팅 동의 시 혜택</div>
-        <div style="font-size: 15.6px;color:#7a5c00;line-height:1.7">
-          • <b>5,000원 할인 쿠폰</b> 즉시 발급<br>
-          • 신규 강의 오픈 알림<br>
-          • 수강생 전용 할인 이벤트 안내
-        </div>
-      </div>
-
-      <div class="terms-all-row" onclick="toggleMarketing()" id="marketing-all-row">
-        <input type="checkbox" id="chk-marketing" style="accent-color:#111;width:16px;height:16px;flex-shrink:0" />
-        <span>마케팅 정보 수신 동의 <span style="font-size: 13.2px;font-weight:400;color:#888">(선택)</span></span>
-      </div>
-
-      <div style="font-size: 14.4px;color:#aaa;line-height:1.7;padding:0 4px;margin-bottom:20px">
-        타닥클래스로부터 신규 강의, 이벤트, 할인 정보를 <b>이메일</b> 또는 등록하신 <b>연락처(알림톡·문자)</b>로 받습니다.<br>
-        동의하지 않아도 서비스 이용에 제한이 없으며, 마이페이지에서 언제든 철회할 수 있습니다.
-      </div>
-
-      <hr class="terms-divider" />
-
-      <div style="font-size: 14.4px;color:#bbb;margin-bottom:20px;line-height:1.6">
-        본 동의는 <b>개인정보보호법</b> 및 <b>정보통신망법 제50조</b>에 따른 선택적 동의 사항입니다. 동의 기록(일시·IP)은 법적 근거로 보관됩니다.
-      </div>
-
-      <button class="btn-submit" id="btn-complete" onclick="doComplete()">시작하기</button>
-      <button class="btn-outline-step" onclick="goStep1()">이전</button>
     </div>
   </div>
   </div>
 
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=16"></script>
   <script src="/js/site-header.js?v=6"></script>
   <script>
     const params = new URLSearchParams(location.search)
@@ -125,6 +119,11 @@
 
     if (!oauthToken) location.href = '/login.html'
 
+    const signupConsent = (() => {
+      try { return JSON.parse(sessionStorage.getItem('tc_signup_consent') || 'null') } catch { return null }
+    })()
+    const googleSignupConsented = isGoogle && signupConsent?.privacy && signupConsent?.terms && signupConsent?.collection
+
     const kakaoIcon = `<svg width="24" height="24" viewBox="0 0 18 18" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1C4.582 1 1 3.925 1 7.5c0 2.286 1.417 4.294 3.563 5.467L3.67 16.14a.25.25 0 0 0 .37.278L8.13 13.96c.288.027.58.04.87.04 4.418 0 8-2.925 8-6.5S13.418 1 9 1z" fill="#3A1D1D"/></svg>`
     const googleIcon = `<svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`
 
@@ -135,7 +134,6 @@
       iconWrap.style.border = '0.5px solid #eee'
       iconWrap.innerHTML = googleIcon
       titleEl.textContent = 'Google 연동 완료'
-      document.getElementById('google-privacy-notice').style.display = 'block'
       document.getElementById('name-hint').textContent = '(Google 계정에서 불러온 이름)'
     } else if (isKakao) {
       iconWrap.style.background = '#FEE500'
@@ -148,12 +146,20 @@
     if (oauthUser.email) document.getElementById('ob-email').value = oauthUser.email
     if (oauthUser.phone) document.getElementById('ob-phone').value = oauthUser.phone
 
-    if (oauthUser.member_type) {
+    if (oauthUser.member_type || (googleSignupConsented && signupConsent.member_type)) {
+      const mt = oauthUser.member_type || signupConsent.member_type
       const section = document.getElementById('member-type-section')
-      if (section) section.style.display = 'none'
-      const radio = document.querySelector(`input[name="member-type"][value="${oauthUser.member_type}"]`)
+      if (section) section.hidden = true
+      const radio = document.querySelector(`input[name="member-type"][value="${mt}"]`)
       if (radio) radio.checked = true
     }
+
+    if (googleSignupConsented) {
+      document.getElementById('ob-legal-checkboxes').hidden = true
+      document.getElementById('ob-legal-done').hidden = false
+    }
+
+    scheduleFitOneLineTexts()
 
     function formatPhone(el) {
       let v = el.value.replace(/[^0-9]/g, '')
@@ -171,22 +177,24 @@
         hint.textContent = '올바른 이메일 주소를 입력해주세요.'
         hint.style.display = 'block'; return
       }
-      if (!document.getElementById('agree-privacy').checked) {
-        alert('개인정보처리방침에 동의해주세요.'); return
-      }
-      if (!document.getElementById('agree-terms').checked) {
-        alert('이용약관에 동의해주세요.'); return
+      if (!googleSignupConsented) {
+        if (!document.getElementById('agree-privacy').checked) {
+          alert('개인정보처리방침에 동의해주세요.'); return
+        }
+        if (!document.getElementById('agree-terms').checked) {
+          alert('이용약관에 동의해주세요.'); return
+        }
       }
       hint.style.display = 'none'
-      document.getElementById('step-1').style.display = 'none'
-      document.getElementById('step-2').style.display = 'block'
+      document.getElementById('step-1').hidden = true
+      document.getElementById('step-2').hidden = false
       document.getElementById('si-1').classList.remove('active'); document.getElementById('si-1').classList.add('done')
       document.getElementById('si-2').classList.add('active')
     }
 
     function goStep1() {
-      document.getElementById('step-2').style.display = 'none'
-      document.getElementById('step-1').style.display = 'block'
+      document.getElementById('step-2').hidden = true
+      document.getElementById('step-1').hidden = false
       document.getElementById('si-2').classList.remove('active')
       document.getElementById('si-1').classList.remove('done'); document.getElementById('si-1').classList.add('active')
     }
@@ -201,7 +209,9 @@
       btn.disabled = true; btn.textContent = '처리 중...'
 
       const marketing_agreed = document.getElementById('chk-marketing').checked
-      const member_type = oauthUser.member_type || document.querySelector('input[name="member-type"]:checked')?.value
+      const member_type = oauthUser.member_type
+        || signupConsent?.member_type
+        || document.querySelector('input[name="member-type"]:checked')?.value
       if (!member_type) { alert('가입 유형을 선택해주세요.'); btn.disabled = false; btn.textContent = '시작하기'; return }
       const body = {
         name: document.getElementById('ob-name').value.trim(),
@@ -225,6 +235,7 @@
 
         localStorage.setItem('tc_token', data.token)
         localStorage.setItem('tc_user', JSON.stringify(data.user))
+        sessionStorage.removeItem('tc_signup_consent')
 
         if (marketing_agreed && data.coupon) {
           alert(`✅ 마케팅 동의 완료!\n5,000원 할인 쿠폰이 발급되었습니다.\n쿠폰번호: ${data.coupon.code}\n\n마이페이지 > 내 쿠폰에서 확인하세요.`)

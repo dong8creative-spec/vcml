@@ -26,6 +26,7 @@ const CLIENT_COURSE_REWARD_COUNT = 10
 const CLIENT_COURSE_REWARD_MIN_COURSE_PRICE = 200000
 const CLIENT_PROJECT_COUPON_MIN_AMOUNT = 30000
 const CLIENT_COURSE_REWARD_REASON = 'client_course_reward'
+const CLIENT_COURSE_REWARD_EXPIRY_MONTHS = 3
 const ANTICIPATION_COUPON_REASON = 'anticipation_review'
 const ANTICIPATION_DISCOUNT_PERCENT = 10
 const ANTICIPATION_MIN_LENGTH = 20
@@ -36,10 +37,25 @@ const STACKABLE_COURSE_COUPON_REASONS = [ANTICIPATION_COUPON_REASON, COURSE_REVI
 const TIMED_PERCENT_COUPON_REASONS = new Set(STACKABLE_COURSE_COUPON_REASONS)
 
 function addOneMonthFrom(iso) {
+  return addMonthsFrom(iso, 1)
+}
+
+function addMonthsFrom(iso, months) {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return null
-  d.setMonth(d.getMonth() + 1)
+  d.setMonth(d.getMonth() + months)
   return d.toISOString()
+}
+
+function getClientCourseRewardExpiresAt(coupon) {
+  if (!coupon || coupon.reason !== CLIENT_COURSE_REWARD_REASON) return null
+  return coupon.expires_at || (coupon.created_at ? addMonthsFrom(coupon.created_at, CLIENT_COURSE_REWARD_EXPIRY_MONTHS) : null)
+}
+
+function isClientCourseRewardCouponExpired(coupon, atMs = Date.now()) {
+  const exp = getClientCourseRewardExpiresAt(coupon)
+  if (!exp) return false
+  return atMs > new Date(exp).getTime()
 }
 
 function getTimedPercentCouponExpiresAt(coupon) {
@@ -92,7 +108,7 @@ const DEFAULT_COUPON_ISSUANCE_CONFIG = {
   client_course_reward: {
     source_label: '의뢰인 수강 혜택',
     route_label: '강의 결제 완료',
-    benefit_label: '3만원 이상 의뢰 시 1만원 할인',
+    benefit_label: '3만원 이상 의뢰 시 1만원 할인 · 발급 후 3개월',
   },
   editor_featured: {
     source_label: '에디터 승인 혜택',
@@ -527,6 +543,46 @@ const EDITOR_WORKBOOK_SEED = [
   },
 ]
 
+const CLIENT_COUPON_FAQ_SEED_KEY = 'client_course_coupon'
+const CLIENT_COUPON_FAQ = {
+  question: '의뢰인 강의 수강 쿠폰은 어떻게 받고 사용하나요?',
+  answer: `회원 유형이 의뢰인인 경우에만 발급·사용할 수 있는 혜택입니다. (기대평·수강 후기 쿠폰과 별도)
+
+발급 조건
+· 20만원 이상 유료 강의를 결제·수강하면 1만원 할인쿠폰 10장이 한 번에 발급됩니다. (강의당 1회)
+
+사용 방법
+· 발급된 10장 중 원하는 시점에 임의로 사용할 수 있습니다.
+· 클라이언츠 의뢰에서 에디터 견적을 수락할 때 쿠폰 적용 여부를 선택하면, 해당 의뢰비에서 1만원이 할인됩니다. (견적 1건당 쿠폰 1장)
+
+유효기간
+· 발급일로부터 3개월 이내에만 사용할 수 있습니다.
+
+보유 내역은 마이페이지 → 내 쿠폰에서 확인할 수 있습니다.`,
+  category: '쿠폰',
+  is_public: true,
+  sort_order: 7,
+}
+
+async function seedClientCouponFaq() {
+  const snap = await fs.collection('faqs').where('seed_key', '==', CLIENT_COUPON_FAQ_SEED_KEY).limit(1).get()
+  const data = { ...CLIENT_COUPON_FAQ, seed_key: CLIENT_COUPON_FAQ_SEED_KEY, updated_at: now() }
+  if (snap.empty) {
+    await fs.collection('faqs').add({ ...data, created_at: now() })
+  } else {
+    await snap.docs[0].ref.set(data, { merge: true })
+  }
+}
+
+async function seedInstructorsIntroDefaults() {
+  const doc = await fs.collection('site_settings').doc('instructors_intro').get()
+  if (doc.exists) return
+  await fs.collection('site_settings').doc('instructors_intro').set({
+    ...normalizeInstructorsIntro({}),
+    updated_at: now(),
+  })
+}
+
 async function seedEditorWorkbooks() {
   for (const wb of EDITOR_WORKBOOK_SEED) {
     const snap = await fs.collection('editor_workbooks').where('slug', '==', wb.slug).limit(1).get()
@@ -818,8 +874,45 @@ function isValidHeroImage(value) {
 
 const DEFAULT_INSTRUCTORS_INTRO = {
   section_title: '강사 소개',
-  section_subtitle: '현업에서 검증된 전문가가 직접 알려드립니다.',
-  page_intro: '타닥클래스 강사진을 소개합니다. 각 분야 현장 경험을 바탕으로 실무 중심 강의를 진행합니다.',
+  section_subtitle: '타닥클래스를 이끌어가는 대표 강사를 소개합니다.',
+  page_intro: '현장 경험과 교육 노하우를 바탕으로, 실무에 바로 쓸 수 있는 강의를 만듭니다.',
+  greeting_eyebrow: 'Message',
+  greeting_heading: '인사말',
+  greeting_body: `안녕하세요, 타닥클래스 대표 강사입니다.
+
+영상·콘텐츠 제작 현장에서 쌓은 경험을, 누구나 따라 할 수 있는 실무 교육으로 풀어내고 있습니다. 단순한 기능 설명을 넘어, 실제 프로젝트에서 바로 쓸 수 있는 워크플로와 노하우를 전달하는 것이 타닥클래스의 방향입니다.
+
+앞으로도 현장의 변화에 맞춘 강의와 콘텐츠로 여러분의 성장을 돕겠습니다. 감사합니다.`,
+  timeline_heading: '주요 경력',
+  timeline: [
+    { year: '2024', title: '타닥클래스 런칭', description: '실무 중심 영상·콘텐츠 교육 플랫폼 설립' },
+    { year: '2020', title: '방송·광고 현장 활동', description: '프리미어 프로·에프터 이펙트 기반 상업 영상 제작' },
+    { year: '2010', title: '영상 제작 경력 시작', description: '편집·모션그래픽 분야 현장 경험 축적' },
+  ],
+}
+
+function normalizeTimelineAchievements(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map(a => String(a || '').trim().slice(0, 200))
+    .filter(Boolean)
+    .slice(0, 12)
+}
+
+function normalizeInstructorTimeline(items) {
+  if (!Array.isArray(items)) return DEFAULT_INSTRUCTORS_INTRO.timeline.map((row, i) => ({ ...row, sort_order: i + 1 }))
+  return items
+    .map((item, i) => ({
+      year: String(item?.year || '').trim().slice(0, 20),
+      title: String(item?.title || '').trim().slice(0, 120),
+      description: String(item?.description || '').trim().slice(0, 500),
+      achievements: normalizeTimelineAchievements(item?.achievements),
+      sort_order: Number(item?.sort_order) || i + 1,
+    }))
+    .filter(item => item.year || item.title || item.description || item.achievements.length)
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+    .slice(0, 30)
+    .map((item, i) => ({ ...item, sort_order: i + 1 }))
 }
 
 function normalizeHeroConfig(data = {}) {
@@ -858,10 +951,15 @@ function normalizeHeroConfig(data = {}) {
 }
 
 function normalizeInstructorsIntro(data = {}) {
-  const base = { ...DEFAULT_INSTRUCTORS_INTRO }
+  const base = { ...DEFAULT_INSTRUCTORS_INTRO, timeline: DEFAULT_INSTRUCTORS_INTRO.timeline.map(r => ({ ...r })) }
   if (data.section_title != null) base.section_title = String(data.section_title).trim().slice(0, 80) || base.section_title
   if (data.section_subtitle != null) base.section_subtitle = String(data.section_subtitle).trim().slice(0, 200)
   if (data.page_intro != null) base.page_intro = String(data.page_intro).trim().slice(0, 1000)
+  if (data.greeting_eyebrow != null) base.greeting_eyebrow = String(data.greeting_eyebrow).trim().slice(0, 40)
+  if (data.greeting_heading != null) base.greeting_heading = String(data.greeting_heading).trim().slice(0, 80) || base.greeting_heading
+  if (data.greeting_body != null) base.greeting_body = String(data.greeting_body).trim().slice(0, 5000)
+  if (data.timeline_heading != null) base.timeline_heading = String(data.timeline_heading).trim().slice(0, 80) || base.timeline_heading
+  if (data.timeline !== undefined) base.timeline = normalizeInstructorTimeline(data.timeline)
   return base
 }
 
@@ -985,12 +1083,12 @@ function getLiveResourceAccess(course, { enrolled = false, at = new Date() } = {
   const replayOpensAt = getReplayOpensAt(course)
   const replayReady = replayOpensAt ? at.getTime() >= replayOpensAt.getTime() : false
   return {
-    replay_configured: !!replayUrl,
+    replay_configured: enrolled && !!replayUrl,
     replay_available: enrolled && !!replayUrl && lectureEnded && replayReady,
     replay_pending: enrolled && !!replayUrl && lectureEnded && !replayReady,
-    replay_opens_at: replayOpensAt ? replayOpensAt.toISOString() : null,
-    replay_opens_label: replayOpensAt ? formatReplayOpensLabel(replayOpensAt) : null,
-    live_ended: lectureEnded,
+    replay_opens_at: enrolled && replayOpensAt ? replayOpensAt.toISOString() : null,
+    replay_opens_label: enrolled && replayOpensAt ? formatReplayOpensLabel(replayOpensAt) : null,
+    live_ended: enrolled ? lectureEnded : false,
     material_configured: !!materialUrl,
     material_available: enrolled && !!materialUrl && lectureDay,
     material_lecture_day: lectureDay,
@@ -1920,6 +2018,7 @@ const db = {
   isCouponExpired(coupon) {
     if (!coupon || coupon.status !== 'available') return coupon?.status === 'expired'
     if (TIMED_PERCENT_COUPON_REASONS.has(coupon.reason)) return isTimedPercentCouponExpired(coupon)
+    if (coupon.reason === CLIENT_COURSE_REWARD_REASON) return isClientCourseRewardCouponExpired(coupon)
     return false
   },
   async expireCouponIfNeeded(coupon) {
@@ -1932,7 +2031,9 @@ const db = {
     if (!coupon) return coupon
     const expires_at = TIMED_PERCENT_COUPON_REASONS.has(coupon.reason)
       ? getTimedPercentCouponExpiresAt(coupon)
-      : (coupon.expires_at || null)
+      : coupon.reason === CLIENT_COURSE_REWARD_REASON
+        ? getClientCourseRewardExpiresAt(coupon)
+        : (coupon.expires_at || null)
     return { ...coupon, expires_at }
   },
   async resolveCouponIssuance(coupon) {
@@ -2118,12 +2219,15 @@ const db = {
     )
     if (existing.length > 0) return null
     const coupons = []
+    const issuedAt = now()
+    const expiresAt = addMonthsFrom(issuedAt, CLIENT_COURSE_REWARD_EXPIRY_MONTHS)
     for (let i = 0; i < CLIENT_COURSE_REWARD_COUNT; i++) {
       const coupon = await db.createCoupon(userId, CLIENT_COURSE_REWARD_AMOUNT, CLIENT_COURSE_REWARD_REASON, {
         course_id: course.id,
         enrollment_order_id: orderId,
         coupon_type: 'client_project_discount',
         min_project_amount: CLIENT_PROJECT_COUPON_MIN_AMOUNT,
+        expires_at: expiresAt,
       })
       coupons.push(coupon)
     }
@@ -2138,10 +2242,12 @@ const db = {
   checkClientProjectCoupon(userId, couponId, quoteAmount) {
     return db.getCouponById(couponId).then(coupon => {
       if (!coupon) return null
-      if (coupon.user_id !== userId || coupon.reason !== CLIENT_COURSE_REWARD_REASON) return null
-      if (coupon.status !== 'available') return null
+      const enriched = db.enrichCoupon(coupon)
+      if (enriched.user_id !== userId || enriched.reason !== CLIENT_COURSE_REWARD_REASON) return null
+      if (enriched.status !== 'available') return null
+      if (db.isCouponExpired(enriched)) return null
       if (Number(quoteAmount) < CLIENT_PROJECT_COUPON_MIN_AMOUNT) return null
-      return coupon
+      return enriched
     })
   },
   async getCouponById(couponId) {
@@ -3133,7 +3239,17 @@ const db = {
   },
 
   async updateInstructorsIntro(data) {
-    const next = normalizeInstructorsIntro(data)
+    const existing = await db.getInstructorsIntro()
+    const { updated_at, ...rest } = existing || {}
+    const merged = { ...rest, ...data }
+    if (Array.isArray(data?.timeline)) merged.timeline = data.timeline
+    const next = normalizeInstructorsIntro(merged)
+    for (const item of next.timeline || []) {
+      const hasContent = item.title || item.description || (item.achievements && item.achievements.length)
+      if (hasContent && !String(item.year || '').trim()) {
+        throw new Error(`연혁 "${item.title || '제목 없음'}" 항목에 연도가 필요합니다.`)
+      }
+    }
     await fs.collection('site_settings').doc('instructors_intro').set({ ...next, updated_at: now() })
     return db.getInstructorsIntro()
   },
@@ -3202,6 +3318,8 @@ const db = {
 
 seed().catch(console.error)
 seedEditorWorkbooks().catch(console.error)
+seedClientCouponFaq().catch(console.error)
+seedInstructorsIntroDefaults().catch(console.error)
 
 module.exports = db
 module.exports.parseLiveStart = parseLiveStart

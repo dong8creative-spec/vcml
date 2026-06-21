@@ -4,68 +4,154 @@
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>강사 소개 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=6" />
-  <link rel="stylesheet" href="/css/common.css" />
+  <link rel="stylesheet" href="/css/instructors.css?v=7" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
-<body>
-<div data-site-header></div>
+<body class="instructors-page">
 
-<section class="instructors-page-hero">
-  <h1 id="page-title">강사 소개</h1>
-  <p id="page-intro">타닥클래스 강사진을 소개합니다.</p>
-</section>
+<div data-chrome="header"></div>
 
-<section class="instructors-section">
-  <div class="container">
-    <div class="instructors-grid" id="instructors-grid">
-      <div class="spinner"></div>
-    </div>
+<main>
+  <header class="instructor-hero">
+    <p class="instructor-hero-eyebrow">Instructor</p>
+    <h1 class="instructor-hero-title" id="page-title">강사 소개</h1>
+    <p class="instructor-hero-subtitle" id="page-subtitle"></p>
+    <p class="instructor-hero-lead" id="page-intro">타닥클래스 대표 강사를 소개합니다.</p>
+  </header>
+
+  <div class="instructor-main" id="instructor-main">
+    <div class="instructors-empty"><span class="spinner"></span></div>
   </div>
-</section>
+</main>
 
 <div data-chrome="footer"></div>
 
 <script src="/js/api.js"></script>
-<script src="/js/site-layout.js"></script>
-<script src="/js/site-header.js?v=6"></script>
 <script src="/js/site-chrome.js"></script>
 <script>
 function escHtml(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-function instructorCard(i) {
-  const initial = (i.name || '?')[0]
-  const avatar = i.profile_image
-    ? `<div class="instructor-avatar"><img src="${escHtml(i.profile_image)}" alt="" /></div>`
-    : `<div class="instructor-avatar instructor-avatar--placeholder">${escHtml(initial)}</div>`
-  const tags = (i.tags || []).map(t => `<span>${escHtml(t)}</span>`).join('')
-  return `<article class="instructor-card">
-    ${avatar}
-    <div class="instructor-body">
-      <h3 class="instructor-name">${escHtml(i.name)}</h3>
-      ${i.role_title ? `<p class="instructor-role">${escHtml(i.role_title)}</p>` : ''}
-      ${tags ? `<div class="instructor-tags">${tags}</div>` : ''}
-      ${i.bio ? `<p class="instructor-bio" style="-webkit-line-clamp:unset">${escHtml(i.bio)}</p>` : ''}
+function renderProfile(instructor) {
+  if (!instructor) return ''
+  const initial = (instructor.name || '?')[0]
+  const photo = instructor.profile_image
+    ? `<div class="instructor-profile__photo"><img src="${escHtml(instructor.profile_image)}" alt="${escHtml(instructor.name)}" /></div>`
+    : `<div class="instructor-profile__photo instructor-profile__photo--placeholder">${escHtml(initial)}</div>`
+  const tags = (instructor.tags || []).map(t => `<span>${escHtml(t)}</span>`).join('')
+  return `<section class="instructor-profile">
+    ${photo}
+    <div class="instructor-profile__body">
+      <h2 class="instructor-profile__name">${escHtml(instructor.name)}</h2>
+      ${instructor.role_title ? `<p class="instructor-profile__role">${escHtml(instructor.role_title)}</p>` : ''}
+      ${tags ? `<div class="instructor-profile__tags">${tags}</div>` : ''}
+      ${instructor.bio ? `<p class="instructor-profile__bio">${escHtml(instructor.bio)}</p>` : ''}
     </div>
-  </article>`
+  </section>`
+}
+
+function renderGreeting(intro, instructor) {
+  if (!intro.greeting_body && !intro.greeting_heading) return ''
+  const signName = instructor?.name || ''
+  const signRole = instructor?.role_title || ''
+  return `<section class="instructor-greeting">
+    ${intro.greeting_eyebrow ? `<p class="instructor-section-eyebrow">${escHtml(intro.greeting_eyebrow)}</p>` : ''}
+    <h2 class="instructor-section-title">${escHtml(intro.greeting_heading || '인사말')}</h2>
+    ${intro.greeting_body ? `<div class="instructor-greeting__body">${escHtml(intro.greeting_body)}</div>` : ''}
+    ${signName ? `<div class="instructor-greeting__sign">
+      <div class="instructor-greeting__sign-name">${escHtml(signName)}</div>
+      ${signRole ? `<div class="instructor-greeting__sign-role">${escHtml(signRole)}</div>` : ''}
+    </div>` : ''}
+  </section>`
+}
+
+function prepareTimelineForDisplay(items) {
+  const seenYears = new Set()
+  const seenRows = new Set()
+  const result = []
+
+  for (const raw of items || []) {
+    const year = String(raw.year || '').trim()
+    const title = String(raw.title || '').trim()
+    const description = String(raw.description || '').trim()
+    const achievements = []
+    const seenAch = new Set()
+    for (const a of raw.achievements || []) {
+      const text = String(a || '').trim()
+      if (!text || seenAch.has(text)) continue
+      seenAch.add(text)
+      achievements.push(text)
+    }
+
+    const rowKey = [year, title, description, achievements.join('\n')].join('||')
+    if (seenRows.has(rowKey)) continue
+    seenRows.add(rowKey)
+
+    const hideYear = !!(year && seenYears.has(year))
+    if (year) seenYears.add(year)
+
+    result.push({ year, title, description, achievements, hideYear })
+  }
+  return result
+}
+
+function renderTimeline(intro) {
+  const items = prepareTimelineForDisplay(intro.timeline || [])
+  if (!items.length) return ''
+  return `<section class="instructor-history">
+    <div class="instructor-history__head">
+      <p class="instructor-section-eyebrow">History</p>
+      <h2 class="instructor-section-title instructor-section-title--flush">${escHtml(intro.timeline_heading || '주요 경력')}</h2>
+    </div>
+    <ol class="instructor-timeline">
+      ${items.map((item, i) => `
+        <li class="instructor-timeline__item${i === 0 ? ' is-current' : ''}">
+          <div class="instructor-timeline__year${item.hideYear ? ' instructor-timeline__year--repeat' : ''}"${item.hideYear ? ' aria-hidden="true"' : ''}>${item.hideYear ? '' : (item.year ? escHtml(item.year) : '<span class="instructor-timeline__year--missing">연도 미입력</span>')}</div>
+          <div class="instructor-timeline__track" aria-hidden="true">
+            <span class="instructor-timeline__dot"></span>
+          </div>
+          <article class="instructor-timeline__card">
+            ${!item.hideYear && item.year ? `<time class="instructor-timeline__year-mobile">${escHtml(item.year)}</time>` : ''}
+            ${item.title ? `<h3 class="instructor-timeline__title">${escHtml(item.title)}</h3>` : ''}
+            ${item.description ? `<p class="instructor-timeline__desc">${escHtml(item.description)}</p>` : ''}
+            ${item.achievements.length ? `<ul class="instructor-timeline__achievements">${item.achievements.map(a => `<li>${escHtml(a)}</li>`).join('')}</ul>` : ''}
+          </article>
+        </li>`).join('')}
+    </ol>
+  </section>`
 }
 
 async function load() {
-  const grid = document.getElementById('instructors-grid')
+  const main = document.getElementById('instructor-main')
   try {
     const data = await API.get('/instructors')
-    if (data.intro?.section_title) document.getElementById('page-title').textContent = data.intro.section_title
-    if (data.intro?.page_intro) document.getElementById('page-intro').textContent = data.intro.page_intro
-    const list = data.instructors || []
-    if (!list.length) {
-      grid.innerHTML = '<p class="empty">등록된 강사가 없습니다.</p>'
+    const intro = data.intro || {}
+    const instructor = (data.instructors || [])[0] || null
+
+    if (intro.section_title) document.getElementById('page-title').textContent = intro.section_title
+    const subtitleEl = document.getElementById('page-subtitle')
+    if (intro.section_subtitle) {
+      subtitleEl.textContent = intro.section_subtitle
+      subtitleEl.hidden = false
+    } else {
+      subtitleEl.hidden = true
+    }
+    if (intro.page_intro) document.getElementById('page-intro').textContent = intro.page_intro
+
+    if (!instructor && !intro.greeting_body && !(intro.timeline || []).length) {
+      main.innerHTML = '<p class="instructors-empty">등록된 강사 정보가 없습니다.</p>'
       return
     }
-    grid.innerHTML = list.map(instructorCard).join('')
+
+    main.innerHTML = [
+      renderProfile(instructor),
+      renderGreeting(intro, instructor),
+      renderTimeline(intro),
+    ].filter(Boolean).join('')
   } catch (e) {
     console.error(e)
-    grid.innerHTML = '<p class="empty">강사 정보를 불러오지 못했습니다.</p>'
+    main.innerHTML = '<p class="instructors-empty">강사 정보를 불러오지 못했습니다.</p>'
   }
 }
 
