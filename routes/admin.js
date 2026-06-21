@@ -85,6 +85,54 @@ router.get('/courses/:id/enrollments', async (req, res) => {
   })
 })
 
+router.get('/courses/:id/chapters', async (req, res) => {
+  const course = await db.getCourseById(req.params.id)
+  if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+  const chapters = await db.getChaptersByCourse(course.id)
+  res.json({
+    course: {
+      id: course.id,
+      title: course.title,
+      slug: course.slug,
+      course_type: course.course_type,
+      live_curriculum_text: course.live_curriculum_text || null,
+      live_curriculum_image: course.live_curriculum_image || null,
+    },
+    chapters,
+  })
+})
+
+router.post('/courses/:id/chapters', async (req, res) => {
+  const course = await db.getCourseById(req.params.id)
+  if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+  const result = await db.createChapter(course.id, req.body)
+  if (result.error === 'title_required') {
+    return res.status(400).json({ error: '챕터 제목을 입력해주세요.' })
+  }
+  res.json({ success: true, chapter: result })
+})
+
+router.patch('/chapters/:id', async (req, res) => {
+  const result = await db.updateChapter(req.params.id, req.body)
+  if (result?.error === 'not_found') return res.status(404).json({ error: '챕터를 찾을 수 없습니다.' })
+  if (result?.error === 'title_required') return res.status(400).json({ error: '챕터 제목을 입력해주세요.' })
+  res.json({ success: true, chapter: result })
+})
+
+router.delete('/chapters/:id', async (req, res) => {
+  const result = await db.deleteChapter(req.params.id)
+  if (result?.error === 'not_found') return res.status(404).json({ error: '챕터를 찾을 수 없습니다.' })
+  res.json({ success: true })
+})
+
+router.post('/chapters/:id/move', async (req, res) => {
+  const direction = req.body?.direction === 'up' ? 'up' : 'down'
+  const result = await db.moveChapter(req.params.id, direction)
+  if (result?.error === 'not_found') return res.status(404).json({ error: '챕터를 찾을 수 없습니다.' })
+  if (result?.error === 'cannot_move') return res.status(400).json({ error: '더 이상 이동할 수 없습니다.' })
+  res.json({ success: true, chapters: result })
+})
+
 router.post('/courses/sync-catalog', async (req, res) => {
   const result = await db.syncCoursesFromCatalog()
   res.json({ success: true, ...result })

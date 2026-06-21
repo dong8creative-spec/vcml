@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>강의 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=14" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=15" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
@@ -124,13 +124,15 @@
         <div class="curriculum-item">
           <span class="ci-num">${String(i+1).padStart(2,'0')}</span>
           <span class="ci-title">${esc(ch.title)}</span>
-          ${ch.is_free
-            ? `<a href="/player.html?slug=${c.slug}&chapter=${ch.id}" class="ci-free" onclick="return checkLoginForFree(event,'${c.slug}','${ch.id}')">무료 보기</a>`
-            : c.enrolled
-              ? `<a href="/player.html?slug=${c.slug}&chapter=${ch.id}" class="ci-watch"><i class="ti ti-player-play"></i></a>`
-              : `<span class="ci-lock"><i class="ti ti-lock"></i></span>`
-          }
-          <span class="ci-time">${esc(ch.duration||'')}</span>
+          <div class="ci-actions">
+            ${ch.is_free
+              ? `<a href="/player.html?slug=${c.slug}&chapter=${ch.id}" class="ci-free" onclick="return checkLoginForFree(event,'${c.slug}','${ch.id}')">무료 보기</a>`
+              : c.enrolled
+                ? `<a href="/player.html?slug=${c.slug}&chapter=${ch.id}" class="ci-watch" aria-label="수강하기"><i class="ti ti-player-play"></i></a>`
+                : `<span class="ci-lock" aria-hidden="true"><i class="ti ti-lock"></i></span>`
+            }
+            ${ch.duration ? `<span class="ci-time">${esc(ch.duration)}</span>` : ''}
+          </div>
         </div>`).join('')}</div>`
     }
 

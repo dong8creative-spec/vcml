@@ -1415,6 +1415,66 @@ const db = {
     const doc = await fs.collection('chapters').doc(id).get()
     return docToObj(doc)
   },
+  async createChapter(courseId, data = {}) {
+    const course = await db.getCourseById(courseId)
+    if (!course) return { error: 'course_not_found' }
+    const chapters = await db.getChaptersByCourse(courseId)
+    const maxOrder = chapters.reduce((m, c) => Math.max(m, Number(c.order_num) || 0), 0)
+    const title = String(data.title || '').trim()
+    if (!title) return { error: 'title_required' }
+    const payload = {
+      course_id: courseId,
+      order_num: Number(data.order_num) > 0 ? Number(data.order_num) : maxOrder + 1,
+      title,
+      duration: String(data.duration || '').trim() || null,
+      is_free: data.is_free ? 1 : 0,
+      video_url: String(data.video_url || '').trim() || null,
+    }
+    const ref = await fs.collection('chapters').add(payload)
+    return { id: ref.id, ...payload }
+  },
+  async updateChapter(chapterId, data = {}) {
+    const chapter = await db.getChapterById(chapterId)
+    if (!chapter) return { error: 'not_found' }
+    const patch = {}
+    if (data.title !== undefined) {
+      const title = String(data.title).trim()
+      if (!title) return { error: 'title_required' }
+      patch.title = title
+    }
+    if (data.duration !== undefined) patch.duration = String(data.duration).trim() || null
+    if (data.is_free !== undefined) patch.is_free = data.is_free ? 1 : 0
+    if (data.video_url !== undefined) patch.video_url = String(data.video_url).trim() || null
+    if (data.order_num !== undefined) patch.order_num = Math.max(1, parseInt(data.order_num, 10) || 1)
+    if (!Object.keys(patch).length) return chapter
+    await fs.collection('chapters').doc(chapterId).update(patch)
+    return db.getChapterById(chapterId)
+  },
+  async deleteChapter(chapterId) {
+    const chapter = await db.getChapterById(chapterId)
+    if (!chapter) return { error: 'not_found' }
+    await fs.collection('chapters').doc(chapterId).delete()
+    const remaining = await db.getChaptersByCourse(chapter.course_id)
+    for (let i = 0; i < remaining.length; i++) {
+      const target = remaining[i]
+      if (Number(target.order_num) !== i + 1) {
+        await fs.collection('chapters').doc(target.id).update({ order_num: i + 1 })
+      }
+    }
+    return { success: true, course_id: chapter.course_id }
+  },
+  async moveChapter(chapterId, direction) {
+    const chapter = await db.getChapterById(chapterId)
+    if (!chapter) return { error: 'not_found' }
+    const chapters = await db.getChaptersByCourse(chapter.course_id)
+    const idx = chapters.findIndex(c => c.id === chapterId)
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (idx < 0 || swapIdx < 0 || swapIdx >= chapters.length) return { error: 'cannot_move' }
+    const other = chapters[swapIdx]
+    await fs.collection('chapters').doc(chapter.id).update({ order_num: other.order_num })
+    await fs.collection('chapters').doc(other.id).update({ order_num: chapter.order_num })
+    return db.getChaptersByCourse(chapter.course_id)
+  },
 
   // enrollments
   async isEnrolled(userId, courseId) {

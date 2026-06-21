@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>수강 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css?v=2" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
@@ -40,45 +40,83 @@
     let courseData = null
     let currentChapterId = null
 
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    }
+
+    function toEmbedUrl(url) {
+      if (!url) return null
+      try {
+        const u = new URL(url)
+        if (u.hostname === 'youtu.be') {
+          const id = u.pathname.replace(/^\//, '').split('/')[0]
+          return id ? `https://www.youtube.com/embed/${id}` : null
+        }
+        if (u.hostname.includes('youtube.com')) {
+          const v = u.searchParams.get('v')
+          if (v) return `https://www.youtube.com/embed/${v}`
+          const m = u.pathname.match(/\/(embed|shorts|live)\/([^/?]+)/)
+          if (m) return `https://www.youtube.com/embed/${m[2]}`
+        }
+        if (u.hostname.includes('vimeo.com')) {
+          const parts = u.pathname.split('/').filter(Boolean)
+          const id = parts[parts.length - 1]
+          return id ? `https://player.vimeo.com/video/${id}` : null
+        }
+      } catch (_) {}
+      return null
+    }
+
+    function showLiveOnlyNotice() {
+      document.getElementById('player-main').innerHTML = `
+        <div class="player-beta-notice player-live-notice">
+          <i class="ti ti-broadcast"></i>
+          <h2>라이브 강의입니다</h2>
+          <p>이 강의는 Google Meet 라이브로 진행됩니다.<br>일정·입장 링크는 <strong>마이페이지 &gt; 내 강의</strong>에서 확인하세요.</p>
+          ${courseData.live_schedule ? `<p class="player-live-schedule"><i class="ti ti-calendar"></i> ${esc(courseData.live_schedule)}</p>` : ''}
+          <a href="/mypage.html" class="player-live-btn">내 강의에서 Meet 입장하기</a>
+          <a href="/course.html?slug=${encodeURIComponent(slug)}" class="player-live-link">강의 상세로 돌아가기</a>
+        </div>`
+      document.getElementById('sidebar-title').textContent = '라이브 안내'
+      document.getElementById('chapter-list').innerHTML = `<div class="chapter-item active"><span class="ch-num">01</span><span class="ch-title">라이브 세션</span></div>`
+    }
+
+    function startChapterPlayer() {
+      document.getElementById('player-course-title').textContent = courseData.title
+      document.getElementById('sidebar-title').textContent = courseData.title
+      renderChapterList(courseData.chapters)
+
+      const chapters = courseData.chapters || []
+      const firstId = chapterParam === 'first' || !chapterParam
+        ? chapters[0]?.id
+        : chapterParam
+      if (firstId) loadChapter(firstId)
+      else document.getElementById('player-main').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>재생할 챕터가 없습니다.</p></div>`
+    }
+
     async function load() {
       try {
         courseData = await API.get('/courses/' + slug)
+        document.getElementById('player-course-title').textContent = courseData.title
 
-        if (courseData.course_type === 'live') {
-          document.getElementById('player-main').innerHTML = `
-            <div class="player-beta-notice player-live-notice">
-              <i class="ti ti-broadcast"></i>
-              <h2>라이브 강의입니다</h2>
-              <p>이 강의는 Google Meet 라이브로 진행됩니다.<br>일정·입장 링크는 <strong>마이페이지 &gt; 내 강의</strong>에서 확인하세요.</p>
-              ${courseData.live_schedule ? `<p class="player-live-schedule"><i class="ti ti-calendar"></i> ${courseData.live_schedule}</p>` : ''}
-              <a href="/mypage.html" class="player-live-btn">내 강의에서 Meet 입장하기</a>
-              <a href="/course.html?slug=${slug}" class="player-live-link">강의 상세로 돌아가기</a>
-            </div>`
-          document.getElementById('player-course-title').textContent = courseData.title
-          document.getElementById('sidebar-title').textContent = '라이브 안내'
-          document.getElementById('chapter-list').innerHTML = `<div class="chapter-item active"><span class="ch-num">01</span><span class="ch-title">라이브 세션</span></div>`
+        const chapters = courseData.chapters || []
+        if (courseData.course_type === 'live' && !chapters.length) {
+          showLiveOnlyNotice()
           return
         }
 
-        document.getElementById('player-course-title').textContent = courseData.title
-        document.getElementById('sidebar-title').textContent = courseData.title
-        renderChapterList(courseData.chapters)
-
-        const firstId = chapterParam === 'first' || !chapterParam
-          ? courseData.chapters[0]?.id
-          : chapterParam
-        if (firstId) loadChapter(firstId)
+        startChapterPlayer()
       } catch(e) {
-        document.getElementById('player-main').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`
+        document.getElementById('player-main').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${esc(e.message)}</p></div>`
       }
     }
 
     function renderChapterList(chapters) {
       document.getElementById('chapter-list').innerHTML = chapters.map((ch, i) => `
-        <div class="chapter-item ${ch.id==currentChapterId?'active':''}" id="ch-item-${ch.id}" onclick="loadChapter('${ch.id}')">
+        <div class="chapter-item ${ch.id==currentChapterId?'active':''}" id="ch-item-${esc(ch.id)}" onclick="loadChapter('${esc(ch.id)}')">
           <span class="ch-num">${String(i+1).padStart(2,'0')}</span>
-          <span class="ch-title">${ch.title}</span>
-          <span class="ch-dur">${ch.duration||''}</span>
+          <span class="ch-title">${esc(ch.title)}</span>
+          <span class="ch-dur">${esc(ch.duration||'')}</span>
         </div>`).join('')
     }
 
@@ -98,32 +136,40 @@
 
     function renderPlayer(ch) {
       const isCompleted = ch.progress?.completed === 1
+      const embed = toEmbedUrl(ch.video_url)
+      const videoHtml = embed
+        ? `<iframe class="video-embed" src="${esc(embed)}" title="${esc(ch.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`
+        : ch.video_url
+          ? `<div class="video-external">
+              <p class="video-external-note">등록된 영상 링크에서 재생됩니다.</p>
+              <a href="${esc(ch.video_url)}" target="_blank" rel="noopener noreferrer" class="vp-play-btn"><i class="ti ti-external-link"></i> 영상 페이지에서 보기</a>
+            </div>`
+          : `<div class="video-placeholder">
+              <div class="vp-icon"><i class="ti ti-player-play-filled"></i></div>
+              <div class="vp-title">${esc(ch.title)}</div>
+              <div class="vp-note">영상 파일 업로드 후 이 영역에서 자동 재생됩니다.<br>현재는 수강 완료 처리만 가능합니다.</div>
+              <button class="vp-play-btn" onclick="simulateWatch('${esc(ch.id)}', ${ch.next_id ? `'${esc(ch.next_id)}'` : 'null'})">
+                <i class="ti ti-player-play-filled"></i> 수강 완료 처리하기
+              </button>
+            </div>`
+
       document.getElementById('player-main').innerHTML = `
-        <div class="player-beta-banner">
+        ${!ch.video_url ? `<div class="player-beta-banner">
           <i class="ti ti-info-circle"></i>
           <span>오픈 베타: 영상 업로드 전 시뮬레이션 모드입니다. 실제 영상은 정식 오픈 후 연결됩니다.</span>
-        </div>
-        <div class="video-area">
-          <div class="video-placeholder">
-            <div class="vp-icon"><i class="ti ti-player-play-filled"></i></div>
-            <div class="vp-title">${ch.title}</div>
-            <div class="vp-note">영상 파일 업로드 후 이 영역에서 자동 재생됩니다.<br>현재는 수강 완료 처리만 가능합니다.</div>
-            <button class="vp-play-btn" onclick="simulateWatch(${ch.id}, ${ch.next_id})">
-              <i class="ti ti-player-play-filled"></i> 수강 완료 처리하기
-            </button>
-          </div>
-        </div>
+        </div>` : ''}
+        <div class="video-area">${videoHtml}</div>
         <div class="chapter-info">
           <div class="ci-header">
-            <h2>${ch.title}</h2>
-            <span class="ci-dur"><i class="ti ti-clock"></i> ${ch.duration||'-'}</span>
+            <h2>${esc(ch.title)}</h2>
+            <span class="ci-dur"><i class="ti ti-clock"></i> ${esc(ch.duration||'-')}</span>
           </div>
           <div class="ci-nav">
-            ${ch.prev_id ? `<button onclick="loadChapter(${ch.prev_id})" class="ci-btn"><i class="ti ti-arrow-left"></i> 이전 강의</button>` : '<span></span>'}
+            ${ch.prev_id ? `<button onclick="loadChapter('${esc(ch.prev_id)}')" class="ci-btn"><i class="ti ti-arrow-left"></i> 이전 강의</button>` : '<span></span>'}
             <span class="ci-status ${isCompleted?'done':''}">
               ${isCompleted ? '<i class="ti ti-circle-check-filled"></i> 수강 완료' : '<i class="ti ti-circle-dashed"></i> 미완료'}
             </span>
-            ${ch.next_id ? `<button onclick="loadChapter(${ch.next_id})" class="ci-btn next"><i class="ti ti-arrow-right"></i> 다음 강의</button>` : ''}
+            ${ch.next_id ? `<button onclick="loadChapter('${esc(ch.next_id)}')" class="ci-btn next"><i class="ti ti-arrow-right"></i> 다음 강의</button>` : ''}
           </div>
         </div>`
     }

@@ -410,6 +410,84 @@
       </div>
     </section>
 
+    <!-- ===== SECTION: CURRICULUM ===== -->
+    <section class="section" id="sec-curriculum">
+      <div class="card">
+        <div class="card-header" style="flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="card-title">커리큘럼 편집</div>
+            <p class="sec-sub" style="margin:4px 0 0">강의 상세 페이지 챕터 목록(제목·시간·무료 보기·영상 링크)을 관리합니다.</p>
+          </div>
+          <button type="button" class="btn-primary-sm" id="curriculum-add-btn" onclick="openChapterModal()" disabled>+ 챕터 추가</button>
+        </div>
+        <div style="padding:0 20px 20px">
+          <div class="form-group" style="max-width:480px">
+            <label>강의 선택</label>
+            <select id="curriculum-course-select" onchange="loadCurriculumChapters()">
+              <option value="">강의를 선택하세요</option>
+            </select>
+          </div>
+          <div id="curriculum-live-note" class="curriculum-live-note" style="display:none"></div>
+          <div class="table-wrap" style="margin-top:16px">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:56px">순서</th>
+                  <th>제목</th>
+                  <th style="width:88px">시간</th>
+                  <th style="width:72px">무료</th>
+                  <th>영상 링크</th>
+                  <th style="width:160px">관리</th>
+                </tr>
+              </thead>
+              <tbody id="curriculum-chapters-body">
+                <tr><td colspan="6" style="text-align:center;color:#888;padding:24px">강의를 선택하면 챕터 목록이 표시됩니다.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="modal-overlay" id="chapter-modal" style="display:none">
+      <div class="modal" style="max-width:520px">
+        <div class="modal-header">
+          <div class="modal-title" id="chapter-modal-title">챕터 추가</div>
+          <button class="modal-close" onclick="closeChapterModal()">✕</button>
+        </div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
+          <div class="form-group">
+            <label>챕터 제목</label>
+            <input type="text" id="ch-title" maxlength="120" placeholder="예: 01 강의 소개" />
+          </div>
+          <div class="two-col" style="gap:12px">
+            <div class="form-group">
+              <label>재생 시간 표시</label>
+              <input type="text" id="ch-duration" maxlength="30" placeholder="예: 10분" />
+            </div>
+            <div class="form-group">
+              <label>순서</label>
+              <input type="number" id="ch-order" min="1" step="1" placeholder="자동" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;font-weight:500">
+              <input type="checkbox" id="ch-is-free" />
+              무료 공개 (비로그인·미수강자도 「무료 보기」 가능)
+            </label>
+          </div>
+          <div class="form-group">
+            <label>영상 링크 <span style="font-size:12px;color:#888">YouTube/Vimeo URL 등</span></label>
+            <input type="url" id="ch-video-url" placeholder="https://..." maxlength="500" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-sm" onclick="closeChapterModal()">취소</button>
+          <button class="btn-primary-sm" id="chapter-save-btn" onclick="saveChapterModal()">저장</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== SECTION: STUDENTS ===== -->
     <section class="section" id="sec-students">
       <div class="card">
@@ -1649,6 +1727,165 @@
     async function loadCourses() {
       _courses = await API.get('/admin/courses')
       renderCoursesTable()
+    }
+
+    let _chapterEditId = null
+    let _curriculumCourseMeta = null
+
+    async function loadCurriculumAdmin() {
+      if (!_courses?.length) {
+        try { _courses = await API.get('/admin/courses') } catch (_) { _courses = [] }
+      }
+      const select = document.getElementById('curriculum-course-select')
+      if (!select) return
+      const prev = select.value || localStorage.getItem('admin_curriculum_course') || ''
+      const list = (_courses || [])
+        .filter(c => c.is_published)
+        .sort((a, b) => (Number(a.sort_order) || 999) - (Number(b.sort_order) || 999) || String(a.title).localeCompare(b.title))
+      select.innerHTML = `<option value="">강의를 선택하세요</option>${list.map(c => {
+        const type = c.course_type === 'live' ? '라이브' : 'VOD'
+        return `<option value="${c.id}">${esc(c.title)} (${type})</option>`
+      }).join('')}`
+      if (prev && list.some(c => String(c.id) === String(prev))) select.value = prev
+      await loadCurriculumChapters()
+    }
+
+    async function loadCurriculumChapters() {
+      const select = document.getElementById('curriculum-course-select')
+      const tbody = document.getElementById('curriculum-chapters-body')
+      const noteEl = document.getElementById('curriculum-live-note')
+      const addBtn = document.getElementById('curriculum-add-btn')
+      const courseId = select?.value || ''
+      if (courseId) localStorage.setItem('admin_curriculum_course', courseId)
+      if (addBtn) addBtn.disabled = !courseId
+      if (!tbody) return
+      if (!courseId) {
+        _curriculumCourseMeta = null
+        if (noteEl) noteEl.style.display = 'none'
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">강의를 선택하면 챕터 목록이 표시됩니다.</td></tr>'
+        return
+      }
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">로딩 중...</td></tr>'
+      try {
+        const data = await API.get('/admin/courses/' + courseId + '/chapters')
+        _curriculumCourseMeta = data.course
+        const chapters = data.chapters || []
+        if (noteEl) {
+          const c = data.course || {}
+          const isLive = c.course_type === 'live'
+          const hasLiveCurriculum = !!(c.live_curriculum_text || c.live_curriculum_image)
+          if (isLive && hasLiveCurriculum) {
+            noteEl.style.display = 'block'
+            noteEl.innerHTML = '이 라이브 강의는 <strong>커리큘럼 텍스트/이미지</strong>가 설정되어 있어 강의 상세에 챕터 목록 대신 해당 내용이 우선 표시됩니다. 챕터는 이미지·텍스트가 없을 때만 노출됩니다.'
+          } else if (isLive) {
+            noteEl.style.display = 'block'
+            noteEl.innerHTML = '라이브 강의입니다. 챕터 목록은 커리큘럼 텍스트/이미지가 없을 때 강의 상세에 표시됩니다. 텍스트·이미지는 <strong>강의 목록 → 라이브 강의 설정</strong>에서 편집하세요.'
+          } else {
+            noteEl.style.display = 'none'
+          }
+        }
+        if (!chapters.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">등록된 챕터가 없습니다. 「+ 챕터 추가」로 만들어주세요.</td></tr>'
+          return
+        }
+        tbody.innerHTML = chapters.map((ch, i) => {
+          const url = ch.video_url ? `<a href="${esc(ch.video_url)}" target="_blank" rel="noopener" class="td-sub">${esc(ch.video_url.length > 42 ? ch.video_url.slice(0, 42) + '…' : ch.video_url)}</a>` : '<span class="td-sub">-</span>'
+          return `<tr>
+            <td>${String(ch.order_num || i + 1).padStart(2, '0')}</td>
+            <td>${esc(ch.title)}</td>
+            <td>${esc(ch.duration || '-')}</td>
+            <td>${ch.is_free ? '<span class="badge-status paid">무료</span>' : '-'}</td>
+            <td>${url}</td>
+            <td>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                <button type="button" class="btn-sm" onclick="moveChapter('${ch.id}','up')" ${i === 0 ? 'disabled' : ''} title="위로">↑</button>
+                <button type="button" class="btn-sm" onclick="moveChapter('${ch.id}','down')" ${i === chapters.length - 1 ? 'disabled' : ''} title="아래로">↓</button>
+                <button type="button" class="btn-sm" onclick="openChapterModal('${ch.id}')">편집</button>
+                <button type="button" class="btn-sm-danger" onclick="deleteChapter('${ch.id}')">삭제</button>
+              </div>
+            </td>
+          </tr>`
+        }).join('')
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#c00;padding:24px">${esc(e.message || '불러오기 실패')}</td></tr>`
+      }
+    }
+
+    function openChapterModal(chapterId) {
+      const courseId = document.getElementById('curriculum-course-select')?.value
+      if (!courseId) { alert('먼저 강의를 선택해주세요.'); return }
+      _chapterEditId = chapterId || null
+      document.getElementById('chapter-modal-title').textContent = chapterId ? '챕터 편집' : '챕터 추가'
+      document.getElementById('ch-title').value = ''
+      document.getElementById('ch-duration').value = ''
+      document.getElementById('ch-order').value = ''
+      document.getElementById('ch-is-free').checked = false
+      document.getElementById('ch-video-url').value = ''
+      if (chapterId) {
+        API.get('/admin/courses/' + courseId + '/chapters').then(data => {
+          const ch = (data.chapters || []).find(x => String(x.id) === String(chapterId))
+          if (!ch) return
+          document.getElementById('ch-title').value = ch.title || ''
+          document.getElementById('ch-duration').value = ch.duration || ''
+          document.getElementById('ch-order').value = ch.order_num || ''
+          document.getElementById('ch-is-free').checked = !!ch.is_free
+          document.getElementById('ch-video-url').value = ch.video_url || ''
+        }).catch(e => alert(e.message))
+      }
+      document.getElementById('chapter-modal').style.display = 'flex'
+    }
+
+    function closeChapterModal() {
+      document.getElementById('chapter-modal').style.display = 'none'
+      _chapterEditId = null
+    }
+
+    async function saveChapterModal() {
+      const courseId = document.getElementById('curriculum-course-select')?.value
+      if (!courseId) return
+      const payload = {
+        title: document.getElementById('ch-title').value.trim(),
+        duration: document.getElementById('ch-duration').value.trim(),
+        is_free: document.getElementById('ch-is-free').checked,
+        video_url: document.getElementById('ch-video-url').value.trim(),
+      }
+      const orderVal = document.getElementById('ch-order').value.trim()
+      if (orderVal) payload.order_num = parseInt(orderVal, 10)
+      if (!payload.title) { alert('챕터 제목을 입력해주세요.'); return }
+      const btn = document.getElementById('chapter-save-btn')
+      try {
+        btn.disabled = true
+        if (_chapterEditId) {
+          await API.patch('/admin/chapters/' + _chapterEditId, payload)
+        } else {
+          await API.post('/admin/courses/' + courseId + '/chapters', payload)
+        }
+        closeChapterModal()
+        await loadCurriculumChapters()
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      } finally {
+        btn.disabled = false
+      }
+    }
+
+    async function deleteChapter(chapterId) {
+      if (!confirm('이 챕터를 삭제할까요?')) return
+      try {
+        await API.del('/admin/chapters/' + chapterId)
+        await loadCurriculumChapters()
+      } catch (e) {
+        alert(e.message || '삭제 실패')
+      }
+    }
+
+    async function moveChapter(chapterId, direction) {
+      try {
+        await API.post('/admin/chapters/' + chapterId + '/move', { direction })
+        await loadCurriculumChapters()
+      } catch (e) {
+        alert(e.message || '순서 변경 실패')
+      }
     }
 
     const memberTypeLabel = { student: '수강생', client: '의뢰인' }
@@ -3859,6 +4096,7 @@
     const sectionLoaders = {
       dashboard: loadDashboard,
       courses: loadCourses,
+      curriculum: loadCurriculumAdmin,
       students: loadStudents,
       orders: loadOrders,
       coupons: loadCouponsAdmin,

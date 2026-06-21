@@ -145,6 +145,16 @@ button, input, select, textarea { font-family: inherit; cursor: pointer; }
 }
 .sec-title { font-size: 20px; font-weight: 800; color: var(--text-primary); }
 .sec-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.curriculum-live-note {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #f8f8f5;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
 .sec-actions { display: flex; align-items: center; gap: 8px; }
 
 /* ===== METRIC CARDS ===== */

@@ -12,6 +12,25 @@ a { text-decoration: none; color: inherit; }
 .player-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: #0d0d0d; }
 
 .video-area { background: #000; }
+.video-embed {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: min(72vh, 820px);
+  border: 0;
+  background: #000;
+}
+.video-external {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+}
+.video-external-note { font-size: 15px; color: rgba(255,255,255,0.45); line-height: 1.6; }
 .video-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 14px; padding: 40px 20px; text-align: center; }
 .vp-icon { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 43.2px; color: rgba(255,255,255,0.4); }
 .vp-title { font-size: 27.6px; font-weight: 500; color: rgba(255,255,255,0.8); max-width: 480px; line-height: 1.4; }
