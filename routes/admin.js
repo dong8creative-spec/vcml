@@ -6,6 +6,44 @@ const { sendLiveInviteMessage } = require('../utils/kakaoMessage')
 
 router.use(adminMiddleware)
 
+router.get('/dashboard', async (req, res) => {
+  const [stats, allOrders, courseStats, allReviews] = await Promise.all([
+    db.getStats(),
+    db.getAllOrders(),
+    db.getCourseStats(),
+    db.getAllReviews(),
+  ])
+  const orderSlice = allOrders.slice(0, 5)
+  const reviewSlice = allReviews.slice(0, 5)
+  const userIds = [...new Set([
+    ...orderSlice.map(o => o.user_id),
+    ...reviewSlice.map(r => r.user_id),
+  ].filter(Boolean))]
+  const courseIds = [...new Set([
+    ...orderSlice.map(o => o.course_id),
+    ...reviewSlice.map(r => r.course_id),
+  ].filter(Boolean))]
+  const [userMap, courseMap] = await Promise.all([
+    db.batchGetUsers(userIds),
+    db.batchGetCourses(courseIds),
+  ])
+  res.json({
+    stats,
+    orders: orderSlice.map(o => ({
+      ...o,
+      user_name: userMap[o.user_id]?.name,
+      email: userMap[o.user_id]?.email,
+      course_title: courseMap[o.course_id]?.title,
+    })),
+    courseStats,
+    reviews: reviewSlice.map(r => ({
+      ...r,
+      user_name: userMap[r.user_id]?.name,
+      course_title: courseMap[r.course_id]?.title,
+    })),
+  })
+})
+
 router.get('/stats', async (req, res) => {
   res.json(await db.getStats())
 })
@@ -25,12 +63,18 @@ router.patch('/coupon-issuance', async (req, res) => {
 
 router.get('/orders', async (req, res) => {
   const orders = await db.getAllOrders()
-  const result = await Promise.all(orders.map(async o => {
-    const u = await db.findUserById(o.user_id)
-    const c = await db.getCourseById(o.course_id)
-    return { ...o, user_name: u?.name, email: u?.email, course_title: c?.title }
-  }))
-  res.json(result)
+  const userIds = [...new Set(orders.map(o => o.user_id).filter(Boolean))]
+  const courseIds = [...new Set(orders.map(o => o.course_id).filter(Boolean))]
+  const [userMap, courseMap] = await Promise.all([
+    db.batchGetUsers(userIds),
+    db.batchGetCourses(courseIds),
+  ])
+  res.json(orders.map(o => ({
+    ...o,
+    user_name: userMap[o.user_id]?.name,
+    email: userMap[o.user_id]?.email,
+    course_title: courseMap[o.course_id]?.title,
+  })))
 })
 
 router.get('/students', async (req, res) => {
@@ -39,12 +83,17 @@ router.get('/students', async (req, res) => {
 
 router.get('/reviews', async (req, res) => {
   const reviews = await db.getAllReviews()
-  const result = await Promise.all(reviews.map(async r => {
-    const u = await db.findUserById(r.user_id)
-    const c = await db.getCourseById(r.course_id)
-    return { ...r, user_name: u?.name, course_title: c?.title }
-  }))
-  res.json(result)
+  const userIds = [...new Set(reviews.map(r => r.user_id).filter(Boolean))]
+  const courseIds = [...new Set(reviews.map(r => r.course_id).filter(Boolean))]
+  const [userMap, courseMap] = await Promise.all([
+    db.batchGetUsers(userIds),
+    db.batchGetCourses(courseIds),
+  ])
+  res.json(reviews.map(r => ({
+    ...r,
+    user_name: userMap[r.user_id]?.name,
+    course_title: courseMap[r.course_id]?.title,
+  })))
 })
 
 router.patch('/reviews/:id', async (req, res) => {
@@ -255,11 +304,9 @@ router.get('/course-stats', async (req, res) => {
 router.get('/editor-applications', async (req, res) => {
   const { status } = req.query
   const apps = await db.getAllEditorApplications(status || null)
-  const result = await Promise.all(apps.map(async a => {
-    const u = await db.findUserById(a.user_id)
-    return { ...a, user_name: u?.name, email: u?.email }
-  }))
-  res.json(result)
+  const userIds = [...new Set(apps.map(a => a.user_id).filter(Boolean))]
+  const userMap = await db.batchGetUsers(userIds)
+  res.json(apps.map(a => ({ ...a, user_name: userMap[a.user_id]?.name, email: userMap[a.user_id]?.email })))
 })
 
 router.patch('/editor-applications/:id', async (req, res) => {
@@ -467,11 +514,16 @@ router.post('/editor-program/sync', async (req, res) => {
 router.get('/workbook-submissions', async (req, res) => {
   const { user_id, workbook_id } = req.query
   const subs = await db.getWorkbookSubmissions({ userId: user_id, workbookId: workbook_id })
-  const result = await Promise.all(subs.map(async s => {
-    const [u, wb] = await Promise.all([
-      db.findUserById(s.user_id),
-      db.getEditorWorkbookById(s.workbook_id),
-    ])
+  const userIds = [...new Set(subs.map(s => s.user_id).filter(Boolean))]
+  const workbookIds = [...new Set(subs.map(s => s.workbook_id).filter(Boolean))]
+  const [userMap, workbooks] = await Promise.all([
+    db.batchGetUsers(userIds),
+    Promise.all(workbookIds.map(id => db.getEditorWorkbookById(id))),
+  ])
+  const wbMap = Object.fromEntries(workbookIds.map((id, i) => [id, workbooks[i]]))
+  res.json(subs.map(s => {
+    const wb = wbMap[s.workbook_id]
+    const u = userMap[s.user_id]
     return {
       ...s,
       user_name: u?.name || '-',
@@ -481,7 +533,6 @@ router.get('/workbook-submissions', async (req, res) => {
       stage_num: wb?.stage_num || '-',
     }
   }))
-  res.json(result)
 })
 
 router.post('/workbook-submissions/:id/review', async (req, res) => {

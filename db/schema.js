@@ -1107,6 +1107,16 @@ function stripLiveResourceUrls(course) {
 // ── DB API ──
 const db = {
   // users
+  async batchGetUsers(ids) {
+    if (!ids.length) return {}
+    const docs = await fs.getAll(...ids.map(id => fs.collection('users').doc(id)))
+    return Object.fromEntries(docs.map(d => [d.id, d.exists ? d.data() : null]))
+  },
+  async batchGetCourses(ids) {
+    if (!ids.length) return {}
+    const docs = await fs.getAll(...ids.map(id => fs.collection('courses').doc(id)))
+    return Object.fromEntries(docs.map(d => [d.id, d.exists ? d.data() : null]))
+  },
   async findUserByEmail(email) {
     const snap = await fs.collection('users').where('email', '==', email).limit(1).get()
     return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
@@ -3039,23 +3049,48 @@ const db = {
     }
   },
   async getAllStudents() {
-    const snap = await fs.collection('users').where('role', '==', 'student').get()
-    return Promise.all(snap.docs.map(async d => {
+    const [usersSnap, enrollSnap, ordersSnap] = await Promise.all([
+      fs.collection('users').where('role', '==', 'student').get(),
+      fs.collection('enrollments').get(),
+      fs.collection('orders').where('status', '==', 'paid').get(),
+    ])
+    const enrollCount = {}
+    enrollSnap.docs.forEach(d => {
+      const uid = d.data().user_id
+      enrollCount[uid] = (enrollCount[uid] || 0) + 1
+    })
+    const paidTotal = {}
+    ordersSnap.docs.forEach(d => {
+      const o = d.data()
+      paidTotal[o.user_id] = (paidTotal[o.user_id] || 0) + (o.amount || 0)
+    })
+    return usersSnap.docs.map(d => {
       const u = { id: d.id, ...d.data() }
-      const [enr, ord] = await Promise.all([
-        fs.collection('enrollments').where('user_id', '==', u.id).get(),
-        fs.collection('orders').where('user_id', '==', u.id).where('status', '==', 'paid').get(),
-      ])
-      return { ...u, course_count: enr.size, total_paid: ord.docs.reduce((s, o) => s + (o.data().amount || 0), 0) }
-    }))
+      return { ...u, course_count: enrollCount[u.id] || 0, total_paid: paidTotal[u.id] || 0 }
+    })
   },
   async getCourseStats() {
-    const courses = await db.getCourses(false)
-    return Promise.all(courses.map(async c => {
-      const snap = await fs.collection('orders').where('course_id', '==', c.id).where('status', '==', 'paid').get()
-      const revenue = snap.docs.reduce((s, d) => s + (d.data().amount || 0), 0)
-      const student_count = await db.countEnrollmentsByCourse(c.id)
-      return { id: c.id, title: c.title, sale_price: c.sale_price, student_count, revenue }
+    const [courses, ordersSnap, enrollSnap] = await Promise.all([
+      db.getCourses(false),
+      fs.collection('orders').where('status', '==', 'paid').get(),
+      fs.collection('enrollments').get(),
+    ])
+    const revenueMap = {}
+    ordersSnap.docs.forEach(d => {
+      const o = d.data()
+      revenueMap[o.course_id] = (revenueMap[o.course_id] || 0) + (o.amount || 0)
+    })
+    const countMap = {}
+    enrollSnap.docs.forEach(d => {
+      const e = d.data()
+      countMap[e.course_id] = (countMap[e.course_id] || 0) + 1
+    })
+    return courses.map(c => ({
+      id: c.id,
+      title: c.title,
+      sale_price: c.sale_price,
+      student_count: countMap[c.id] || 0,
+      revenue: revenueMap[c.id] || 0,
     }))
   },
 

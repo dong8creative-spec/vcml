@@ -95,6 +95,50 @@ function decodeNextPath(nextPath) {
   }
 }
 
+/** Threads·카카오톡·인스타 등 앱 내 WebView — Google OAuth 차단(403 disallowed_useragent) */
+function detectInAppBrowser() {
+  const ua = navigator.userAgent || ''
+  const low = ua.toLowerCase()
+  const tokens = [
+    'fban', 'fbav', 'fb_iab', 'instagram', 'barcelona',
+    'kakaotalk', 'kakaostory', 'naver(inapp)', 'line/',
+    'twitter', 'snapchat', 'tiktok', 'pinterest',
+    'everytimeapp', 'band/', 'whale/', 'daumapps',
+  ]
+  if (tokens.some(t => low.includes(t))) return true
+  if (/android/i.test(ua) && /;\s*wv\)/.test(ua)) return true
+  if (/iphone|ipad|ipod/i.test(ua) && /applewebkit/i.test(ua) && !/safari/i.test(ua)) return true
+  return false
+}
+
+function copyPageUrlForExternalBrowser() {
+  const url = location.href
+  const done = () => toast('주소를 복사했습니다. Safari 또는 Chrome 주소창에 붙여넣어 주세요.', 'success')
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(url).then(done).catch(() => {
+      fallbackCopyUrl(url)
+      done()
+    })
+  }
+  fallbackCopyUrl(url)
+  done()
+}
+
+function fallbackCopyUrl(text) {
+  const ta = document.createElement('textarea')
+  ta.value = text
+  ta.setAttribute('readonly', '')
+  ta.style.position = 'fixed'
+  ta.style.left = '-9999px'
+  document.body.appendChild(ta)
+  ta.select()
+  try { document.execCommand('copy') } catch (_) {}
+  document.body.removeChild(ta)
+}
+
+window.detectInAppBrowser = detectInAppBrowser
+window.copyPageUrlForExternalBrowser = copyPageUrlForExternalBrowser
+
 function showGoogleMemberTypeModal(nextPath) {
   let overlay = document.getElementById('google-member-modal')
   if (!overlay) {
@@ -131,6 +175,11 @@ function showGoogleMemberTypeModal(nextPath) {
         toast('가입 유형을 선택해주세요.', 'error')
         return
       }
+      if (detectInAppBrowser()) {
+        toast('Google 로그인은 Safari 또는 Chrome에서만 가능합니다. 주소를 복사해 외부 브라우저에서 열어주세요.', 'error')
+        copyPageUrlForExternalBrowser()
+        return
+      }
       const next = overlay.dataset.next || '/'
       location.href = buildGoogleAuthUrl(next, mt)
     }
@@ -140,6 +189,14 @@ function showGoogleMemberTypeModal(nextPath) {
 }
 
 function startGoogleLogin(nextPath, options = {}) {
+  if (detectInAppBrowser()) {
+    const next = decodeNextPath(nextPath)
+    const q = new URLSearchParams()
+    if (next && next !== '/') q.set('next', next)
+    if (options.intent === 'login') q.set('mode', 'login')
+    location.href = '/login.html' + (q.toString() ? '?' + q.toString() : '')
+    return
+  }
   const next = decodeNextPath(nextPath)
   if (options.intent === 'login') {
     location.href = buildGoogleAuthUrl(next, null, 'login')

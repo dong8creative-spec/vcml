@@ -112,11 +112,35 @@ body.login-body { background: var(--bg-soft); min-height: 100vh; display: flex; 
 .login-card-notice-desc {
   display: block;
   width: 100%;
+  line-height: 1.5;
+  text-align: left;
+}
+#beta-notice .login-card-notice-desc {
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
-  text-align: left;
 }
+.login-card-notice--warn {
+  background: #fff8e6;
+  border-color: #f0d78c;
+  color: #5c4a12;
+}
+.login-card-notice--warn strong { color: #4a3a0a; }
+.login-card-notice--warn .login-card-notice-desc { white-space: normal; margin: 0 0 10px; }
+.btn-inapp-copy {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px solid #d4a017;
+  border-radius: 8px;
+  background: #fff;
+  color: #5c4a12;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-inapp-copy:hover { background: #fffdf5; }
 
 .login-setup-hint {
   font-size: 14px;

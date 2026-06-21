@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>로그인 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css?v=6" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css?v=7" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body class="login-body">
@@ -14,6 +14,12 @@
       <h1 class="login-card-title" id="login-card-title">회원가입</h1>
       <p class="login-card-sub" id="login-card-sub">가입 유형 선택 → 정보 고지·동의 → Google 계정 연결 순서로 진행됩니다</p>
     </header>
+
+    <div id="inapp-notice" class="login-card-notice login-card-notice--warn" hidden>
+      <strong>앱 내 브라우저에서는 Google 로그인이 되지 않습니다</strong>
+      <p class="login-card-notice-desc">Threads·카카오톡·인스타 등 <strong>앱 안에서 연 링크</strong>는 Google 정책상 로그인이 차단됩니다(403 오류). <strong>Safari</strong>(iPhone) 또는 <strong>Chrome</strong>(Android)에서 아래 주소로 접속해 주세요.</p>
+      <button type="button" id="btn-copy-site-url" class="btn-inapp-copy">주소 복사하기</button>
+    </div>
 
     <div id="beta-notice" class="login-card-notice" hidden>
       <strong>오픈 베타</strong>
@@ -220,7 +226,7 @@
   </div>
   </div>
 
-  <script src="/js/api.js?v=16"></script>
+  <script src="/js/api.js?v=17"></script>
   <script src="/js/site-header.js?v=6"></script>
   <script>
     const params = new URLSearchParams(location.search)
@@ -342,6 +348,10 @@
       const googleBtn = document.getElementById('btn-google-link')
       if (googleBtn && !googleBtn.classList.contains('is-disabled')) {
         googleBtn.onclick = () => {
+          if (detectInAppBrowser()) {
+            toast('Safari 또는 Chrome에서 접속해 주세요.', 'error')
+            return
+          }
           const mt = selectedGoogleMemberType()
           if (!mt) { toast('가입 유형을 선택해주세요.', 'error'); goGoogleSignupStep(1); return }
           let consent = null
@@ -359,8 +369,23 @@
     function bindGoogleLoginButton() {
       const loginBtn = document.getElementById('btn-google-login')
       if (loginBtn && !loginBtn.classList.contains('is-disabled')) {
-        loginBtn.onclick = () => location.href = buildGoogleAuthUrl(nextUrl, null, 'login')
+        loginBtn.onclick = () => {
+          if (detectInAppBrowser()) {
+            toast('Safari 또는 Chrome에서 접속해 주세요.', 'error')
+            return
+          }
+          location.href = buildGoogleAuthUrl(nextUrl, null, 'login')
+        }
       }
+    }
+
+    function initInAppBrowserNotice() {
+      if (!detectInAppBrowser()) return
+      const notice = document.getElementById('inapp-notice')
+      if (notice) notice.hidden = false
+      document.getElementById('btn-google-link')?.classList.add('is-disabled')
+      document.getElementById('btn-google-login')?.classList.add('is-disabled')
+      document.getElementById('btn-copy-site-url')?.addEventListener('click', copyPageUrlForExternalBrowser)
     }
 
     function setSocialNextLinks() {
@@ -368,6 +393,7 @@
       bindGoogleLoginButton()
     }
     setSocialNextLinks()
+    initInAppBrowserNotice()
     updateGoogleTypeLabels()
     if (params.get('mode') === 'login') showAuthMode('login')
     else showAuthMode('signup')

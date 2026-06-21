@@ -18,10 +18,6 @@
       <a href="#dashboard" class="nav-item active" data-section="dashboard">
         <i class="ti ti-layout-dashboard"></i> 개요
       </a>
-      <a href="#revenue" class="nav-item" data-section="revenue">
-        <i class="ti ti-chart-line"></i> 매출 현황
-      </a>
-
       <div class="nav-group-label">강의 관리</div>
       <a href="#courses" class="nav-item" data-section="courses">
         <i class="ti ti-video"></i> 강의 목록
@@ -39,7 +35,7 @@
       </a>
       <a href="#refunds" class="nav-item" data-section="refunds">
         <i class="ti ti-arrow-back-up"></i> 환불 요청
-        <span class="badge-dot">3</span>
+        <span class="badge-dot" id="refund-badge" style="display:none"></span>
       </a>
       <a href="#coupons" class="nav-item" data-section="coupons">
         <i class="ti ti-ticket"></i> 쿠폰 관리
@@ -99,7 +95,7 @@
     <header class="topbar">
       <div class="topbar-title" id="page-title">대시보드 개요</div>
       <div class="topbar-right">
-        <div class="topbar-date"><i class="ti ti-calendar"></i> 2025년 6월 기준</div>
+        <div class="topbar-date" id="topbar-date"><i class="ti ti-calendar"></i></div>
         <div class="topbar-admin"><i class="ti ti-user-circle"></i> 관리자</div>
       </div>
     </header>
@@ -156,9 +152,10 @@
               <tr>
                 <th>수강생</th>
                 <th>강의</th>
-                <th>결제 수단</th>
                 <th>금액</th>
+                <th>결제 수단</th>
                 <th>상태</th>
+                <th>결제일</th>
               </tr>
             </thead>
             <tbody id="recent-orders-body">
@@ -514,10 +511,6 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title">수강생 목록</div>
-          <div class="search-wrap">
-            <i class="ti ti-search"></i>
-            <input type="text" placeholder="이름 또는 이메일 검색" />
-          </div>
         </div>
         <table class="data-table">
           <thead>
@@ -535,10 +528,6 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title">결제 내역</div>
-          <div class="filter-row">
-            <select><option>전체 기간</option><option>이번 달</option><option>지난 달</option></select>
-            <select><option>전체 수단</option><option>신용카드</option><option>네이버페이</option><option>카카오페이</option></select>
-          </div>
         </div>
         <table class="data-table">
           <thead>
@@ -1547,7 +1536,7 @@
   </main>
 
   <!-- 라이브 강의 등록 모달 -->
-  <div id="live-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
+  <div id="live-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:16px;padding:28px;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
         <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-broadcast" style="color:#111111"></i> 라이브 강의 등록</div>
@@ -1636,45 +1625,43 @@
     // ── 데이터 로드 함수들 ──
     async function loadDashboard() {
       try {
-        const stats = await API.get('/admin/stats');
+        const { stats, orders, courseStats, reviews } = await API.get('/admin/dashboard');
+
         document.getElementById('stat-revenue').textContent = stats.revenue.toLocaleString() + '원';
         document.getElementById('stat-students').textContent = stats.totalStudents.toLocaleString() + '명';
         document.getElementById('stat-orders').textContent = stats.orderCount.toLocaleString() + '건';
         document.getElementById('stat-refunds').textContent = stats.refundPending.toLocaleString() + '건';
 
-        const orders = await API.get('/admin/orders');
         const tbody = document.getElementById('recent-orders-body');
         if (tbody) {
-          tbody.innerHTML = orders.slice(0, 5).map(o => `
+          tbody.innerHTML = orders.map(o => `
             <tr>
-              <td>${o.user_name || '-'}</td>
-              <td class="td-sub">${o.course_title || '-'}</td>
+              <td>${esc(o.user_name || '-')}</td>
+              <td class="td-sub">${esc(o.course_title || '-')}</td>
               <td>${(o.amount||0).toLocaleString()}원</td>
-              <td>${o.method || '-'}</td>
+              <td>${esc(o.method || '-')}</td>
               <td><span class="badge-status paid">결제완료</span></td>
               <td class="td-date">${o.paid_at || '-'}</td>
             </tr>`).join('');
         }
 
-        const courseStats = await API.get('/admin/course-stats');
         const chartEl = document.getElementById('revenue-chart');
         if (chartEl) {
           const max = Math.max(...courseStats.map(c => c.revenue), 1);
           chartEl.innerHTML = courseStats.map(c => `
             <div class="bar-item">
-              <div class="bar-label">${c.title.slice(0,10)}</div>
+              <div class="bar-label">${esc(c.title.slice(0,10))}</div>
               <div class="bar-track"><div class="bar-fill" style="width:${Math.round(c.revenue/max*100)}%"></div></div>
               <div class="bar-value">${(c.revenue||0).toLocaleString()}원</div>
             </div>`).join('');
         }
 
-        const reviews = await API.get('/admin/reviews');
         const revBody = document.getElementById('dashboard-reviews-body');
         if (revBody) {
           if (!reviews.length) {
             revBody.innerHTML = '<tr class="empty-state-row"><td colspan="6">등록된 후기가 없습니다.</td></tr>';
           } else {
-            revBody.innerHTML = reviews.slice(0, 5).map(r => `
+            revBody.innerHTML = reviews.map(r => `
               <tr>
                 <td><div class="user-cell"><div class="avatar-sm">${esc((r.user_name||'?')[0])}</div> ${esc(r.user_name||'-')}</div></td>
                 <td class="td-sub">${esc(r.course_title||'-')}</td>
@@ -2465,7 +2452,6 @@
 
     const titles = {
       dashboard: '대시보드 개요',
-      revenue: '매출 현황',
       courses: '강의 목록',
       curriculum: '커리큘럼 편집',
       students: '수강생 목록',
@@ -4198,6 +4184,34 @@
       } catch (e) { alert(e.message || '저장 실패') }
     })
 
+    async function loadRefunds() {
+      const tbody = document.getElementById('refunds-table-body')
+      const countEl = document.getElementById('refund-count')
+      const badgeEl = document.getElementById('refund-badge')
+      if (!tbody) return
+      try {
+        const orders = await API.get('/admin/orders')
+        const refunds = orders.filter(o => o.status && o.status !== 'paid')
+        if (countEl) countEl.textContent = refunds.length + '건'
+        if (badgeEl) { badgeEl.textContent = refunds.length; badgeEl.style.display = refunds.length ? '' : 'none' }
+        if (!refunds.length) {
+          tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">환불 요청이 없습니다.</td></tr>'
+          return
+        }
+        tbody.innerHTML = refunds.map(o => `<tr>
+          <td>${esc(o.user_name || '-')}</td>
+          <td class="td-sub">${esc(o.course_title || '-')}</td>
+          <td class="td-date">${o.paid_at || '-'}</td>
+          <td class="td-date">-</td>
+          <td>-</td>
+          <td>${Number(o.amount || 0).toLocaleString()}원</td>
+          <td><span class="badge-status refund">${esc(o.status)}</span></td>
+        </tr>`).join('')
+      } catch(e) {
+        if (tbody) tbody.innerHTML = `<tr class="empty-state-row"><td colspan="7">${esc(e.message || '불러오기 실패')}</td></tr>`
+      }
+    }
+
     const sectionLoaders = {
       dashboard: loadDashboard,
       courses: loadCourses,
@@ -4205,6 +4219,7 @@
       students: loadStudents,
       orders: loadOrders,
       coupons: loadCouponsAdmin,
+      refunds: loadRefunds,
       reviews: loadReviews,
       instructors: loadInstructors,
       'editor-apps': () => loadEditorApps('pending'),
@@ -4313,6 +4328,14 @@
         alert(e.message || '등록 중 오류가 발생했습니다.')
       }
     }
+
+    // 상단 날짜 동적 초기화
+    ;(function() {
+      const el = document.getElementById('topbar-date')
+      if (!el) return
+      const now = new Date()
+      el.innerHTML = `<i class="ti ti-calendar"></i> ${now.getFullYear()}년 ${now.getMonth() + 1}월 기준`
+    })()
 
     // 초기 로드
     loadDashboard();
