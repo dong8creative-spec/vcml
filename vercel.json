@@ -45,7 +45,7 @@
     },
     {
       "src": "/(.*\\.html)",
-      "dest": "/public/$1"
+      "dest": "server.js"
     },
     {
       "src": "/favicon\\.ico",
