@@ -178,7 +178,7 @@ window.comingSoon = comingSoon
 })()
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/live-reminder.js?v=11'
+  s.src = '/js/live-reminder.js?v=13'
   s.defer = true
   document.head.appendChild(s)
 })()

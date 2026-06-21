@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타닥클래스 — 영상제작 전문 온라인 강의</title>
-  <link rel="stylesheet" href="/css/style.css?v=10" />
+  <link rel="stylesheet" href="/css/style.css?v=11" />
   <link rel="stylesheet" href="/css/common.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
@@ -27,8 +27,8 @@ if (new URLSearchParams(location.search).get('preview') === '1') {
       <h1 id="hero-title">현업 20년 전문가에게 배우는<br><em id="hero-title-em">영상 제작 실전 강의</em></h1>
       <p id="hero-subtitle">편집·모션·촬영·색보정 — 유튜브부터 방송까지<br>현장에서 실제로 쓰는 방식을 알려드립니다.</p>
       <div class="hero-btns" id="hero-btns">
-        <a href="#all" class="btn-hero-primary" id="hero-primary-btn">전체 강의 보기</a>
-        <a href="#all" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-message-heart"></i> 강의 기대평 남기기</a>
+        <a href="#all" class="btn-hero-primary" id="hero-primary-btn"><span class="btn-hero-ghost__label">전체 강의 보기</span></a>
+        <a href="#all" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-message-heart"></i><span class="btn-hero-ghost__label">강의 기대평 남기기</span></a>
       </div>
     </div>
   </div>
@@ -264,6 +264,46 @@ function escHtml(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
+function syncHeroKnockoutBackground(heroSection, imageUrl) {
+  if (!heroSection) return
+  const value = imageUrl
+    ? `url("${String(imageUrl).replace(/"/g, '%22').replace(/'/g, '%27')}")`
+    : 'linear-gradient(150deg, var(--dark-bg, #111) 0%, #1e1e1e 60%, #2a2a2a 100%)'
+  heroSection.style.setProperty('--hero-knockout-bg-image', value)
+}
+
+function applyHeroButton(el, cfg, slot) {
+  if (!el || !cfg) return
+  const resolved = typeof resolveHeroButton === 'function'
+    ? resolveHeroButton(cfg)
+    : cfg
+  const label = String(resolved.label || resolved.defaultLabel || '').trim()
+  el.href = resolved.href || (slot === 'primary' ? '#all' : '#')
+  el.classList.remove('btn-hero-primary', 'btn-hero-knockout', 'btn-hero-ghost')
+
+  const isKnockout = cfg.style === 'knockout'
+    || cfg.action === 'instructors'
+    || /instructors\.html/i.test(String(resolved.href || ''))
+    || label === '강사 소개'
+  const isGhost = cfg.style === 'ghost' || (!isKnockout && slot === 'secondary')
+
+  if (isKnockout) {
+    el.classList.add('btn-hero-knockout')
+    el.innerHTML = `<span class="btn-hero-knockout__label">${escHtml(label)}</span>`
+    return
+  }
+  if (isGhost) {
+    el.classList.add('btn-hero-ghost')
+    const icon = cfg.show_icon !== false && slot === 'secondary'
+      ? '<i class="ti ti-player-play-filled"></i>'
+      : ''
+    el.innerHTML = `${icon}<span class="btn-hero-ghost__label">${escHtml(label)}</span>`
+    return
+  }
+  el.classList.add('btn-hero-primary')
+  el.innerHTML = `<span class="btn-hero-ghost__label">${escHtml(label)}</span>`
+}
+
 async function loadHero() {
   try {
     const h = await API.get('/hero')
@@ -273,22 +313,7 @@ async function loadHero() {
     if (title) title.innerHTML = `${escHtml(h.title)}<br><em id="hero-title-em">${escHtml(h.title_emphasis)}</em>`
     const sub = document.getElementById('hero-subtitle')
     if (sub) sub.innerHTML = escHtml(h.subtitle).replace(/\n/g, '<br>')
-    const primary = document.getElementById('hero-primary-btn')
-    if (primary && h.primary_btn) {
-      const resolved = typeof resolveHeroButton === 'function'
-        ? resolveHeroButton(h.primary_btn)
-        : h.primary_btn
-      primary.textContent = resolved.label || resolved.defaultLabel || '전체 강의 보기'
-      primary.href = resolved.href || '#all'
-    }
-    const secondary = document.getElementById('hero-secondary-btn')
-    if (secondary && h.secondary_btn) {
-      const resolved = typeof resolveHeroButton === 'function'
-        ? resolveHeroButton(h.secondary_btn)
-        : h.secondary_btn
-      secondary.href = resolved.href || '#'
-      secondary.innerHTML = `${h.secondary_btn.show_icon !== false ? '<i class="ti ti-player-play-filled"></i> ' : ''}${escHtml(resolved.label || resolved.defaultLabel || '')}`
-    }
+
     const heroSection = document.querySelector('.hero')
     const heroBg = document.getElementById('hero-bg')
     if (heroSection && heroBg) {
@@ -296,14 +321,19 @@ async function loadHero() {
         const safeUrl = String(h.image).replace(/"/g, '%22').replace(/'/g, '%27')
         heroBg.style.backgroundImage = `url("${safeUrl}")`
         heroSection.classList.add('hero--has-image')
+        syncHeroKnockoutBackground(heroSection, h.image)
         if (h.image_alt) heroSection.setAttribute('aria-label', h.image_alt)
         else heroSection.removeAttribute('aria-label')
       } else {
         heroBg.style.backgroundImage = ''
         heroSection.classList.remove('hero--has-image')
+        syncHeroKnockoutBackground(heroSection, null)
         heroSection.removeAttribute('aria-label')
       }
     }
+
+    applyHeroButton(document.getElementById('hero-primary-btn'), h.primary_btn, 'primary')
+    applyHeroButton(document.getElementById('hero-secondary-btn'), h.secondary_btn, 'secondary')
   } catch (e) {
     console.error(e)
   }

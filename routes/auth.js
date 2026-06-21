@@ -256,9 +256,14 @@ router.get('/google/callback', async (req, res) => {
       }
     }
 
-    // 베타: Google 로그인은 온보딩 없이 바로 이용 (Google OAuth 범위 내 정보만 사용)
+    if (isNew || !user.profile_complete) {
+      const token = signUserToken(user, { profileComplete: false })
+      const userJson = encodeURIComponent(JSON.stringify(userPayload(user)))
+      return res.redirect(`/onboarding.html?google_token=${token}&google_user=${userJson}&next=${encodeURIComponent(nextUrl)}`)
+    }
+
     const token = signUserToken(user, { profileComplete: true })
-    redirectOAuthLogin(res, { token, user, nextUrl, paramPrefix: 'google', welcome: isNew })
+    redirectOAuthLogin(res, { token, user, nextUrl, paramPrefix: 'google', welcome: false })
   } catch (err) {
     console.error('Google 로그인 오류:', err)
     res.redirect('/login.html?google_error=' + encodeURIComponent('Google 로그인 중 오류가 발생했습니다.'))

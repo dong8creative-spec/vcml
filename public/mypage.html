@@ -162,6 +162,12 @@
     .my-course-card--wrap { display:flex; flex-direction:column; }
     .my-course-card--wrap .mc-link { text-decoration:none; color:inherit; flex:1; display:block; }
     .mc-actions { padding:0 12px 12px; display:flex; gap:8px; flex-wrap:wrap; }
+    .mc-actions--live {
+      flex-direction: column;
+      flex-wrap: nowrap;
+      gap: 10px;
+    }
+    .mc-actions--live .live-extra-actions { display: contents; }
     .mc-cancel-btn {
       flex:1; min-width:0; padding:8px 10px; border-radius:8px; border:1px solid #e8e8e8;
       background:#fff; color:#666; font-size:13px; font-weight:700; cursor:pointer;
@@ -451,8 +457,8 @@
       <div class="settings-card">
         <div class="settings-row">
           <div>
-            <div class="settings-label">마케팅 정보 수신 동의 (SMS)</div>
-            <div class="settings-desc">신규 강의 오픈, 이벤트, 할인 정보를 카카오 알림톡으로 받습니다.</div>
+            <div class="settings-label">마케팅 정보 수신 동의</div>
+            <div class="settings-desc">신규 강의 오픈, 이벤트, 할인 정보를 이메일 또는 등록하신 연락처(알림톡·문자)로 받습니다.</div>
           </div>
           <div>
             <span id="marketing-status" style="font-size: 15.6px;color:#aaa"></span>
@@ -460,7 +466,7 @@
           </div>
         </div>
         <div style="font-size: 14.4px;color:#bbb;margin-top:12px;line-height:1.6">
-          동의 철회 시 마케팅 문자 수신이 즉시 중단됩니다. 동의 기록은 법적 근거로 보관됩니다.
+          동의 철회 시 마케팅 수신(이메일·문자·알림톡)이 즉시 중단됩니다. 동의 기록은 법적 근거로 보관됩니다.
         </div>
       </div>
     </div>
@@ -751,7 +757,9 @@ function renderLiveCourseCard(c) {
     live_starts_at: c.live_starts_at,
     live_schedule: c.live_schedule,
   }))
-  const meetBtn = LS ? LS.meetButtonHtml(c, start, true) : ''
+  const meetBtn = (c.live_resources?.live_ended || c.live_status === 'ended')
+    ? `<span class="btn-meet btn-meet--waiting">라이브 종료</span>`
+    : (LS ? LS.meetButtonHtml(c, start, true) : '')
   const materialBtn = LS ? LS.materialButtonHtml(c) : ''
   const replayExtras = LS ? LS.liveResourceButtonsHtml(c, { includeMaterial: false }) : ''
   return `<div class="my-course-card my-course-card--live my-course-card--wrap">
@@ -1073,7 +1081,15 @@ async function loadCoupons() {
         : isPercent
         ? `<div class="coupon-amount">${c.discount_percent || 10}% 할인</div>`
         : `<div class="coupon-amount">${(c.amount || 0).toLocaleString()}원 할인</div>`
-      const reasonHtml = isApplyFeatured
+      const issuance = c.issuance || {}
+      const reasonHtml = issuance.source
+        ? [
+            issuance.source,
+            issuance.route ? `발급 경로: ${issuance.route}` : '',
+            issuance.benefit || '',
+            issuance.course_title ? `대상 강의: ${issuance.course_title}` : '',
+          ].filter(Boolean).join(' · ')
+        : isApplyFeatured
         ? '에디터즈 승격 혜택 · 명단 상단 노출'
         : isFeatured
         ? '에디터즈 승인 혜택 · 명단 상단 노출'

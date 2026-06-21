@@ -16,34 +16,50 @@
 .course-hero-slides {
   position: absolute;
   inset: 0;
+  background: #141414;
 }
 .course-hero-slide {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
   opacity: 0;
   transition: opacity 0.8s ease;
 }
 .course-hero-slide.is-active {
   opacity: 1;
 }
+.course-hero-slide-blur,
+.course-hero-slide-main {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+.course-hero-slide-blur {
+  background-size: cover;
+  filter: blur(30px);
+  opacity: 0.55;
+  transform: scale(1.1);
+}
+.course-hero-slide-main {
+  background-size: auto 100%;
+  z-index: 1;
+}
 .course-hero-overlay {
   position: absolute;
   inset: 0;
-  z-index: 1;
-  background: linear-gradient(
-    105deg,
-    rgba(0, 0, 0, 0.05) 0%,
-    rgba(0, 0, 0, 0.05) 38%,
-    rgba(0, 0, 0, 0.05) 62%,
-    rgba(0, 0, 0, 0.05) 100%
-  );
+  z-index: 2;
   pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.82) 0%,
+    rgba(0, 0, 0, 0.58) 32%,
+    rgba(0, 0, 0, 0.22) 58%,
+    rgba(0, 0, 0, 0) 78%
+  );
 }
 .course-hero--gallery .course-hero-inner {
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 .course-hero--gallery .course-hero-text h1 { color: #fff; }
 .course-hero--gallery .course-hero-text { color: rgba(255, 255, 255, 0.85); }
@@ -110,7 +126,18 @@
 .ch-meta span { display: flex; align-items: center; gap: 5px; }
 .hero-dark .ch-meta { color: rgba(255,255,255,0.5); }
 
-.course-buy-card { width: var(--course-sidebar-width, 280px); flex-shrink: 0; background: #fff; border-radius: 14px; overflow: hidden; border: 0.5px solid var(--border); }
+.course-buy-card {
+  width: var(--course-sidebar-width, 280px);
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 0.5px solid var(--border);
+  /* buy-card spacing tokens — 새 버튼·텍스트 추가 시 margin 대신 gap 사용 */
+  --buy-gap: 10px;
+  --buy-gap-tight: 4px;
+  --buy-section: 16px;
+}
 .course-buy-card.enrollment-closed-panel {
   position: relative;
   overflow: hidden;
@@ -126,10 +153,16 @@
 .thumb-dark.buy-thumb .ti { color: rgba(255,255,255,0.25); }
 .thumb-light.buy-thumb { background: linear-gradient(135deg,var(--bg-muted) 0%,var(--border) 100%); }
 .buy-body {
-  padding: 18px 18px 24px;
+  padding: 16px 18px 18px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--buy-section);
+}
+.buy-intro,
+.buy-pricing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--buy-gap);
 }
 .buy-body .btn-enroll,
 .buy-body .btn-kakao-room,
@@ -137,16 +170,21 @@
 .buy-body .buy-live-head,
 .buy-body .buy-price,
 .buy-body .buy-price-row,
-.buy-body .buy-live-extras,
-.buy-body .buy-features {
-  margin-top: 0;
-  margin-bottom: 0;
+.buy-body .buy-actions,
+.buy-body .buy-features,
+.buy-body .live-extra-actions {
+  margin: 0;
 }
 .buy-enroll-status {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
+}
+.buy-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--buy-gap);
 }
 .buy-enroll-status .enroll-gauge {
   flex: 1;
@@ -158,9 +196,15 @@
 .buy-disc { font-size: 9.6px; background: var(--bg-muted); color: var(--text-secondary); padding: 2px 5px; border-radius: 4px; }
 .buy-price { font-size: 30px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
 .buy-price--free { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; color: var(--price-free); }
-.buy-live-head { text-align: center; padding: 0; }
+.buy-live-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--buy-gap-tight);
+  text-align: center;
+  padding: 0;
+}
 .buy-live-price { font-size: 30px; font-weight: 700; color: var(--price-free); line-height: 1.2; }
-.buy-live-sub { font-size: 14px; color: #888; margin-top: 6px; line-height: 1.4; }
+.buy-live-sub { font-size: 14px; color: #888; margin: 0; line-height: 1.4; }
 .buy-live-schedule {
   background: var(--bg-muted);
   border-radius: 8px;
@@ -173,13 +217,33 @@
   line-height: 1.4;
 }
 .buy-live-enrolled { text-align: center; font-size: 15px; line-height: 1.45; }
+.btn-enroll.enrolled.buy-live-enrolled--ended {
+  background: #222;
+  color: #fff;
+  cursor: default;
+}
+.btn-enroll.enrolled.buy-live-enrolled--ended:hover { background: #222; }
 .buy-live-ended { background: #ccc; cursor: not-allowed; text-align: center; font-size: 15px; }
-.btn-enroll { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 12px 10px; background: var(--text-primary); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: background 0.2s; box-sizing: border-box; }
+.btn-enroll { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 12px 10px; background: var(--text-primary); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: background 0.2s; box-sizing: border-box; }
 .btn-enroll:hover { background: var(--text-secondary); }
 .btn-enroll.enrolled { background: var(--success); }
 .btn-enroll--underlay { margin-bottom: 0; cursor: default; }
 .btn-enroll--underlay:hover { background: var(--text-primary); }
-.buy-features { list-style: none; display: flex; flex-direction: column; gap: 10px; padding-top: 2px; }
+.btn-enroll--secondary {
+  background: #fff;
+  color: var(--text-primary);
+  border: 1.5px solid var(--border);
+}
+.btn-enroll--secondary:hover { background: var(--bg-muted); }
+.buy-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--buy-gap);
+  margin: 0;
+  padding: var(--buy-gap) 0 0;
+  border-top: 1px solid var(--border);
+}
 .buy-features li { font-size: 14px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; line-height: 1.45; }
 .buy-features .feat-icon {
   display: inline-flex;
@@ -214,8 +278,23 @@
 }
 .btn-kakao-room:hover { background: #F5DC00; color: #2a1a1a; }
 .btn-kakao-room svg { flex-shrink: 0; display: block; }
-.buy-live-extras { margin-top: 0; }
-.buy-live-extras .live-extra-actions { margin-top: 0; }
+/* CTA 스택: 래퍼는 레이아웃에 참여하지 않고 gap만 적용 */
+.buy-actions .live-extra-actions {
+  display: contents;
+}
+.buy-actions .btn-enroll,
+.buy-actions .btn-kakao-room,
+.buy-actions .btn-live-extra {
+  min-height: 44px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  line-height: 1.3;
+}
+.buy-actions .btn-live-extra--replay-pending {
+  min-height: 48px;
+  padding: 10px 14px;
+}
 .feat-icon--replay { background: #f0f0f0; color: #111; }
 .feat-icon--material { background: #eef6ff; color: #1a73e8; }
 .buy-features .feat-icon--lifetime .ti { color: var(--text-secondary); }
@@ -286,17 +365,76 @@
   border-radius: 12px;
   padding: 14px 16px;
 }
+.anticipation-card--mine {
+  border-color: rgba(17, 17, 17, 0.18);
+  background: var(--bg-soft);
+}
+.anticipation-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
 .anticipation-card-id {
   font-size: 13px;
   font-weight: 700;
   color: var(--text-primary);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+.anticipation-card-mine-label {
+  font-family: var(--font, inherit);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 7px;
+  vertical-align: middle;
+}
+.anticipation-card-edit {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.anticipation-card-edit--danger {
+  color: #c0392b;
+  border-color: rgba(192, 57, 43, 0.25);
+}
+.anticipation-card-edit--danger:hover {
+  color: #a93226;
+  border-color: rgba(192, 57, 43, 0.45);
+}
+.anticipation-card-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+}
+.anticipation-edit-locked {
+  font-size: 12px;
+  color: var(--text-hint);
+  line-height: 1.5;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #f8f8f8;
+  border-radius: 8px;
+}
+.anticipation-card-edit:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
 .anticipation-card-date {
   font-size: 12px;
   color: var(--text-hint);
   margin-top: 2px;
-  margin-bottom: 8px;
 }
 .anticipation-card-content {
   font-size: 14.5px;

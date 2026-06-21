@@ -10,11 +10,9 @@
   <div data-site-header="logo-only"></div>
   <div class="login-body-content">
   <div class="login-card">
-    <div style="text-align:center;margin-bottom:24px">
-      <div style="width:48px;height:48px;background:#FEE500;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
-        <svg width="24" height="24" viewBox="0 0 18 18" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1C4.582 1 1 3.925 1 7.5c0 2.286 1.417 4.294 3.563 5.467L3.67 16.14a.25.25 0 0 0 .37.278L8.13 13.96c.288.027.58.04.87.04 4.418 0 8-2.925 8-6.5S13.418 1 9 1z" fill="#3A1D1D"/></svg>
-      </div>
-      <div style="font-size: 20.4px;font-weight:600;color:#111">카카오 연동 완료</div>
+    <div style="text-align:center;margin-bottom:24px" id="oauth-header">
+      <div id="oauth-icon-wrap" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px"></div>
+      <div style="font-size: 20.4px;font-weight:600;color:#111" id="oauth-title">소셜 연동 완료</div>
       <div style="font-size: 15.6px;color:#888;margin-top:4px">서비스 이용을 위해 정보를 확인해 주세요</div>
     </div>
 
@@ -27,22 +25,39 @@
 
     <!-- Step 1: 가입 유형 + 기본 정보 -->
     <div id="step-1">
-      <div class="member-type-label">가입 유형 <span class="hint">(가입 후 변경 불가)</span></div>
-      <div class="member-type-row">
-        <label class="member-type-card">
-          <input type="radio" name="member-type" value="student" checked />
-          <div class="member-type-title">수강생</div>
-          <div class="member-type-desc">온라인 강의 수강·학습</div>
-        </label>
-        <label class="member-type-card">
-          <input type="radio" name="member-type" value="client" />
-          <div class="member-type-title">의뢰인</div>
-            <div class="member-type-desc">클라이언츠 · 매칭</div>
-          <div class="member-type-benefit">20만원↑ 강의 수강 시 1만원 쿠폰 10장</div>
-        </label>
+      <div id="google-privacy-notice" style="display:none;background:#f5f7ff;border:0.5px solid #d8dcff;border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:14.4px;color:#444;line-height:1.7">
+        <div style="font-weight:600;color:#333;margin-bottom:6px">Google 로그인 시 수집·이용하는 정보</div>
+        <ul style="margin:0;padding-left:18px">
+          <li><b>Google 고유 ID</b> — 계정 연동·중복 가입 방지</li>
+          <li><b>이름</b> — 회원 식별·프로필 표시</li>
+          <li><b>이메일</b> — 계정 식별·서비스 안내</li>
+          <li><b>프로필 사진</b> — 프로필 표시(선택적 노출)</li>
+        </ul>
+        <p style="margin:8px 0 0;font-size:13.2px;color:#666">
+          위 항목은 Google OAuth(<code style="font-size:12px">openid email profile</code>) 범위에서 제공되며, 회원 가입·서비스 제공 목적으로만 이용합니다.
+          <a href="/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a>에서 자세히 확인할 수 있습니다.
+        </p>
       </div>
+
+      <div id="member-type-section">
+        <div class="member-type-label">가입 유형 <span class="hint">(가입 후 변경 불가)</span></div>
+        <div class="member-type-row">
+          <label class="member-type-card">
+            <input type="radio" name="member-type" value="student" checked />
+            <div class="member-type-title">수강생</div>
+            <div class="member-type-desc">온라인 강의 수강·학습</div>
+          </label>
+          <label class="member-type-card">
+            <input type="radio" name="member-type" value="client" />
+            <div class="member-type-title">의뢰인</div>
+            <div class="member-type-desc">클라이언츠 · 매칭</div>
+            <div class="member-type-benefit">20만원↑ 강의 수강 시 1만원 쿠폰 10장</div>
+          </label>
+        </div>
+      </div>
+
       <div class="form-field">
-        <label>이름 <span class="hint">(카카오에서 불러온 이름)</span></label>
+        <label>이름 <span class="hint" id="name-hint">(소셜 계정에서 불러온 이름)</span></label>
         <input type="text" id="ob-name" placeholder="이름을 입력해주세요" required />
       </div>
       <div class="form-field">
@@ -51,9 +66,17 @@
         <div class="code-hint" id="email-hint" style="display:none;color:#111111"></div>
       </div>
       <div class="form-field">
-        <label>연락처 <span class="hint">(선택 — 카카오 알림톡 수신 시 필요)</span></label>
+        <label>연락처 <span class="hint">(선택 — 알림톡·문자 수신 시 필요)</span></label>
         <input type="tel" id="ob-phone" placeholder="010-0000-0000" maxlength="13" oninput="formatPhone(this)" />
       </div>
+
+      <div class="terms-row required" style="margin-top:4px">
+        <label><input type="checkbox" id="agree-privacy" /> [필수] <a href="/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a> 확인 및 동의</label>
+      </div>
+      <div class="terms-row required">
+        <label><input type="checkbox" id="agree-terms" /> [필수] <a href="/terms.html" target="_blank" rel="noopener">이용약관</a> 동의</label>
+      </div>
+
       <button class="btn-submit" onclick="goStep2()">다음</button>
     </div>
 
@@ -74,7 +97,7 @@
       </div>
 
       <div style="font-size: 14.4px;color:#aaa;line-height:1.7;padding:0 4px;margin-bottom:20px">
-        타닥클래스로부터 신규 강의, 이벤트, 할인 정보를 카카오 알림톡으로 받습니다.<br>
+        타닥클래스로부터 신규 강의, 이벤트, 할인 정보를 <b>이메일</b> 또는 등록하신 <b>연락처(알림톡·문자)</b>로 받습니다.<br>
         동의하지 않아도 서비스 이용에 제한이 없으며, 마이페이지에서 언제든 철회할 수 있습니다.
       </div>
 
@@ -94,15 +117,43 @@
   <script src="/js/site-header.js?v=6"></script>
   <script>
     const params = new URLSearchParams(location.search)
-    const kakaoToken = params.get('kakao_token')
-    const kakaoUser = JSON.parse(decodeURIComponent(params.get('kakao_user') || '{}'))
+    const isGoogle = !!params.get('google_token')
+    const isKakao = !!params.get('kakao_token')
+    const oauthToken = params.get('google_token') || params.get('kakao_token')
+    const oauthUser = JSON.parse(decodeURIComponent(params.get('google_user') || params.get('kakao_user') || '{}'))
     const nextUrl = params.get('next') || '/'
 
-    if (!kakaoToken) location.href = '/login.html'
+    if (!oauthToken) location.href = '/login.html'
 
-    // 카카오에서 받아온 정보 자동 입력
-    if (kakaoUser.name) document.getElementById('ob-name').value = kakaoUser.name
-    if (kakaoUser.email) document.getElementById('ob-email').value = kakaoUser.email
+    const kakaoIcon = `<svg width="24" height="24" viewBox="0 0 18 18" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1C4.582 1 1 3.925 1 7.5c0 2.286 1.417 4.294 3.563 5.467L3.67 16.14a.25.25 0 0 0 .37.278L8.13 13.96c.288.027.58.04.87.04 4.418 0 8-2.925 8-6.5S13.418 1 9 1z" fill="#3A1D1D"/></svg>`
+    const googleIcon = `<svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`
+
+    const iconWrap = document.getElementById('oauth-icon-wrap')
+    const titleEl = document.getElementById('oauth-title')
+    if (isGoogle) {
+      iconWrap.style.background = '#fff'
+      iconWrap.style.border = '0.5px solid #eee'
+      iconWrap.innerHTML = googleIcon
+      titleEl.textContent = 'Google 연동 완료'
+      document.getElementById('google-privacy-notice').style.display = 'block'
+      document.getElementById('name-hint').textContent = '(Google 계정에서 불러온 이름)'
+    } else if (isKakao) {
+      iconWrap.style.background = '#FEE500'
+      iconWrap.innerHTML = kakaoIcon
+      titleEl.textContent = '카카오 연동 완료'
+      document.getElementById('name-hint').textContent = '(카카오에서 불러온 이름)'
+    }
+
+    if (oauthUser.name) document.getElementById('ob-name').value = oauthUser.name
+    if (oauthUser.email) document.getElementById('ob-email').value = oauthUser.email
+    if (oauthUser.phone) document.getElementById('ob-phone').value = oauthUser.phone
+
+    if (oauthUser.member_type) {
+      const section = document.getElementById('member-type-section')
+      if (section) section.style.display = 'none'
+      const radio = document.querySelector(`input[name="member-type"][value="${oauthUser.member_type}"]`)
+      if (radio) radio.checked = true
+    }
 
     function formatPhone(el) {
       let v = el.value.replace(/[^0-9]/g, '')
@@ -119,6 +170,12 @@
       if (!email || !email.includes('@')) {
         hint.textContent = '올바른 이메일 주소를 입력해주세요.'
         hint.style.display = 'block'; return
+      }
+      if (!document.getElementById('agree-privacy').checked) {
+        alert('개인정보처리방침에 동의해주세요.'); return
+      }
+      if (!document.getElementById('agree-terms').checked) {
+        alert('이용약관에 동의해주세요.'); return
       }
       hint.style.display = 'none'
       document.getElementById('step-1').style.display = 'none'
@@ -144,7 +201,7 @@
       btn.disabled = true; btn.textContent = '처리 중...'
 
       const marketing_agreed = document.getElementById('chk-marketing').checked
-      const member_type = document.querySelector('input[name="member-type"]:checked')?.value
+      const member_type = oauthUser.member_type || document.querySelector('input[name="member-type"]:checked')?.value
       if (!member_type) { alert('가입 유형을 선택해주세요.'); btn.disabled = false; btn.textContent = '시작하기'; return }
       const body = {
         name: document.getElementById('ob-name').value.trim(),
@@ -155,12 +212,12 @@
       }
 
       try {
-        localStorage.setItem('tc_token', kakaoToken)
-        localStorage.setItem('tc_user', JSON.stringify(kakaoUser))
+        localStorage.setItem('tc_token', oauthToken)
+        localStorage.setItem('tc_user', JSON.stringify(oauthUser))
 
         const res = await fetch('/api/auth/complete-profile', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + kakaoToken },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + oauthToken },
           body: JSON.stringify(body),
         })
         const data = await res.json()

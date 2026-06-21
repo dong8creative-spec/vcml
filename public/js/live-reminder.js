@@ -155,20 +155,45 @@
       .live-remind-dismiss:hover { color: #666; }
       .my-course-card--live { cursor: default; }
       .my-course-card--live:hover { transform: none; }
-      .live-extra-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; width: 100%; }
+      .live-extra-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
       .btn-live-extra {
         display: flex; align-items: center; justify-content: center; gap: 6px;
         width: 100%; padding: 10px 12px; border-radius: 8px; font-size: 14px;
         font-weight: 700; text-decoration: none; border: none; cursor: pointer;
         box-sizing: border-box; transition: .15s;
       }
-      .btn-live-extra--replay { background: #111; color: #fff; }
-      .btn-live-extra--replay:hover { background: #333; }
+      .btn-live-extra--replay {
+        background: #fff;
+        color: #111;
+        border: 1px solid #e8e8e8;
+        gap: 8px;
+      }
+      .btn-live-extra--replay:hover { background: #fafafa; border-color: #ddd; }
+      .btn-live-extra--replay .replay-youtube-icon {
+        flex-shrink: 0;
+        display: block;
+        width: 22px;
+        height: 22px;
+      }
+      .btn-live-extra--replay.btn-live-extra--locked {
+        background: #fff;
+        color: #666;
+        border: 1px solid #eee;
+        cursor: default;
+      }
+      .btn-live-extra--replay.btn-live-extra--locked .replay-youtube-icon { opacity: 0.45; }
       .btn-live-extra--material { background: #f5f5f5; color: #111; border: 1px solid #ddd; }
       .btn-live-extra--material:hover { background: #eee; }
       .btn-live-extra--locked {
         background: #f5f5f5; color: #999; border: 1px solid #e8e8e8;
         cursor: default; font-weight: 600;
+      }
+      .btn-live-extra--replay-pending {
+        flex-direction: column; gap: 4px; line-height: 1.4;
+        padding: 12px; text-align: center;
+      }
+      .btn-live-extra__sub {
+        font-size: 11px; font-weight: 500; color: #888;
       }
     `
     document.head.appendChild(style)
@@ -216,6 +241,9 @@
   }
 
   function meetButtonHtml(course, start, compact) {
+    if (course?.live_status === 'ended' || course?.live_resources?.live_ended) {
+      return `<span class="btn-meet btn-meet--waiting">라이브 종료</span>`
+    }
     const url = meetUrl(course.meet_code)
     const join = canJoinMeet(course, start)
     const icon = `<span class="btn-meet__icon">${googleMeetIcon()}</span>`
@@ -241,12 +269,33 @@
     return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 다운로드${hint}</span>`
   }
 
+  function youtubeReplayIcon() {
+    return `<svg class="replay-youtube-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/><path fill="#FFF" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`
+  }
+
+  function replayButtonContentHtml() {
+    return `${youtubeReplayIcon()}<span>강의 다시보기</span>`
+  }
+
+  function replayPendingHtml(course) {
+    const r = course?.live_resources
+    const when = r?.replay_opens_label || '다음 날 오후 1시'
+    return `<span class="btn-live-extra btn-live-extra--replay btn-live-extra--locked btn-live-extra--replay-pending">
+      <span style="display:inline-flex;align-items:center;justify-content:center;gap:8px">${replayButtonContentHtml()}</span>
+      <span class="btn-live-extra__sub">${escapeHtml(when)}에 제공됩니다</span>
+    </span>`
+  }
+
   function liveResourceButtonsHtml(course, { includeMaterial = true } = {}) {
     const r = course?.live_resources
     if (!r) return ''
     const parts = []
     if (r.replay_available) {
-      parts.push(`<button type="button" class="btn-live-extra btn-live-extra--replay" onclick="LiveSession.openReplay('${escapeHtml(course.id)}')"><i class="ti ti-player-play"></i> 다시보기</button>`)
+      parts.push(`<button type="button" class="btn-live-extra btn-live-extra--replay" onclick="LiveSession.openReplay('${escapeHtml(course.id)}')">${replayButtonContentHtml()}</button>`)
+    } else if (r.replay_pending) {
+      parts.push(replayPendingHtml(course))
+    } else if (r.replay_configured && r.live_ended) {
+      parts.push(replayPendingHtml(course))
     }
     if (includeMaterial && r.material_configured) {
       if (r.material_available) {

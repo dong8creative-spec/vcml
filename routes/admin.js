@@ -14,6 +14,15 @@ router.get('/coupons', async (req, res) => {
   res.json(await db.getAdminCouponReport())
 })
 
+router.get('/coupon-issuance', async (req, res) => {
+  res.json(await db.getCouponIssuanceConfig())
+})
+
+router.patch('/coupon-issuance', async (req, res) => {
+  const config = await db.updateCouponIssuanceConfig(req.body)
+  res.json({ success: true, config })
+})
+
 router.get('/orders', async (req, res) => {
   const orders = await db.getAllOrders()
   const result = await Promise.all(orders.map(async o => {

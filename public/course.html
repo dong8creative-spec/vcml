@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>강의 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=6" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=14" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
@@ -15,19 +15,19 @@
   <div id="anticipation-modal-overlay" class="modal-overlay hidden" onclick="closeAnticipationModal()">
     <div class="modal anticipation-modal" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <div class="modal-title">강의 기대평 작성</div>
+        <div class="modal-title" id="anticipation-modal-title">강의 기대평 작성</div>
         <button class="modal-close" onclick="closeAnticipationModal()"><i class="ti ti-x"></i></button>
       </div>
       <div style="padding: 0 22px 20px">
-        <p class="anticipation-modal-note">
-          이 강의에 대한 기대평을 작성해 주세요. 기대평 작성 후 수강 신청이 완료됩니다.
+        <p class="anticipation-modal-note" id="anticipation-modal-note">
+          이 강의에 대한 기대평을 작성해 주세요. 작성 완료 시 할인 쿠폰이 발급되며, 수강 신청은 별도로 진행합니다.
         </p>
         <textarea id="anticipation-input" maxlength="150" placeholder="이 강의에서 배우고 싶은 점, 기대하는 내용을 20~150자로 작성해주세요."></textarea>
         <div class="anticipation-modal-meta">
           <span id="anticipation-char-count">0 / 150자</span>
           <span>최소 20자</span>
         </div>
-        <button class="btn-anticipation-submit" id="btn-anticipation-submit" onclick="submitAnticipationApply()">기대평 작성하고 신청하기</button>
+        <button class="btn-anticipation-submit" id="btn-anticipation-submit" onclick="submitAnticipationReview()">기대평 작성하고 쿠폰 받기</button>
       </div>
     </div>
   </div>
@@ -63,7 +63,6 @@
     const slug = new URLSearchParams(location.search).get('slug')
     let courseData = null
     let anticipationReviews = []
-    let pendingApplyMode = null
     const ANTICIPATION_MIN = 20
     const ANTICIPATION_MAX = 150
 
@@ -135,16 +134,42 @@
         </div>`).join('')}</div>`
     }
 
-    function renderAnticipationFeed() {
+    const ANTICIPATION_SUBMIT_CREATE = '기대평 작성하고 쿠폰 받기'
+    const ANTICIPATION_SUBMIT_EDIT = '기대평 수정하기'
+
+    function canEditAnticipation(c) {
+      return c?.my_anticipation && c.my_anticipation.can_edit !== false && c.anticipation_modify?.can_modify !== false
+    }
+
+    function renderAnticipationFeed(c) {
       if (!anticipationReviews.length) {
         return `<div class="anticipation-empty">아직 작성된 기대평이 없습니다.<br>첫 번째 기대평을 남겨보세요!</div>`
       }
-      return `<div class="anticipation-feed">${anticipationReviews.map(r => `
-        <article class="anticipation-card">
-          <div class="anticipation-card-id">${esc(r.author_id_display || r.author_display)}</div>
-          <div class="anticipation-card-date">신청 ${formatDate(r.created_at)}</div>
+      const mineId = c?.my_anticipation?.id
+      const lockedNote = c?.my_anticipation && !canEditAnticipation(c) && c.anticipation_modify?.message
+        ? `<div class="anticipation-edit-locked">${esc(c.anticipation_modify.message)}</div>`
+        : ''
+      return `<div class="anticipation-feed">${anticipationReviews.map(r => {
+        const isMine = mineId && r.id === mineId
+        const actions = isMine && canEditAnticipation(c)
+          ? `<div class="anticipation-card-actions">
+              <button type="button" class="anticipation-card-edit" onclick="openAnticipationModal(true)">수정</button>
+              <button type="button" class="anticipation-card-edit anticipation-card-edit--danger" onclick="deleteAnticipationReview()">삭제</button>
+            </div>`
+          : ''
+        return `
+        <article class="anticipation-card${isMine ? ' anticipation-card--mine' : ''}">
+          <div class="anticipation-card-head">
+            <div>
+              <div class="anticipation-card-id">${esc(r.author_id_display || r.author_display)}${isMine ? ' <span class="anticipation-card-mine-label">내 기대평</span>' : ''}</div>
+              <div class="anticipation-card-date">작성 ${formatDate(r.created_at)}</div>
+            </div>
+            ${actions}
+          </div>
           <div class="anticipation-card-content">${esc(r.content)}</div>
-        </article>`).join('')}</div>`
+          ${isMine ? lockedNote : ''}
+        </article>`
+      }).join('')}</div>`
     }
 
     function renderBodySection(c) {
@@ -156,33 +181,71 @@
               ${renderCurriculumSection(c)}
             </div>
           </div>
-          <aside class="course-body-side" aria-label="수강 신청 기대평">
+          <aside class="course-body-side" aria-label="수강 기대평">
             <div class="course-section">
-              <h2>수강 신청 기대평</h2>
-              ${renderAnticipationFeed()}
+              <h2>수강 기대평</h2>
+              ${renderAnticipationFeed(c)}
             </div>
           </aside>
         </div>`
     }
 
     function enrollButtonLabel(c) {
-      if (c.course_type === 'live') return '기대평 작성하고 무료 신청'
-      if (isFreeVod(c)) return '기대평 작성하고 무료 시작'
-      return '기대평 작성하고 수강 신청'
+      if (c.course_type === 'live') return '무료 수강 신청'
+      if (isFreeVod(c)) return '무료 수강 시작'
+      return '결제하고 수강 시작'
+    }
+
+    function renderAnticipationBtn(c) {
+      if (c.my_anticipation) {
+        if (!canEditAnticipation(c)) return ''
+        return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal(true)"><i class="ti ti-pencil"></i> 기대평 수정</button>`
+      }
+      return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal()"><i class="ti ti-message-heart"></i> 기대평 작성하고 쿠폰 받기</button>`
+    }
+
+    function wrapBuyActions(html) {
+      const inner = String(html || '').trim()
+      if (!inner) return ''
+      return `<div class="buy-actions">${inner}</div>`
+    }
+
+    function renderEnrollActions(c) {
+      if (c.enrolled) {
+        if (c.course_type === 'live') {
+          return wrapBuyActions(`${renderLiveEnrolledAction(c)}${renderAnticipationBtn(c)}`)
+        }
+        return wrapBuyActions(`<a href="/player.html?slug=${c.slug}&chapter=first" class="btn-enroll enrolled"><i class="ti ti-player-play"></i> 이어서 수강하기</a>${renderAnticipationBtn(c)}`)
+      }
+      if (c.course_type === 'live') {
+        if (c.live_status === 'ended') return wrapBuyActions(`<div class="btn-enroll buy-live-ended">종료된 강의입니다</div>`)
+        return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-user-plus"></i> ${enrollButtonLabel(c)}`, `onclick="submitCourseEnroll()"`)}
+          ${renderAnticipationBtn(c)}`)
+      }
+      if (isFreeVod(c)) {
+        return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-player-play"></i> ${enrollButtonLabel(c)}`, `onclick="submitCourseEnroll()"`)}
+          ${renderAnticipationBtn(c)}`)
+      }
+      return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-cart"></i> ${enrollButtonLabel(c)}`, `onclick="openModal()"`)}
+        ${renderAnticipationBtn(c)}`)
     }
 
     function renderLiveEnrolledAction(c) {
+      const ended = c.live_status === 'ended' || c.live_resources?.live_ended
       const extras = window.LiveSession?.liveResourceButtonsHtml
         ? LiveSession.liveResourceButtonsHtml(c)
         : ''
+      if (ended) {
+        return `<div class="btn-enroll enrolled buy-live-enrolled buy-live-enrolled--ended"><i class="ti ti-check"></i> 라이브 종료</div>${extras || ''}`
+      }
       const url = (c.live_chat_url || '').trim()
       if (url) {
         return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="btn-kakao-room">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1C4.582 1 1 3.925 1 7.5c0 2.286 1.417 4.294 3.563 5.467L3.67 16.14a.25.25 0 0 0 .37.278L8.13 13.96c.288.027.58.04.87.04 4.418 0 8-2.925 8-6.5S13.418 1 9 1z" fill="#3A1D1D"/></svg>
           수강생 대기실로 입장
-        </a>${extras ? `<div class="buy-live-extras">${extras}</div>` : ''}`
+        </a>${extras || ''}`
       }
-      return `<div class="btn-enroll enrolled buy-live-enrolled"><i class="ti ti-check"></i> 신청 완료</div>${extras ? `<div class="buy-live-extras">${extras}</div>` : ''}`
+      return `<div class="btn-enroll enrolled buy-live-enrolled"><i class="ti ti-check"></i> 신청 완료</div>${extras || ''}`
     }
 
     function renderApplyBtn(c, labelHtml, onclickAttr) {
@@ -227,9 +290,13 @@
       if (!urls.length) {
         return `<div class="course-hero-bg course-hero-bg--empty" aria-hidden="true"></div><div class="course-hero-overlay" aria-hidden="true"></div>`
       }
-      const slides = urls.map((url, i) =>
-        `<div class="course-hero-slide${i === 0 ? ' is-active' : ''}" style="background-image:url('${esc(url).replace(/'/g, '%27')}')"></div>`
-      ).join('')
+      const slides = urls.map((url, i) => {
+        const safeUrl = esc(url).replace(/'/g, '%27')
+        return `<div class="course-hero-slide${i === 0 ? ' is-active' : ''}">
+          <div class="course-hero-slide-blur" style="background-image:url('${safeUrl}')"></div>
+          <div class="course-hero-slide-main" style="background-image:url('${safeUrl}')"></div>
+        </div>`
+      }).join('')
       return `<div class="course-hero-bg" aria-hidden="true"><div class="course-hero-slides">${slides}</div></div><div class="course-hero-overlay" aria-hidden="true"></div>`
     }
 
@@ -284,38 +351,30 @@
               ${renderBuyThumb(c, thumbClass)}
               <div class="buy-body">
                 ${c.course_type === 'live' ? `
-                <div class="buy-live-head">
-                  <div class="buy-live-price">무료</div>
-                  <div class="buy-live-sub">라이브 강의 · 무료 참여</div>
+                <div class="buy-intro">
+                  <div class="buy-live-head">
+                    <div class="buy-live-price">무료</div>
+                    <div class="buy-live-sub">라이브 강의 · 무료 참여</div>
+                  </div>
+                  ${c.live_schedule ? `<div class="buy-live-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule}</div>` : ''}
                 </div>
-                ${c.live_schedule ? `<div class="buy-live-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule}</div>` : ''}
                 ${renderBuyEnrollmentNote(c)}
-                ${c.enrolled
-                  ? renderLiveEnrolledAction(c)
-                  : c.live_status === 'ended'
-                    ? `<div class="btn-enroll buy-live-ended">종료된 강의입니다</div>`
-                    : renderApplyBtn(c, `<i class="ti ti-message-heart"></i> ${enrollButtonLabel(c)}`, `onclick="openAnticipationModal('live')"`)
-                }
+                ${renderEnrollActions(c)}
                 <ul class="buy-features">
                   <li><span class="feat-icon feat-icon--live"><i class="ti ti-broadcast"></i></span> 라이브 실시간 강의</li>
                   <li><span class="feat-icon feat-icon--meet"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span> Google Meet 참여</li>
-                  <li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 다시보기 무제한 제공</li>
+                  <li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 강의 종료 후 다음 날 오후 1시 다시보기</li>
                   <li><span class="feat-icon feat-icon--material"><i class="ti ti-download"></i></span> 자료 다운로드 강의 당일(1일)</li>
                 </ul>
               ` : `
                 ${renderBuyEnrollmentNote(c)}
-                <div class="buy-price-row">
-                  ${!freeVod && c.price!==c.sale_price ? `<span class="buy-original">₩${Number(c.price).toLocaleString()}</span><span class="buy-disc">${Math.round((1-c.sale_price/c.price)*100)}%</span>` : ''}
+                <div class="buy-pricing">
+                  <div class="buy-price-row">
+                    ${!freeVod && c.price!==c.sale_price ? `<span class="buy-original">₩${Number(c.price).toLocaleString()}</span><span class="buy-disc">${Math.round((1-c.sale_price/c.price)*100)}%</span>` : ''}
+                  </div>
+                  <div class="buy-price${freeVod ? ' buy-price--free' : ''}">${salePriceLabel}</div>
                 </div>
-                <div class="buy-price${freeVod ? ' buy-price--free' : ''}">${salePriceLabel}</div>
-                ${c.enrolled
-                  ? `<a href="/player.html?slug=${c.slug}&chapter=first" class="btn-enroll enrolled"><i class="ti ti-player-play"></i> 이어서 수강하기</a>`
-                  : freeVod
-                    ? renderApplyBtn(c, `<i class="ti ti-message-heart"></i> ${enrollButtonLabel(c)}`, `onclick="openAnticipationModal('free-vod')"`)
-                    : c.my_anticipation
-                      ? renderApplyBtn(c, `<i class="ti ti-shopping-cart"></i> 결제하고 수강 시작`, `onclick="openModal()"`)
-                      : renderApplyBtn(c, `<i class="ti ti-message-heart"></i> ${enrollButtonLabel(c)}`, `onclick="openAnticipationModal('paid')"`)
-                }
+                ${renderEnrollActions(c)}
                 <ul class="buy-features">
                   <li><span class="feat-icon feat-icon--lifetime"><i class="ti ti-infinity"></i></span> 평생 소장</li>
                   <li><span class="feat-icon feat-icon--mobile"><i class="ti ti-device-mobile"></i></span> 모바일 수강 가능</li>
@@ -335,20 +394,30 @@
       startHeroGallery(document.querySelector('.course-hero--gallery'))
     }
 
-    function openAnticipationModal(mode) {
-      if (CourseEnrollmentUI.isClosedForApply(courseData)) {
-        toast('모집 정원이 마감되었습니다.', 'error')
-        return
-      }
+    function setAnticipationModalMode(edit) {
+      const overlay = document.getElementById('anticipation-modal-overlay')
+      overlay.dataset.mode = edit ? 'edit' : 'create'
+      document.getElementById('anticipation-modal-title').textContent = edit ? '기대평 수정' : '강의 기대평 작성'
+      document.getElementById('anticipation-modal-note').textContent = edit
+        ? '작성하신 기대평을 수정할 수 있습니다. 쿠폰은 최초 작성 시에만 발급됩니다. 강의 시작 1시간 전까지만 수정·삭제할 수 있습니다.'
+        : '이 강의에 대한 기대평을 작성해 주세요. 작성 완료 시 할인 쿠폰이 발급되며, 수강 신청은 별도로 진행합니다.'
+      document.getElementById('btn-anticipation-submit').textContent = edit ? ANTICIPATION_SUBMIT_EDIT : ANTICIPATION_SUBMIT_CREATE
+    }
+
+    function openAnticipationModal(edit = false) {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
-      if (courseData?.my_anticipation) {
-        if (mode === 'paid') openModal()
-        else toast('이미 기대평을 작성하셨습니다.', 'info')
+      if (edit && !canEditAnticipation(courseData)) {
+        toast(courseData?.anticipation_modify?.message || '강의 시작 1시간 전부터는 기대평을 수정·삭제할 수 없습니다.', 'error')
         return
       }
-      pendingApplyMode = mode
+      const existing = courseData?.my_anticipation
+      if (edit && !existing) {
+        toast('수정할 기대평이 없습니다.', 'info')
+        return
+      }
       const input = document.getElementById('anticipation-input')
-      input.value = ''
+      input.value = edit && existing ? existing.content : ''
+      setAnticipationModalMode(!!edit)
       updateAnticipationCount()
       document.getElementById('anticipation-modal-overlay').classList.remove('hidden')
       input.focus()
@@ -356,7 +425,6 @@
 
     function closeAnticipationModal() {
       document.getElementById('anticipation-modal-overlay').classList.add('hidden')
-      pendingApplyMode = null
     }
 
     function updateAnticipationCount() {
@@ -366,7 +434,7 @@
 
     document.getElementById('anticipation-input')?.addEventListener('input', updateAnticipationCount)
 
-    async function submitAnticipationApply() {
+    async function submitAnticipationReview() {
       const content = document.getElementById('anticipation-input').value.trim()
       if (content.length < ANTICIPATION_MIN) {
         toast(`기대평은 ${ANTICIPATION_MIN}자 이상 입력해주세요.`, 'error')
@@ -376,46 +444,69 @@
         toast(`기대평은 ${ANTICIPATION_MAX}자 이내로 입력해주세요.`, 'error')
         return
       }
+      const overlay = document.getElementById('anticipation-modal-overlay')
+      const isEdit = overlay.dataset.mode === 'edit'
       const btn = document.getElementById('btn-anticipation-submit')
       btn.disabled = true
       btn.textContent = '처리 중...'
       try {
-        const res = await API.post('/courses/' + slug + '/apply-with-anticipation', { content })
+        const res = isEdit
+          ? await API.patch('/courses/' + slug + '/anticipation-reviews/mine', { content })
+          : await API.post('/courses/' + slug + '/anticipation-reviews', { content })
         closeAnticipationModal()
-        let msg = '기대평 작성 완료!'
-        if (res.enrolled) {
-          msg += courseData.course_type === 'live'
-            ? ' 라이브 수강 신청이 완료되었습니다.'
-            : ' 수강 신청이 완료되었습니다.'
-        } else if (res.needs_payment) {
-          msg += ' 결제를 진행해주세요.'
+        courseData.my_anticipation = res.review
+        if (isEdit) {
+          toast('기대평이 수정되었습니다.', 'success')
+        } else {
+          let msg = '기대평 작성 완료!'
+          if (res.coupon?.code) {
+            msg += ` ${res.coupon.discount_percent || 10}% 할인 쿠폰이 발급되었습니다.`
+          }
+          toast(msg, 'success')
         }
-        toast(msg, 'success')
-        if (res.needs_payment) {
-          courseData.my_anticipation = res.review
-          setTimeout(() => openModal(), 600)
-          return
-        }
+        setTimeout(() => location.reload(), 900)
+      } catch (err) {
+        toast(err.message, 'error')
+        btn.disabled = false
+        btn.textContent = isEdit ? ANTICIPATION_SUBMIT_EDIT : ANTICIPATION_SUBMIT_CREATE
+      }
+    }
+
+    async function deleteAnticipationReview() {
+      if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
+      if (!canEditAnticipation(courseData)) {
+        toast(courseData?.anticipation_modify?.message || '강의 시작 1시간 전부터는 기대평을 수정·삭제할 수 없습니다.', 'error')
+        return
+      }
+      if (!confirm('기대평을 삭제할까요?\n발급된 기대평 할인 쿠폰도 회수됩니다.')) return
+      try {
+        await API.del('/courses/' + slug + '/anticipation-reviews/mine')
+        toast('기대평이 삭제되었습니다.', 'success')
+        setTimeout(() => location.reload(), 700)
+      } catch (err) {
+        toast(err.message, 'error')
+      }
+    }
+
+    async function submitCourseEnroll() {
+      if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
+      if (CourseEnrollmentUI.isClosedForApply(courseData)) {
+        toast('모집 정원이 마감되었습니다.', 'error')
+        return
+      }
+      try {
+        await API.post('/courses/' + slug + '/enroll', {})
+        toast(courseData.course_type === 'live' ? '라이브 수강 신청이 완료되었습니다.' : '수강 신청이 완료되었습니다.', 'success')
         setTimeout(() => {
-          if (res.enrolled && courseData.course_type !== 'live') {
+          if (courseData.course_type !== 'live') {
             location.href = '/player.html?slug=' + slug + '&chapter=first'
           } else {
             location.reload()
           }
-        }, 1200)
+        }, 900)
       } catch (err) {
         toast(err.message, 'error')
-        btn.disabled = false
-        btn.textContent = '기대평 작성하고 신청하기'
       }
-    }
-
-    async function enrollFree() {
-      openAnticipationModal('live')
-    }
-
-    async function enrollFreeVod() {
-      openAnticipationModal('free-vod')
     }
 
     let selectedCouponCode = null
@@ -425,10 +516,6 @@
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
       if (CourseEnrollmentUI.isClosedForApply(courseData)) {
         toast('모집 정원이 마감되었습니다.', 'error')
-        return
-      }
-      if (!courseData.my_anticipation) {
-        openAnticipationModal('paid')
         return
       }
       document.getElementById('modal-course-info').innerHTML = `<div class="mci-title">${courseData.title}</div>`

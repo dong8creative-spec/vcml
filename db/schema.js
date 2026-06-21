@@ -73,6 +73,38 @@ const COUPON_REASON_LABELS = {
   editor_featured: '에디터 승인 혜택',
   editor_apply_featured: '에디터 승격 혜택',
 }
+const DEFAULT_COUPON_ISSUANCE_CONFIG = {
+  anticipation_review: {
+    source_label: '강의 기대평 작성',
+    route_label: '강의 상세 > 기대평 작성',
+    benefit_label: '최초 강의 결제 10% 할인',
+  },
+  course_review_five_star: {
+    source_label: '수강 후기 5점 작성',
+    route_label: '마이페이지 > 내 강의 > 후기 작성',
+    benefit_label: '기대평 쿠폰과 중첩 10% 할인',
+  },
+  marketing_consent: {
+    source_label: '마케팅 수신 동의',
+    route_label: '회원가입 > 프로필 완료',
+    benefit_label: '5,000원 할인',
+  },
+  client_course_reward: {
+    source_label: '의뢰인 수강 혜택',
+    route_label: '강의 결제 완료',
+    benefit_label: '3만원 이상 의뢰 시 1만원 할인',
+  },
+  editor_featured: {
+    source_label: '에디터 승인 혜택',
+    route_label: '관리자 승인',
+    benefit_label: '상위노출 7일',
+  },
+  editor_apply_featured: {
+    source_label: '에디터 승격 혜택',
+    route_label: '에디터즈 프로그램 승격',
+    benefit_label: '상위노출 7일',
+  },
+}
 const EDITOR_APPLY_FEATURED_REASON = 'editor_apply_featured'
 const EDITOR_APPLY_FEATURED_AMOUNT = 20000
 const EDITOR_APPLY_FEATURED_COUNT = 5
@@ -127,6 +159,18 @@ const DEFAULT_EDITOR_PROGRAM_CONFIG = {
   stage_count: 10,
   stages: DEFAULT_EDITOR_PROGRAM_STAGES,
   guide_cards: DEFAULT_EDITOR_GUIDE_CARDS,
+}
+
+function normalizeCouponIssuanceConfig(data = {}) {
+  const base = JSON.parse(JSON.stringify(DEFAULT_COUPON_ISSUANCE_CONFIG))
+  for (const key of Object.keys(base)) {
+    const row = data[key]
+    if (!row || typeof row !== 'object') continue
+    if (row.source_label != null) base[key].source_label = String(row.source_label).trim().slice(0, 80) || base[key].source_label
+    if (row.route_label != null) base[key].route_label = String(row.route_label).trim().slice(0, 120) || base[key].route_label
+    if (row.benefit_label != null) base[key].benefit_label = String(row.benefit_label).trim().slice(0, 120) || base[key].benefit_label
+  }
+  return base
 }
 
 function normalizeEditorProgramConfig(raw) {
@@ -857,20 +901,96 @@ function kstDateKey(date) {
   return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' })
 }
 
+const LIVE_END_AFTER_MS = 3 * 60 * 60 * 1000
+const REPLAY_OPEN_HOUR_KST = 13
+const ANTICIPATION_MODIFY_LOCK_MS = 60 * 60 * 1000
+
+function kstCalendarParts(date) {
+  const t = date.getTime() + 9 * 3600000
+  const d = new Date(t)
+  return { y: d.getUTCFullYear(), m: d.getUTCMonth(), day: d.getUTCDate() }
+}
+
+/** 강의일(KST) 다음 날 오후 1시 */
+function getReplayOpensAt(course) {
+  const start = parseLiveStart(course)
+  if (!start) return null
+  const { y, m, day } = kstCalendarParts(start)
+  return new Date(Date.UTC(y, m, day + 1, REPLAY_OPEN_HOUR_KST - 9, 0, 0))
+}
+
+function isLiveCourseEnded(course, at = new Date()) {
+  if (course?.live_status === 'ended') return true
+  const start = parseLiveStart(course)
+  if (!start) return false
+  return at.getTime() > start.getTime() + LIVE_END_AFTER_MS
+}
+
+function canModifyAnticipationReview(course, at = new Date()) {
+  const start = parseLiveStart(course)
+  if (!start) return true
+  return at.getTime() < start.getTime() - ANTICIPATION_MODIFY_LOCK_MS
+}
+
+function getAnticipationModifyMeta(course, at = new Date()) {
+  const start = parseLiveStart(course)
+  if (!start) {
+    return { can_modify: true, locked: false, deadline: null, deadline_label: null, message: null }
+  }
+  const deadline = new Date(start.getTime() - ANTICIPATION_MODIFY_LOCK_MS)
+  const canModify = canModifyAnticipationReview(course, at)
+  const deadlineLabel = deadline.toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+  return {
+    can_modify: canModify,
+    locked: !canModify,
+    deadline: deadline.toISOString(),
+    deadline_label: deadlineLabel,
+    message: canModify
+      ? null
+      : `강의 시작 1시간 전(${deadlineLabel})부터는 기대평을 수정·삭제할 수 없습니다.`,
+  }
+}
+
+function formatReplayOpensLabel(opensAt) {
+  if (!opensAt || isNaN(opensAt.getTime())) return '다음 날 오후 1시'
+  return opensAt.toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
 function isLiveLectureDay(course, at = new Date()) {
   const start = parseLiveStart(course)
   if (!start) return false
   return kstDateKey(at) === kstDateKey(start)
 }
 
-function getLiveResourceAccess(course, { enrolled = false } = {}) {
+function getLiveResourceAccess(course, { enrolled = false, at = new Date() } = {}) {
   const replayUrl = String(course?.live_replay_url || '').trim()
   const materialUrl = String(course?.live_material_url || '').trim()
-  const lectureDay = isLiveLectureDay(course)
+  const lectureDay = isLiveLectureDay(course, at)
   const start = parseLiveStart(course)
+  const lectureEnded = isLiveCourseEnded(course, at)
+  const replayOpensAt = getReplayOpensAt(course)
+  const replayReady = replayOpensAt ? at.getTime() >= replayOpensAt.getTime() : false
   return {
     replay_configured: !!replayUrl,
-    replay_available: enrolled && !!replayUrl,
+    replay_available: enrolled && !!replayUrl && lectureEnded && replayReady,
+    replay_pending: enrolled && !!replayUrl && lectureEnded && !replayReady,
+    replay_opens_at: replayOpensAt ? replayOpensAt.toISOString() : null,
+    replay_opens_label: replayOpensAt ? formatReplayOpensLabel(replayOpensAt) : null,
+    live_ended: lectureEnded,
     material_configured: !!materialUrl,
     material_available: enrolled && !!materialUrl && lectureDay,
     material_lecture_day: lectureDay,
@@ -926,7 +1046,7 @@ const db = {
       name: name || 'Google 사용자',
       role: 'student',
       member_type: ['student', 'client'].includes(memberType) ? memberType : 'student',
-      profile_complete: true,
+      profile_complete: false,
       profile_image: profileImage || null,
       auth_provider: 'google',
       marketing_agreed: 0,
@@ -1261,6 +1381,8 @@ const db = {
     return removed
   },
   async deleteAnticipationReviewByUserAndCourse(userId, courseId) {
+    const course = await db.getCourseById(courseId)
+    if (course && !canModifyAnticipationReview(course)) return false
     const snap = await fs.collection('anticipation_reviews').where('user_id', '==', userId).get()
     for (const doc of snap.docs) {
       if (doc.data().course_id === courseId) {
@@ -1269,6 +1391,17 @@ const db = {
       }
     }
     return false
+  },
+  async recallAnticipationCouponForCourse(userId, courseId) {
+    const coupons = await db.getCouponsByUser(userId)
+    let recalled = 0
+    for (const c of coupons) {
+      if (c.reason !== ANTICIPATION_COUPON_REASON || c.status !== 'available') continue
+      if (c.source_course_id !== courseId) continue
+      await fs.collection('coupons').doc(c.id).update({ status: 'revoked', revoked_at: now() })
+      recalled++
+    }
+    return recalled
   },
   async recallEnrollmentCoupons(userId, courseId, { refundedOrderId } = {}) {
     const coupons = (await db.getCouponsByUser(userId)).filter(c => {
@@ -1306,6 +1439,9 @@ const db = {
       }
       if (course.live_status === 'live') {
         return { allowed: false, error: '진행 중인 라이브는 취소할 수 없습니다.' }
+      }
+      if (!canModifyAnticipationReview(course)) {
+        return { allowed: false, error: getAnticipationModifyMeta(course).message }
       }
       return { allowed: true, type: 'cancel', refund_amount: 0, label: '신청 취소' }
     }
@@ -1456,13 +1592,19 @@ const db = {
         coupon = db.enrichCoupon(existingAvailable)
       } else if (!alreadyIssued) {
         const issuedAt = now()
+        const reviewCfg = (await db.getCouponIssuanceConfig()).course_review_five_star || DEFAULT_COUPON_ISSUANCE_CONFIG.course_review_five_star
+        const course = await db.getCourseById(courseId)
         coupon = await db.createCoupon(userId, 0, COURSE_REVIEW_FIVE_STAR_REASON, {
           discount_percent: COURSE_REVIEW_FIVE_STAR_DISCOUNT_PERCENT,
           coupon_type: 'percent',
           stackable: true,
           first_course_only: true,
           course_id: courseId,
+          source_course_id: courseId,
+          source_course_title: course?.title || null,
           expires_at: addOneMonthFrom(issuedAt),
+          issued_source_label: reviewCfg.source_label,
+          issued_route_label: reviewCfg.route_label,
         })
       }
     }
@@ -1594,6 +1736,22 @@ const db = {
       .filter(r => r.is_public === 1)
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
   },
+  async enrollInCourse(userId, courseId) {
+    const course = await db.getCourseById(courseId)
+    if (!course) return { error: 'course_not_found' }
+    if (await db.isEnrolled(userId, courseId)) return { error: 'already_enrolled' }
+    if (await db.isCourseEnrollmentFullAsync(course)) return { error: 'enrollment_full' }
+
+    const isLive = course.course_type === 'live'
+    const isFreeVod = !isLive && Number(course.sale_price) === 0
+    if (!isLive && !isFreeVod) return { error: 'payment_required' }
+    if (isLive && course.live_status === 'ended') return { error: 'live_ended' }
+
+    await db.enroll(userId, courseId)
+    await db.createOrder(userId, courseId, 0, '무료', 0)
+    await db.syncCourseStudentCount(courseId)
+    return { success: true, course }
+  },
   async createCourseAnticipationReview(userId, courseId, content, { enroll = false } = {}) {
     const existing = await db.getAnticipationReviewByUserAndCourse(userId, courseId)
     if (existing) return { error: 'already_submitted', review: existing }
@@ -1638,10 +1796,20 @@ const db = {
       created_at: createdAt,
     }
 
-    const existingCoupon = (await db.getCouponsByUser(userId)).find(
-      c => c.reason === ANTICIPATION_COUPON_REASON && c.status === 'available' && !isTimedPercentCouponExpired(c)
+    const issuanceCfg = (await db.getCouponIssuanceConfig()).anticipation_review || DEFAULT_COUPON_ISSUANCE_CONFIG.anticipation_review
+    const userCoupons = await db.getCouponsByUser(userId)
+    const existingCoupon = userCoupons.find(
+      c => c.reason === ANTICIPATION_COUPON_REASON
+        && c.source_course_id === courseId
+        && c.status === 'available'
+        && !isTimedPercentCouponExpired(c)
+    ) || userCoupons.find(
+      c => c.reason === ANTICIPATION_COUPON_REASON
+        && c.anticipation_review_id === review.id
+        && c.status === 'available'
+        && !isTimedPercentCouponExpired(c)
     )
-    let coupon = existingCoupon || null
+    let coupon = existingCoupon ? db.enrichCoupon(existingCoupon) : null
     if (!coupon) {
       const issuedAt = now()
       coupon = await db.createCoupon(userId, 0, ANTICIPATION_COUPON_REASON, {
@@ -1649,7 +1817,13 @@ const db = {
         coupon_type: 'percent',
         first_course_only: true,
         expires_at: addOneMonthFrom(issuedAt),
+        source_course_id: courseId,
+        source_course_title: course.title,
+        anticipation_review_id: review.id,
+        issued_source_label: issuanceCfg.source_label,
+        issued_route_label: issuanceCfg.route_label,
       })
+      coupon = db.enrichCoupon(coupon)
     }
 
     let enrolled = false
@@ -1664,6 +1838,44 @@ const db = {
     }
 
     return { review, coupon, enrolled }
+  },
+  async updateCourseAnticipationReview(userId, courseId, content) {
+    const review = await db.getAnticipationReviewByUserAndCourse(userId, courseId)
+    if (!review) return { error: 'not_found' }
+
+    const course = await db.getCourseById(courseId)
+    if (course && !canModifyAnticipationReview(course)) {
+      return { error: 'edit_locked', message: getAnticipationModifyMeta(course).message }
+    }
+
+    const text = String(content || '').trim()
+    if (text.length < ANTICIPATION_MIN_LENGTH) return { error: 'too_short' }
+    if (text.length > ANTICIPATION_MAX_LENGTH) return { error: 'too_long' }
+
+    const updatedAt = now()
+    await fs.collection('anticipation_reviews').doc(review.id).update({
+      content: text,
+      updated_at: updatedAt,
+    })
+    return {
+      review: {
+        ...review,
+        content: text,
+        updated_at: updatedAt,
+      },
+    }
+  },
+  async deleteCourseAnticipationReview(userId, courseId) {
+    const course = await db.getCourseById(courseId)
+    if (!course) return { error: 'course_not_found' }
+    if (!canModifyAnticipationReview(course)) {
+      return { error: 'edit_locked', message: getAnticipationModifyMeta(course).message }
+    }
+    const review = await db.getAnticipationReviewByUserAndCourse(userId, courseId)
+    if (!review) return { error: 'not_found' }
+    await fs.collection('anticipation_reviews').doc(review.id).delete()
+    const coupons_recalled = await db.recallAnticipationCouponForCourse(userId, courseId)
+    return { success: true, coupons_recalled }
   },
   /** @deprecated 글로벌 오픈베타 기대평 — createCourseAnticipationReview 사용 */
   async createAnticipationReview(userId, content) {
@@ -1722,6 +1934,22 @@ const db = {
       ? getTimedPercentCouponExpiresAt(coupon)
       : (coupon.expires_at || null)
     return { ...coupon, expires_at }
+  },
+  async resolveCouponIssuance(coupon) {
+    if (!coupon) return null
+    const config = await db.getCouponIssuanceConfig()
+    const row = config[coupon.reason] || DEFAULT_COUPON_ISSUANCE_CONFIG[coupon.reason] || {}
+    let courseTitle = coupon.source_course_title || null
+    if (!courseTitle && coupon.source_course_id) {
+      const course = await db.getCourseById(coupon.source_course_id)
+      courseTitle = course?.title || null
+    }
+    return {
+      source: coupon.issued_source_label || row.source_label || COUPON_REASON_LABELS[coupon.reason] || coupon.reason,
+      route: coupon.issued_route_label || row.route_label || '',
+      benefit: row.benefit_label || '',
+      course_title: courseTitle,
+    }
   },
   async resolveStackableCourseDiscount(userId, salePrice, isFirstPurchase) {
     const coupons = await db.getCouponsByUser(userId)
@@ -1811,6 +2039,7 @@ const db = {
       } else {
         item = db.enrichCoupon(c)
       }
+      item.issuance = await db.resolveCouponIssuance(item)
       if (item.status === 'used') {
         item.usage = await db.resolveCouponUsage(item)
       }
@@ -1865,6 +2094,7 @@ const db = {
         user_name: u?.name || u?.email || '-',
         user_email: u?.email || null,
         reason_label: COUPON_REASON_LABELS[c.reason] || c.reason,
+        issuance: await db.resolveCouponIssuance(enriched),
         usage: c.status === 'used' ? await db.resolveCouponUsage(c) : null,
       }
     }))
@@ -2883,6 +3113,18 @@ const db = {
     return db.getHeroConfig()
   },
 
+  async getCouponIssuanceConfig() {
+    const doc = await fs.collection('site_settings').doc('coupon_issuance').get()
+    if (!doc.exists) return normalizeCouponIssuanceConfig({})
+    return normalizeCouponIssuanceConfig(doc.data())
+  },
+
+  async updateCouponIssuanceConfig(data) {
+    const next = normalizeCouponIssuanceConfig(data)
+    await fs.collection('site_settings').doc('coupon_issuance').set({ ...next, updated_at: now() })
+    return db.getCouponIssuanceConfig()
+  },
+
   async getInstructorsIntro() {
     const doc = await fs.collection('site_settings').doc('instructors_intro').get()
     if (!doc.exists) return { ...normalizeInstructorsIntro({}), updated_at: null }
@@ -2950,6 +3192,10 @@ const db = {
 
   parseLiveStart,
   isLiveLectureDay,
+  isLiveCourseEnded,
+  canModifyAnticipationReview,
+  getAnticipationModifyMeta,
+  getReplayOpensAt,
   getLiveResourceAccess,
   stripLiveResourceUrls,
 }
@@ -2960,6 +3206,10 @@ seedEditorWorkbooks().catch(console.error)
 module.exports = db
 module.exports.parseLiveStart = parseLiveStart
 module.exports.isLiveLectureDay = isLiveLectureDay
+module.exports.isLiveCourseEnded = isLiveCourseEnded
+module.exports.canModifyAnticipationReview = canModifyAnticipationReview
+module.exports.getAnticipationModifyMeta = getAnticipationModifyMeta
+module.exports.getReplayOpensAt = getReplayOpensAt
 module.exports.getLiveResourceAccess = getLiveResourceAccess
 module.exports.stripLiveResourceUrls = stripLiveResourceUrls
 module.exports.userPayload = userPayload
@@ -2981,4 +3231,5 @@ module.exports.DEFAULT_HOMEPAGE_COPY = DEFAULT_HOMEPAGE_COPY
 module.exports.DEFAULT_HOMEPAGE_CATEGORIES = DEFAULT_HOMEPAGE_CATEGORIES
 module.exports.DEFAULT_FOOTER_CONFIG = DEFAULT_FOOTER_CONFIG
 module.exports.DEFAULT_HERO_CONFIG = DEFAULT_HERO_CONFIG
+module.exports.DEFAULT_COUPON_ISSUANCE_CONFIG = DEFAULT_COUPON_ISSUANCE_CONFIG
 module.exports.DEFAULT_INSTRUCTORS_INTRO = DEFAULT_INSTRUCTORS_INTRO

@@ -67,9 +67,9 @@
             <div class="coupon-guide-step-num">1</div>
             <div class="coupon-guide-step-body">
               <div class="coupon-guide-step-title">강의 듣기 전, 기대평 남기기</div>
-              <p>강의 상세페이지에 기대평을 남겨주시면<br><strong>10% 할인 쿠폰</strong>을 드립니다.</p>
-              <p class="coupon-guide-step-note">「이 강의 기대돼요」 정도의 짧은 한마디도 괜찮습니다.<br>
-              쿠폰은 최초 유료 강의 결제 시 사용할 수 있어요.<br>
+              <p>강의 상세페이지에서 <strong>「기대평 작성하고 쿠폰 받기」</strong>를 눌러<br>기대평을 남겨주시면 <strong>10% 할인 쿠폰</strong>을 드립니다.</p>
+              <p class="coupon-guide-step-note">수강 신청과는 별도이며, 「이 강의 기대돼요」 정도의 짧은 한마디도 괜찮습니다.<br>
+              쿠폰은 최초 유료 강의 결제 시 사용할 수 있고, 발급처·경로가 함께 표시됩니다.<br>
               사용 기간은 발급일로부터 1개월입니다.</p>
             </div>
           </div>

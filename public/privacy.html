@@ -15,7 +15,7 @@
   <header class="legal-hero">
     <p class="legal-hero-eyebrow">Legal</p>
     <h1 class="legal-hero-title">개인정보처리방침</h1>
-    <p class="legal-hero-meta">시행일: 2025년 1월 1일 · 최종 개정: 2025년 6월 20일</p>
+    <p class="legal-hero-meta">시행일: 2025년 1월 1일 · 최종 개정: 2025년 6월 21일</p>
   </header>
 
   <div class="legal-layout">
@@ -54,8 +54,9 @@
         <thead><tr><th>구분</th><th>필수 항목</th><th>선택 항목</th></tr></thead>
         <tbody>
           <tr><td>이메일 회원가입</td><td>이메일, 비밀번호, 이름</td><td>전화번호</td></tr>
+          <tr><td>Google 소셜 로그인</td><td>Google 고유 ID(sub), 이름, 이메일</td><td>프로필 사진, 전화번호(온보딩 시 입력)</td></tr>
           <tr><td>카카오 소셜 로그인</td><td>카카오 고유 ID, 이름(닉네임)</td><td>이메일, 전화번호</td></tr>
-          <tr><td>마케팅 동의</td><td>—</td><td>전화번호(알림톡 수신용)</td></tr>
+          <tr><td>마케팅 동의(선택)</td><td>—</td><td>이메일, 전화번호(알림톡·문자 수신용)</td></tr>
           <tr><td>결제</td><td>결제수단 정보(PG사 처리), 결제금액</td><td>—</td></tr>
           <tr><td>서비스 이용</td><td>IP 주소, 접속 기기 정보, 수강 이력, 쿠키</td><td>—</td></tr>
         </tbody>
@@ -90,12 +91,28 @@
     </section>
 
     <section>
-      <h2>제5조 (개인정보 처리 위탁)</h2>
+      <h2>제5조 (Google 소셜 로그인 정보)</h2>
+      <p>Google 계정으로 가입·로그인하는 경우, 회사는 Google OAuth 2.0을 통해 아래 정보를 수집·이용합니다.</p>
+      <table class="legal-table">
+        <thead><tr><th>수집 항목</th><th>수집 경로</th><th>이용 목적</th><th>보유 기간</th></tr></thead>
+        <tbody>
+          <tr><td>Google 고유 ID (sub)</td><td>Google OAuth</td><td>계정 연동, 중복 가입 방지</td><td>회원 탈퇴 시까지</td></tr>
+          <tr><td>이름</td><td>Google OAuth (profile)</td><td>회원 식별, 프로필 표시</td><td>회원 탈퇴 시까지</td></tr>
+          <tr><td>이메일</td><td>Google OAuth (email)</td><td>계정 식별, 서비스·마케팅(동의 시) 안내</td><td>회원 탈퇴 시까지</td></tr>
+          <tr><td>프로필 사진 URL</td><td>Google OAuth (profile)</td><td>프로필 표시</td><td>회원 탈퇴 시까지</td></tr>
+        </tbody>
+      </table>
+      <p class="small-note">※ Google 로그인 시 요청하는 OAuth 범위는 <code>openid email profile</code>이며, Google 계정 비밀번호 등은 수집하지 않습니다. 마케팅 정보 수신은 별도 선택 동의 후에만 이루어집니다.</p>
+    </section>
+
+    <section>
+      <h2>제6조 (개인정보 처리 위탁)</h2>
       <table class="legal-table">
         <thead><tr><th>수탁업체</th><th>위탁 업무</th></tr></thead>
         <tbody>
+          <tr><td>Google LLC</td><td>Google 소셜 로그인(OAuth) 인증</td></tr>
           <tr><td>카카오(주)</td><td>카카오 소셜 로그인, 알림톡 발송</td></tr>
-          <tr><td>구글(Firebase)</td><td>데이터베이스 저장·관리 (Google Cloud)</td></tr>
+          <tr><td>구글(Firebase / Google Cloud)</td><td>데이터베이스 저장·관리</td></tr>
           <tr><td>결제대행사(PG)</td><td>결제 처리·정산</td></tr>
         </tbody>
       </table>
@@ -103,7 +120,7 @@
     </section>
 
     <section>
-      <h2>제6조 (정보주체의 권리·의무 및 행사 방법)</h2>
+      <h2>제7조 (정보주체의 권리·의무 및 행사 방법)</h2>
       <p>정보주체는 회사에 대해 언제든지 다음 권리를 행사할 수 있습니다.</p>
       <ul>
         <li>개인정보 열람 요구</li>
@@ -115,7 +132,7 @@
     </section>
 
     <section>
-      <h2>제7조 (쿠키의 사용)</h2>
+      <h2>제8조 (쿠키의 사용)</h2>
       <ol>
         <li>회사는 서비스 편의 제공을 위해 쿠키(cookie)를 사용합니다. 쿠키는 이용자의 브라우저에 저장되는 소량의 데이터입니다.</li>
         <li>이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있으나, 일부 서비스 이용이 제한될 수 있습니다.</li>
@@ -124,7 +141,7 @@
     </section>
 
     <section>
-      <h2>제8조 (개인정보의 안전성 확보 조치)</h2>
+      <h2>제9조 (개인정보의 안전성 확보 조치)</h2>
       <p>회사는 「개인정보 보호법」 제29조에 따라 다음과 같은 안전성 확보 조치를 취합니다.</p>
       <ul>
         <li><strong>암호화</strong>: 비밀번호는 단방향 암호화(bcrypt) 저장, 통신 시 HTTPS(TLS) 적용</li>
@@ -135,12 +152,12 @@
     </section>
 
     <section>
-      <h2>제9조 (개인정보 자동 수집 장치)</h2>
+      <h2>제10조 (개인정보 자동 수집 장치)</h2>
       <p>서비스 이용 과정에서 IP 주소, 쿠키, 방문일시, 서비스 이용 기록, 불량 이용 기록 등이 자동으로 생성·수집됩니다. 이는 서비스 품질 관리 및 부정 이용 방지를 위해 활용됩니다.</p>
     </section>
 
     <section>
-      <h2>제10조 (개인정보 보호책임자)</h2>
+      <h2>제11조 (개인정보 보호책임자)</h2>
       <div class="legal-box">
         <strong>개인정보 보호책임자</strong><br>
         성명: 이동헌 · 직책: 대표<br>
@@ -154,7 +171,7 @@
     </section>
 
     <section>
-      <h2>제11조 (개인정보처리방침의 변경)</h2>
+      <h2>제12조 (개인정보처리방침의 변경)</h2>
       <p>이 개인정보처리방침은 2025년 1월 1일부터 적용되며, 변경 사항이 있는 경우 서비스 공지사항을 통해 사전에 고지합니다.</p>
     </section>
       </article>

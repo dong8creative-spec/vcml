@@ -253,7 +253,7 @@
                 <input type="url" id="live-chat-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
               </div>
               <div class="form-group">
-                <label>다시보기 링크 <span style="font-size: 13.2px;color:#aaa">신청자 무제한 시청</span></label>
+                <label>다시보기 링크 <span style="font-size: 13.2px;color:#aaa">종료 후 다음 날 오후 1시 공개</span></label>
                 <input type="url" id="live-replay-url" placeholder="https://..." maxlength="500" />
               </div>
               <div class="form-group">
@@ -503,6 +503,20 @@
         </div>
       </div>
 
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div class="card-title">쿠폰 발급 문구 설정</div>
+            <p class="sec-sub" style="margin:0">회원 마이페이지·쿠폰 목록에 표시되는 발급처·경로·혜택 문구입니다. 강의별 기대평 쿠폰은 아래 문구와 함께 강의명이 표시됩니다.</p>
+          </div>
+          <button type="button" class="btn-primary-sm" id="coupon-issuance-save-btn">저장</button>
+        </div>
+        <div style="padding:0 20px 20px" id="coupon-issuance-form">
+          <p style="color:#888;margin:0">로딩 중...</p>
+        </div>
+        <div style="padding:0 20px 16px;color:#888;font-size:13px" id="coupon-issuance-save-status"></div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <div class="card-title">쿠폰 목록</div>
@@ -522,6 +536,8 @@
               <th>코드</th>
               <th>회원</th>
               <th>발급 사유</th>
+              <th>발급처</th>
+              <th>발급 경로</th>
               <th>혜택</th>
               <th>상태</th>
               <th>사용처</th>
@@ -530,7 +546,7 @@
             </tr>
           </thead>
           <tbody id="coupons-table-body">
-            <tr><td colspan="8" style="text-align:center;color:#888">로딩 중...</td></tr>
+            <tr><td colspan="11" style="text-align:center;color:#888">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1868,7 +1884,81 @@
     }
 
     let adminCouponsCache = []
+    let couponIssuanceConfig = {}
     const couponStatusLabel = { available: '사용 가능', used: '사용 완료', expired: '만료', revoked: '회수' }
+    const COUPON_ISSUANCE_REASON_NAMES = {
+      anticipation_review: '강의 기대평',
+      course_review_five_star: '수강 후기 5점',
+      marketing_consent: '마케팅 동의',
+      client_course_reward: '의뢰인 수강 혜택',
+      editor_featured: '에디터 승인',
+      editor_apply_featured: '에디터 승격',
+    }
+
+    function renderCouponIssuanceForm(config) {
+      couponIssuanceConfig = config || {}
+      const el = document.getElementById('coupon-issuance-form')
+      if (!el) return
+      el.innerHTML = Object.entries(COUPON_ISSUANCE_REASON_NAMES).map(([key, title]) => {
+        const row = config[key] || {}
+        return `<div style="margin-bottom:12px;padding:16px;background:#fafafa;border:1px solid #eee;border-radius:8px">
+          <div style="font-weight:600;margin-bottom:12px">${title}</div>
+          <div class="two-col" style="gap:12px">
+            <div class="form-group">
+              <label>발급처</label>
+              <input type="text" data-issuance-key="${key}" data-issuance-field="source_label" value="${esc(row.source_label || '')}" maxlength="80">
+            </div>
+            <div class="form-group">
+              <label>발급 경로</label>
+              <input type="text" data-issuance-key="${key}" data-issuance-field="route_label" value="${esc(row.route_label || '')}" maxlength="120">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>혜택 문구</label>
+            <input type="text" data-issuance-key="${key}" data-issuance-field="benefit_label" value="${esc(row.benefit_label || '')}" maxlength="120">
+          </div>
+        </div>`
+      }).join('')
+    }
+
+    function readCouponIssuanceForm() {
+      const next = JSON.parse(JSON.stringify(couponIssuanceConfig))
+      document.querySelectorAll('[data-issuance-key]').forEach(input => {
+        const key = input.dataset.issuanceKey
+        const field = input.dataset.issuanceField
+        if (!next[key]) next[key] = {}
+        next[key][field] = input.value.trim()
+      })
+      return next
+    }
+
+    async function loadCouponIssuanceSettings() {
+      const formEl = document.getElementById('coupon-issuance-form')
+      const statusEl = document.getElementById('coupon-issuance-save-status')
+      if (!formEl) return
+      try {
+        const config = await API.get('/admin/coupon-issuance')
+        renderCouponIssuanceForm(config)
+        if (statusEl) statusEl.textContent = ''
+      } catch (e) {
+        formEl.innerHTML = `<p style="color:#e00;margin:0">${esc(e.message || '불러오기 실패')}</p>`
+      }
+    }
+
+    document.getElementById('coupon-issuance-save-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('coupon-issuance-save-btn')
+      const statusEl = document.getElementById('coupon-issuance-save-status')
+      try {
+        btn.disabled = true
+        const result = await API.patch('/admin/coupon-issuance', readCouponIssuanceForm())
+        renderCouponIssuanceForm(result.config || result)
+        if (statusEl) statusEl.textContent = '저장되었습니다.'
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      } finally {
+        btn.disabled = false
+      }
+    })
 
     function couponBenefitLabel(c) {
       if (c.discount_percent) return `${c.discount_percent}% 할인`
@@ -1881,7 +1971,8 @@
     async function loadCouponsAdmin() {
       const tbody = document.getElementById('coupons-table-body')
       if (!tbody) return
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888">로딩 중...</td></tr>'
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888">로딩 중...</td></tr>'
+      await loadCouponIssuanceSettings()
       try {
         const data = await API.get('/admin/coupons')
         adminCouponsCache = data.coupons || []
@@ -1934,17 +2025,23 @@
         const filter = document.getElementById('coupon-filter-status')?.value || 'all'
         const filtered = filter === 'all' ? adminCouponsCache : adminCouponsCache.filter(c => c.status === filter)
         if (!filtered.length) {
-          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888">표시할 쿠폰이 없습니다.</td></tr>'
+          tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888">표시할 쿠폰이 없습니다.</td></tr>'
           return
         }
         tbody.innerHTML = filtered.map(c => {
           const usageText = c.status === 'used' && c.usage
             ? `${c.usage.context_label}${c.usage.target_title ? `<br><span class="td-sub">${c.usage.target_title}</span>` : ''}`
             : '-'
+          const issuance = c.issuance || {}
+          const sourceText = issuance.source || '-'
+          const routeText = issuance.route || '-'
+          const courseSub = issuance.course_title ? `<br><span class="td-sub">${esc(issuance.course_title)}</span>` : ''
           return `<tr>
             <td style="font-family:monospace;font-size:13px">${c.code}</td>
             <td>${c.user_name || '-'}<br><span class="td-sub">${c.user_email || ''}</span></td>
             <td>${c.reason_label || c.reason || '-'}</td>
+            <td>${esc(sourceText)}${courseSub}</td>
+            <td class="td-sub">${esc(routeText)}</td>
             <td>${couponBenefitLabel(c)}</td>
             <td><span class="badge-status ${c.status === 'available' ? 'paid' : c.status === 'used' ? 'pending' : 'refund'}">${couponStatusLabel[c.status] || c.status}</span></td>
             <td class="td-sub">${usageText}</td>
@@ -1953,7 +2050,7 @@
           </tr>`
         }).join('')
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#e00">${e.message || '불러오기 실패'}</td></tr>`
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:#e00">${e.message || '불러오기 실패'}</td></tr>`
       }
     }
 

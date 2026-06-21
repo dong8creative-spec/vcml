@@ -12,11 +12,6 @@ router.post('/', authMiddleware, async (req, res) => {
     return res.status(409).json({ error: '모집 정원이 마감되었습니다.', code: 'enrollment_full' })
   }
 
-  const anticipation = await db.getAnticipationReviewByUserAndCourse(req.user.id, course_id)
-  if (!anticipation) {
-    return res.status(400).json({ error: '기대평 작성 후 결제할 수 있습니다.', code: 'anticipation_required' })
-  }
-
   const priorOrders = await db.getOrdersByUser(req.user.id)
   const isFirstPurchase = priorOrders.length === 0
   const salePrice = Number(course.sale_price || 0)

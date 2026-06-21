@@ -155,6 +155,17 @@ router.get('/courses/:courseId/live-replay', authMiddleware, async (req, res) =>
   if (!await db.isEnrolled(req.user.id, course.id)) {
     return res.status(403).json({ error: '수강 신청 후 이용할 수 있습니다.' })
   }
+  const access = db.getLiveResourceAccess(course, { enrolled: true })
+  if (!access.replay_available) {
+    if (access.replay_pending) {
+      const when = access.replay_opens_label || '다음 날 오후 1시'
+      return res.status(403).json({ error: `강의 다시보기는 ${when}부터 이용할 수 있습니다.` })
+    }
+    if (!access.live_ended) {
+      return res.status(403).json({ error: '라이브 강의 종료 후 다시보기가 제공됩니다.' })
+    }
+    return res.status(404).json({ error: '다시보기 링크가 아직 준비되지 않았습니다.' })
+  }
   const url = String(course.live_replay_url || '').trim()
   if (!url || !/^https?:\/\/.+/i.test(url)) {
     return res.status(404).json({ error: '다시보기 링크가 아직 준비되지 않았습니다.' })
