@@ -7,7 +7,14 @@ const CAT_MATCH = {
   ai:       c => /ai/i.test(c.category || '') || String(c.slug || '').startsWith('ai'),
 }
 
-const CAT_LABELS = { capcut: '캡컷 PRO', premiere: '프리미어 PRO', ai: 'AI 콘텐츠 제작' }
+let CAT_LABELS = { capcut: '캡컷 PRO', premiere: '프리미어 PRO', ai: 'AI 콘텐츠 제작' }
+
+window.setHomepageCategoryLabels = function (categories) {
+  if (!Array.isArray(categories)) return
+  categories.forEach(cat => {
+    if (cat?.key && cat?.label) CAT_LABELS[cat.key] = cat.label
+  })
+}
 
 let allPublishedCourses = []
 let activeCategory = null

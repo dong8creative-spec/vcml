@@ -19,10 +19,12 @@ const API = {
     localStorage.setItem('tc_user', JSON.stringify(user))
     if (typeof renderHeaderAuth === 'function') renderHeaderAuth()
     if (typeof renderChromeAuth === 'function') renderChromeAuth()
+    if (typeof syncAdminFab === 'function') syncAdminFab().catch(() => {})
   },
   logout() {
     localStorage.removeItem('tc_token')
     localStorage.removeItem('tc_user')
+    if (typeof syncAdminFab === 'function') syncAdminFab().catch(() => {})
     location.href = '/'
   },
 
@@ -84,6 +86,12 @@ function toast(msg, type = 'info') {
 window.toast = toast
 window.comingSoon = comingSoon
 
+;(function () {
+  const s = document.createElement('script')
+  s.src = '/js/admin-fab.js?v=1'
+  s.defer = true
+  document.head.appendChild(s)
+})()
 ;(function () {
   const s = document.createElement('script')
   s.src = '/js/live-reminder.js?v=7'

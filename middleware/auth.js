@@ -16,12 +16,37 @@ function authMiddleware(req, res, next) {
   }
 }
 
-function adminMiddleware(req, res, next) {
-  authMiddleware(req, res, () => {
-    if (!isAllowedAdmin(req.user)) {
-      return res.status(403).json({ error: '관리자 접근 권한이 없습니다.' })
-    }
+const jwt = require('jsonwebtoken')
+const { isAllowedAdmin } = require('../utils/adminAccess')
+
+function authMiddleware(req, res, next) {
+  const header = req.headers.authorization
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ error: '로그인이 필요합니다.' })
+  }
+  try {
+    const token = header.slice(7)
+    req.user = jwt.verify(token, process.env.JWT_SECRET)
     next()
+  } catch (e) {
+    console.error('JWT 검증 오류:', e.message)
+    res.status(401).json({ error: '세션이 만료되었습니다.' })
+  }
+}
+
+function adminMiddleware(req, res, next) {
+  authMiddleware(req, res, async () => {
+    try {
+      const db = require('../db/schema')
+      const user = await db.findUserById(req.user.id)
+      if (!isAllowedAdmin(user)) {
+        return res.status(403).json({ error: '관리자 접근 권한이 없습니다.' })
+      }
+      next()
+    } catch (e) {
+      console.error('adminMiddleware:', e.message)
+      res.status(500).json({ error: '관리자 권한 확인 중 오류가 발생했습니다.' })
+    }
   })
 }
 

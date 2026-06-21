@@ -603,6 +603,7 @@ function maskPublicName(name) {
 
 const DEFAULT_HOMEPAGE_LAYOUT = {
   sections: {
+    hero: true,
     categories: true,
     instructors: true,
     all_courses: true,
@@ -620,12 +621,64 @@ const DEFAULT_HOMEPAGE_LAYOUT = {
     editors: true,
     projects: true,
   },
+  copy: {
+    all_courses: { title: '전체 강의' },
+    free_courses: { title: '무료강의', subtitle: '무료지만 기본기를 탄탄하게!', more_label: '전부보기' },
+    new_courses: { title: '최신 강의', subtitle: '새롭게 업데이트된 강의', more_label: '전부보기' },
+    reviews: { title: '실시간 후기', subtitle: '실제 회원 후기를 실시간으로 확인하세요' },
+    purchase_ticker: { label: '⚡ 구매현황', live_text: 'LIVE' },
+  },
+  categories: [
+    { key: 'capcut', label: '캡컷 PRO', style: 'capcut', image: null },
+    { key: 'premiere', label: '프리미어 PRO', style: 'premiere', image: null },
+    { key: 'ai', label: 'AI 콘텐츠 제작', style: 'ai', image: null },
+  ],
+  site: {
+    brand_name: '타닥클래스',
+  },
+}
+
+const DEFAULT_HOMEPAGE_COPY = DEFAULT_HOMEPAGE_LAYOUT.copy
+const DEFAULT_HOMEPAGE_CATEGORIES = DEFAULT_HOMEPAGE_LAYOUT.categories
+
+function normalizeHomepageCopy(copy = {}) {
+  const base = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_COPY))
+  for (const key of Object.keys(base)) {
+    if (copy[key]) {
+      for (const field of Object.keys(base[key])) {
+        if (copy[key][field] != null) {
+          base[key][field] = String(copy[key][field]).trim().slice(0, field === 'subtitle' ? 200 : 80)
+        }
+      }
+    }
+  }
+  return base
+}
+
+function normalizeCategoryTile(item, fallback) {
+  const key = String(item?.key || fallback?.key || '').trim().slice(0, 20)
+  return {
+    key,
+    label: String(item?.label ?? fallback?.label ?? '').trim().slice(0, 60),
+    style: String(item?.style ?? fallback?.style ?? key).trim().slice(0, 20),
+    image: item?.image !== undefined ? (item.image || null) : (fallback?.image || null),
+  }
+}
+
+function normalizeHomepageCategories(items) {
+  return DEFAULT_HOMEPAGE_CATEGORIES.map(def => {
+    const found = Array.isArray(items) ? items.find(c => c.key === def.key) : null
+    return normalizeCategoryTile(found || def, def)
+  })
 }
 
 function normalizeHomepageLayout(data = {}) {
   const layout = {
     sections: { ...DEFAULT_HOMEPAGE_LAYOUT.sections },
     nav: { ...DEFAULT_HOMEPAGE_LAYOUT.nav },
+    copy: normalizeHomepageCopy(data.copy || {}),
+    categories: normalizeHomepageCategories(data.categories),
+    site: { ...DEFAULT_HOMEPAGE_LAYOUT.site },
   }
   if (data.sections) {
     for (const key of Object.keys(layout.sections)) {
@@ -636,6 +689,11 @@ function normalizeHomepageLayout(data = {}) {
     for (const key of Object.keys(layout.nav)) {
       if (data.nav[key] !== undefined) layout.nav[key] = !!data.nav[key]
     }
+  }
+  if (data.copy) layout.copy = normalizeHomepageCopy({ ...layout.copy, ...data.copy })
+  if (data.categories) layout.categories = normalizeHomepageCategories(data.categories)
+  if (data.site?.brand_name != null) {
+    layout.site.brand_name = String(data.site.brand_name).trim().slice(0, 40) || layout.site.brand_name
   }
   return layout
 }
@@ -717,6 +775,17 @@ const DEFAULT_HERO_CONFIG = {
   subtitle: '편집·모션·촬영·색보정 — 유튜브부터 방송까지\n현장에서 실제로 쓰는 방식을 알려드립니다.',
   primary_btn: { label: '전체 강의 보기', href: '#all' },
   secondary_btn: { label: '무료 맛보기', href: '/course.html?slug=capcut-beginner-free', show_icon: true },
+  image: null,
+  image_alt: '',
+}
+
+const MAX_HERO_IMAGE_LEN = 480000
+
+function isValidHeroImage(value) {
+  if (!value) return true
+  if (typeof value !== 'string') return false
+  if (value.length > MAX_HERO_IMAGE_LEN) return false
+  return /^https?:\/\/.+/i.test(value) || /^data:image\/(jpeg|jpg|png|webp);base64,/.test(value)
 }
 
 const DEFAULT_INSTRUCTORS_INTRO = {
@@ -743,6 +812,13 @@ function normalizeHeroConfig(data = {}) {
       href: String(data.secondary_btn.href || base.secondary_btn.href).trim().slice(0, 300),
       show_icon: data.secondary_btn.show_icon !== false,
     }
+  }
+  if (data.image !== undefined) {
+    const img = data.image === null || data.image === '' ? null : String(data.image)
+    base.image = img && isValidHeroImage(img) ? img : null
+  }
+  if (data.image_alt != null) {
+    base.image_alt = String(data.image_alt).trim().slice(0, 120)
   }
   return base
 }
@@ -1191,6 +1267,71 @@ const db = {
     }
     const ref = await fs.collection('platform_reviews').add({ seed_key: seedKey, created_at: now(), is_public: 1, ...data })
     return ref.id
+  },
+
+  async getAllPlatformReviews() {
+    const snap = await fs.collection('platform_reviews').get()
+    return snapToArr(snap).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+  },
+
+  async getPlatformReviewById(id) {
+    const doc = await fs.collection('platform_reviews').doc(id).get()
+    return docToObj(doc)
+  },
+
+  normalizePlatformReviewInput(data = {}, { partial = false } = {}) {
+    const types = ['student', 'client', 'editor']
+    const payload = {}
+    if (!partial || data.review_type !== undefined) {
+      payload.review_type = types.includes(data.review_type) ? data.review_type : 'student'
+    }
+    if (!partial || data.author_name !== undefined) {
+      payload.author_name = String(data.author_name || '').trim().slice(0, 40)
+    }
+    if (!partial || data.author_initial !== undefined) {
+      const name = data.author_name !== undefined ? data.author_name : ''
+      payload.author_initial = String(data.author_initial || (name || '?')[0]).trim().slice(0, 2)
+    }
+    if (!partial || data.content !== undefined) {
+      payload.content = String(data.content || '').trim().slice(0, 500)
+    }
+    if (!partial || data.rating !== undefined) {
+      payload.rating = Math.min(5, Math.max(1, parseInt(data.rating, 10) || 5))
+    }
+    if (!partial || data.context_label !== undefined) {
+      payload.context_label = String(data.context_label || '').trim().slice(0, 80)
+    }
+    if (!partial || data.is_public !== undefined) {
+      payload.is_public = data.is_public === false || data.is_public === 0 ? 0 : 1
+    }
+    return payload
+  },
+
+  async createPlatformReview(data) {
+    const payload = db.normalizePlatformReviewInput(data)
+    if (!payload.content) throw new Error('후기 내용은 필수입니다.')
+    if (!payload.author_name) throw new Error('작성자 이름은 필수입니다.')
+    if (!payload.author_initial) payload.author_initial = payload.author_name[0]
+    payload.created_at = now()
+    payload.updated_at = now()
+    const ref = await fs.collection('platform_reviews').add(payload)
+    return { id: ref.id, ...payload }
+  },
+
+  async updatePlatformReview(id, data) {
+    const existing = await db.getPlatformReviewById(id)
+    if (!existing) return null
+    const payload = db.normalizePlatformReviewInput({ ...existing, ...data }, { partial: true })
+    if (payload.author_name && !payload.author_initial && data.author_initial === undefined) {
+      payload.author_initial = payload.author_name[0]
+    }
+    payload.updated_at = now()
+    await fs.collection('platform_reviews').doc(id).update(payload)
+    return db.getPlatformReviewById(id)
+  },
+
+  async deletePlatformReview(id) {
+    await fs.collection('platform_reviews').doc(id).delete()
   },
 
   // anticipation_reviews (강의별 기대평)
@@ -2448,11 +2589,14 @@ const db = {
     return { ...normalizeHomepageLayout(data), updated_at: data.updated_at || null }
   },
 
-  async updateHomepageLayout({ sections, nav } = {}) {
+  async updateHomepageLayout({ sections, nav, copy, categories, site } = {}) {
     const current = await db.getHomepageLayout()
     const next = normalizeHomepageLayout({
       sections: sections ? { ...current.sections, ...sections } : current.sections,
       nav: nav ? { ...current.nav, ...nav } : current.nav,
+      copy: copy ? { ...current.copy, ...copy } : current.copy,
+      categories: categories !== undefined ? categories : current.categories,
+      site: site ? { ...current.site, ...site } : current.site,
     })
     await fs.collection('site_settings').doc('homepage').set({ ...next, updated_at: now() })
     return db.getHomepageLayout()
@@ -2566,6 +2710,8 @@ module.exports.CLIENT_PROJECT_COUPON_MIN_AMOUNT = CLIENT_PROJECT_COUPON_MIN_AMOU
 module.exports.getTotalMailCountFromConfig = getTotalMailCountFromConfig
 module.exports.DEFAULT_EDITOR_PROGRAM_CONFIG = DEFAULT_EDITOR_PROGRAM_CONFIG
 module.exports.DEFAULT_HOMEPAGE_LAYOUT = DEFAULT_HOMEPAGE_LAYOUT
+module.exports.DEFAULT_HOMEPAGE_COPY = DEFAULT_HOMEPAGE_COPY
+module.exports.DEFAULT_HOMEPAGE_CATEGORIES = DEFAULT_HOMEPAGE_CATEGORIES
 module.exports.DEFAULT_FOOTER_CONFIG = DEFAULT_FOOTER_CONFIG
 module.exports.DEFAULT_HERO_CONFIG = DEFAULT_HERO_CONFIG
 module.exports.DEFAULT_INSTRUCTORS_INTRO = DEFAULT_INSTRUCTORS_INTRO

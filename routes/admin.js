@@ -64,11 +64,14 @@ router.patch('/courses/:id', async (req, res) => {
     'title', 'description', 'category', 'price', 'sale_price', 'is_published',
     'course_type', 'live_schedule', 'live_starts_at', 'meet_code', 'live_status',
     'live_curriculum_text', 'live_curriculum_image',
-    'badge', 'thumbnail_icon', 'thumb_style', 'sort_order', 'is_offline',
+    'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'sort_order', 'is_offline',
   ]
   const update = {}
   for (const key of allowed) {
     if (req.body[key] !== undefined) update[key] = req.body[key]
+  }
+  if (update.thumbnail_url !== undefined && update.thumbnail_url !== null && update.thumbnail_url !== '' && !isValidImage(update.thumbnail_url)) {
+    return res.status(400).json({ error: '썸네일은 URL 또는 JPG/PNG/WebP(base64)만 사용할 수 있습니다.' })
   }
   if (Object.keys(update).length === 0) return res.status(400).json({ error: '변경할 항목이 없습니다.' })
   update.updated_at = new Date().toISOString()
@@ -167,15 +170,57 @@ router.get('/homepage-layout', async (req, res) => {
 })
 
 router.patch('/homepage-layout', async (req, res) => {
-  const { sections, nav } = req.body
+  const { sections, nav, copy, categories, site } = req.body
   if (sections !== undefined && (typeof sections !== 'object' || Array.isArray(sections))) {
     return res.status(400).json({ error: 'sections 형식이 올바르지 않습니다.' })
   }
   if (nav !== undefined && (typeof nav !== 'object' || Array.isArray(nav))) {
     return res.status(400).json({ error: 'nav 형식이 올바르지 않습니다.' })
   }
-  const layout = await db.updateHomepageLayout({ sections, nav })
+  if (copy !== undefined && (typeof copy !== 'object' || Array.isArray(copy))) {
+    return res.status(400).json({ error: 'copy 형식이 올바르지 않습니다.' })
+  }
+  if (categories !== undefined) {
+    if (!Array.isArray(categories)) return res.status(400).json({ error: 'categories는 배열이어야 합니다.' })
+    for (const cat of categories) {
+      if (cat?.image && !isValidImage(cat.image)) {
+        return res.status(400).json({ error: '카테고리 이미지는 URL 또는 JPG/PNG/WebP(base64)만 사용할 수 있습니다.' })
+      }
+    }
+  }
+  if (site !== undefined && (typeof site !== 'object' || Array.isArray(site))) {
+    return res.status(400).json({ error: 'site 형식이 올바르지 않습니다.' })
+  }
+  const layout = await db.updateHomepageLayout({ sections, nav, copy, categories, site })
   res.json({ success: true, ...layout })
+})
+
+router.get('/platform-reviews', async (req, res) => {
+  res.json(await db.getAllPlatformReviews())
+})
+
+router.post('/platform-reviews', async (req, res) => {
+  try {
+    const review = await db.createPlatformReview(req.body)
+    res.json({ success: true, review })
+  } catch (e) {
+    res.status(400).json({ error: e.message })
+  }
+})
+
+router.patch('/platform-reviews/:id', async (req, res) => {
+  try {
+    const review = await db.updatePlatformReview(req.params.id, req.body)
+    if (!review) return res.status(404).json({ error: '후기를 찾을 수 없습니다.' })
+    res.json({ success: true, review })
+  } catch (e) {
+    res.status(400).json({ error: e.message })
+  }
+})
+
+router.delete('/platform-reviews/:id', async (req, res) => {
+  await db.deletePlatformReview(req.params.id)
+  res.json({ success: true })
 })
 
 router.get('/footer', async (req, res) => {
@@ -192,6 +237,10 @@ router.get('/hero', async (req, res) => {
 })
 
 router.patch('/hero', async (req, res) => {
+  const { image } = req.body
+  if (image !== null && image !== undefined && image !== '' && !isValidImage(image)) {
+    return res.status(400).json({ error: '히어로 이미지는 URL 또는 JPG/PNG/WebP(base64)만 사용할 수 있습니다.' })
+  }
   const hero = await db.updateHeroConfig(req.body)
   res.json({ success: true, ...hero })
 })

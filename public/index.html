@@ -12,8 +12,8 @@
 <div data-site-header></div>
 
 <!-- HERO -->
-<section class="hero">
-  <div class="hero-inner hero-inner--solo">
+<section class="hero" data-home-section="hero">
+  <div class="hero-inner hero-inner--solo" id="hero-inner">
     <div class="hero-text" id="hero-content">
       <div class="hero-badge" id="hero-badge"><i class="ti ti-star-filled"></i> 실무 중심 영상 강의</div>
       <h1 id="hero-title">현업 20년 전문가에게 배우는<br><em id="hero-title-em">영상 제작 실전 강의</em></h1>
@@ -22,6 +22,9 @@
         <a href="#all" class="btn-hero-primary" id="hero-primary-btn">전체 강의 보기</a>
         <a href="#all" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-message-heart"></i> 강의 기대평 쓰고 20% 쿠폰</a>
       </div>
+    </div>
+    <div class="hero-media" id="hero-media" hidden>
+      <img id="hero-image" alt="" />
     </div>
   </div>
 </section>
@@ -66,7 +69,7 @@
   <div class="container">
     <div class="shelf-header">
       <div>
-        <h2 class="shelf-title">전체 강의</h2>
+        <h2 class="shelf-title" id="home-all-title">전체 강의</h2>
         <p class="shelf-sub" id="course-grid-sub">불러오는 중...</p>
       </div>
     </div>
@@ -81,10 +84,10 @@
   <div class="container">
     <div class="shelf-header shelf-header--left">
       <div>
-        <h2 class="shelf-title">무료강의</h2>
-        <p class="shelf-sub">무료지만 기본기를 탄탄하게!</p>
+        <h2 class="shelf-title" id="home-free-title">무료강의</h2>
+        <p class="shelf-sub" id="home-free-sub">무료지만 기본기를 탄탄하게!</p>
       </div>
-      <a href="#" class="shelf-more" onclick="shelfShowAll('free');return false">전부보기 <i class="ti ti-chevron-right"></i></a>
+      <a href="#" class="shelf-more" onclick="shelfShowAll('free');return false"><span id="home-free-more">전부보기</span> <i class="ti ti-chevron-right"></i></a>
     </div>
     <div class="shelf-wrap shelf-wrap--free">
       <button class="shelf-arrow left" onclick="scroll_shelf('free',-1)"><i class="ti ti-chevron-left"></i></button>
@@ -98,10 +101,10 @@
   <div class="container">
     <div class="shelf-header">
       <div>
-        <h2 class="shelf-title">최신 강의</h2>
-        <p class="shelf-sub">새롭게 업데이트된 강의</p>
+        <h2 class="shelf-title" id="home-new-title">최신 강의</h2>
+        <p class="shelf-sub" id="home-new-sub">새롭게 업데이트된 강의</p>
       </div>
-      <a href="#" class="shelf-more" onclick="shelfShowAll(null);return false">전부보기 <i class="ti ti-chevron-right"></i></a>
+      <a href="#" class="shelf-more" onclick="shelfShowAll(null);return false"><span id="home-new-more">전부보기</span> <i class="ti ti-chevron-right"></i></a>
     </div>
     <div class="shelf-wrap">
       <button class="shelf-arrow left" onclick="scroll_shelf('new',-1)"><i class="ti ti-chevron-left"></i></button>
@@ -116,7 +119,7 @@
   <div class="container">
     <div class="shelf-header">
       <div>
-        <h2 class="shelf-title">실시간 후기</h2>
+        <h2 class="shelf-title" id="home-reviews-title">실시간 후기</h2>
         <p class="shelf-sub" id="review-sub">실제 회원 후기를 실시간으로 확인하세요</p>
       </div>
     </div>
@@ -128,7 +131,7 @@
 
 <!-- 실시간 구매현황 -->
 <section class="ticker-section" id="ticker-section" data-home-section="purchase_ticker" style="display:none">
-  <div class="ticker-label">⚡ 구매현황 <span class="live-text">LIVE</span></div>
+  <div class="ticker-label"><span id="ticker-label-text">⚡ 구매현황</span> <span class="live-text" id="ticker-live-text">LIVE</span></div>
   <div class="ticker-track">
     <div class="ticker-inner" id="ticker-inner"></div>
   </div>
@@ -153,11 +156,15 @@ function courseCard(c) {
     ? '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating))
     : ''
   const liveStatusMap = { upcoming: '신청 가능', live: '진행 중', ended: '종료' }
+  const thumbImg = c.thumbnail_url || c.thumbnail_image
+  const thumbInner = thumbImg
+    ? `<img src="${thumbImg.replace(/"/g, '&quot;')}" alt="" />`
+    : `<i class="ti ${c.thumbnail_icon || 'ti-video'}"></i>`
   return `
   <a href="/course.html?slug=${c.slug}" class="ccard">
     <div class="ccard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
       ${isLive ? googleMeetBadgeHtml('badge-live') : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
-      <i class="ti ${c.thumbnail_icon || 'ti-video'}"></i>
+      ${thumbInner}
     </div>
     <div class="ccard-body">
       <div class="ccard-cat">${c.category || ''}</div>
@@ -285,6 +292,24 @@ async function loadHero() {
       secondary.href = h.secondary_btn.href || '#'
       secondary.innerHTML = `${h.secondary_btn.show_icon !== false ? '<i class="ti ti-player-play-filled"></i> ' : ''}${escHtml(h.secondary_btn.label)}`
     }
+    const heroInner = document.getElementById('hero-inner')
+    const heroMedia = document.getElementById('hero-media')
+    const heroImg = document.getElementById('hero-image')
+    if (heroInner && heroMedia && heroImg) {
+      if (h.image) {
+        heroImg.src = h.image
+        heroImg.alt = h.image_alt || ''
+        heroMedia.hidden = false
+        heroInner.classList.remove('hero-inner--solo')
+        heroInner.classList.add('hero-inner--with-media')
+      } else {
+        heroImg.removeAttribute('src')
+        heroImg.alt = ''
+        heroMedia.hidden = true
+        heroInner.classList.add('hero-inner--solo')
+        heroInner.classList.remove('hero-inner--with-media')
+      }
+    }
   } catch (e) {
     console.error(e)
   }
@@ -399,7 +424,8 @@ async function loadLiveReviews() {
   try {
     const data = await API.get('/reviews/live')
     const mixed = interleaveReviews(data.reviews || [])
-    if (sub) sub.textContent = reviewSubtitle(data.visible_types || [], API.isLoggedIn())
+    const customSub = (typeof getHomepageLayout === 'function' && getHomepageLayout()?.copy?.reviews?.subtitle) || ''
+    if (sub) sub.textContent = customSub || reviewSubtitle(data.visible_types || [], API.isLoggedIn())
     if (!mixed.length) {
       grid.innerHTML = '<p class="empty">표시할 후기가 없습니다.</p>'
       return
