@@ -454,6 +454,34 @@ body.login-body { background: var(--bg-soft); min-height: 100vh; display: flex; 
   .signup-disclosure-table th, .signup-disclosure-table td { font-size: 11px; padding: 5px 6px; }
 }
 
+.signup-method-hint {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.signup-method-row { display: flex; flex-direction: column; gap: var(--card-gap); margin-bottom: 0; }
+.signup-method-card {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start;
+  width: 100%; min-width: 0; border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+  background: #fff; box-sizing: border-box;
+}
+.signup-method-card input { position: absolute; opacity: 0; pointer-events: none; }
+.signup-method-card:has(input:checked) { border-color: var(--text-primary); background: var(--bg-soft); }
+.signup-method-card.is-disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.signup-method-title { font-size: 21.6px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; line-height: 1.35; }
+.signup-method-desc { font-size: 16.8px; color: var(--text-muted); line-height: 1.5; word-break: keep-all; }
+.signup-google-note {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  text-align: center;
+}
+#su-panel-google:not([hidden]) { display: flex; flex-direction: column; gap: 16px; }
+#su-panel-email:not([hidden]) { display: flex; flex-direction: column; gap: var(--card-gap); }
+
 .member-type-note {
   font-size: 12px;
   color: var(--text-hint);
