@@ -348,8 +348,8 @@ body.login-body { background: var(--bg-soft); min-height: 100vh; display: flex; 
   font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
-  white-space: nowrap;
-  overflow: hidden;
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .signup-disclosure {

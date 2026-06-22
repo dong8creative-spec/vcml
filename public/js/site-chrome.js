@@ -23,7 +23,7 @@
       { title: '강의', links: [
         { label: '전체 강의', href: '/#all' },
         { label: '캡컷 PRO', href: '/?cat=capcut#all' },
-        { label: '프리미어 PRO', href: '/?cat=premiere#all' },
+        { label: '프리미어 프로', href: '/?cat=premiere#all' },
         { label: 'AI 콘텐츠 제작', href: '/?cat=ai#all' },
       ]},
       { title: '고객지원', links: [

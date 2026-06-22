@@ -11,7 +11,7 @@
   </script>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>로그인 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css?v=14" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css?v=15" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body class="login-body">
@@ -19,8 +19,10 @@
   <div class="login-body-content">
   <div class="login-card">
     <header class="login-card-header">
-      <h1 class="login-card-title" id="login-card-title">로그인</h1>
-      <p class="login-card-sub" id="login-card-sub">이메일·비밀번호 또는 연동한 Google·카카오 계정으로 로그인합니다</p>
+      <h1 class="login-card-title" id="login-header-login">로그인</h1>
+      <h1 class="login-card-title" id="login-header-signup" hidden>회원가입</h1>
+      <p class="login-card-sub" id="login-sub-login">이메일·비밀번호 또는 연동한 Google·카카오 계정으로 로그인합니다</p>
+      <p class="login-card-sub" id="login-sub-signup" hidden>가입 유형 → 가입 방법 → 약관 동의 → 가입 완료 순서로 진행됩니다</p>
     </header>
 
     <nav class="auth-mode-switch" role="tablist" aria-label="로그인 또는 회원가입">
@@ -465,7 +467,6 @@
         updateTypeLabels()
       }
       setSignupStepIndicators(step)
-      scheduleFitOneLineTexts()
     }
 
     function showAuthMode(mode) {
@@ -473,8 +474,10 @@
       const login = document.getElementById('login-flow')
       const loginTab = document.getElementById('btn-auth-mode-login')
       const signupTab = document.getElementById('btn-auth-mode-signup')
-      const titleEl = document.getElementById('login-card-title')
-      const subEl = document.getElementById('login-card-sub')
+      const headerLogin = document.getElementById('login-header-login')
+      const headerSignup = document.getElementById('login-header-signup')
+      const subLogin = document.getElementById('login-sub-login')
+      const subSignup = document.getElementById('login-sub-signup')
       const betaNotice = document.getElementById('beta-notice')
       const isSignup = mode !== 'login'
       if (signup) signup.hidden = !isSignup
@@ -487,14 +490,12 @@
         signupTab.classList.toggle('is-active', isSignup)
         signupTab.setAttribute('aria-selected', String(isSignup))
       }
+      if (headerLogin) headerLogin.hidden = isSignup
+      if (headerSignup) headerSignup.hidden = !isSignup
+      if (subLogin) subLogin.hidden = isSignup
+      if (subSignup) subSignup.hidden = !isSignup
       if (betaNotice && betaNotice.dataset.visible === '1') {
         betaNotice.hidden = !isSignup
-      }
-      if (titleEl) titleEl.textContent = isSignup ? '회원가입' : '로그인'
-      if (subEl) {
-        subEl.textContent = isSignup
-          ? '가입 유형 → 가입 방법 → 약관 동의 → 가입 완료 순서로 진행됩니다'
-          : '이메일·비밀번호 또는 연동한 Google·카카오 계정으로 로그인합니다'
       }
       document.title = (isSignup ? '회원가입' : '로그인') + ' — 타닥클래스'
       try {
@@ -504,7 +505,6 @@
         history.replaceState(null, '', url.pathname + url.search + url.hash)
       } catch (_) {}
       if (isSignup) goSignupStep(1)
-      scheduleFitOneLineTexts()
     }
 
     document.getElementById('btn-auth-mode-login')?.addEventListener('click', () => showAuthMode('login'))
@@ -763,7 +763,6 @@
       }
     }
     initAuthProviders()
-    scheduleFitOneLineTexts()
 
     document.getElementById('email-toggle')?.addEventListener('click', () => {
       const panel = document.getElementById('email-panel')

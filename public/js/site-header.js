@@ -16,7 +16,7 @@
       <a href="/#all" data-gnb-all data-nav-key="all">전체강의</a>
       <a href="/instructors.html" data-nav-key="instructors">강사 소개</a>
       <a href="/?cat=capcut#all" data-gnb-cat="capcut" data-nav-key="capcut">캡컷 PRO</a>
-      <a href="/?cat=premiere#all" data-gnb-cat="premiere" data-nav-key="premiere">프리미어 PRO</a>
+      <a href="/?cat=premiere#all" data-gnb-cat="premiere" data-nav-key="premiere">프리미어 프로</a>
       <a href="/?cat=ai#all" data-gnb-cat="ai" data-nav-key="ai">AI 콘텐츠 제작</a>
       <a href="/editors.html" data-nav-key="editors">에디터즈</a>
       <a href="/projects.html" data-nav-key="projects">클라이언츠</a>

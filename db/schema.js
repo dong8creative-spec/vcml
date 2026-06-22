@@ -792,7 +792,7 @@ const DEFAULT_FOOTER_CONFIG = {
       links: [
         { label: '전체 강의', href: '/#all' },
         { label: '캡컷 PRO', href: '/?cat=capcut#all' },
-        { label: '프리미어 PRO', href: '/?cat=premiere#all' },
+        { label: '프리미어 프로', href: '/?cat=premiere#all' },
         { label: 'AI 콘텐츠 제작', href: '/?cat=ai#all' },
       ],
     },
@@ -861,7 +861,7 @@ function normalizeFooterConfig(data = {}) {
 
 const DEFAULT_HERO_CONFIG = {
   badge_text: '실무 중심 영상 강의',
-  title: '현업 20년 전문가에게 배우는',
+  title: '현업 15년 전문가에게 배우는',
   title_emphasis: '영상 제작 실전 강의',
   subtitle: '편집·모션·촬영·색보정 — 유튜브부터 방송까지\n현장에서 실제로 쓰는 방식을 알려드립니다.',
   primary_btn: { label: '전체 강의 보기', href: '#all', action: 'all_courses' },

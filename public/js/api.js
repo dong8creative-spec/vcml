@@ -263,6 +263,7 @@ window.comingSoon = comingSoon
 
 /** 한 줄 텍스트 — 컨테이너 너비에 맞게 글자 크기 자동 축소 */
 function fitOneLineTexts(root = document) {
+  if (root.body?.classList?.contains('login-body') || document.body?.classList?.contains('login-body')) return
   root.querySelectorAll('.login-card-notice-desc, .member-type-benefit').forEach(el => {
     const max = el.classList.contains('member-type-benefit') ? 12 : 13
     const min = 7.5

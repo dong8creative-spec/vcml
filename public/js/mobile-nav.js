@@ -14,7 +14,7 @@
     { section: '강의', items: [
       { href: '/#all', label: '전체강의' },
       { href: '/?cat=capcut#all', label: '캡컷 PRO' },
-      { href: '/?cat=premiere#all', label: '프리미어 PRO' },
+      { href: '/?cat=premiere#all', label: '프리미어 프로' },
       { href: '/?cat=ai#all', label: 'AI 콘텐츠 제작' },
     ]},
     { section: '서비스', items: [

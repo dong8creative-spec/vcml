@@ -7,7 +7,7 @@ const CAT_MATCH = {
   ai:       c => /ai/i.test(c.category || '') || String(c.slug || '').startsWith('ai'),
 }
 
-let CAT_LABELS = { capcut: '캡컷 PRO', premiere: '프리미어 PRO', ai: 'AI 콘텐츠 제작' }
+let CAT_LABELS = { capcut: '캡컷 PRO', premiere: '프리미어 프로', ai: 'AI 콘텐츠 제작' }
 
 window.setHomepageCategoryLabels = function (categories) {
   if (!Array.isArray(categories)) return
