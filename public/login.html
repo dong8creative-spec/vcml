@@ -45,20 +45,21 @@
       </div>
 
       <div id="gs-step-1" class="auth-card-step">
-        <div class="member-type-label">가입 유형 <span class="hint">(가입 후 변경 불가)</span></div>
+        <div class="member-type-label">어떻게 이용하실 건가요?</div>
         <div class="member-type-row">
           <label class="member-type-card">
             <input type="radio" name="google-member-type" value="student" checked />
-            <div class="member-type-title">수강생</div>
-            <div class="member-type-desc">온라인 강의 수강·학습</div>
+            <div class="member-type-title">강의 수강</div>
+            <div class="member-type-desc">온라인 강의를 듣고 싶어요</div>
           </label>
           <label class="member-type-card">
             <input type="radio" name="google-member-type" value="client" />
-            <div class="member-type-title">의뢰인</div>
-            <div class="member-type-desc">클라이언츠 · 매칭</div>
-            <div class="member-type-benefit">20만원↑ 유료강의 수강 시 1만원 쿠폰 10장(건당 의뢰비 5만원 이상 시 사용가능)</div>
+            <div class="member-type-title">영상 편집 의뢰</div>
+            <div class="member-type-desc">영상 편집 작업을 맡기고 싶어요</div>
+            <div class="member-type-benefit">유료강의(20만원↑) 수강 시 의뢰 할인쿠폰 10장 추가 제공</div>
           </label>
         </div>
+        <p class="member-type-note">※ 가입 후 유형 변경을 원하시면 고객센터로 문의해 주세요.</p>
         <button type="button" class="btn-submit" onclick="goGoogleSignupStep(2)">다음</button>
       </div>
 
@@ -264,7 +265,7 @@
       if (err) toast(decodeURIComponent(err), 'error')
     })
 
-    const MEMBER_TYPE_LABELS = { student: '수강생', client: '의뢰인' }
+    const MEMBER_TYPE_LABELS = { student: '강의 수강(수강생)', client: '영상 편집 의뢰(의뢰인)' }
 
     function selectedGoogleMemberType() {
       return document.querySelector('input[name="google-member-type"]:checked')?.value || null

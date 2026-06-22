@@ -43,11 +43,16 @@
   <!-- 결제 모달 -->
   <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
     <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-beta-banner">
+        <i class="ti ti-info-circle"></i>
+        <span><strong>테스트 결제 기간입니다.</strong> 실제 결제는 이루어지지 않으며, 버튼을 누르면 즉시 수강 등록됩니다. 7일 이내 <a href="/refund.html" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">환불 신청</a>은 마이페이지에서 가능합니다.</span>
+      </div>
       <div class="modal-header">
         <div class="modal-title">수강 신청</div>
         <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
       </div>
       <div class="modal-course-info" id="modal-course-info"></div>
+      <div class="modal-coupon-info" id="modal-coupon-info"></div>
       <div class="modal-section-title">결제 수단 선택</div>
       <div class="pay-options">
         <label class="pay-option"><input type="radio" name="paymethod" value="카카오페이" checked /><span class="pay-label"><i class="ti ti-brand-kakao"></i> 카카오페이</span></label>
@@ -56,8 +61,7 @@
         <label class="pay-option"><input type="radio" name="paymethod" value="가상계좌" /><span class="pay-label"><i class="ti ti-building-bank"></i> 가상계좌</span></label>
       </div>
       <div class="modal-total" id="modal-total"></div>
-      <button class="btn-pay" id="btn-pay" onclick="submitOrder()">결제하기</button>
-      <p class="modal-notice">오픈 베타: 실제 PG 연동 전 · 결제 즉시 수강 등록 · 7일 이내 환불 가능</p>
+      <button class="btn-pay" id="btn-pay" onclick="submitOrder()">수강 신청 완료하기</button>
     </div>
   </div>
 
@@ -222,7 +226,8 @@
         if (!canEditAnticipation(c)) return ''
         return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal(true)"><i class="ti ti-pencil"></i> 기대평 수정</button>`
       }
-      return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal()"><i class="ti ti-message-heart"></i> 기대평 작성하고 쿠폰 받기</button>`
+      return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal()"><i class="ti ti-message-heart"></i> 기대평 작성하고 쿠폰 받기</button>
+        <p class="anticipation-flow-hint"><i class="ti ti-arrow-right"></i> 기대평 작성 → 할인 쿠폰 발급 → 결제 시 자동 적용</p>`
     }
 
     function wrapBuyActions(html) {
@@ -539,6 +544,7 @@
         return
       }
       document.getElementById('modal-course-info').innerHTML = `<div class="mci-title">${courseData.title}</div>`
+      document.getElementById('modal-coupon-info').innerHTML = ''
       selectedCouponCode = null
       let total = Number(courseData.sale_price)
       document.getElementById('modal-total').innerHTML = `총 결제금액 <b>₩${total.toLocaleString()}</b>`
@@ -547,10 +553,12 @@
         const preview = await API.get('/orders/preview?course_id=' + courseData.id)
         total = preview.final_amount
         selectedCouponCode = preview.coupon_code || null
-        const discountHtml = preview.discount > 0
-          ? ` <span style="font-size:0.85em;color:var(--color-success,#22a055)">(-₩${preview.discount.toLocaleString()})</span>`
-          : ''
-        document.getElementById('modal-total').innerHTML = `총 결제금액 <b>₩${total.toLocaleString()}</b>${discountHtml}`
+        if (preview.discount > 0) {
+          const couponLabel = preview.is_stackable ? '기대평·후기 쿠폰 자동 적용' : '쿠폰 자동 적용'
+          document.getElementById('modal-coupon-info').innerHTML =
+            `<div class="modal-coupon-applied"><i class="ti ti-ticket"></i> ${couponLabel} <span class="modal-coupon-discount">-₩${preview.discount.toLocaleString()}</span></div>`
+        }
+        document.getElementById('modal-total').innerHTML = `총 결제금액 <b>₩${total.toLocaleString()}</b>`
       } catch (_) {}
     }
     function closeModal() { document.getElementById('modal-overlay').classList.add('hidden') }
@@ -563,13 +571,13 @@
         const payload = { course_id: courseData.id, method }
         if (selectedCouponCode) payload.coupon_code = selectedCouponCode
         const res = await API.post('/orders', payload)
-        let msg = '수강 신청이 완료되었습니다! 🎉'
+        let msg = '수강 신청이 완료되었습니다! 바로 강의를 시작합니다.'
         if (res.reward_coupon) {
-          msg += ` 의뢰인 혜택: 1만원 할인쿠폰 ${res.reward_coupon.count}장(총 ${res.reward_coupon.total_amount.toLocaleString()}원)이 발급되었습니다.`
+          msg += ` 의뢰인 혜택: 1만원 쿠폰 ${res.reward_coupon.count}장이 발급되었습니다. (마이페이지 > 내 쿠폰에서 확인)`
         }
         toast(msg, 'success')
         closeModal()
-        setTimeout(() => location.href = '/player.html?slug=' + slug + '&chapter=first', 1200)
+        setTimeout(() => location.href = '/player.html?slug=' + slug + '&chapter=first', 1500)
       } catch(err) {
         toast(err.message, 'error')
         btn.disabled = false; btn.textContent = '결제하기'

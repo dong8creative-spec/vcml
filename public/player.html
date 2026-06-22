@@ -27,6 +27,12 @@
       <div class="spinner"></div>
     </main>
 
+    <!-- 모바일 커리큘럼 토글 버튼 -->
+    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" aria-expanded="false" aria-controls="player-sidebar">
+      <span><i class="ti ti-list"></i> 강의 목록</span>
+      <i class="ti ti-chevron-down"></i>
+    </button>
+
     <!-- 사이드 커리큘럼 -->
     <aside class="player-sidebar" id="player-sidebar">
       <div class="sidebar-course-title" id="sidebar-title">커리큘럼</div>
@@ -128,9 +134,25 @@
         </div>`).join('')
     }
 
+    function toggleSidebar() {
+      const sidebar = document.getElementById('player-sidebar')
+      const btn = document.getElementById('sidebar-toggle-btn')
+      const isOpen = sidebar.classList.toggle('is-open')
+      btn.classList.toggle('is-open', isOpen)
+      btn.setAttribute('aria-expanded', isOpen)
+    }
+
     async function loadChapter(id) {
       currentChapterId = id
       document.querySelectorAll('.chapter-item').forEach(el => el.classList.toggle('active', el.id === 'ch-item-'+id))
+      // 모바일에서 챕터 선택 후 사이드바 자동 닫기
+      if (window.innerWidth <= 768) {
+        const sidebar = document.getElementById('player-sidebar')
+        const btn = document.getElementById('sidebar-toggle-btn')
+        sidebar.classList.remove('is-open')
+        btn.classList.remove('is-open')
+        btn.setAttribute('aria-expanded', 'false')
+      }
 
       document.getElementById('player-main').innerHTML = '<div class="spinner"></div>'
       try {

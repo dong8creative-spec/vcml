@@ -88,3 +88,44 @@ a { text-decoration: none; color: inherit; }
 
 /* spinner on dark bg */
 .spinner { border-color: rgba(255,255,255,0.1); border-top-color: rgba(255,255,255,0.5); }
+
+/* ── 모바일 레이아웃 ── */
+@media (max-width: 768px) {
+  body { overflow: auto; }
+  .player-layout { flex-direction: column; overflow: visible; }
+  .player-main { overflow: visible; }
+
+  .player-sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 0.5px solid rgba(255,255,255,0.07);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .player-sidebar.is-open {
+    max-height: 420px;
+    overflow-y: auto;
+  }
+
+  .sidebar-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px 20px;
+    background: #161616;
+    border: none;
+    border-top: 0.5px solid rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.55);
+    font-size: 14px;
+    cursor: pointer;
+    gap: 8px;
+  }
+  .sidebar-toggle-btn i { font-size: 16px; transition: transform 0.3s; }
+  .sidebar-toggle-btn.is-open i.ti-chevron-down { transform: rotate(180deg); }
+}
+
+@media (min-width: 769px) {
+  .sidebar-toggle-btn { display: none; }
+}

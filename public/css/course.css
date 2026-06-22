@@ -636,3 +636,31 @@
   .course-body-side { width: 100%; }
   .anticipation-feed { max-height: none; }
 }
+
+/* ── 결제 모달 개선 ── */
+.modal-beta-banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 18px;
+  background: #fff8e1;
+  border-bottom: 1px solid #ffe082;
+  font-size: 13px; color: #5d4037; line-height: 1.55;
+  border-radius: 12px 12px 0 0;
+}
+.modal-beta-banner i { font-size: 16px; color: #f9a825; flex-shrink: 0; margin-top: 2px; }
+.modal-coupon-info { padding: 0 22px; }
+.modal-coupon-applied {
+  display: flex; align-items: center; gap: 7px;
+  padding: 10px 14px; margin-bottom: 4px;
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+  font-size: 14px; color: #166534;
+}
+.modal-coupon-applied i { font-size: 16px; }
+.modal-coupon-discount { margin-left: auto; font-weight: 700; color: #15803d; }
+
+/* ── 기대평 순서 안내 ── */
+.anticipation-flow-hint {
+  font-size: 12px; color: var(--text-hint);
+  text-align: center; margin-top: 6px;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.anticipation-flow-hint i { font-size: 10px; }

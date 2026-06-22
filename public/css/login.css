@@ -323,3 +323,10 @@ body.login-body { background: var(--bg-soft); min-height: 100vh; display: flex; 
   .login-card { padding: 22px 18px 20px; --card-section: 16px; }
   .signup-disclosure-table th, .signup-disclosure-table td { font-size: 11px; padding: 5px 6px; }
 }
+
+.member-type-note {
+  font-size: 12px;
+  color: var(--text-hint);
+  margin-top: 10px;
+  line-height: 1.5;
+}
