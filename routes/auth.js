@@ -303,8 +303,22 @@ router.get('/google/callback', async (req, res) => {
 })
 
 router.post('/complete-profile', authMiddleware, async (req, res) => {
-  const { name, email, phone, marketing_agreed, member_type } = req.body
-  if (!email) return res.status(400).json({ error: '이메일을 입력해주세요.' })
+  const { name, email, phone, address, marketing_agreed, member_type } = req.body
+  if (!name || String(name).trim().length < 2) {
+    return res.status(400).json({ error: '이름을 2자 이상 입력해주세요.' })
+  }
+  if (!email || !String(email).includes('@')) {
+    return res.status(400).json({ error: '이메일을 입력해주세요.' })
+  }
+  const phoneDigits = String(phone || '').replace(/\D/g, '')
+  if (!/^010\d{8}$/.test(phoneDigits)) {
+    return res.status(400).json({ error: '휴대폰 번호는 010으로 시작하는 11자리로 입력해주세요.' })
+  }
+  const normalizedPhone = `${phoneDigits.slice(0, 3)}-${phoneDigits.slice(3, 7)}-${phoneDigits.slice(7)}`
+  const normalizedAddress = String(address || '').trim()
+  if (normalizedAddress.length < 5) {
+    return res.status(400).json({ error: '주소를 5자 이상 입력해주세요.' })
+  }
   const current = await db.findUserById(req.user.id)
   if (!current?.member_type && !member_type) {
     return res.status(400).json({ error: '가입 유형(수강생/의뢰인)을 선택해주세요.' })
@@ -312,10 +326,18 @@ router.post('/complete-profile', authMiddleware, async (req, res) => {
   if (member_type && !['student', 'client'].includes(member_type)) {
     return res.status(400).json({ error: '올바른 가입 유형을 선택해주세요.' })
   }
-  const existing = await db.findUserByEmail(email)
+  const existing = await db.findUserByEmail(String(email).toLowerCase().trim())
   if (existing && existing.id !== req.user.id) return res.status(409).json({ error: '이미 사용 중인 이메일입니다.' })
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
-  const user = await db.completeProfile(req.user.id, { name, email, phone, marketing_agreed: !!marketing_agreed, member_type, ip })
+  const user = await db.completeProfile(req.user.id, {
+    name: String(name).trim(),
+    email: String(email).toLowerCase().trim(),
+    phone: normalizedPhone,
+    address: normalizedAddress,
+    marketing_agreed: !!marketing_agreed,
+    member_type,
+    ip,
+  })
   if (!user) return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' })
 
   let coupon = null

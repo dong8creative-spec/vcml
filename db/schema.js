@@ -635,6 +635,7 @@ function userPayload(user) {
     role: user.role,
     member_type: user.member_type || 'student',
     phone: user.phone || null,
+    address: user.address || null,
     bio: user.bio || '',
     profile_image: user.profile_image || null,
     social_links: Array.isArray(user.social_links) ? user.social_links : [],
@@ -1187,11 +1188,12 @@ const db = {
   async linkGoogleId(userId, googleId) {
     await fs.collection('users').doc(userId).update({ google_id: String(googleId), auth_provider: 'google' })
   },
-  async completeProfile(userId, { name, email, phone, marketing_agreed, member_type, ip }) {
+  async completeProfile(userId, { name, email, phone, address, marketing_agreed, member_type, ip }) {
     const update = { profile_complete: true }
     if (name) update.name = name
     if (email) update.email = email
     if (phone) update.phone = phone
+    if (address) update.address = String(address).trim().slice(0, 200)
     const existing = await db.findUserById(userId)
     if (member_type && !existing?.member_type) update.member_type = member_type
     if (marketing_agreed) {
@@ -1206,13 +1208,14 @@ const db = {
     await fs.collection('users').doc(userId).update({ marketing_agreed: 0 })
     await fs.collection('consent_logs').add({ user_id: userId, type: 'marketing_sms', agreed: 0, agreed_at: new Date().toISOString(), ip: ip || null })
   },
-  async updateUserProfile(userId, { name, bio, profile_image, social_links, phone }) {
+  async updateUserProfile(userId, { name, bio, profile_image, social_links, phone, address }) {
     const update = { profile_updated_at: now() }
     if (name !== undefined) update.name = String(name).trim()
     if (bio !== undefined) update.bio = String(bio).trim().slice(0, 500)
     if (profile_image !== undefined) update.profile_image = profile_image || null
     if (social_links !== undefined) update.social_links = social_links
     if (phone !== undefined) update.phone = phone ? String(phone).trim() : null
+    if (address !== undefined) update.address = address ? String(address).trim().slice(0, 200) : null
     await fs.collection('users').doc(userId).update(update)
     return db.findUserById(userId)
   },
