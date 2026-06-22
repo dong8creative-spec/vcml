@@ -22,6 +22,54 @@ body.login-body { background: var(--bg-soft); min-height: 100vh; display: flex; 
 .login-card-header { text-align: center; }
 .login-card-title { font-size: 26px; font-weight: 700; color: #111; line-height: 1.3; margin: 0; }
 .login-card-sub { font-size: 14px; color: #888; margin: 4px 0 0; line-height: 1.45; }
+.auth-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 5px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.auth-mode-btn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-hint);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.auth-mode-btn.is-active {
+  background: #fff;
+  color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+}
+.auth-mode-btn:hover:not(.is-active) { color: var(--text-secondary); }
+.auth-mode-btn:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+#signup-flow:not([hidden]),
+#login-flow:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+#login-flow form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+#login-flow .or-divider {
+  margin: 0;
+}
+#login-flow .btn-google + .btn-kakao {
+  margin-top: 0;
+}
 .login-card-main { display: flex; flex-direction: column; gap: var(--card-gap); }
 #google-signup-flow { display: flex; flex-direction: column; gap: var(--card-gap); }
 .login-card-footer {
@@ -32,6 +80,10 @@ body.login-body { background: var(--bg-soft); min-height: 100vh; display: flex; 
   flex-direction: column;
   gap: var(--card-gap);
   align-items: center;
+  text-align: center;
+}
+.login-card-footer:not(:has(:not([hidden]))) {
+  display: none;
 }
 .auth-card-step {
   display: flex;

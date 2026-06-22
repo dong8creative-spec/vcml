@@ -7,7 +7,7 @@
     // 회원가입/로그인은 단일 인증 페이지(login.html)로 통합되었습니다.
     (function () {
       var params = new URLSearchParams(location.search);
-      // 이전 카카오 오류 파라미터 등은 그대로 전달
+      if (!params.has('mode')) params.set('mode', 'signup');
       var qs = params.toString();
       location.replace('/login.html' + (qs ? '?' + qs : ''));
     })();

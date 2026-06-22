@@ -11,7 +11,7 @@
   </script>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>로그인 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css?v=10" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css?v=13" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body class="login-body">
@@ -19,9 +19,14 @@
   <div class="login-body-content">
   <div class="login-card">
     <header class="login-card-header">
-      <h1 class="login-card-title" id="login-card-title">회원가입</h1>
-      <p class="login-card-sub" id="login-card-sub">가입 유형 선택 → 약관 동의 → 회원정보 입력 순서로 진행됩니다</p>
+      <h1 class="login-card-title" id="login-card-title">로그인</h1>
+      <p class="login-card-sub" id="login-card-sub">이메일·비밀번호 또는 연동한 Google·카카오 계정으로 로그인합니다</p>
     </header>
+
+    <nav class="auth-mode-switch" role="tablist" aria-label="로그인 또는 회원가입">
+      <button type="button" id="btn-auth-mode-login" class="auth-mode-btn is-active" role="tab" aria-selected="true" aria-controls="login-flow">로그인</button>
+      <button type="button" id="btn-auth-mode-signup" class="auth-mode-btn" role="tab" aria-selected="false" aria-controls="signup-flow">회원가입</button>
+    </nav>
 
     <div id="inapp-notice" class="login-card-notice login-card-notice--warn" hidden>
       <strong>앱 내 브라우저에서는 Google 로그인이 되지 않습니다</strong>
@@ -36,7 +41,7 @@
 
     <div class="login-card-main">
     <!-- 회원가입 흐름: 가입 유형 → 약관 동의 → 가입 방법(Google/카카오) -->
-    <div id="signup-flow">
+    <div id="signup-flow" hidden>
       <div class="step-indicator">
         <div class="step-item active" id="su-si-1"><span class="step-num">1</span><span class="step-label">가입 유형</span></div>
         <div class="step-line"></div>
@@ -146,7 +151,7 @@
     </div>
 
     <!-- 로그인 흐름: 이메일/비밀번호 + (연동된 계정) 소셜 로그인 -->
-    <div id="login-flow" hidden>
+    <div id="login-flow">
       <form id="form-login-unified" onsubmit="doLoginUnified(event)">
         <div class="form-field">
           <label>이메일</label>
@@ -174,8 +179,6 @@
     </div>
 
     <footer class="login-card-footer">
-      <button type="button" id="btn-show-login" class="auth-mode-link" hidden>이미 계정이 있으신가요? <span>로그인</span></button>
-      <button type="button" id="btn-show-signup" class="auth-mode-link" hidden>처음이신가요? <span>회원가입</span></button>
       <p id="google-setup-hint" class="login-setup-hint" hidden>
         Google 로그인이 아직 설정되지 않았습니다. 관리자에게 GOOGLE_CLIENT_ID 설정을 요청해주세요.
       </p>
@@ -383,16 +386,22 @@
     function showAuthMode(mode) {
       const signup = document.getElementById('signup-flow')
       const login = document.getElementById('login-flow')
-      const showLoginBtn = document.getElementById('btn-show-login')
-      const showSignupBtn = document.getElementById('btn-show-signup')
+      const loginTab = document.getElementById('btn-auth-mode-login')
+      const signupTab = document.getElementById('btn-auth-mode-signup')
       const titleEl = document.getElementById('login-card-title')
       const subEl = document.getElementById('login-card-sub')
       const betaNotice = document.getElementById('beta-notice')
       const isSignup = mode !== 'login'
       if (signup) signup.hidden = !isSignup
       if (login) login.hidden = isSignup
-      if (showLoginBtn) showLoginBtn.hidden = !isSignup
-      if (showSignupBtn) showSignupBtn.hidden = isSignup
+      if (loginTab) {
+        loginTab.classList.toggle('is-active', !isSignup)
+        loginTab.setAttribute('aria-selected', String(!isSignup))
+      }
+      if (signupTab) {
+        signupTab.classList.toggle('is-active', isSignup)
+        signupTab.setAttribute('aria-selected', String(isSignup))
+      }
       if (betaNotice && betaNotice.dataset.visible === '1') {
         betaNotice.hidden = !isSignup
       }
@@ -400,14 +409,21 @@
       if (subEl) {
         subEl.textContent = isSignup
           ? '가입 유형 선택 → 약관 동의 → 회원정보 입력 순서로 진행됩니다'
-          : '가입하신 방법(Google·카카오)으로 바로 로그인합니다'
+          : '이메일·비밀번호 또는 연동한 Google·카카오 계정으로 로그인합니다'
       }
+      document.title = (isSignup ? '회원가입' : '로그인') + ' — 타닥클래스'
+      try {
+        const url = new URL(location.href)
+        if (isSignup) url.searchParams.set('mode', 'signup')
+        else url.searchParams.delete('mode')
+        history.replaceState(null, '', url.pathname + url.search + url.hash)
+      } catch (_) {}
       if (isSignup) goSignupStep(1)
       scheduleFitOneLineTexts()
     }
 
-    document.getElementById('btn-show-login')?.addEventListener('click', () => showAuthMode('login'))
-    document.getElementById('btn-show-signup')?.addEventListener('click', () => showAuthMode('signup'))
+    document.getElementById('btn-auth-mode-login')?.addEventListener('click', () => showAuthMode('login'))
+    document.getElementById('btn-auth-mode-signup')?.addEventListener('click', () => showAuthMode('signup'))
 
     // ── Step 3: 자체 회원가입(이메일 인증 + 정보 입력) ──
     function getSignupConsent() {
@@ -600,8 +616,8 @@
     bindAllProviderButtons()
     initInAppBrowserNotice()
     updateTypeLabels()
-    if (params.get('mode') === 'login') showAuthMode('login')
-    else showAuthMode('signup')
+    if (params.get('mode') === 'signup') showAuthMode('signup')
+    else showAuthMode('login')
 
     async function initAuthProviders() {
       try {
