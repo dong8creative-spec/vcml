@@ -50,6 +50,10 @@ router.post('/', authMiddleware, async (req, res) => {
   let order
   let rewardCoupon = null
   try {
+    const enrollResult = await db.enrollAtomically(req.user.id, course_id, course)
+    if (enrollResult.error === 'enrollment_full') {
+      return res.status(409).json({ error: '모집 정원이 마감되었습니다.', code: 'enrollment_full' })
+    }
     order = await db.createOrder(req.user.id, course_id, finalAmount, method, discount)
     for (const { coupon, discount: couponDiscount } of appliedCoupons) {
       await db.useCoupon(coupon.id, {
@@ -62,8 +66,6 @@ router.post('/', authMiddleware, async (req, res) => {
         used_discount: couponDiscount,
       })
     }
-    await db.enroll(req.user.id, course_id)
-    await db.syncCourseStudentCount(course_id)
     rewardCoupon = await db.issueClientCourseRewardCoupons(req.user.id, course, order.id)
   } catch (e) {
     console.error('결제/수강 등록 오류:', e)
@@ -80,6 +82,49 @@ router.post('/', authMiddleware, async (req, res) => {
     discount,
     coupons_applied: appliedCoupons.length,
     reward_coupon: rewardCoupon,
+  })
+})
+
+router.get('/preview', authMiddleware, async (req, res) => {
+  const { course_id } = req.query
+  if (!course_id) return res.status(400).json({ error: 'course_id가 필요합니다.' })
+  const course = await db.getCourseById(course_id)
+  if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+
+  const priorOrders = await db.getOrdersByUser(req.user.id)
+  const isFirstPurchase = priorOrders.length === 0
+  const salePrice = Number(course.sale_price || 0)
+
+  let discount = 0
+  let coupon_code = null
+
+  const stack = await db.resolveStackableCourseDiscount(req.user.id, salePrice, isFirstPurchase)
+  if (stack.totalDiscount > 0) {
+    discount = stack.totalDiscount
+  } else {
+    const coupons = await db.getCouponsByUser(req.user.id)
+    for (const raw of coupons) {
+      const c = db.enrichCoupon(raw)
+      if (c.status !== 'available') continue
+      if (db.isCouponExpired(c)) continue
+      if (c.reason === CLIENT_COURSE_REWARD_REASON) continue
+      if (c.first_course_only && !isFirstPurchase) continue
+      const d = c.discount_percent
+        ? Math.floor(salePrice * Number(c.discount_percent) / 100)
+        : Number(c.amount || 0)
+      if (d > discount) {
+        discount = d
+        coupon_code = c.code
+      }
+    }
+  }
+
+  res.json({
+    sale_price: salePrice,
+    discount,
+    final_amount: Math.max(0, salePrice - discount),
+    coupon_code,
+    is_stackable: stack.totalDiscount > 0,
   })
 })
 

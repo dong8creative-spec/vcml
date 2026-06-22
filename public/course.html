@@ -531,7 +531,6 @@
     }
 
     let selectedCouponCode = null
-    const STACKABLE_REASONS = ['anticipation_review', 'course_review_five_star']
 
     async function openModal() {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
@@ -542,46 +541,17 @@
       document.getElementById('modal-course-info').innerHTML = `<div class="mci-title">${courseData.title}</div>`
       selectedCouponCode = null
       let total = Number(courseData.sale_price)
-      try {
-        const [coupons, orders] = await Promise.all([
-          API.get('/my/coupons'),
-          API.get('/orders/my').catch(() => []),
-        ])
-        const isFirstPurchase = !orders.length
-        const applicable = (coupons || []).filter(c => {
-          if (c.status !== 'available') return false
-          if (c.expires_at && new Date(c.expires_at) <= new Date()) return false
-          if (c.reason === 'client_course_reward') return false
-          if (c.coupon_type === 'editor_featured' || c.reason === 'editor_featured' || c.reason === 'editor_apply_featured') return false
-          if (c.first_course_only && !isFirstPurchase) return false
-          return true
-        })
-        const stackable = applicable.filter(c => STACKABLE_REASONS.includes(c.reason) && c.discount_percent)
-        const anticipation = stackable.filter(c => c.reason === 'anticipation_review').slice(0, 1)
-        const reviewPick = stackable
-          .filter(c => c.reason === 'course_review_five_star')
-          .sort((a, b) => (a.expires_at || a.created_at || '').localeCompare(b.expires_at || b.created_at || ''))
-          .slice(0, 1)
-        const stackCoupons = [...anticipation, ...reviewPick]
-        let totalDiscount = 0
-        for (const c of stackCoupons) {
-          totalDiscount += Math.floor(total * Number(c.discount_percent) / 100)
-        }
-        if (totalDiscount <= 0) {
-          for (const c of applicable) {
-            const d = c.discount_percent
-              ? Math.floor(total * Number(c.discount_percent) / 100)
-              : Number(c.amount || 0)
-            if (d > totalDiscount) {
-              totalDiscount = d
-              selectedCouponCode = c.code
-            }
-          }
-        }
-        if (totalDiscount > 0) total = Math.max(0, total - totalDiscount)
-      } catch (_) {}
       document.getElementById('modal-total').innerHTML = `총 결제금액 <b>₩${total.toLocaleString()}</b>`
       document.getElementById('modal-overlay').classList.remove('hidden')
+      try {
+        const preview = await API.get('/orders/preview?course_id=' + courseData.id)
+        total = preview.final_amount
+        selectedCouponCode = preview.coupon_code || null
+        const discountHtml = preview.discount > 0
+          ? ` <span style="font-size:0.85em;color:var(--color-success,#22a055)">(-₩${preview.discount.toLocaleString()})</span>`
+          : ''
+        document.getElementById('modal-total').innerHTML = `총 결제금액 <b>₩${total.toLocaleString()}</b>${discountHtml}`
+      } catch (_) {}
     }
     function closeModal() { document.getElementById('modal-overlay').classList.add('hidden') }
 

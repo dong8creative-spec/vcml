@@ -1502,6 +1502,24 @@ const db = {
     if (already) return
     await fs.collection('enrollments').add({ user_id: userId, course_id: courseId, enrolled_at: now() })
   },
+  async enrollAtomically(userId, courseId, course) {
+    const courseRef = fs.collection('courses').doc(courseId)
+    const limit = Math.max(0, parseInt(course?.enrollment_limit, 10) || 0)
+    let enrollmentFull = false
+    await fs.runTransaction(async t => {
+      const courseSnap = await t.get(courseRef)
+      if (!courseSnap.exists) throw new Error('course_not_found')
+      const currentCount = Math.max(0, parseInt(courseSnap.data().student_count, 10) || 0)
+      if (limit > 0 && currentCount >= limit) {
+        enrollmentFull = true
+        return
+      }
+      t.update(courseRef, { student_count: admin.firestore.FieldValue.increment(1) })
+    })
+    if (enrollmentFull) return { error: 'enrollment_full' }
+    await fs.collection('enrollments').add({ user_id: userId, course_id: courseId, enrolled_at: now() })
+    return { success: true }
+  },
   async getEnrollmentsByUser(userId) {
     const snap = await fs.collection('enrollments').where('user_id', '==', userId).get()
     return snapToArr(snap)
@@ -1914,16 +1932,23 @@ const db = {
     const course = await db.getCourseById(courseId)
     if (!course) return { error: 'course_not_found' }
     if (await db.isEnrolled(userId, courseId)) return { error: 'already_enrolled' }
-    if (await db.isCourseEnrollmentFullAsync(course)) return { error: 'enrollment_full' }
 
     const isLive = course.course_type === 'live'
     const isFreeVod = !isLive && Number(course.sale_price) === 0
     if (!isLive && !isFreeVod) return { error: 'payment_required' }
     if (isLive && course.live_status === 'ended') return { error: 'live_ended' }
 
-    await db.enroll(userId, courseId)
-    await db.createOrder(userId, courseId, 0, '무료', 0)
-    await db.syncCourseStudentCount(courseId)
+    const enrollResult = await db.enrollAtomically(userId, courseId, course)
+    if (enrollResult.error) return enrollResult
+
+    try {
+      await db.createOrder(userId, courseId, 0, '무료', 0)
+      await db.syncCourseStudentCount(courseId)
+    } catch (e) {
+      await db.unenroll(userId, courseId).catch(() => {})
+      await db.syncCourseStudentCount(courseId).catch(() => {})
+      throw e
+    }
     return { success: true, course }
   },
   async createCourseAnticipationReview(userId, courseId, content, { enroll = false } = {}) {
