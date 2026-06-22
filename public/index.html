@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <link rel="preload" as="image" href="https://res.cloudinary.com/doajvqv3f/image/fetch/w_2560,h_960,c_fill,q_auto,f_auto/https%3A%2F%2Fvcml.kr%2Fimages%2Fhero.jpg">
+  <link rel="preload" as="image" href="/images/hero.webp">
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-13X3J2EYQ2"></script>
   <script>
@@ -327,10 +327,9 @@ async function loadHero() {
     const heroBg = document.getElementById('hero-bg')
     if (heroSection && heroBg) {
       if (h.image) {
-        const optimizedUrl = getCloudinaryUrl(h.image, { width: 2560, height: 960 })
-        heroBg.style.backgroundImage = `url("${optimizedUrl}")`
+        heroBg.style.backgroundImage = `url("${h.image}")`
         heroSection.classList.add('hero--has-image')
-        syncHeroKnockoutBackground(heroSection, optimizedUrl)
+        syncHeroKnockoutBackground(heroSection, h.image)
         if (h.image_alt) heroSection.setAttribute('aria-label', h.image_alt)
         else heroSection.removeAttribute('aria-label')
       } else {
