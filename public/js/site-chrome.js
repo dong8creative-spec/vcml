@@ -35,20 +35,20 @@
         { label: '자주 묻는 질문', href: '/faq.html' },
         { label: '환불 및 취소 정책', href: '/refund.html' },
       ]},
-      { title: '안내', links: [
-        { label: '공지사항', href: '/notices.html' },
-        { label: '개인정보처리방침', href: '/privacy.html', emphasis: true },
-        { label: '청소년보호정책', href: '/youth.html' },
-      ]},
     ],
-    biz_info: '상호명 블루필드매뉴얼픽쳐스 · 대표자 이동헌 · 사업자등록번호 640-50-00860 · 통신판매업신고 제 0000-부산OO-0000 호 · 사업장 부산광역시 부산진구 가야대로 707-2(당감동) · 고객센터 010-4850-6946 (평일 10:00~18:00) · 이메일 dong8creative@gmail.com · 호스팅 Amazon Web Services (AWS) · 개인정보보호책임자 이동헌',
-    copyright: '© 2025 타닥클래스. All rights reserved.',
     policy_links: [
-      { label: '개인정보처리방침', href: '/privacy.html' },
+      { label: '공지사항', href: '/notices.html' },
       { label: '이용약관', href: '/terms.html' },
-      { label: '청소년보호정책', href: '/youth.html' },
       { label: '환불정책', href: '/refund.html' },
+      { label: '개인정보처리방침', href: '/privacy.html', emphasis: true },
+      { label: '청소년보호정책', href: '/youth.html' },
     ],
+    biz_info: [
+      '상호명 블루필드매뉴얼픽쳐스 · 대표자 이동헌 · 통신판매업신고 제 2025-부산진-0959 호',
+      '사업자등록번호 640-50-00860 · 고객센터 010-4850-6946',
+      '주소 부산광역시 부산진구 가야대로 707-2(당감동) · 이메일 dong8creative@gmail.com',
+    ],
+    copyright: '© 2025 타닥클래스. All rights reserved.',
   }
 
   function esc(s) {
@@ -138,7 +138,7 @@
       <button type="button" class="biz-toggle" onclick="this.closest('.biz-info').classList.toggle('open')">
         사업자 정보 <i class="ti ti-chevron-down"></i>
       </button>
-      <p class="biz-detail">${esc(c.biz_info)}</p>
+      <div class="biz-detail">${Array.isArray(c.biz_info) ? c.biz_info.map(line => `<p>${esc(line)}</p>`).join('') : `<p>${esc(c.biz_info)}</p>`}</div>
     </div>
     <div class="footer-bottom">
       <span>${esc(c.copyright)}</span>
