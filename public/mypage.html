@@ -500,6 +500,25 @@
           동의 철회 시 마케팅 수신(이메일·문자·알림톡)이 즉시 중단됩니다. 동의 기록은 법적 근거로 보관됩니다.
         </div>
       </div>
+
+      <div class="settings-card">
+        <div class="settings-label" style="margin-bottom:4px">연결된 계정</div>
+        <div class="settings-desc" style="margin-bottom:14px">소셜 계정을 연결하면 다음부터 해당 계정으로도 로그인할 수 있습니다.</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Google</div>
+            <div class="settings-desc" id="google-link-status">확인 중…</div>
+          </div>
+          <button id="btn-google-link-toggle" class="btn-settings-action" onclick="toggleSocialLink('google')">연결하기</button>
+        </div>
+        <div class="settings-row" style="margin-top:12px">
+          <div>
+            <div class="settings-label">카카오</div>
+            <div class="settings-desc" id="kakao-link-status">확인 중…</div>
+          </div>
+          <button id="btn-kakao-link-toggle" class="btn-settings-action" onclick="toggleSocialLink('kakao')">연결하기</button>
+        </div>
+      </div>
     </div>
   </main>
 </div>
@@ -704,11 +723,74 @@ async function loadSettings() {
     } else {
       ms.textContent = '미동의'; mb.style.display = 'none'
     }
+    renderLinkStatus(profileData)
     renderSidebar(profileData)
   } catch (e) {
     toast('프로필을 불러오지 못했습니다.', 'error')
   }
 }
+
+function renderLinkStatus(p) {
+  const map = [
+    ['google', p.google_linked, 'google-link-status', 'btn-google-link-toggle'],
+    ['kakao', p.kakao_linked, 'kakao-link-status', 'btn-kakao-link-toggle'],
+  ]
+  map.forEach(([provider, linked, statusId, btnId]) => {
+    const statusEl = document.getElementById(statusId)
+    const btn = document.getElementById(btnId)
+    if (!statusEl || !btn) return
+    if (linked) {
+      statusEl.textContent = '연결됨 ✅'
+      btn.textContent = '연결 해제'
+      btn.dataset.linked = '1'
+      // 다른 로그인 수단이 없으면 해제 비활성화
+      const otherLinked = provider === 'google' ? p.kakao_linked : p.google_linked
+      btn.disabled = !p.has_password && !otherLinked
+    } else {
+      statusEl.textContent = '연결 안 됨'
+      btn.textContent = '연결하기'
+      btn.dataset.linked = '0'
+      btn.disabled = false
+    }
+  })
+}
+
+async function toggleSocialLink(provider) {
+  const btn = document.getElementById(provider === 'google' ? 'btn-google-link-toggle' : 'btn-kakao-link-toggle')
+  if (btn?.dataset.linked === '1') {
+    // 연결 해제
+    if (!confirm(`${provider === 'google' ? 'Google' : '카카오'} 연결을 해제할까요?`)) return
+    try {
+      const res = await API.post('/my/unlink/' + provider, {})
+      renderLinkStatus(res.user)
+      toast('연결을 해제했습니다.', 'success')
+    } catch (e) {
+      toast(e.message || '해제 중 오류가 발생했습니다.', 'error')
+    }
+    return
+  }
+  // 연결하기: 단기 토큰 발급 후 OAuth 왕복
+  try {
+    const { link_token } = await API.get('/auth/link-token')
+    const builder = provider === 'google' ? buildGoogleAuthUrl : buildKakaoAuthUrl
+    location.href = builder('/mypage.html', null, 'link', link_token)
+  } catch (e) {
+    toast(e.message || '연동을 시작하지 못했습니다.', 'error')
+  }
+}
+
+// 연동 결과 토스트 (콜백 리다이렉트 파라미터)
+;(function handleLinkResult() {
+  const sp = new URLSearchParams(location.search)
+  if (sp.get('link_success')) {
+    const p = sp.get('link_success')
+    toast(`${p === 'google' ? 'Google' : '카카오'} 계정을 연결했습니다.`, 'success')
+    history.replaceState(null, '', location.pathname)
+  } else if (sp.get('link_error')) {
+    toast(decodeURIComponent(sp.get('link_error')), 'error')
+    history.replaceState(null, '', location.pathname)
+  }
+})()
 
 async function saveProfile() {
   const btn = document.getElementById('btn-save-profile')

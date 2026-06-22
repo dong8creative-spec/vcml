@@ -2,11 +2,8 @@
   const SHOW_LOGIN_LINK = false // 임시: 「로그인」 텍스트 링크 숨김
 
   function guestChromeAuthHtml(next) {
-    const icon = typeof GOOGLE_ICON_SVG !== 'undefined' ? GOOGLE_ICON_SVG : (window.GOOGLE_ICON_SVG || '')
-    const loginLink = SHOW_LOGIN_LINK
-      ? `<a href="/login.html?next=${next}" class="nav-btn">로그인</a>`
-      : ''
-    return `${loginLink}<a href="#" class="nav-btn nav-btn-google" onclick="startGoogleLogin('${next}');return false">${icon} Google</a>`
+    const nextQ = next && next !== encodeURIComponent('/') ? `?next=${next}` : ''
+    return `<a href="/login.html${nextQ}" class="nav-btn nav-btn-primary">로그인 / 가입</a>`
   }
   const SUBPAGE_NAV = [
     { href: '/notices.html', key: 'notices', label: '공지사항' },

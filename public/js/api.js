@@ -41,6 +41,7 @@ const API = {
     const data = await res.json()
     if (!res.ok) {
       const err = new Error(data.error || '오류가 발생했습니다.')
+      err.status = res.status
       if (data.timed_out) err.timed_out = true
       if (data.code) err.code = data.code
       throw err
@@ -70,7 +71,7 @@ function googleMeetBadgeHtml(className = 'badge-live') {
 window.googleMeetBadgeHtml = googleMeetBadgeHtml
 window.googleMeetIconHtml = googleMeetIconHtml
 
-function buildGoogleAuthUrl(next, memberType, intent = 'signup') {
+function buildGoogleAuthUrl(next, memberType, intent = 'signup', linkToken) {
   const params = new URLSearchParams()
   const safeNext = next && String(next).startsWith('/') && !String(next).startsWith('//') ? next : '/'
   params.set('next', safeNext)
@@ -78,10 +79,11 @@ function buildGoogleAuthUrl(next, memberType, intent = 'signup') {
     params.set('member_type', memberType)
   }
   if (intent === 'login') params.set('intent', 'login')
+  if (intent === 'link' && linkToken) { params.set('intent', 'link'); params.set('link_token', linkToken) }
   return '/api/auth/google?' + params.toString()
 }
 
-function buildKakaoAuthUrl(next, memberType, intent = 'signup') {
+function buildKakaoAuthUrl(next, memberType, intent = 'signup', linkToken) {
   const params = new URLSearchParams()
   const safeNext = next && String(next).startsWith('/') && !String(next).startsWith('//') ? next : '/'
   params.set('next', safeNext)
@@ -89,6 +91,7 @@ function buildKakaoAuthUrl(next, memberType, intent = 'signup') {
     params.set('member_type', memberType)
   }
   if (intent === 'login') params.set('intent', 'login')
+  if (intent === 'link' && linkToken) { params.set('intent', 'link'); params.set('link_token', linkToken) }
   return '/api/auth/kakao?' + params.toString()
 }
 

@@ -13,6 +13,9 @@ function profileView(user) {
     ...userPayload(user),
     marketing_agreed: !!user.marketing_agreed,
     phone: user.phone || null,
+    google_linked: !!user.google_id,
+    kakao_linked: !!user.kakao_id,
+    has_password: !!user.password,
   }
 }
 
@@ -73,6 +76,28 @@ router.patch('/profile', authMiddleware, async (req, res) => {
     phone: normalizedPhone,
   })
   res.json({ success: true, user: profileView(user) })
+})
+
+// 소셜 계정 연동 해제 (로그인 수단이 최소 1개 남도록 보장)
+router.post('/unlink/:provider', authMiddleware, async (req, res) => {
+  const provider = req.params.provider
+  if (!['google', 'kakao'].includes(provider)) {
+    return res.status(400).json({ error: '지원하지 않는 연동입니다.' })
+  }
+  const user = await db.findUserById(req.user.id)
+  if (!user) return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' })
+
+  const hasPassword = !!user.password
+  const otherLinked = provider === 'google' ? !!user.kakao_id : !!user.google_id
+  if (!hasPassword && !otherLinked) {
+    return res.status(400).json({ error: '유일한 로그인 수단은 해제할 수 없습니다. 먼저 비밀번호를 설정하거나 다른 계정을 연동해주세요.' })
+  }
+
+  if (provider === 'google') await db.unlinkGoogleId(user.id)
+  else await db.unlinkKakaoId(user.id)
+
+  const updated = await db.findUserById(user.id)
+  res.json({ success: true, user: profileView(updated) })
 })
 
 router.get('/live-sessions', authMiddleware, async (req, res) => {

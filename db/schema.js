@@ -1136,12 +1136,20 @@ const db = {
     const snap = await fs.collection('users').where('kakao_id', '==', String(kakaoId)).limit(1).get()
     return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
   },
-  async createUser(email, password, name, memberType = 'student') {
-    const data = { email, password, name, role: 'student', member_type: memberType, profile_complete: true, marketing_agreed: 0, marketing_agreed_at: null, phone: null, created_at: now() }
+  async createUser(email, password, name, memberType = 'student', extra = {}) {
+    const data = {
+      email, password, name, role: 'student', member_type: memberType,
+      profile_complete: true, marketing_agreed: 0, marketing_agreed_at: null,
+      phone: extra.phone || null,
+      gender: extra.gender || null,
+      birth_year: extra.birth_year || null,
+      age_range: extra.age_range || null,
+      created_at: now(),
+    }
     const ref = await fs.collection('users').add(data)
     return { id: ref.id, ...data }
   },
-  async createKakaoUser(kakaoId, email, name, memberType = 'student') {
+  async createKakaoUser(kakaoId, email, name, memberType = 'student', kakaoProfile = {}) {
     const data = {
       kakao_id: String(kakaoId),
       email: email || null,
@@ -1154,13 +1162,37 @@ const db = {
       marketing_agreed: 0,
       marketing_agreed_at: null,
       phone: null,
+      address: null,
+      kakao_gender: kakaoProfile.gender || null,
+      kakao_age_range: kakaoProfile.age_range || null,
+      kakao_birthyear: kakaoProfile.birthyear || null,
+      kakao_ci: kakaoProfile.ci || null,
       created_at: now(),
     }
     const ref = await fs.collection('users').add(data)
     return { id: ref.id, ...data }
   },
+  async updateKakaoProfile(userId, kakaoProfile = {}) {
+    const update = {}
+    if (kakaoProfile.gender) update.kakao_gender = kakaoProfile.gender
+    if (kakaoProfile.age_range) update.kakao_age_range = kakaoProfile.age_range
+    if (kakaoProfile.birthyear) update.kakao_birthyear = kakaoProfile.birthyear
+    if (kakaoProfile.ci) update.kakao_ci = kakaoProfile.ci
+    if (Object.keys(update).length) {
+      await fs.collection('users').doc(userId).update(update)
+    }
+  },
   async linkKakaoId(userId, kakaoId) {
     await fs.collection('users').doc(userId).update({ kakao_id: String(kakaoId), auth_provider: 'kakao' })
+  },
+  async unlinkKakaoId(userId) {
+    await fs.collection('users').doc(userId).update({
+      kakao_id: admin.firestore.FieldValue.delete(),
+      kakao_gender: admin.firestore.FieldValue.delete(),
+      kakao_age_range: admin.firestore.FieldValue.delete(),
+      kakao_birthyear: admin.firestore.FieldValue.delete(),
+      kakao_ci: admin.firestore.FieldValue.delete(),
+    })
   },
   async findUserByGoogleId(googleId) {
     const snap = await fs.collection('users').where('google_id', '==', String(googleId)).limit(1).get()
@@ -1187,6 +1219,9 @@ const db = {
   },
   async linkGoogleId(userId, googleId) {
     await fs.collection('users').doc(userId).update({ google_id: String(googleId), auth_provider: 'google' })
+  },
+  async unlinkGoogleId(userId) {
+    await fs.collection('users').doc(userId).update({ google_id: admin.firestore.FieldValue.delete() })
   },
   async completeProfile(userId, { name, email, phone, address, marketing_agreed, member_type, ip }) {
     const update = { profile_complete: true }

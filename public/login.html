@@ -11,7 +11,7 @@
   </script>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>로그인 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css?v=7" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css?v=10" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body class="login-body">
@@ -20,7 +20,7 @@
   <div class="login-card">
     <header class="login-card-header">
       <h1 class="login-card-title" id="login-card-title">회원가입</h1>
-      <p class="login-card-sub" id="login-card-sub">가입 유형 선택 → 정보 고지·동의 → Google 계정 연결 순서로 진행됩니다</p>
+      <p class="login-card-sub" id="login-card-sub">가입 유형 선택 → 약관 동의 → 회원정보 입력 순서로 진행됩니다</p>
     </header>
 
     <div id="inapp-notice" class="login-card-notice login-card-notice--warn" hidden>
@@ -35,90 +35,140 @@
     </div>
 
     <div class="login-card-main">
-    <div id="google-signup-flow">
+    <!-- 회원가입 흐름: 가입 유형 → 약관 동의 → 가입 방법(Google/카카오) -->
+    <div id="signup-flow">
       <div class="step-indicator">
-        <div class="step-item active" id="gs-si-1"><span class="step-num">1</span><span class="step-label">가입 유형</span></div>
+        <div class="step-item active" id="su-si-1"><span class="step-num">1</span><span class="step-label">가입 유형</span></div>
         <div class="step-line"></div>
-        <div class="step-item" id="gs-si-2"><span class="step-num">2</span><span class="step-label">정보 고지</span></div>
+        <div class="step-item" id="su-si-2"><span class="step-num">2</span><span class="step-label">약관 동의</span></div>
         <div class="step-line"></div>
-        <div class="step-item" id="gs-si-3"><span class="step-num">3</span><span class="step-label">Google 연결</span></div>
+        <div class="step-item" id="su-si-3"><span class="step-num">3</span><span class="step-label">회원정보</span></div>
       </div>
 
-      <div id="gs-step-1" class="auth-card-step">
+      <div id="su-step-1" class="auth-card-step">
         <div class="member-type-label">어떻게 이용하실 건가요?</div>
         <div class="member-type-row">
           <label class="member-type-card">
-            <input type="radio" name="google-member-type" value="student" checked />
+            <input type="radio" name="signup-member-type" value="student" checked />
             <div class="member-type-title">강의 수강</div>
             <div class="member-type-desc">온라인 강의를 듣고 싶어요</div>
           </label>
           <label class="member-type-card">
-            <input type="radio" name="google-member-type" value="client" />
+            <input type="radio" name="signup-member-type" value="client" />
             <div class="member-type-title">영상 편집 의뢰</div>
             <div class="member-type-desc">영상 편집 작업을 맡기고 싶어요</div>
             <div class="member-type-benefit">유료강의(20만원↑) 수강 시 의뢰 할인쿠폰 10장 추가 제공</div>
           </label>
         </div>
         <p class="member-type-note">※ 가입 후 유형 변경을 원하시면 고객센터로 문의해 주세요.</p>
-        <button type="button" class="btn-submit" onclick="goGoogleSignupStep(2)">다음</button>
+        <button type="button" class="btn-submit" onclick="goSignupStep(2)">다음</button>
       </div>
 
-      <div id="gs-step-2" class="auth-card-step" hidden>
+      <div id="su-step-2" class="auth-card-step" hidden>
         <div class="signup-disclosure">
           <div class="signup-disclosure-head">
-            <strong>Google 계정 연동 시 수집·이용하는 개인정보</strong>
-            <p>회원가입을 위해 Google OAuth(<code>openid</code> · <code>email</code> · <code>profile</code>)를 통해 아래 정보를 수집·이용합니다. Google 계정 비밀번호는 수집하지 않습니다.</p>
+            <strong>가입 시 수집·이용하는 개인정보</strong>
+            <p>회원가입을 위해 다음 단계에서 아래 정보를 직접 입력받아 수집·이용합니다.</p>
           </div>
           <table class="signup-disclosure-table">
             <thead><tr><th>수집 항목</th><th>이용 목적</th><th>보유 기간</th></tr></thead>
             <tbody>
-              <tr><td>Google 고유 ID</td><td>계정 연동·중복 가입 방지</td><td>회원 탈퇴 시까지</td></tr>
+              <tr><td>이메일</td><td>계정 식별·로그인·서비스 안내</td><td>회원 탈퇴 시까지</td></tr>
+              <tr><td>비밀번호</td><td>계정 보안(암호화 저장)</td><td>회원 탈퇴 시까지</td></tr>
               <tr><td>이름</td><td>회원 식별·프로필 표시</td><td>회원 탈퇴 시까지</td></tr>
-              <tr><td>이메일</td><td>계정 식별·서비스 안내</td><td>회원 탈퇴 시까지</td></tr>
-              <tr><td>프로필 사진</td><td>프로필 표시</td><td>회원 탈퇴 시까지</td></tr>
+              <tr><td>휴대폰 번호</td><td>강의 운영 안내(문자·알림톡)</td><td>회원 탈퇴 시까지</td></tr>
+              <tr><td>성별·출생연도</td><td>연령 확인·맞춤 안내·통계</td><td>회원 탈퇴 시까지</td></tr>
             </tbody>
           </table>
           <p class="signup-disclosure-note">마케팅 정보 수신(이메일·알림톡 등)은 가입 완료 후 <b>별도 선택 동의</b>를 받을 때만 진행합니다.</p>
-          <div class="signup-type-summary">선택한 가입 유형: <strong id="gs-type-label">수강생</strong></div>
+          <div class="signup-type-summary">선택한 가입 유형: <strong id="su-type-label">수강생</strong></div>
         </div>
         <div class="terms-stack">
           <div class="terms-row required">
-            <label><input type="checkbox" id="gs-agree-collection" /> [필수] 위 개인정보 수집·이용 내용을 확인하였으며 동의합니다.</label>
+            <label><input type="checkbox" id="su-agree-collection" /> [필수] 위 개인정보 수집·이용 내용을 확인하였으며 동의합니다.</label>
           </div>
           <div class="terms-row required">
-            <label><input type="checkbox" id="gs-agree-privacy" /> [필수] <a href="/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a> 동의</label>
+            <label><input type="checkbox" id="su-agree-privacy" /> [필수] <a href="/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a> 동의</label>
           </div>
           <div class="terms-row required">
-            <label><input type="checkbox" id="gs-agree-terms" /> [필수] <a href="/terms.html" target="_blank" rel="noopener">이용약관</a> 동의</label>
+            <label><input type="checkbox" id="su-agree-terms" /> [필수] <a href="/terms.html" target="_blank" rel="noopener">이용약관</a> 동의</label>
           </div>
         </div>
         <div class="auth-card-actions">
-          <button type="button" class="btn-outline-step" onclick="goGoogleSignupStep(1)">이전</button>
-          <button type="button" class="btn-submit" onclick="goGoogleSignupStep(3)">다음</button>
+          <button type="button" class="btn-outline-step" onclick="goSignupStep(1)">이전</button>
+          <button type="button" class="btn-submit" onclick="goSignupStep(3)">다음</button>
         </div>
       </div>
 
-      <div id="gs-step-3" class="auth-card-step" hidden>
-        <div class="signup-google-ready">
-          <div class="signup-google-ready-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      <div id="su-step-3" class="auth-card-step" hidden>
+        <p class="social-choice-desc"><strong id="su-type-label-2">수강생</strong>(으)로 가입합니다. 회원정보를 입력해 주세요.</p>
+        <div class="form-field">
+          <label>이메일</label>
+          <div class="code-row">
+            <input type="email" id="sru-email" placeholder="example@email.com" />
+            <button type="button" class="btn-send-code" id="sru-send" onclick="sruSendCode()">인증 발송</button>
           </div>
-          <div class="signup-google-ready-title">Google 계정을 선택해 주세요</div>
-          <p class="signup-google-ready-desc"><strong id="gs-type-label-2">수강생</strong>으로 가입합니다. 아래 버튼을 누르면 Google 계정 선택 화면으로 이동합니다.</p>
         </div>
-        <button type="button" id="btn-google-link" class="btn-google">
-          <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Google 계정 선택하기
-        </button>
-        <button type="button" class="btn-outline-step" onclick="goGoogleSignupStep(2)">이전</button>
+        <div id="sru-code-field" class="form-field" hidden>
+          <label>인증 코드 <span class="hint" id="sru-code-timer"></span></label>
+          <div class="code-row">
+            <input type="text" id="sru-code" maxlength="6" inputmode="numeric" placeholder="6자리 숫자 입력" />
+            <button type="button" class="btn-send-code verify" id="sru-verify" onclick="sruVerifyCode()">확인</button>
+          </div>
+        </div>
+        <div id="sru-verified" class="verified-msg" hidden><i class="ti ti-circle-check-filled"></i> 이메일 인증 완료</div>
+        <div class="form-field">
+          <label>비밀번호</label>
+          <div class="pw-wrap">
+            <input type="password" id="sru-pw" placeholder="8자 이상" />
+            <button type="button" class="pw-toggle" onclick="togglePw('sru-pw',this)"><i class="ti ti-eye"></i></button>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>비밀번호 확인</label>
+          <input type="password" id="sru-pw2" placeholder="비밀번호 재입력" />
+        </div>
+        <div class="form-field"><label>이름</label><input type="text" id="sru-name" maxlength="30" placeholder="홍길동" /></div>
+        <div class="form-field"><label>휴대폰 번호</label><input type="tel" id="sru-phone" maxlength="13" placeholder="010-0000-0000" /></div>
+        <div class="form-field">
+          <label>성별</label>
+          <div class="gender-row">
+            <label class="gender-pill"><input type="radio" name="sru-gender" value="male" /><span>남성</span></label>
+            <label class="gender-pill"><input type="radio" name="sru-gender" value="female" /><span>여성</span></label>
+          </div>
+        </div>
+        <div class="form-field"><label>출생연도</label><select id="sru-birthyear" class="birthyear-select"><option value="">선택해주세요</option></select></div>
+        <div class="auth-card-actions">
+          <button type="button" class="btn-outline-step" onclick="goSignupStep(2)">이전</button>
+          <button type="button" class="btn-submit" id="sru-submit" onclick="sruRegister()">가입 완료</button>
+        </div>
       </div>
     </div>
 
-    <div id="google-login-quick" class="auth-card-step" hidden>
-      <p class="google-login-quick-desc">이미 가입하신 Google 계정으로 로그인합니다.</p>
+    <!-- 로그인 흐름: 이메일/비밀번호 + (연동된 계정) 소셜 로그인 -->
+    <div id="login-flow" hidden>
+      <form id="form-login-unified" onsubmit="doLoginUnified(event)">
+        <div class="form-field">
+          <label>이메일</label>
+          <input type="email" id="lf-email" placeholder="example@email.com" />
+        </div>
+        <div class="form-field">
+          <label>비밀번호</label>
+          <div class="pw-wrap">
+            <input type="password" id="lf-pw" placeholder="비밀번호 입력" />
+            <button type="button" class="pw-toggle" onclick="togglePw('lf-pw',this)"><i class="ti ti-eye"></i></button>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit" id="lf-login-btn">로그인</button>
+      </form>
+      <div class="or-divider"><span>또는 연동한 계정으로</span></div>
       <button type="button" id="btn-google-login" class="btn-google">
         <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         Google로 로그인
+      </button>
+      <button type="button" id="btn-kakao-login" class="btn-kakao">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="#3C1E1E" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7-.2.7-.7 2.6-.8 3-.1.5.2.5.4.4.2-.1 2.6-1.8 3.7-2.5.7.1 1.4.2 2 .2 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>
+        카카오로 로그인
       </button>
     </div>
     </div>
@@ -126,7 +176,6 @@
     <footer class="login-card-footer">
       <button type="button" id="btn-show-login" class="auth-mode-link" hidden>이미 계정이 있으신가요? <span>로그인</span></button>
       <button type="button" id="btn-show-signup" class="auth-mode-link" hidden>처음이신가요? <span>회원가입</span></button>
-      <a href="/signup.html" class="auth-mode-link auth-mode-link--block" id="link-kakao-signup">카카오로 가입하시려면 <span>회원가입 페이지</span></a>
       <p id="google-setup-hint" class="login-setup-hint" hidden>
         Google 로그인이 아직 설정되지 않았습니다. 관리자에게 GOOGLE_CLIENT_ID 설정을 요청해주세요.
       </p>
@@ -241,10 +290,6 @@
   <script>
     const params = new URLSearchParams(location.search)
     const nextUrl = params.get('next') || '/'
-    const linkKakao = document.getElementById('link-kakao-signup')
-    if (linkKakao) {
-      linkKakao.href = '/signup.html' + (nextUrl !== '/' ? '?next=' + encodeURIComponent(nextUrl) : '')
-    }
 
     function finishOAuthLogin(token, userJson, prefix) {
       try {
@@ -265,6 +310,13 @@
       if (token && user) finishOAuthLogin(token, user, prefix)
     })
 
+    // 이미 로그인한 사용자는 가입/로그인 화면 진입 차단
+    const hasOAuthReturn = params.get('google_token') || params.get('kakao_token')
+    if (!hasOAuthReturn && typeof API !== 'undefined' && API.isLoggedIn && API.isLoggedIn()) {
+      const dest = (nextUrl && nextUrl !== '/') ? nextUrl : (API.isAdmin && API.isAdmin() ? '/admin.html' : '/')
+      location.replace(dest)
+    }
+
     ;['google_error', 'kakao_error'].forEach(key => {
       const err = params.get(key)
       if (err) toast(decodeURIComponent(err), 'error')
@@ -272,66 +324,65 @@
 
     const MEMBER_TYPE_LABELS = { student: '강의 수강(수강생)', client: '영상 편집 의뢰(의뢰인)' }
 
-    function selectedGoogleMemberType() {
-      return document.querySelector('input[name="google-member-type"]:checked')?.value || null
+    function selectedMemberType() {
+      return document.querySelector('input[name="signup-member-type"]:checked')?.value || null
     }
 
-    function updateGoogleTypeLabels() {
-      const mt = selectedGoogleMemberType()
-      const label = MEMBER_TYPE_LABELS[mt] || '수강생'
-      document.getElementById('gs-type-label').textContent = label
-      document.getElementById('gs-type-label-2').textContent = label
+    function updateTypeLabels() {
+      const label = MEMBER_TYPE_LABELS[selectedMemberType()] || '수강생'
+      const a = document.getElementById('su-type-label')
+      const b = document.getElementById('su-type-label-2')
+      if (a) a.textContent = label
+      if (b) b.textContent = label
     }
 
-    document.querySelectorAll('input[name="google-member-type"]').forEach(el => {
-      el.addEventListener('change', updateGoogleTypeLabels)
+    document.querySelectorAll('input[name="signup-member-type"]').forEach(el => {
+      el.addEventListener('change', updateTypeLabels)
     })
 
-    function setGoogleSignupStepIndicators(step) {
+    function setSignupStepIndicators(step) {
       for (let i = 1; i <= 3; i++) {
-        const el = document.getElementById('gs-si-' + i)
+        const el = document.getElementById('su-si-' + i)
         if (!el) continue
         el.classList.toggle('active', i === step)
         el.classList.toggle('done', i < step)
       }
     }
 
-    function goGoogleSignupStep(step) {
+    function goSignupStep(step) {
       if (step === 2) {
-        const mt = selectedGoogleMemberType()
-        if (!mt) { toast('가입 유형(수강생/의뢰인)을 선택해주세요.', 'error'); return }
-        updateGoogleTypeLabels()
+        if (!selectedMemberType()) { toast('가입 유형(수강생/의뢰인)을 선택해주세요.', 'error'); return }
+        updateTypeLabels()
       }
       if (step === 3) {
-        if (!document.getElementById('gs-agree-collection').checked) {
+        if (!document.getElementById('su-agree-collection').checked) {
           toast('개인정보 수집·이용 동의가 필요합니다.', 'error'); return
         }
-        if (!document.getElementById('gs-agree-privacy').checked) {
+        if (!document.getElementById('su-agree-privacy').checked) {
           toast('개인정보처리방침에 동의해주세요.', 'error'); return
         }
-        if (!document.getElementById('gs-agree-terms').checked) {
+        if (!document.getElementById('su-agree-terms').checked) {
           toast('이용약관에 동의해주세요.', 'error'); return
         }
-        const mt = selectedGoogleMemberType()
         sessionStorage.setItem('tc_signup_consent', JSON.stringify({
           collection: true,
           privacy: true,
           terms: true,
-          member_type: mt,
+          member_type: selectedMemberType(),
           at: Date.now(),
         }))
       }
       for (let i = 1; i <= 3; i++) {
-        const panel = document.getElementById('gs-step-' + i)
+        const panel = document.getElementById('su-step-' + i)
         if (panel) panel.hidden = i !== step
       }
-      setGoogleSignupStepIndicators(step)
+      setSignupStepIndicators(step)
       scheduleFitOneLineTexts()
     }
 
     function showAuthMode(mode) {
-      const signup = document.getElementById('google-signup-flow')
-      const login = document.getElementById('google-login-quick')
+      const signup = document.getElementById('signup-flow')
+      const login = document.getElementById('login-flow')
       const showLoginBtn = document.getElementById('btn-show-login')
       const showSignupBtn = document.getElementById('btn-show-signup')
       const titleEl = document.getElementById('login-card-title')
@@ -348,37 +399,176 @@
       if (titleEl) titleEl.textContent = isSignup ? '회원가입' : '로그인'
       if (subEl) {
         subEl.textContent = isSignup
-          ? '가입 유형 선택 → 정보 고지·동의 → Google 계정 연결 순서로 진행됩니다'
-          : '이미 가입하신 Google 계정으로 바로 로그인합니다'
+          ? '가입 유형 선택 → 약관 동의 → 회원정보 입력 순서로 진행됩니다'
+          : '가입하신 방법(Google·카카오)으로 바로 로그인합니다'
       }
-      if (isSignup) goGoogleSignupStep(1)
+      if (isSignup) goSignupStep(1)
       scheduleFitOneLineTexts()
     }
 
     document.getElementById('btn-show-login')?.addEventListener('click', () => showAuthMode('login'))
     document.getElementById('btn-show-signup')?.addEventListener('click', () => showAuthMode('signup'))
 
-    function bindGoogleSignupButton() {
-      const googleBtn = document.getElementById('btn-google-link')
+    // ── Step 3: 자체 회원가입(이메일 인증 + 정보 입력) ──
+    function getSignupConsent() {
+      let consent = null
+      try { consent = JSON.parse(sessionStorage.getItem('tc_signup_consent') || 'null') } catch (_) {}
+      return consent
+    }
+
+    // 출생연도 옵션 채우기 (만 14세 이상 ~ 1940)
+    ;(function fillBirthYears() {
+      const sel = document.getElementById('sru-birthyear')
+      if (!sel) return
+      const cur = new Date().getFullYear()
+      for (let y = cur - 14; y >= 1940; y--) {
+        const opt = document.createElement('option')
+        opt.value = String(y); opt.textContent = y + '년'
+        sel.appendChild(opt)
+      }
+    })()
+
+    // 성별 선택 시각 상태(:has 미지원 브라우저 대비)
+    document.querySelectorAll('input[name="sru-gender"]').forEach(el => {
+      el.addEventListener('change', () => {
+        document.querySelectorAll('.gender-pill').forEach(p => p.classList.remove('is-selected'))
+        el.closest('.gender-pill')?.classList.add('is-selected')
+      })
+    })
+
+    // 휴대폰 자동 하이픈
+    document.getElementById('sru-phone')?.addEventListener('input', (e) => {
+      const d = e.target.value.replace(/\D/g, '').slice(0, 11)
+      e.target.value = d.length < 4 ? d : d.length < 8 ? `${d.slice(0,3)}-${d.slice(3)}` : `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`
+    })
+
+    let sruEmailVerified = false
+    let sruTimer = null
+    async function sruSendCode() {
+      const email = document.getElementById('sru-email').value.trim()
+      if (!email) { toast('이메일을 입력해주세요.', 'error'); return }
+      const btn = document.getElementById('sru-send')
+      btn.disabled = true; btn.textContent = '발송 중...'
+      try {
+        await API.post('/auth/send-code', { email })
+        document.getElementById('sru-code-field').hidden = false
+        toast('인증 코드를 발송했습니다.', 'success')
+        let left = 180
+        const timerEl = document.getElementById('sru-code-timer')
+        clearInterval(sruTimer)
+        sruTimer = setInterval(() => {
+          left--
+          if (timerEl) timerEl.textContent = `${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`
+          if (left <= 0) clearInterval(sruTimer)
+        }, 1000)
+        btn.textContent = '재발송'
+      } catch (e) {
+        if (e.status === 409) {
+          // 이미 가입된 이메일 → 로그인 모드로 전환하고 이메일 자동 입력
+          toast('이미 가입된 이메일입니다. 로그인해 주세요.', 'error')
+          showAuthMode('login')
+          const lf = document.getElementById('lf-email')
+          if (lf) { lf.value = email; document.getElementById('lf-pw')?.focus() }
+        } else {
+          toast(e.message || '발송 실패', 'error')
+        }
+        btn.textContent = '인증 발송'
+      } finally { btn.disabled = false }
+    }
+    async function sruVerifyCode() {
+      const email = document.getElementById('sru-email').value.trim()
+      const code = document.getElementById('sru-code').value.trim()
+      if (!code) { toast('인증 코드를 입력해주세요.', 'error'); return }
+      try {
+        await API.post('/auth/verify-code', { email, code })
+        sruEmailVerified = true
+        clearInterval(sruTimer)
+        document.getElementById('sru-verified').hidden = false
+        document.getElementById('sru-code-field').hidden = true
+        toast('이메일 인증이 완료되었습니다.', 'success')
+      } catch (e) {
+        toast(e.message || '인증 실패', 'error')
+      }
+    }
+    async function sruRegister() {
+      const mt = selectedMemberType()
+      if (!mt) { toast('가입 유형을 선택해주세요.', 'error'); goSignupStep(1); return }
+      const consent = getSignupConsent()
+      if (!consent?.privacy || !consent?.terms || !consent?.collection) {
+        toast('약관 동의를 먼저 완료해주세요.', 'error'); goSignupStep(2); return
+      }
+      if (!sruEmailVerified) { toast('이메일 인증을 완료해주세요.', 'error'); return }
+      const email = document.getElementById('sru-email').value.trim()
+      const pw = document.getElementById('sru-pw').value
+      const pw2 = document.getElementById('sru-pw2').value
+      const name = document.getElementById('sru-name').value.trim()
+      const phone = document.getElementById('sru-phone').value.trim()
+      const gender = document.querySelector('input[name="sru-gender"]:checked')?.value
+      const birth_year = document.getElementById('sru-birthyear').value
+      if (pw.length < 8) { toast('비밀번호는 8자 이상이어야 합니다.', 'error'); return }
+      if (pw !== pw2) { toast('비밀번호가 일치하지 않습니다.', 'error'); return }
+      if (!name) { toast('이름을 입력해주세요.', 'error'); return }
+      if (!/^010\d{8}$/.test(phone.replace(/\D/g, ''))) { toast('휴대폰 번호를 정확히 입력해주세요.', 'error'); return }
+      if (!gender) { toast('성별을 선택해주세요.', 'error'); return }
+      if (!birth_year) { toast('출생연도를 선택해주세요.', 'error'); return }
+      const btn = document.getElementById('sru-submit')
+      btn.disabled = true; btn.textContent = '가입 중...'
+      try {
+        const { token, user } = await API.post('/auth/register', { email, password: pw, name, member_type: mt, phone, gender, birth_year })
+        sessionStorage.removeItem('tc_signup_consent')
+        API.login(token, user)
+        location.href = params.get('next') || '/'
+      } catch (e) {
+        toast(e.message || '가입 중 오류가 발생했습니다.', 'error')
+        btn.disabled = false; btn.textContent = '가입 완료'
+      }
+    }
+    window.sruSendCode = sruSendCode
+    window.sruVerifyCode = sruVerifyCode
+    window.sruRegister = sruRegister
+
+    // 통합 로그인 흐름의 이메일/비밀번호 로그인
+    async function doLoginUnified(e) {
+      e.preventDefault()
+      const email = document.getElementById('lf-email').value.trim()
+      const password = document.getElementById('lf-pw').value
+      if (!email || !password) { toast('이메일과 비밀번호를 입력해주세요.', 'error'); return }
+      const btn = document.getElementById('lf-login-btn')
+      btn.disabled = true; btn.textContent = '로그인 중...'
+      try {
+        const { token, user } = await API.post('/auth/login', { email, password })
+        API.login(token, user)
+        location.href = params.get('next') || (user.can_access_admin ? '/admin.html' : '/')
+      } catch (err) {
+        toast(err.message, 'error')
+        btn.disabled = false; btn.textContent = '로그인'
+      }
+    }
+    window.doLoginUnified = doLoginUnified
+
+    function bindSignupProviderButtons() { /* 자체 가입 폼으로 전환되어 사용 안 함 */ }
+
+    function bindLoginProviderButtons() {
+      const googleBtn = document.getElementById('btn-google-login')
+      const kakaoBtn = document.getElementById('btn-kakao-login')
       if (googleBtn && !googleBtn.classList.contains('is-disabled')) {
         googleBtn.onclick = () => {
           if (detectInAppBrowser()) {
-            toast('Safari 또는 Chrome에서 접속해 주세요.', 'error')
+            toast('Google 로그인은 Safari 또는 Chrome에서 진행해 주세요.', 'error')
             return
           }
-          const mt = selectedGoogleMemberType()
-          if (!mt) { toast('가입 유형을 선택해주세요.', 'error'); goGoogleSignupStep(1); return }
-          let consent = null
-          try { consent = JSON.parse(sessionStorage.getItem('tc_signup_consent') || 'null') } catch (_) {}
-          if (!consent?.privacy || !consent?.terms || !consent?.collection) {
-            toast('정보 고지·약관 동의를 먼저 완료해주세요.', 'error')
-            goGoogleSignupStep(2)
-            return
-          }
-          location.href = buildGoogleAuthUrl(nextUrl, mt, 'signup')
+          location.href = buildGoogleAuthUrl(nextUrl, null, 'login')
+        }
+      }
+      if (kakaoBtn && !kakaoBtn.classList.contains('is-disabled')) {
+        kakaoBtn.onclick = () => {
+          location.href = buildKakaoAuthUrl(nextUrl, null, 'login')
         }
       }
     }
+
+    // 아래 레거시 함수 본문은 호환용으로 유지 (initInAppBrowserNotice 등에서 호출)
+    function bindGoogleSignupButton() { bindSignupProviderButtons() }
 
     function bindGoogleLoginButton() {
       const loginBtn = document.getElementById('btn-google-login')
@@ -397,51 +587,43 @@
       if (!detectInAppBrowser()) return
       const notice = document.getElementById('inapp-notice')
       if (notice) notice.hidden = false
-      document.getElementById('btn-google-link')?.classList.add('is-disabled')
+      // Google만 인앱 브라우저에서 차단(카카오는 정상)
+      document.getElementById('btn-google-signup')?.classList.add('is-disabled')
       document.getElementById('btn-google-login')?.classList.add('is-disabled')
       document.getElementById('btn-copy-site-url')?.addEventListener('click', copyPageUrlForExternalBrowser)
     }
 
-    function setSocialNextLinks() {
-      bindGoogleSignupButton()
-      bindGoogleLoginButton()
+    function bindAllProviderButtons() {
+      bindSignupProviderButtons()
+      bindLoginProviderButtons()
     }
-    setSocialNextLinks()
+    bindAllProviderButtons()
     initInAppBrowserNotice()
-    updateGoogleTypeLabels()
+    updateTypeLabels()
     if (params.get('mode') === 'login') showAuthMode('login')
     else showAuthMode('signup')
 
     async function initAuthProviders() {
       try {
         const providers = await API.get('/auth/providers')
-        const betaNotice = document.getElementById('beta-notice')
-        const emailSection = document.getElementById('email-login-section')
         const setupHint = document.getElementById('google-setup-hint')
+        // 통합 흐름이 이메일 로그인/자체 가입을 모두 포함하므로 구 중복 섹션은 항상 숨김
+        const emailSection = document.getElementById('email-login-section')
         const registerSection = document.getElementById('register-section')
+        const betaNotice = document.getElementById('beta-notice')
+        if (emailSection) emailSection.hidden = true
+        if (registerSection) registerSection.hidden = true
+        if (betaNotice) betaNotice.hidden = true
 
-        if (providers.beta_mode) {
-          if (betaNotice) {
-            betaNotice.dataset.visible = '1'
-            betaNotice.hidden = params.get('mode') === 'login'
-          }
-          if (emailSection) emailSection.hidden = true
-          if (registerSection) registerSection.hidden = true
-        } else {
-          if (betaNotice) betaNotice.hidden = true
-          if (emailSection) emailSection.hidden = false
-          if (registerSection) registerSection.hidden = false
-          if (params.get('tab') === 'register') switchTab('register')
-        }
-
+        // 소셜 로그인은 "연동된 계정" 전용 — 미설정 시 해당 버튼만 비활성화
         if (!providers.google) {
-          document.getElementById('btn-google-link')?.classList.add('is-disabled')
           document.getElementById('btn-google-login')?.classList.add('is-disabled')
           if (setupHint) setupHint.hidden = false
-        } else {
-          bindGoogleSignupButton()
-          bindGoogleLoginButton()
         }
+        if (!providers.kakao) {
+          document.getElementById('btn-kakao-login')?.classList.add('is-disabled')
+        }
+        bindLoginProviderButtons()
       } catch (e) {
         console.error(e)
       }
