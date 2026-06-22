@@ -834,7 +834,13 @@ function normalizeFooterConfig(data = {}) {
   const base = JSON.parse(JSON.stringify(DEFAULT_FOOTER_CONFIG))
   if (data.brand_name != null) base.brand_name = String(data.brand_name).trim().slice(0, 40) || base.brand_name
   if (data.tagline != null) base.tagline = String(data.tagline).trim().slice(0, 200)
-  if (data.biz_info != null) base.biz_info = String(data.biz_info).trim().slice(0, 2000)
+  if (data.biz_info != null) {
+    if (Array.isArray(data.biz_info)) {
+      base.biz_info = data.biz_info.map(line => String(line || '').trim()).filter(Boolean)
+    } else {
+      base.biz_info = String(data.biz_info).trim().slice(0, 2000)
+    }
+  }
   if (data.copyright != null) base.copyright = String(data.copyright).trim().slice(0, 120) || base.copyright
   if (Array.isArray(data.columns)) {
     base.columns = data.columns.slice(0, 6).map(col => ({
