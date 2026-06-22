@@ -147,6 +147,7 @@ router.get('/courses/:id/chapters', async (req, res) => {
       live_curriculum_text: course.live_curriculum_text || null,
       live_curriculum_image: course.live_curriculum_image || null,
       detail_intro_text: course.detail_intro_text || null,
+      detail_intro_images: normalizeDetailIntroImages(course),
       detail_intro_image: course.detail_intro_image || null,
     },
     chapters,
@@ -199,9 +200,10 @@ router.patch('/courses/:id', async (req, res) => {
   const allowed = [
     'title', 'description', 'category', 'price', 'sale_price', 'is_published',
     'course_type', 'live_schedule', 'live_starts_at', 'meet_code', 'live_status',
-    'live_curriculum_text', 'live_curriculum_image', 'detail_intro_text', 'detail_intro_image', 'live_chat_url',
+    'live_curriculum_text', 'live_curriculum_image', 'detail_intro_text', 'detail_intro_image', 'detail_intro_images', 'live_chat_url',
     'live_replay_url', 'live_material_url',
     'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'hero_gallery', 'sort_order', 'is_offline', 'enrollment_limit',
+    'learning_outcomes', 'target_audience', 'instructor_name', 'instructor_role', 'instructor_bio', 'instructor_avatar',
   ]
   const update = {}
   for (const key of allowed) {
@@ -241,11 +243,55 @@ router.patch('/courses/:id', async (req, res) => {
     }
     update[key] = url.slice(0, 500)
   }
-  if (update.detail_intro_image !== undefined && update.detail_intro_image !== null && update.detail_intro_image !== '' && !isValidImage(update.detail_intro_image)) {
-    return res.status(400).json({ error: '상세 소개 이미지는 URL 또는 JPG/PNG/WebP(base64)만 사용할 수 있습니다.' })
+  if (update.detail_intro_images !== undefined) {
+    if (update.detail_intro_images === null || update.detail_intro_images === '') {
+      update.detail_intro_images = null
+      update.detail_intro_image = null
+    } else if (!Array.isArray(update.detail_intro_images)) {
+      return res.status(400).json({ error: '상세 소개 이미지는 배열 형식이어야 합니다.' })
+    } else {
+      const cleaned = []
+      for (const item of update.detail_intro_images.slice(0, 10)) {
+        const url = String(item || '').trim()
+        if (!url) continue
+        if (url.length > MAX_DETAIL_INTRO_IMAGE_LEN) {
+          return res.status(400).json({ error: '상세 소개 이미지 용량이 너무 큽니다. WebP 파일을 줄여서 다시 업로드해주세요.' })
+        }
+        if (!isValidWebpImage(url)) {
+          return res.status(400).json({ error: '상세 소개 이미지는 WebP(URL 또는 base64)만 사용할 수 있습니다.' })
+        }
+        cleaned.push(url)
+      }
+      update.detail_intro_images = cleaned.length ? cleaned : null
+      update.detail_intro_image = null
+    }
+  }
+  if (update.detail_intro_image !== undefined && update.detail_intro_image !== null && update.detail_intro_image !== '') {
+    if (typeof update.detail_intro_image === 'string' && update.detail_intro_image.length > MAX_DETAIL_INTRO_IMAGE_LEN) {
+      return res.status(400).json({ error: '상세 소개 이미지 용량이 너무 큽니다. 더 작은 이미지를 업로드해주세요.' })
+    }
+    if (!isValidWebpImage(update.detail_intro_image)) {
+      return res.status(400).json({ error: '상세 소개 이미지는 WebP(URL 또는 base64)만 사용할 수 있습니다.' })
+    }
   }
   if (update.detail_intro_text !== undefined) {
     update.detail_intro_text = String(update.detail_intro_text || '').trim() || null
+  }
+  for (const key of ['learning_outcomes', 'target_audience']) {
+    if (update[key] === undefined) continue
+    if (!Array.isArray(update[key])) {
+      update[key] = null
+    } else {
+      const cleaned = update[key].map(s => String(s || '').trim()).filter(Boolean).slice(0, 10)
+      update[key] = cleaned.length ? cleaned : null
+    }
+  }
+  for (const key of ['instructor_name', 'instructor_role', 'instructor_bio']) {
+    if (update[key] !== undefined) update[key] = String(update[key] || '').trim() || null
+  }
+  if (update.instructor_avatar !== undefined) {
+    if (!update.instructor_avatar || update.instructor_avatar === '') update.instructor_avatar = null
+    else if (!isValidImage(update.instructor_avatar)) return res.status(400).json({ error: '강사 사진은 URL 또는 JPG/PNG/WebP(base64)만 사용할 수 있습니다.' })
   }
   if (update.detail_intro_image !== undefined && (update.detail_intro_image === null || update.detail_intro_image === '')) {
     update.detail_intro_image = null
@@ -318,6 +364,25 @@ router.patch('/editor-applications/:id', async (req, res) => {
 })
 
 const MAX_IMAGE_LEN = 480000
+const MAX_DETAIL_INTRO_IMAGE_LEN = 950000
+
+function normalizeDetailIntroImages(course) {
+  if (!course) return []
+  if (Array.isArray(course.detail_intro_images) && course.detail_intro_images.length) {
+    return course.detail_intro_images.filter(Boolean).slice(0, 10)
+  }
+  if (course.detail_intro_image) return [course.detail_intro_image]
+  return []
+}
+
+function isValidWebpImage(value) {
+  if (!value) return true
+  if (typeof value !== 'string') return false
+  if (value.length > MAX_DETAIL_INTRO_IMAGE_LEN) return false
+  if (/^data:image\/webp;base64,/.test(value)) return true
+  if (/^https?:\/\/.+/i.test(value)) return /\.webp(\?|#|$)/i.test(value)
+  return false
+}
 
 function isValidImage(value) {
   if (!value) return true

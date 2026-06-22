@@ -302,6 +302,122 @@
 .buy-features .feat-icon--cert .ti { color: var(--text-secondary); }
 .buy-features .feat-icon--refund .ti { color: var(--text-secondary); }
 
+/* ── 배우는 것 섹션 ── */
+.outcomes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+}
+.outcome-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+.outcome-item .ti {
+  font-size: 17px;
+  color: var(--success);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ── 추천 대상 섹션 ── */
+.target-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.target-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+.target-item .ti {
+  font-size: 17px;
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ── 강사 소개 ── */
+.instructor-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.instructor-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 0.5px solid var(--border);
+}
+.instructor-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-muted);
+  font-size: 24px;
+  color: var(--text-hint);
+}
+.instructor-info { flex: 1; min-width: 0; }
+.instructor-name { font-size: 17px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+.instructor-role { font-size: 14px; color: var(--text-hint); margin-bottom: 8px; }
+.instructor-bio { font-size: 14.5px; color: var(--text-secondary); line-height: 1.75; white-space: pre-wrap; }
+
+/* ── 사이드 통계 ── */
+.side-stats-section .course-section { padding-bottom: 0; }
+.side-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--bg-soft);
+  border-radius: 10px;
+}
+.side-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.side-stat-item .ti { font-size: 16px; color: var(--text-hint); flex-shrink: 0; }
+.side-stat-item strong { color: var(--text-primary); }
+
+/* ── 섹션 간격 (main col) ── */
+.course-body-main .course-section {
+  margin-bottom: 36px;
+  padding-bottom: 36px;
+  border-bottom: 0.5px solid var(--border);
+}
+.course-body-main .course-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.course-body-main .course-section h2 { border-bottom: none; padding-bottom: 0; margin-bottom: 16px; }
+
+/* ── buy card: 환불 보장 배너 ── */
+.buy-guarantee {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.buy-guarantee .ti { font-size: 15px; flex-shrink: 0; }
+
 .course-body-wrap { padding: 40px 0 60px; }
 .course-body-inner {
   display: flex;
@@ -323,6 +439,12 @@
 }
 .course-detail-intro__figure {
   margin: 0 0 20px;
+}
+.course-detail-intro__figure:last-of-type {
+  margin-bottom: 20px;
+}
+.course-detail-intro__figure + .course-detail-intro__figure {
+  margin-top: 4px;
 }
 .course-detail-intro__image {
   display: block;

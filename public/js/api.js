@@ -38,7 +38,16 @@ const API = {
       },
       body: body ? JSON.stringify(body) : undefined
     })
-    const data = await res.json()
+    let data = {}
+    try {
+      data = await res.json()
+    } catch {
+      if (!res.ok) {
+        const err = new Error(res.status === 413 ? '요청 용량이 너무 큽니다. 이미지 크기를 줄여주세요.' : '오류가 발생했습니다.')
+        err.status = res.status
+        throw err
+      }
+    }
     if (!res.ok) {
       const err = new Error(data.error || '오류가 발생했습니다.')
       err.status = res.status

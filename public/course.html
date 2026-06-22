@@ -11,7 +11,7 @@
   </script>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>강의 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=16" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=17" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 </head>
 <body>
@@ -188,11 +188,67 @@
 
     function renderDetailIntro(c) {
       const text = String(c.detail_intro_text || '').trim()
-      const image = String(c.detail_intro_image || '').trim()
-      if (!text && !image) return ''
+      const images = Array.isArray(c.detail_intro_images) && c.detail_intro_images.length
+        ? c.detail_intro_images.filter(Boolean)
+        : (String(c.detail_intro_image || '').trim() ? [String(c.detail_intro_image).trim()] : [])
+      if (!text && !images.length) return ''
       return `<div class="course-detail-intro">
-        ${image ? `<figure class="course-detail-intro__figure"><img class="course-detail-intro__image" src="${esc(image)}" alt="" loading="lazy" /></figure>` : ''}
+        ${images.map(src => `<figure class="course-detail-intro__figure"><img class="course-detail-intro__image" src="${esc(src)}" alt="" loading="lazy" /></figure>`).join('')}
         ${text ? `<div class="course-detail-intro__text">${esc(text)}</div>` : ''}
+      </div>`
+    }
+
+    function renderLearningOutcomes(c) {
+      const items = c.learning_outcomes
+      if (!Array.isArray(items) || !items.length) return ''
+      return `<div class="course-section">
+        <h2>이 강의에서 배우는 것</h2>
+        <div class="outcomes-grid">${items.map(t => `
+          <div class="outcome-item"><i class="ti ti-circle-check" aria-hidden="true"></i><span>${esc(t)}</span></div>`).join('')}
+        </div>
+      </div>`
+    }
+
+    function renderTargetAudience(c) {
+      const items = c.target_audience
+      if (!Array.isArray(items) || !items.length) return ''
+      return `<div class="course-section">
+        <h2>이런 분께 추천합니다</h2>
+        <div class="target-list">${items.map(t => `
+          <div class="target-item"><i class="ti ti-user-check" aria-hidden="true"></i><span>${esc(t)}</span></div>`).join('')}
+        </div>
+      </div>`
+    }
+
+    function renderInstructor(c) {
+      if (!c.instructor_name) return ''
+      const avatarHtml = c.instructor_avatar
+        ? `<img class="instructor-avatar" src="${esc(c.instructor_avatar)}" alt="${esc(c.instructor_name)}" />`
+        : `<div class="instructor-avatar instructor-avatar--placeholder"><i class="ti ti-user" aria-hidden="true"></i></div>`
+      return `<div class="course-section">
+        <h2>강사 소개</h2>
+        <div class="instructor-card">
+          ${avatarHtml}
+          <div class="instructor-info">
+            <div class="instructor-name">${esc(c.instructor_name)}</div>
+            ${c.instructor_role ? `<div class="instructor-role">${esc(c.instructor_role)}</div>` : ''}
+            ${c.instructor_bio ? `<div class="instructor-bio">${esc(c.instructor_bio)}</div>` : ''}
+          </div>
+        </div>
+      </div>`
+    }
+
+    function renderSideStats(c) {
+      const rating = Number(c.rating) || 0
+      const reviewCount = Number(c.review_count) || 0
+      const studentCount = Number(c.student_count) || 0
+      if (!reviewCount && !studentCount) return ''
+      return `<div class="course-section side-stats-section">
+        <h2>수강생 통계</h2>
+        <div class="side-stats">
+          ${studentCount ? `<div class="side-stat-item"><i class="ti ti-users" aria-hidden="true"></i><span><strong>${studentCount.toLocaleString()}명</strong> 수강 중</span></div>` : ''}
+          ${reviewCount ? `<div class="side-stat-item"><i class="ti ti-star" aria-hidden="true"></i><span><strong>${rating}</strong> / 5.0 (${reviewCount.toLocaleString()}개 후기)</span></div>` : ''}
+        </div>
       </div>`
     }
 
@@ -200,13 +256,17 @@
       return `
         <div class="course-body-inner">
           <div class="course-body-main">
+            ${renderLearningOutcomes(c)}
+            ${renderTargetAudience(c)}
             ${renderDetailIntro(c)}
             <div class="course-section">
               <h2>커리큘럼</h2>
               ${renderCurriculumSection(c)}
             </div>
+            ${renderInstructor(c)}
           </div>
-          <aside class="course-body-side" aria-label="수강 기대평">
+          <aside class="course-body-side" aria-label="수강 정보">
+            ${renderSideStats(c)}
             <div class="course-section">
               <h2>수강 기대평</h2>
               ${renderAnticipationFeed(c)}
@@ -375,7 +435,10 @@
               ${CourseEnrollmentUI.buyCardPanelOpen(c)}
               ${renderBuyThumb(c, thumbClass)}
               <div class="buy-body">
-                ${c.course_type === 'live' ? `
+                ${c.course_type !== 'live' && !isFreeVod(c) ? `
+                <div class="buy-guarantee"><i class="ti ti-shield-check"></i> 7일 이내 전액 환불 보장</div>
+              ` : ''}
+              ${c.course_type === 'live' ? `
                 <div class="buy-intro">
                   <div class="buy-live-head">
                     <div class="buy-live-price">무료</div>
