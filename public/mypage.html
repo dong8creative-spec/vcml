@@ -216,107 +216,130 @@
     .qs-badge.accepted { background:#f5f5f5; color:#333333; }
     .qs-badge.rejected { background:#f0f0f0; color:#aaa; }
 
-    /* 쿠폰 — 티켓형 */
-    .coupon-list { display:flex; flex-direction:column; gap:14px; }
+    /* 쿠폰 — 영화제 티켓 스타일 */
+    .coupon-list { display:flex; flex-direction:column; gap:18px; }
     .coupon-ticket {
-      --coupon-page-bg: #f5f6fa;
-      --coupon-stub-w: 152px;
-      --coupon-notch: 11px;
-      display:flex;
-      align-items:stretch;
-      position:relative;
-      border-radius:12px;
-      background:#fff;
-      border:1px solid #e3e6ec;
-      box-shadow:0 2px 10px rgba(0,0,0,.06);
-      overflow:hidden;
+      --ct-bg:    #141428;
+      --ct-bg2:   #1e1e3c;
+      --ct-color: #e8c96a;
+      --ct-hole:  #f5f6fa;
+      --stub-w:   156px;
+      --notch:    11px;
+      display:flex; align-items:stretch; position:relative;
+      border-radius:14px;
+      background:linear-gradient(135deg, var(--ct-bg) 0%, var(--ct-bg2) 100%);
+      box-shadow:0 8px 32px rgba(0,0,0,.28), 0 2px 6px rgba(0,0,0,.18);
+      overflow:hidden; color:#fff;
     }
+    /* 쿠폰 유형별 컬러 */
+    .coupon-ticket--anticipation  { --ct-bg:#12122a; --ct-bg2:#1e1e46; --ct-color:#ffd166; }
+    .coupon-ticket--review5       { --ct-bg:#2a0e20; --ct-bg2:#3d1530; --ct-color:#ff8ab4; }
+    .coupon-ticket--client-reward { --ct-bg:#0a2218; --ct-bg2:#14342a; --ct-color:#4ecb71; }
+    .coupon-ticket--editor        { --ct-bg:#1c0a2e; --ct-bg2:#2a1248; --ct-color:#c084fc; }
+    .coupon-ticket--marketing     { --ct-bg:#1c140a; --ct-bg2:#2e2010; --ct-color:#f59e0b; }
+    /* 반치형 노치 */
     .coupon-ticket::before,
     .coupon-ticket::after {
-      content:'';
-      position:absolute;
-      right:calc(var(--coupon-stub-w) - var(--coupon-notch));
-      width:calc(var(--coupon-notch) * 2);
-      height:calc(var(--coupon-notch) * 2);
-      border-radius:50%;
-      background:var(--coupon-page-bg);
-      z-index:2;
+      content:''; position:absolute;
+      right:calc(var(--stub-w) - var(--notch));
+      width:calc(var(--notch) * 2); height:calc(var(--notch) * 2);
+      border-radius:50%; background:var(--ct-hole); z-index:3;
     }
-    .coupon-ticket::before { top:calc(var(--coupon-notch) * -1); }
-    .coupon-ticket::after { bottom:calc(var(--coupon-notch) * -1); }
+    .coupon-ticket::before { top:calc(var(--notch) * -1); }
+    .coupon-ticket::after  { bottom:calc(var(--notch) * -1); }
+    /* 사용·만료 */
     .coupon-ticket--used,
-    .coupon-ticket--expired { opacity:.52; filter:grayscale(.2); }
+    .coupon-ticket--expired { opacity:.42; filter:grayscale(.55); }
+    /* 메인 영역 */
     .coupon-ticket__main {
-      flex:1;
-      min-width:0;
-      padding:18px 20px 18px 24px;
-      position:relative;
+      flex:1; min-width:0; padding:20px 18px 20px 14px; position:relative; overflow:hidden;
     }
+    /* 필름 천공 — 왼쪽 세로 */
     .coupon-ticket__main::before {
-      content:'';
-      position:absolute;
-      left:0;
-      top:0;
-      bottom:0;
-      width:5px;
-      background:linear-gradient(180deg,#111 0%,#444 100%);
+      content:''; position:absolute; left:0; top:0; bottom:0; width:22px;
+      background:repeating-linear-gradient(
+        180deg,
+        transparent 0, transparent 5px,
+        rgba(255,255,255,.11) 5px, rgba(255,255,255,.11) 13px,
+        transparent 13px, transparent 18px
+      );
     }
-    .coupon-ticket--used .coupon-ticket__main::before,
-    .coupon-ticket--expired .coupon-ticket__main::before {
-      background:linear-gradient(180deg,#bbb 0%,#ddd 100%);
+    /* 우측 흐릿한 원형 워터마크 */
+    .coupon-ticket__main::after {
+      content:''; position:absolute;
+      right:-50px; top:50%; transform:translateY(-50%);
+      width:160px; height:160px; border-radius:50%;
+      border:36px solid rgba(255,255,255,.04);
     }
+    .coupon-ticket__badge {
+      display:inline-block; font-size:9px; font-weight:700;
+      letter-spacing:.14em; text-transform:uppercase;
+      color:var(--ct-color); opacity:.8;
+      margin-bottom:6px; padding-left:26px;
+    }
+    .coupon-amount {
+      font-size:30px; font-weight:900; color:var(--ct-color);
+      line-height:1.1; letter-spacing:-.02em; padding-left:26px;
+    }
+    .coupon-reason {
+      font-size:13px; color:rgba(255,255,255,.5);
+      margin-top:7px; line-height:1.5; padding-left:26px;
+    }
+    .coupon-until {
+      font-size:11px; color:rgba(255,255,255,.3);
+      margin-top:5px; padding-left:26px;
+    }
+    .coupon-usage {
+      font-size:11px; color:rgba(255,255,255,.3);
+      margin-top:7px; line-height:1.5; padding-left:26px;
+    }
+    /* 뜯는 선 */
     .coupon-ticket__tear {
-      flex-shrink:0;
-      width:0;
-      border-left:2px dashed #d1d5db;
-      margin:16px 0;
-      position:relative;
-      z-index:1;
+      flex-shrink:0; width:0;
+      border-left:2px dashed rgba(255,255,255,.18);
+      margin:14px 0; position:relative; z-index:1;
     }
+    /* 스텁 */
     .coupon-ticket__stub {
-      flex-shrink:0;
-      width:var(--coupon-stub-w);
+      flex-shrink:0; width:var(--stub-w);
       padding:16px 14px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      gap:6px;
-      background:linear-gradient(180deg,#fafafa 0%,#f3f4f6 100%);
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; text-align:center; gap:9px;
+      background:rgba(0,0,0,.22);
     }
-    .coupon-amount { font-size:22px; font-weight:900; color:#111; line-height:1.25; letter-spacing:-.02em; }
-    .coupon-reason { font-size:14px; color:#888; margin-top:6px; line-height:1.5; }
-    .coupon-until { font-size:12px; color:#888; margin-top:6px; }
-    .coupon-usage { font-size:12px; color:#666; margin-top:8px; line-height:1.5; }
     .coupon-code {
-      font-size:13px;
-      font-weight:700;
+      font-size:12px; font-weight:700;
       font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-      color:#222;
-      letter-spacing:.06em;
-      word-break:break-all;
+      color:var(--ct-color); letter-spacing:.1em; word-break:break-all;
+      background:rgba(255,255,255,.07); padding:7px 10px;
+      border-radius:6px; border:1px solid rgba(255,255,255,.1); width:100%;
     }
-    .coupon-status { font-size:13px; font-weight:700; }
-    .coupon-status.available { color:#111; }
+    .coupon-status {
+      font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+      padding:4px 12px; border-radius:20px;
+    }
+    .coupon-status.available {
+      background:rgba(255,255,255,.1); color:#fff;
+      border:1px solid rgba(255,255,255,.22);
+    }
     .coupon-status.used,
-    .coupon-status.expired { color:#aaa; }
-    .coupon-ticket__stub .btn-settings-action { margin-top:4px; font-size:12px; padding:6px 10px; width:100%; max-width:130px; }
+    .coupon-status.expired {
+      background:rgba(255,255,255,.04); color:rgba(255,255,255,.28);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .coupon-ticket__stub .btn-settings-action {
+      background:var(--ct-color); color:#000; border:none;
+      border-radius:7px; font-size:12px; font-weight:700;
+      padding:7px 12px; width:100%; max-width:130px; cursor:pointer; margin-top:2px;
+    }
     @media (max-width:560px) {
-      .coupon-ticket {
-        flex-direction:column;
-        --coupon-stub-w: 100%;
-      }
-      .coupon-ticket::before,
-      .coupon-ticket::after { display:none; }
+      .coupon-ticket { flex-direction:column; --stub-w:100%; }
+      .coupon-ticket::before, .coupon-ticket::after { display:none; }
       .coupon-ticket__tear {
-        width:auto;
-        height:0;
-        border-left:none;
-        border-top:2px dashed #d1d5db;
-        margin:0 16px;
+        width:auto; height:0; border-left:none;
+        border-top:2px dashed rgba(255,255,255,.18); margin:0 16px;
       }
-      .coupon-ticket__stub { width:100%; border-radius:0 0 12px 12px; }
+      .coupon-ticket__stub { width:100%; flex-direction:row; flex-wrap:wrap; justify-content:space-between; }
     }
 
     /* 설정 */
@@ -1108,29 +1131,39 @@ async function loadCoupons() {
       const useBtn = isFeatured && c.status === 'available'
         ? `<button type="button" class="btn-settings-action" onclick="useFeaturedCoupon('${c.id}')">상위노출 적용</button>`
         : ''
-      const statusClass = c.status === 'available'
-        ? 'coupon-ticket--available'
-        : c.status === 'expired'
-          ? 'coupon-ticket--expired'
-          : 'coupon-ticket--used'
-      const untilNote = (c.reason === 'anticipation_review' || c.reason === 'course_review_five_star') && c.expires_at
-        ? `<div class="coupon-until">~ ${c.expires_at.slice(0, 10)}까지</div>`
-        : c.reason === 'client_course_reward' && c.expires_at
-        ? `<div class="coupon-until">~ ${c.expires_at.slice(0, 10)}까지</div>`
-        : isFeatured && c.featured_until
-        ? `<div class="coupon-until">~ ${c.featured_until.slice(0,10)}</div>`
+      const themeClass = c.reason === 'anticipation_review' ? 'coupon-ticket--anticipation'
+        : c.reason === 'course_review_five_star' ? 'coupon-ticket--review5'
+        : c.reason === 'client_course_reward' ? 'coupon-ticket--client-reward'
+        : isFeatured ? 'coupon-ticket--editor'
+        : c.reason === 'marketing_consent' ? 'coupon-ticket--marketing'
         : ''
-      const statusLabel = c.status === 'available' ? '사용 가능' : c.status === 'expired' ? '만료됨' : '사용 완료'
+      const stateClass = c.status === 'available' ? '' : c.status === 'expired' ? 'coupon-ticket--expired' : 'coupon-ticket--used'
+      const badgeLabel = c.reason === 'anticipation_review' ? '기대평 쿠폰'
+        : c.reason === 'course_review_five_star' ? '5성 후기 쿠폰'
+        : c.reason === 'client_course_reward' ? '의뢰인 혜택'
+        : isApplyFeatured ? '에디터즈 승격'
+        : isFeatured ? '에디터즈 쿠폰'
+        : c.reason === 'marketing_consent' ? '마케팅 혜택'
+        : '할인 쿠폰'
+      const untilNote = (c.reason === 'anticipation_review' || c.reason === 'course_review_five_star') && c.expires_at
+        ? `<div class="coupon-until"><i class="ti ti-clock" aria-hidden="true"></i> ~ ${c.expires_at.slice(0, 10)}까지</div>`
+        : c.reason === 'client_course_reward' && c.expires_at
+        ? `<div class="coupon-until"><i class="ti ti-clock" aria-hidden="true"></i> ~ ${c.expires_at.slice(0, 10)}까지</div>`
+        : isFeatured && c.featured_until
+        ? `<div class="coupon-until"><i class="ti ti-clock" aria-hidden="true"></i> ~ ${c.featured_until.slice(0,10)}</div>`
+        : ''
+      const statusLabel = c.status === 'available' ? '✦ 사용 가능' : c.status === 'expired' ? '만료됨' : '사용 완료'
       const usageHtml = c.status === 'used' && c.usage
         ? `<div class="coupon-usage">
             ${c.usage.context_label}${c.usage.target_title ? ` · ${c.usage.target_title}` : ''}
-            ${c.usage.detail ? `<br><span style="color:#999">${c.usage.detail}</span>` : ''}
-            ${c.usage.used_at ? `<br><span style="color:#999">${c.usage.used_at.slice(0, 10)} 사용</span>` : ''}
+            ${c.usage.detail ? `<br>${c.usage.detail}` : ''}
+            ${c.usage.used_at ? `<br>${c.usage.used_at.slice(0, 10)} 사용` : ''}
           </div>`
         : ''
       return `
-      <div class="coupon-ticket ${statusClass}">
+      <div class="coupon-ticket ${themeClass} ${stateClass}">
         <div class="coupon-ticket__main">
+          <div class="coupon-ticket__badge">${badgeLabel}</div>
           ${amountHtml}
           <div class="coupon-reason">${reasonHtml}</div>
           ${untilNote}
