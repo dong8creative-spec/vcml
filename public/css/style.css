@@ -795,6 +795,16 @@ img { display: block; max-width: 100%; }
   .cat-tile-label { font-size: 21.6px; text-align: right; }
 }
 
+@media (min-width: 1440px) {
+  .hero { min-height: 560px; padding: 96px 24px; }
+  .hero-text h1 { font-size: 52px; }
+  .hero-text p { font-size: 19.2px; }
+}
+@media (min-width: 1920px) {
+  .hero { min-height: 640px; }
+  .hero-text h1 { font-size: 60px; }
+}
+
 /* Admin FAB — 관리자 전용 고정 버튼 */
 .site-admin-fab {
   position: fixed;
