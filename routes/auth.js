@@ -78,6 +78,7 @@ function isKakaoConfigured() {
 
 function isKakaoLoginEnabled() {
   if (process.env.KAKAO_LOGIN_ENABLED === '0') return false
+  if (process.env.KAKAO_LOGIN_ENABLED === '1') return isKakaoConfigured()
   if (process.env.AUTH_BETA_MODE !== '0') return false
   return isKakaoConfigured()
 }
@@ -119,16 +120,27 @@ router.post('/verify-code', (req, res) => {
 
 router.get('/kakao', (req, res) => {
   if (!isKakaoLoginEnabled()) {
-    return res.redirect('/login.html?kakao_error=' + encodeURIComponent('카카오 로그인은 준비 중입니다. Google 계정으로 로그인해주세요.'))
+    return res.redirect('/signup.html?kakao_error=' + encodeURIComponent('카카오 로그인이 설정되지 않았습니다. 관리자에게 문의해주세요.'))
   }
-  const state = encodeOAuthState(req.query.next)
+  const intent = req.query.intent === 'login' ? 'login' : 'signup'
+  const member_type = req.query.member_type
+  if (intent === 'signup') {
+    if (!member_type || !['student', 'client'].includes(member_type)) {
+      const nextQ = req.query.next ? '&next=' + encodeURIComponent(req.query.next) : ''
+      return res.redirect('/signup.html?kakao_error=' + encodeURIComponent('가입 유형(수강생/의뢰인)을 선택해주세요.') + nextQ)
+    }
+  }
+  const state = encodeOAuthState(req.query.next, member_type, intent)
   const url = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}&response_type=code&state=${state}`
   res.redirect(url)
 })
 
 router.get('/kakao/callback', async (req, res) => {
   const { code, state, error } = req.query
-  if (error) return res.redirect('/login.html?kakao_error=' + encodeURIComponent('카카오 로그인을 취소했습니다.'))
+  if (error) return res.redirect('/signup.html?kakao_error=' + encodeURIComponent('카카오 로그인을 취소했습니다.'))
+  if (!code) {
+    return res.redirect('/signup.html?kakao_error=' + encodeURIComponent('카카오 인증 코드가 없습니다.'))
+  }
   try {
     const tokenRes = await fetch('https://kauth.kakao.com/oauth/token', {
       method: 'POST',
@@ -143,32 +155,44 @@ router.get('/kakao/callback', async (req, res) => {
     })
     const kakaoUser = await userRes.json()
     const kakaoId = kakaoUser.id
-    const kakaoEmail = kakaoUser.kakao_account?.email || null
+    const kakaoEmail = (kakaoUser.kakao_account?.email || '').toLowerCase().trim() || null
     const kakaoName = kakaoUser.kakao_account?.profile?.nickname || kakaoUser.properties?.nickname || '카카오 사용자'
 
+    const { nextUrl, memberType, intent } = parseOAuthState(state)
     let isNew = false
     let user = await db.findUserByKakaoId(kakaoId)
     if (!user && kakaoEmail) {
       user = await db.findUserByEmail(kakaoEmail)
-      if (user) await db.linkKakaoId(user.id, kakaoId)
+      if (user) {
+        await db.linkKakaoId(user.id, kakaoId)
+        user = await db.findUserById(user.id)
+      }
     }
     if (!user) {
-      user = await db.createKakaoUser(kakaoId, kakaoEmail, kakaoName)
+      if (intent === 'login' || !memberType) {
+        return res.redirect('/signup.html?kakao_error=' + encodeURIComponent('처음 이용하시는 경우 회원가입(가입 유형 선택)을 먼저 진행해주세요.') + (nextUrl !== '/' ? '&next=' + encodeURIComponent(nextUrl) : ''))
+      }
+      user = await db.createKakaoUser(kakaoId, kakaoEmail, kakaoName, memberType || 'student')
       isNew = true
+    } else if (memberType && !user.member_type) {
+      user = await db.completeProfile(user.id, {
+        name: user.name,
+        email: user.email || kakaoEmail,
+        member_type: memberType,
+      })
     }
 
-    const token = signUserToken(user)
-    const nextUrl = parseOAuthNext(state)
-
     if (isNew || !user.profile_complete) {
+      const token = signUserToken(user, { profileComplete: false })
       const userJson = encodeURIComponent(JSON.stringify(userPayload(user)))
       return res.redirect(`/onboarding.html?kakao_token=${token}&kakao_user=${userJson}&next=${encodeURIComponent(nextUrl)}`)
     }
 
+    const token = signUserToken(user, { profileComplete: true })
     redirectOAuthLogin(res, { token, user, nextUrl, paramPrefix: 'kakao' })
   } catch (err) {
     console.error('카카오 로그인 오류:', err)
-    res.redirect('/login.html?kakao_error=' + encodeURIComponent('카카오 로그인 중 오류가 발생했습니다.'))
+    res.redirect('/signup.html?kakao_error=' + encodeURIComponent('카카오 로그인 중 오류가 발생했습니다.'))
   }
 })
 

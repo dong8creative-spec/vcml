@@ -1140,13 +1140,26 @@ const db = {
     const ref = await fs.collection('users').add(data)
     return { id: ref.id, ...data }
   },
-  async createKakaoUser(kakaoId, email, name) {
-    const data = { kakao_id: String(kakaoId), email: email || null, password: null, name, role: 'student', member_type: null, profile_complete: false, marketing_agreed: 0, marketing_agreed_at: null, phone: null, created_at: now() }
+  async createKakaoUser(kakaoId, email, name, memberType = 'student') {
+    const data = {
+      kakao_id: String(kakaoId),
+      email: email || null,
+      password: null,
+      name: name || '카카오 사용자',
+      role: 'student',
+      member_type: ['student', 'client'].includes(memberType) ? memberType : 'student',
+      profile_complete: false,
+      auth_provider: 'kakao',
+      marketing_agreed: 0,
+      marketing_agreed_at: null,
+      phone: null,
+      created_at: now(),
+    }
     const ref = await fs.collection('users').add(data)
     return { id: ref.id, ...data }
   },
   async linkKakaoId(userId, kakaoId) {
-    await fs.collection('users').doc(userId).update({ kakao_id: String(kakaoId) })
+    await fs.collection('users').doc(userId).update({ kakao_id: String(kakaoId), auth_provider: 'kakao' })
   },
   async findUserByGoogleId(googleId) {
     const snap = await fs.collection('users').where('google_id', '==', String(googleId)).limit(1).get()

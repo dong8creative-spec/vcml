@@ -126,6 +126,7 @@
     <footer class="login-card-footer">
       <button type="button" id="btn-show-login" class="auth-mode-link" hidden>이미 계정이 있으신가요? <span>로그인</span></button>
       <button type="button" id="btn-show-signup" class="auth-mode-link" hidden>처음이신가요? <span>회원가입</span></button>
+      <a href="/signup.html" class="auth-mode-link auth-mode-link--block" id="link-kakao-signup">카카오로 가입하시려면 <span>회원가입 페이지</span></a>
       <p id="google-setup-hint" class="login-setup-hint" hidden>
         Google 로그인이 아직 설정되지 않았습니다. 관리자에게 GOOGLE_CLIENT_ID 설정을 요청해주세요.
       </p>
@@ -240,6 +241,10 @@
   <script>
     const params = new URLSearchParams(location.search)
     const nextUrl = params.get('next') || '/'
+    const linkKakao = document.getElementById('link-kakao-signup')
+    if (linkKakao) {
+      linkKakao.href = '/signup.html' + (nextUrl !== '/' ? '?next=' + encodeURIComponent(nextUrl) : '')
+    }
 
     function finishOAuthLogin(token, userJson, prefix) {
       try {

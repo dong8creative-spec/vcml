@@ -283,13 +283,54 @@ body.login-body { background: var(--bg-soft); min-height: 100vh; display: flex; 
 }
 .signup-type-summary strong { color: #111; }
 
-.signup-google-ready { text-align: center; padding: 4px 0 0; }
-.signup-google-ready-icon {
+.signup-google-ready,
+.signup-oauth-ready { text-align: center; padding: 4px 0 0; }
+.signup-google-ready-icon,
+.signup-oauth-ready-icon {
   width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 50%;
   border: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: center; background: #fff;
 }
-.signup-google-ready-title { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 6px; }
-.signup-google-ready-desc { margin: 0; font-size: 14px; color: #666; line-height: 1.6; }
+.signup-oauth-ready-icon--kakao { background: #FEE500; border-color: #e6d200; }
+.signup-google-ready-title,
+.signup-oauth-ready-title { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 6px; }
+.signup-google-ready-desc,
+.signup-oauth-ready-desc { margin: 0; font-size: 14px; color: #666; line-height: 1.6; }
+
+.login-card-notice--minimal {
+  background: #f6fbf6;
+  border-color: #c8e6c9;
+  color: #1b4332;
+}
+.login-card-notice--minimal strong { color: #14532d; }
+.login-card-notice--minimal .login-card-notice-desc {
+  white-space: normal;
+  margin: 6px 0 0;
+  line-height: 1.55;
+  font-size: 13px;
+}
+.signup-tag-optional {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  background: #eee;
+  padding: 1px 5px;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+.signup-not-collected {
+  margin: 10px 0 8px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border: 1px dashed #ddd;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #555;
+  line-height: 1.55;
+}
+.signup-not-collected strong { display: block; color: #333; margin-bottom: 6px; font-size: 13px; }
+.signup-not-collected ul { margin: 0 0 8px; padding-left: 18px; }
+.signup-not-collected p { margin: 0; }
 
 .google-login-quick-desc { text-align: center; font-size: 14px; color: #666; margin: 0; line-height: 1.55; }
 
@@ -298,6 +339,7 @@ body.login-body { background: var(--bg-soft); min-height: 100vh; display: flex; 
 }
 .auth-mode-link span { color: #111; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 .auth-mode-link:hover span { color: #333; }
+.auth-mode-link--block { display: block; text-align: center; text-decoration: none; margin-top: 2px; }
 
 .consent-done-banner {
   background: #f5f7ff; border: 1px solid #d8dcff; border-radius: 10px;

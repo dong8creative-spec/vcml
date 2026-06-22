@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-13X3J2EYQ2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-13X3J2EYQ2');
+  </script>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>회원가입 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/login.css?v=8" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+</head>
+<body class="login-body">
+  <div data-site-header="logo-only"></div>
+  <div class="login-body-content">
+  <div class="login-card">
+    <header class="login-card-header">
+      <h1 class="login-card-title">회원가입</h1>
+      <p class="login-card-sub">가입 유형 선택 → 개인정보 안내·동의 → 카카오 계정 연결 순서로 진행됩니다</p>
+    </header>
+
+    <div class="login-card-notice login-card-notice--minimal">
+      <strong>최소한의 정보만 수집합니다</strong>
+      <p class="login-card-notice-desc">회원가입 단계에서는 카카오 로그인에 필요한 식별 정보만 받습니다. 휴대전화번호는 강의 신청·운영 안내가 필요할 때 별도로 안내드립니다.</p>
+    </div>
+
+    <div class="login-card-main">
+      <div id="kakao-signup-flow">
+        <div class="step-indicator">
+          <div class="step-item active" id="ks-si-1"><span class="step-num">1</span><span class="step-label">가입 유형</span></div>
+          <div class="step-line"></div>
+          <div class="step-item" id="ks-si-2"><span class="step-num">2</span><span class="step-label">정보 고지</span></div>
+          <div class="step-line"></div>
+          <div class="step-item" id="ks-si-3"><span class="step-num">3</span><span class="step-label">카카오 연결</span></div>
+        </div>
+
+        <div id="ks-step-1" class="auth-card-step">
+          <div class="member-type-label">어떻게 이용하실 건가요?</div>
+          <div class="member-type-row">
+            <label class="member-type-card">
+              <input type="radio" name="signup-member-type" value="student" checked />
+              <div class="member-type-title">강의 수강</div>
+              <div class="member-type-desc">온라인 강의를 듣고 싶어요</div>
+            </label>
+            <label class="member-type-card">
+              <input type="radio" name="signup-member-type" value="client" />
+              <div class="member-type-title">영상 편집 의뢰</div>
+              <div class="member-type-desc">영상 편집 작업을 맡기고 싶어요</div>
+              <div class="member-type-benefit">유료강의(20만원↑) 수강 시 의뢰 할인쿠폰 10장 추가 제공</div>
+            </label>
+          </div>
+          <p class="member-type-note">※ 가입 후 유형 변경을 원하시면 고객센터로 문의해 주세요.</p>
+          <button type="button" class="btn-submit" onclick="goSignupStep(2)">다음</button>
+        </div>
+
+        <div id="ks-step-2" class="auth-card-step" hidden>
+          <div class="signup-disclosure">
+            <div class="signup-disclosure-head">
+              <strong>카카오 계정 연동 시 수집·이용하는 개인정보</strong>
+              <p>회원가입을 위해 카카오 로그인(OAuth)을 통해 아래 정보를 수집·이용합니다. 카카오 계정 비밀번호는 수집하지 않습니다.</p>
+            </div>
+            <table class="signup-disclosure-table">
+              <thead><tr><th>수집 항목</th><th>이용 목적</th><th>보유 기간</th></tr></thead>
+              <tbody>
+                <tr><td>카카오 고유 ID</td><td>계정 연동·중복 가입 방지</td><td>회원 탈퇴 시까지</td></tr>
+                <tr><td>닉네임(표시명)</td><td>회원 식별·프로필 표시</td><td>회원 탈퇴 시까지</td></tr>
+                <tr><td>이메일 <span class="signup-tag-optional">선택</span></td><td>계정 식별·필수 서비스 안내</td><td>회원 탈퇴 시까지</td></tr>
+              </tbody>
+            </table>
+            <div class="signup-not-collected">
+              <strong>회원가입 단계에서 수집하지 않는 항목</strong>
+              <ul>
+                <li>휴대전화번호 · 주소 · 생년월일 · 성별</li>
+                <li>마케팅·프로모션 수신 동의 (가입 후 별도 선택)</li>
+              </ul>
+              <p>강의 일정·입장 등 <b>운영 안내</b>가 필요한 경우, 강의 신청 시 연락처와 별도 동의를 받습니다.</p>
+            </div>
+            <p class="signup-disclosure-note">이메일은 카카오 계정 설정·동의 여부에 따라 제공되지 않을 수 있으며, 미제공 시에도 서비스 이용이 가능합니다.</p>
+            <div class="signup-type-summary">선택한 가입 유형: <strong id="ks-type-label">강의 수강(수강생)</strong></div>
+          </div>
+          <div class="terms-stack">
+            <div class="terms-row required">
+              <label><input type="checkbox" id="ks-agree-collection" /> [필수] 위 개인정보 수집·이용 내용을 확인하였으며 동의합니다.</label>
+            </div>
+            <div class="terms-row required">
+              <label><input type="checkbox" id="ks-agree-privacy" /> [필수] <a href="/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a> 동의</label>
+            </div>
+            <div class="terms-row required">
+              <label><input type="checkbox" id="ks-agree-terms" /> [필수] <a href="/terms.html" target="_blank" rel="noopener">이용약관</a> 동의</label>
+            </div>
+          </div>
+          <div class="auth-card-actions">
+            <button type="button" class="btn-outline-step" onclick="goSignupStep(1)">이전</button>
+            <button type="button" class="btn-submit" onclick="goSignupStep(3)">다음</button>
+          </div>
+        </div>
+
+        <div id="ks-step-3" class="auth-card-step" hidden>
+          <div class="signup-oauth-ready">
+            <div class="signup-oauth-ready-icon signup-oauth-ready-icon--kakao" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 18 18" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1C4.582 1 1 3.925 1 7.5c0 2.286 1.417 4.294 3.563 5.467L3.67 16.14a.25.25 0 0 0 .37.278L8.13 13.96c.288.027.58.04.87.04 4.418 0 8-2.925 8-6.5S13.418 1 9 1z" fill="#3A1D1D"/></svg>
+            </div>
+            <div class="signup-oauth-ready-title">카카오 계정을 선택해 주세요</div>
+            <p class="signup-oauth-ready-desc"><strong id="ks-type-label-2">강의 수강(수강생)</strong>으로 가입합니다. 아래 버튼을 누르면 카카오 로그인 화면으로 이동합니다.</p>
+          </div>
+          <button type="button" id="btn-kakao-signup" class="btn-kakao">
+            <svg width="20" height="20" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1C4.582 1 1 3.925 1 7.5c0 2.286 1.417 4.294 3.563 5.467L3.67 16.14a.25.25 0 0 0 .37.278L8.13 13.96c.288.027.58.04.87.04 4.418 0 8-2.925 8-6.5S13.418 1 9 1z" fill="#3A1D1D"/></svg>
+            카카오로 가입하기
+          </button>
+          <button type="button" class="btn-outline-step" onclick="goSignupStep(2)">이전</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="login-card-footer">
+      <button type="button" class="auth-mode-link" onclick="location.href='/login.html?mode=login' + (nextUrl !== '/' ? '&next=' + encodeURIComponent(nextUrl) : '')">
+        이미 계정이 있으신가요? <span>로그인</span>
+      </button>
+      <p id="kakao-setup-hint" class="login-setup-hint" hidden>
+        카카오 로그인이 아직 설정되지 않았습니다. 관리자에게 KAKAO_CLIENT_ID 설정을 요청해주세요.
+      </p>
+    </footer>
+  </div>
+  </div>
+
+  <script src="/js/api.js?v=18"></script>
+  <script src="/js/site-header.js?v=6"></script>
+  <script>
+    const params = new URLSearchParams(location.search)
+    const nextUrl = params.get('next') || '/'
+    const MEMBER_TYPE_LABELS = { student: '강의 수강(수강생)', client: '영상 편집 의뢰(의뢰인)' }
+
+    ;[
+      ['kakao_token', 'kakao_user', 'kakao'],
+    ].forEach(([tokenKey, userKey, prefix]) => {
+      const token = params.get(tokenKey)
+      const user = params.get(userKey)
+      if (!token || !user) return
+      try {
+        API.login(token, JSON.parse(decodeURIComponent(user)))
+        location.replace(nextUrl)
+      } catch {
+        toast('카카오 로그인 처리 중 오류가 발생했습니다.', 'error')
+      }
+    })
+
+    const kakaoErr = params.get('kakao_error')
+    if (kakaoErr) toast(decodeURIComponent(kakaoErr), 'error')
+
+    function selectedMemberType() {
+      return document.querySelector('input[name="signup-member-type"]:checked')?.value || null
+    }
+
+    function updateTypeLabels() {
+      const label = MEMBER_TYPE_LABELS[selectedMemberType()] || '수강생'
+      document.getElementById('ks-type-label').textContent = label
+      document.getElementById('ks-type-label-2').textContent = label
+    }
+
+    document.querySelectorAll('input[name="signup-member-type"]').forEach(el => {
+      el.addEventListener('change', updateTypeLabels)
+    })
+
+    function setStepIndicators(step) {
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById('ks-si-' + i)
+        if (!el) continue
+        el.classList.toggle('active', i === step)
+        el.classList.toggle('done', i < step)
+      }
+    }
+
+    function goSignupStep(step) {
+      if (step === 2) {
+        if (!selectedMemberType()) { toast('가입 유형을 선택해주세요.', 'error'); return }
+        updateTypeLabels()
+      }
+      if (step === 3) {
+        if (!document.getElementById('ks-agree-collection').checked) {
+          toast('개인정보 수집·이용 동의가 필요합니다.', 'error'); return
+        }
+        if (!document.getElementById('ks-agree-privacy').checked) {
+          toast('개인정보처리방침에 동의해주세요.', 'error'); return
+        }
+        if (!document.getElementById('ks-agree-terms').checked) {
+          toast('이용약관에 동의해주세요.', 'error'); return
+        }
+        sessionStorage.setItem('tc_signup_consent', JSON.stringify({
+          provider: 'kakao',
+          collection: true,
+          privacy: true,
+          terms: true,
+          member_type: selectedMemberType(),
+          at: Date.now(),
+        }))
+      }
+      for (let i = 1; i <= 3; i++) {
+        const panel = document.getElementById('ks-step-' + i)
+        if (panel) panel.hidden = i !== step
+      }
+      setStepIndicators(step)
+      if (typeof scheduleFitOneLineTexts === 'function') scheduleFitOneLineTexts()
+    }
+
+    function bindKakaoSignupButton() {
+      const btn = document.getElementById('btn-kakao-signup')
+      if (!btn || btn.classList.contains('is-disabled')) return
+      btn.onclick = () => {
+        const mt = selectedMemberType()
+        if (!mt) { toast('가입 유형을 선택해주세요.', 'error'); goSignupStep(1); return }
+        let consent = null
+        try { consent = JSON.parse(sessionStorage.getItem('tc_signup_consent') || 'null') } catch (_) {}
+        if (!consent?.privacy || !consent?.terms || !consent?.collection) {
+          toast('정보 고지·약관 동의를 먼저 완료해주세요.', 'error')
+          goSignupStep(2)
+          return
+        }
+        location.href = buildKakaoAuthUrl(nextUrl, mt, 'signup')
+      }
+    }
+
+    async function initProviders() {
+      try {
+        const providers = await API.get('/auth/providers')
+        if (!providers.kakao) {
+          document.getElementById('btn-kakao-signup')?.classList.add('is-disabled')
+          const hint = document.getElementById('kakao-setup-hint')
+          if (hint) hint.hidden = false
+        } else {
+          bindKakaoSignupButton()
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
+    updateTypeLabels()
+    bindKakaoSignupButton()
+    initProviders()
+    if (typeof scheduleFitOneLineTexts === 'function') scheduleFitOneLineTexts()
+  </script>
+</body>
+</html>

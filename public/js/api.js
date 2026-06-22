@@ -81,6 +81,17 @@ function buildGoogleAuthUrl(next, memberType, intent = 'signup') {
   return '/api/auth/google?' + params.toString()
 }
 
+function buildKakaoAuthUrl(next, memberType, intent = 'signup') {
+  const params = new URLSearchParams()
+  const safeNext = next && String(next).startsWith('/') && !String(next).startsWith('//') ? next : '/'
+  params.set('next', safeNext)
+  if (memberType && ['student', 'client'].includes(memberType)) {
+    params.set('member_type', memberType)
+  }
+  if (intent === 'login') params.set('intent', 'login')
+  return '/api/auth/kakao?' + params.toString()
+}
+
 function readGoogleMemberTypeFromPage() {
   return document.querySelector('input[name="google-member-type"]:checked')?.value
     || document.querySelector('input[name="member-type"]:checked')?.value
@@ -227,6 +238,7 @@ function startGoogleLogin(nextPath, options = {}) {
 }
 
 window.buildGoogleAuthUrl = buildGoogleAuthUrl
+window.buildKakaoAuthUrl = buildKakaoAuthUrl
 window.startGoogleLogin = startGoogleLogin
 
 function comingSoon(e) {
