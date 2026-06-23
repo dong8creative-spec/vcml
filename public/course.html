@@ -92,12 +92,9 @@
     async function load() {
       if (!slug) { location.href = '/'; return }
       try {
-        const [course, reviewsRes] = await Promise.all([
-          API.get('/courses/' + slug),
-          API.get('/courses/' + slug + '/anticipation-reviews').catch(() => ({ reviews: [] })),
-        ])
+        const course = await API.get('/courses/' + slug)
         courseData = course
-        anticipationReviews = reviewsRes.reviews || []
+        anticipationReviews = course.anticipation_reviews || []
         render(courseData)
       } catch { document.getElementById('course-wrap').innerHTML = '<p style="text-align:center;padding:60px;color:#aaa">강의를 찾을 수 없습니다.</p>' }
     }

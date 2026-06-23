@@ -252,26 +252,36 @@ router.get('/:slug', async (req, res) => {
   try {
     const course = await db.getCourseBySlug(req.params.slug)
     if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
-    const chapters = await db.getChaptersByCourse(course.id)
-    let enrolled = false
-    let my_anticipation = null
+
     const anticipation_modify = db.getAnticipationModifyMeta(course)
     const u = await optionalUser(req)
-    if (u) {
-      enrolled = await db.isEnrolled(u.id, course.id)
-      const review = await db.getAnticipationReviewByUserAndCourse(u.id, course.id)
-      if (review) {
-        my_anticipation = {
-          id: review.id,
-          content: review.content,
-          created_at: review.created_at,
-          can_edit: anticipation_modify.can_modify,
-        }
-      }
-    }
+
+    // course.id가 확정된 후 나머지 쿼리를 모두 병렬로 실행
+    const [chapters, anticipationReviews, enrolledResult, myReview] = await Promise.all([
+      db.getChaptersByCourse(course.id),
+      db.getCourseAnticipationReviews(course.id),
+      u ? db.isEnrolled(u.id, course.id) : Promise.resolve(false),
+      u ? db.getAnticipationReviewByUserAndCourse(u.id, course.id) : Promise.resolve(null),
+    ])
+
+    const enrolled = enrolledResult
+    const my_anticipation = myReview ? {
+      id: myReview.id,
+      content: myReview.content,
+      created_at: myReview.created_at,
+      can_edit: anticipation_modify.can_modify,
+    } : null
+
     const payload = {
       ...(await db.enrichCourseEnrollment(db.stripLiveResourceUrls(course))),
       chapters,
+      anticipation_reviews: anticipationReviews.map(r => ({
+        id: r.id,
+        author_id_display: r.author_id_display || r.author_display,
+        author_display: r.author_display,
+        content: r.content,
+        created_at: r.created_at,
+      })),
       enrolled,
       my_anticipation,
       anticipation_modify,

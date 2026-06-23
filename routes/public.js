@@ -81,4 +81,32 @@ router.get('/recent-orders', async (req, res) => {
   }
 })
 
+// 홈페이지 전체 데이터를 한 번에 반환 — API 요청 5개 → 1개로 줄임
+router.get('/homepage', async (req, res) => {
+  try {
+    const cached = db._cacheGet('homepage:data')
+    if (cached) return res.json(cached)
+    const [hero, courses, layout, orders, platformReviews] = await Promise.all([
+      db.getHeroConfig(),
+      db.getCourses(true),
+      db.getHomepageLayout(),
+      db.getRecentPublicOrders(20),
+      db.getPlatformReviewsByTypes(['student', 'client', 'editor']).catch(() => []),
+    ])
+    const TYPE_LABEL = { student: '수강생 후기', client: '의뢰인 후기', editor: '에디터즈 후기' }
+    const liveReviews = platformReviews.map(r => ({
+      id: r.id, review_type: r.review_type,
+      type_label: TYPE_LABEL[r.review_type] || r.review_type,
+      author_name: r.author_name, author_initial: r.author_initial,
+      content: r.content, rating: r.rating || 5,
+      context_label: r.context_label, created_at: r.created_at,
+    }))
+    const data = { hero, courses, layout, orders: orders || [], liveReviews }
+    db._cacheSet('homepage:data', data, 30_000)
+    res.json(data)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 module.exports = router

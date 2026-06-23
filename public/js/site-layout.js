@@ -8,18 +8,18 @@
       instructors: false,
       all_courses: true,
       free_courses: true,
-      new_courses: true,
-      reviews: true,
+      new_courses: false,
+      reviews: false,
       purchase_ticker: true,
     },
     nav: {
       all: true,
       instructors: true,
       capcut: true,
-      premiere: true,
-      ai: true,
-      editors: true,
-      projects: true,
+      premiere: false,
+      ai: false,
+      editors: false,
+      projects: false,
     },
     copy: {
       all_courses: { title: '전체 강의' },
@@ -40,7 +40,12 @@
 
   async function fetchLayout() {
     try {
-      layout = await API.get('/homepage-layout')
+      // 통합 엔드포인트에서 미리 받은 데이터가 있으면 재사용
+      if (window._homepageData?.layout) {
+        layout = window._homepageData.layout
+      } else {
+        layout = await API.get('/homepage-layout')
+      }
     } catch {
       layout = { ...DEFAULT, updated_at: null }
     }

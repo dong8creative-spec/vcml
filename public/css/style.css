@@ -160,6 +160,7 @@ img { display: block; max-width: 100%; }
   flex: 1;
   max-width: 760px;
   color: #fff;
+  padding-left: 20px;
 }
 .hero-badge { display: inline-flex; align-items: center; gap: 5px; background: #fff; border-radius: 20px; padding: 4px 12px; font-size: 13.6px; color: #555555; margin-bottom: 14px; }
 .hero-badge i { color: #555555; font-size: 13.6px; }

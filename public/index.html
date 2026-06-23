@@ -32,12 +32,12 @@ if (new URLSearchParams(location.search).get('preview') === '1') {
   <div class="hero-overlay" aria-hidden="true"></div>
   <div class="hero-inner" id="hero-inner">
     <div class="hero-text" id="hero-content">
-      <div class="hero-badge" id="hero-badge"><i class="ti ti-star-filled"></i> 실무 중심 쇼츠 편집 강의</div>
-      <h1 id="hero-title">현업 15년 전문가에게 배우는<br><em id="hero-title-em">영상편집 10배 단축클래스</em></h1>
-      <p id="hero-subtitle">여러분들의 귀한 시간,<br>낭비하지마세요</p>
+      <div class="hero-badge" id="hero-badge"><i class="ti ti-star-filled"></i> 실무 중심 영상편집 강의</div>
+      <h1 id="hero-title">현업 15년 전문가의 스킬을<br><em id="hero-title-em">흡수하는 초고속 편집강의</em></h1>
+      <p id="hero-subtitle">완전초보자들도 4시간 과정으로<br>중급단계까지 퀀텀점프!</p>
       <div class="hero-btns" id="hero-btns">
-        <a href="/instructors.html" class="btn-hero-primary" id="hero-primary-btn"><span class="btn-hero-ghost__label">강사 소개</span></a>
-        <a href="/course.html?slug=capcut-beginner-free" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-message-heart"></i><span class="btn-hero-ghost__label">강의 신청하기</span></a>
+        <a href="#all" class="btn-hero-primary" id="hero-primary-btn"><span class="btn-hero-ghost__label">전체 강의 보기</span></a>
+        <a href="/course.html?slug=capcut-beginner-free" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-player-play-filled"></i><span class="btn-hero-ghost__label">무료강의 신청하기</span></a>
       </div>
     </div>
   </div>
@@ -244,7 +244,7 @@ function renderCourseGrid332(courses) {
 
 async function loadAll() {
   try {
-    const courses = await API.get('/courses')
+    const courses = (window._homepageData?.courses) || await API.get('/courses')
     const published = courses.filter(c => c.is_published !== false)
     allPublishedCourses = published
     const live = published.filter(c => c.course_type === 'live')
@@ -315,7 +315,7 @@ function applyHeroButton(el, cfg, slot) {
 
 async function loadHero() {
   try {
-    const h = await API.get('/hero')
+    const h = (window._homepageData?.hero) || await API.get('/hero')
     const badge = document.getElementById('hero-badge')
     if (badge) badge.innerHTML = `<i class="ti ti-star-filled"></i> ${escHtml(h.badge_text)}`
     const title = document.getElementById('hero-title')
@@ -355,7 +355,7 @@ async function loadPurchaseTicker() {
     return
   }
   try {
-    const data = await API.get('/recent-orders')
+    const data = window._homepageData ? { orders: window._homepageData.orders } : await API.get('/recent-orders')
     const orders = data.orders || []
     if (!orders.length) {
       section.style.display = 'none'
@@ -416,7 +416,9 @@ async function loadLiveReviews() {
   const sub = document.getElementById('review-sub')
   if (!grid) return
   try {
-    const data = await API.get('/reviews/live')
+    const data = window._homepageData
+      ? { reviews: window._homepageData.liveReviews || [], visible_types: [{ type: 'student', label: '수강생 후기' }, { type: 'client', label: '의뢰인 후기' }, { type: 'editor', label: '에디터즈 후기' }] }
+      : await API.get('/reviews/live')
     const mixed = interleaveReviews(data.reviews || [])
     const customSub = (typeof getHomepageLayout === 'function' && getHomepageLayout()?.copy?.reviews?.subtitle) || ''
     if (sub) sub.textContent = customSub || reviewSubtitle(data.visible_types || [], API.isLoggedIn())
@@ -441,13 +443,20 @@ function scroll_shelf(id, dir) {
 // Nav auth — site-header.js에서 처리
 
 initFromUrl()
-applyHomepageLayout().then(() => {
+// 통합 엔드포인트로 홈 데이터를 한 번에 받아 캐시 → 개별 함수는 재사용
+;(async () => {
+  try {
+    window._homepageData = await API.get('/homepage')
+  } catch (_) {
+    window._homepageData = null
+  }
+  await applyHomepageLayout()
   loadHero()
   loadAll()
   initCategoryTiles()
   initGnbCatLinks()
   initSearch()
-})
+})()
 </script>
 </body>
 </html>

@@ -21,6 +21,33 @@ if (!admin.apps.length) {
 const fs = admin.firestore()
 fs.settings({ databaseId: process.env.FIREBASE_DATABASE_ID || 'vcmlmembers' })
 
+// ── 인메모리 TTL 캐시 ──
+// Vercel 서버리스: 인스턴스가 살아있는 동안 캐시 유지. 콜드 스타트 후엔 자동 갱신.
+const _cache = new Map()
+function cacheGet(key) {
+  const entry = _cache.get(key)
+  if (!entry) return null
+  if (Date.now() > entry.expiresAt) { _cache.delete(key); return null }
+  return entry.value
+}
+function cacheSet(key, value, ttlMs) {
+  _cache.set(key, { value, expiresAt: Date.now() + ttlMs })
+}
+function cacheInvalidate(...keys) {
+  keys.forEach(k => _cache.delete(k))
+}
+const TTL = {
+  COURSES: 30_000,       // 강의 목록 30초
+  COURSE_SLUG: 60_000,   // 강의 상세 1분
+  HERO: 5 * 60_000,      // 히어로 5분
+  FOOTER: 5 * 60_000,    // 푸터 5분
+  HOMEPAGE: 5 * 60_000,  // 홈페이지 레이아웃 5분
+  DASHBOARD: 60_000,     // 관리자 대시보드 1분
+  STATS: 60_000,         // 통계 1분
+  INSTRUCTORS: 5 * 60_000,
+  FAQS: 10 * 60_000,
+}
+
 const CLIENT_COURSE_REWARD_AMOUNT = 10000
 const CLIENT_COURSE_REWARD_COUNT = 10
 const CLIENT_COURSE_REWARD_MIN_COURSE_PRICE = 200000
@@ -813,7 +840,11 @@ const DEFAULT_FOOTER_CONFIG = {
       ],
     },
   ],
-  biz_info: '상호명 블루필드매뉴얼픽쳐스 · 대표자 이동헌 · 사업자등록번호 640-50-00860 · 통신판매업신고 제 0000-부산OO-0000 호 · 사업장 부산광역시 부산진구 가야대로 707-2(당감동) · 고객센터 010-4850-6946 (평일 10:00~18:00) · 이메일 dong8creative@gmail.com · 호스팅 Amazon Web Services (AWS) · 개인정보보호책임자 이동헌',
+  biz_info: [
+    '상호명 블루필드매뉴얼픽쳐스 · 대표자 이동헌 · 통신판매업신고 제 2025-부산진-0959 호',
+    '사업자등록번호 640-50-00860 · 고객센터 010-4850-6946',
+    '주소 부산광역시 부산진구 가야대로 707-2(당감동) · 이메일 dong8creative@gmail.com',
+  ],
   copyright: '© 2025 타닥클래스. All rights reserved.',
   policy_links: [
     { label: '개인정보처리방침', href: '/privacy.html' },
@@ -860,12 +891,12 @@ function normalizeFooterConfig(data = {}) {
 }
 
 const DEFAULT_HERO_CONFIG = {
-  badge_text: '실무 중심 영상 강의',
-  title: '현업 15년 전문가에게 배우는',
-  title_emphasis: '영상 제작 실전 강의',
-  subtitle: '편집·모션·촬영·색보정 — 유튜브부터 방송까지\n현장에서 실제로 쓰는 방식을 알려드립니다.',
+  badge_text: '실무 중심 영상편집 강의',
+  title: '현업 15년 전문가의 스킬을',
+  title_emphasis: '흡수하는 초고속 편집강의',
+  subtitle: '완전초보자들도 4시간 과정으로\n중급단계까지 퀀텀점프!',
   primary_btn: { label: '전체 강의 보기', href: '#all', action: 'all_courses' },
-  secondary_btn: { label: '무료 맛보기', href: '/course.html?slug=capcut-beginner-free', show_icon: true, action: 'custom' },
+  secondary_btn: { label: '무료강의 신청하기', href: '/course.html?slug=capcut-beginner-free', show_icon: true, action: 'custom' },
   image: null,
   image_alt: '',
 }
@@ -1257,15 +1288,24 @@ const db = {
 
   // courses
   async getCourses(publishedOnly = true) {
+    const key = publishedOnly ? 'courses:pub' : 'courses:all'
+    const cached = cacheGet(key)
+    if (cached) return cached
     let q = fs.collection('courses')
     if (publishedOnly) q = q.where('is_published', '==', 1)
     const snap = await q.get()
-    const items = snapToArr(snap)
-    return items.sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
+    const items = snapToArr(snap).sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
+    cacheSet(key, items, TTL.COURSES)
+    return items
   },
   async getCourseBySlug(slug) {
+    const key = `course:slug:${slug}`
+    const cached = cacheGet(key)
+    if (cached) return cached
     const snap = await fs.collection('courses').where('slug', '==', slug).limit(1).get()
-    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+    const result = snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+    if (result) cacheSet(key, result, TTL.COURSE_SLUG)
+    return result
   },
   async getCourseById(id) {
     const doc = await fs.collection('courses').doc(id).get()
@@ -1357,6 +1397,11 @@ const db = {
   },
   async updateCourse(id, data) {
     await fs.collection('courses').doc(id).update(data)
+    cacheInvalidate('courses:pub', 'courses:all', 'homepage:data')
+    // slug 캐시도 무효화 (slug를 모르면 전체 패턴 삭제)
+    for (const k of _cache.keys()) {
+      if (k.startsWith('course:slug:')) _cache.delete(k)
+    }
   },
   async createLiveCourse({ title, description, category, thumbnail_icon, live_schedule, live_starts_at, meet_code }) {
     const slug = 'live-' + Date.now()
@@ -1475,8 +1520,13 @@ const db = {
 
   // chapters
   async getChaptersByCourse(courseId) {
+    const key = `chapters:${courseId}`
+    const cached = cacheGet(key)
+    if (cached) return cached
     const snap = await fs.collection('chapters').where('course_id', '==', courseId).orderBy('order_num').get()
-    return snapToArr(snap)
+    const result = snapToArr(snap)
+    cacheSet(key, result, 30_000)
+    return result
   },
   async getChapterById(id) {
     const doc = await fs.collection('chapters').doc(id).get()
@@ -1498,6 +1548,7 @@ const db = {
       video_url: String(data.video_url || '').trim() || null,
     }
     const ref = await fs.collection('chapters').add(payload)
+    cacheInvalidate(`chapters:${courseId}`)
     return { id: ref.id, ...payload }
   },
   async updateChapter(chapterId, data = {}) {
@@ -1515,12 +1566,14 @@ const db = {
     if (data.order_num !== undefined) patch.order_num = Math.max(1, parseInt(data.order_num, 10) || 1)
     if (!Object.keys(patch).length) return chapter
     await fs.collection('chapters').doc(chapterId).update(patch)
+    cacheInvalidate(`chapters:${chapter.course_id}`)
     return db.getChapterById(chapterId)
   },
   async deleteChapter(chapterId) {
     const chapter = await db.getChapterById(chapterId)
     if (!chapter) return { error: 'not_found' }
     await fs.collection('chapters').doc(chapterId).delete()
+    cacheInvalidate(`chapters:${chapter.course_id}`)
     const remaining = await db.getChaptersByCourse(chapter.course_id)
     for (let i = 0; i < remaining.length; i++) {
       const target = remaining[i]
@@ -1528,6 +1581,7 @@ const db = {
         await fs.collection('chapters').doc(target.id).update({ order_num: i + 1 })
       }
     }
+    cacheInvalidate(`chapters:${chapter.course_id}`)
     return { success: true, course_id: chapter.course_id }
   },
   async moveChapter(chapterId, direction) {
@@ -1540,6 +1594,7 @@ const db = {
     const other = chapters[swapIdx]
     await fs.collection('chapters').doc(chapter.id).update({ order_num: other.order_num })
     await fs.collection('chapters').doc(other.id).update({ order_num: chapter.order_num })
+    cacheInvalidate(`chapters:${chapter.course_id}`)
     return db.getChaptersByCourse(chapter.course_id)
   },
 
@@ -1974,10 +2029,15 @@ const db = {
     return snapToArr(snap).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
   },
   async getCourseAnticipationReviews(courseId) {
+    const key = `anticipation:${courseId}`
+    const cached = cacheGet(key)
+    if (cached) return cached
     const snap = await fs.collection('anticipation_reviews').where('course_id', '==', courseId).get()
-    return snapToArr(snap)
+    const result = snapToArr(snap)
       .filter(r => r.is_public === 1)
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    cacheSet(key, result, 30_000)
+    return result
   },
   async enrollInCourse(userId, courseId) {
     const course = await db.getCourseById(courseId)
@@ -2087,6 +2147,7 @@ const db = {
       enrolled = true
     }
 
+    cacheInvalidate(`anticipation:${courseId}`)
     return { review, coupon, enrolled }
   },
   async updateCourseAnticipationReview(userId, courseId, content) {
@@ -2107,6 +2168,7 @@ const db = {
       content: text,
       updated_at: updatedAt,
     })
+    cacheInvalidate(`anticipation:${courseId}`)
     return {
       review: {
         ...review,
@@ -2124,6 +2186,7 @@ const db = {
     const review = await db.getAnticipationReviewByUserAndCourse(userId, courseId)
     if (!review) return { error: 'not_found' }
     await fs.collection('anticipation_reviews').doc(review.id).delete()
+    cacheInvalidate(`anticipation:${courseId}`)
     const coupons_recalled = await db.recallAnticipationCouponForCourse(userId, courseId)
     return { success: true, coupons_recalled }
   },
@@ -3116,19 +3179,17 @@ const db = {
 
   // admin stats
   async getStats() {
+    const cached = cacheGet('admin:stats')
+    if (cached) return cached
     const [orders, enrollments, users] = await Promise.all([
       fs.collection('orders').where('status', '==', 'paid').get(),
       fs.collection('enrollments').get(),
       fs.collection('users').where('role', '==', 'student').get(),
     ])
     const revenue = orders.docs.reduce((s, d) => s + (d.data().amount || 0), 0)
-    return {
-      revenue,
-      newStudents: enrollments.size,
-      orderCount: orders.size,
-      refundPending: 0,
-      totalStudents: users.size,
-    }
+    const result = { revenue, newStudents: enrollments.size, orderCount: orders.size, refundPending: 0, totalStudents: users.size }
+    cacheSet('admin:stats', result, TTL.STATS)
+    return result
   },
   async getAllStudents() {
     const [usersSnap, enrollSnap, ordersSnap] = await Promise.all([
@@ -3152,6 +3213,8 @@ const db = {
     })
   },
   async getCourseStats() {
+    const cached = cacheGet('admin:courseStats')
+    if (cached) return cached
     const [courses, ordersSnap, enrollSnap] = await Promise.all([
       db.getCourses(false),
       fs.collection('orders').where('status', '==', 'paid').get(),
@@ -3167,13 +3230,15 @@ const db = {
       const e = d.data()
       countMap[e.course_id] = (countMap[e.course_id] || 0) + 1
     })
-    return courses.map(c => ({
+    const result = courses.map(c => ({
       id: c.id,
       title: c.title,
       sale_price: c.sale_price,
       student_count: countMap[c.id] || 0,
       revenue: revenueMap[c.id] || 0,
     }))
+    cacheSet('admin:courseStats', result, TTL.STATS)
+    return result
   },
 
   async getPublicSiteStats() {
@@ -3351,13 +3416,17 @@ const db = {
   },
 
   async getHomepageLayout() {
+    const cached = cacheGet('site:homepage')
+    if (cached) return cached
     const doc = await fs.collection('site_settings').doc('homepage').get()
-    if (!doc.exists) return { ...normalizeHomepageLayout({}), updated_at: null }
-    const data = doc.data()
-    return { ...normalizeHomepageLayout(data), updated_at: data.updated_at || null }
+    const data = doc.exists ? doc.data() : {}
+    const result = { ...normalizeHomepageLayout(data), updated_at: data.updated_at || null }
+    cacheSet('site:homepage', result, TTL.HOMEPAGE)
+    return result
   },
 
   async updateHomepageLayout({ sections, nav, copy, categories, site } = {}) {
+    cacheInvalidate('site:homepage', 'homepage:data')
     const current = await db.getHomepageLayout()
     const next = normalizeHomepageLayout({
       sections: sections ? { ...current.sections, ...sections } : current.sections,
@@ -3371,28 +3440,36 @@ const db = {
   },
 
   async getFooterConfig() {
+    const cached = cacheGet('site:footer')
+    if (cached) return cached
     const doc = await fs.collection('site_settings').doc('footer').get()
-    if (!doc.exists) return { ...normalizeFooterConfig({}), updated_at: null }
-    const data = doc.data()
-    return { ...normalizeFooterConfig(data), updated_at: data.updated_at || null }
+    const data = doc.exists ? doc.data() : {}
+    const result = { ...normalizeFooterConfig(data), updated_at: data.updated_at || null }
+    cacheSet('site:footer', result, TTL.FOOTER)
+    return result
   },
 
   async updateFooterConfig(data) {
     const next = normalizeFooterConfig(data)
     await fs.collection('site_settings').doc('footer').set({ ...next, updated_at: now() })
+    cacheInvalidate('site:footer')
     return db.getFooterConfig()
   },
 
   async getHeroConfig() {
+    const cached = cacheGet('site:hero')
+    if (cached) return cached
     const doc = await fs.collection('site_settings').doc('hero').get()
-    if (!doc.exists) return { ...normalizeHeroConfig({}), updated_at: null }
-    const data = doc.data()
-    return { ...normalizeHeroConfig(data), updated_at: data.updated_at || null }
+    const data = doc.exists ? doc.data() : {}
+    const result = { ...normalizeHeroConfig(data), updated_at: data.updated_at || null }
+    cacheSet('site:hero', result, TTL.HERO)
+    return result
   },
 
   async updateHeroConfig(data) {
     const next = normalizeHeroConfig(data)
     await fs.collection('site_settings').doc('hero').set({ ...next, updated_at: now() })
+    cacheInvalidate('site:hero', 'homepage:data')
     return db.getHeroConfig()
   },
 
@@ -3491,6 +3568,9 @@ const db = {
   getReplayOpensAt,
   getLiveResourceAccess,
   stripLiveResourceUrls,
+  _cacheGet: cacheGet,
+  _cacheSet: cacheSet,
+  _cacheInvalidate: cacheInvalidate,
 }
 
 seed().catch(console.error)
