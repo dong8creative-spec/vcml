@@ -62,6 +62,34 @@ const API = {
   post(path, body)  { return this.req('POST', path, body) },
   patch(path, body) { return this.req('PATCH', path, body) },
   del(path)         { return this.req('DELETE', path) },
+
+  async upload(path, fileOrBlob, fields = {}) {
+    const form = new FormData()
+    const name = fileOrBlob?.name || 'upload'
+    form.append('file', fileOrBlob, name)
+    for (const [key, value] of Object.entries(fields)) {
+      if (value != null && value !== '') form.append(key, String(value))
+    }
+    const res = await fetch(this.base + path, {
+      method: 'POST',
+      headers: {
+        ...(this.token() ? { Authorization: 'Bearer ' + this.token() } : {}),
+      },
+      body: form,
+    })
+    let data = {}
+    try {
+      data = await res.json()
+    } catch {
+      if (!res.ok) throw new Error('업로드에 실패했습니다.')
+    }
+    if (!res.ok) {
+      const err = new Error(data.error || '업로드에 실패했습니다.')
+      err.status = res.status
+      throw err
+    }
+    return data
+  },
 }
 
 window.API = API

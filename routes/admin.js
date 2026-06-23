@@ -1,10 +1,50 @@
 const router = require('express').Router()
+const multer = require('multer')
 const db = require('../db/schema')
 const { getTotalMailCountFromConfig } = require('../db/schema')
 const { adminMiddleware } = require('../middleware/auth')
 const { sendLiveInviteMessage } = require('../utils/kakaoMessage')
+const { uploadCourseImage } = require('../utils/storage')
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 },
+})
 
 router.use(adminMiddleware)
+
+router.post('/uploads', upload.single('file'), async (req, res) => {
+  try {
+    const kind = String(req.body?.kind || '').trim()
+    const courseId = String(req.body?.course_id || '').trim()
+    if (!['detail-intro', 'thumbnail'].includes(kind)) {
+      return res.status(400).json({ error: '유효하지 않은 업로드 종류입니다.' })
+    }
+    if (!req.file?.buffer?.length) {
+      return res.status(400).json({ error: '파일을 선택해주세요.' })
+    }
+    const ct = String(req.file.mimetype || '').toLowerCase()
+    if (kind === 'detail-intro') {
+      if (ct !== 'image/webp') {
+        return res.status(400).json({ error: '상세 소개 이미지는 WebP만 업로드할 수 있습니다.' })
+      }
+    } else if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(ct)) {
+      return res.status(400).json({ error: 'JPEG, PNG, WebP만 업로드할 수 있습니다.' })
+    }
+    if (kind === 'thumbnail' && req.file.size > 2 * 1024 * 1024) {
+      return res.status(400).json({ error: '2MB 이하 이미지만 업로드할 수 있습니다.' })
+    }
+    const url = await uploadCourseImage(req.file.buffer, {
+      kind,
+      courseId: courseId || 'draft',
+      contentType: ct === 'image/jpg' ? 'image/jpeg' : ct,
+    })
+    res.json({ success: true, url })
+  } catch (e) {
+    console.error('[admin/uploads]', e)
+    res.status(500).json({ error: e.message || '업로드에 실패했습니다.' })
+  }
+})
 
 router.get('/dashboard', async (req, res) => {
   const [stats, allOrders, courseStats, allReviews] = await Promise.all([
@@ -254,7 +294,7 @@ router.patch('/courses/:id', async (req, res) => {
       for (const item of update.detail_intro_images.slice(0, 10)) {
         const url = String(item || '').trim()
         if (!url) continue
-        if (url.length > MAX_DETAIL_INTRO_IMAGE_LEN) {
+        if (url.startsWith('data:') && url.length > MAX_DETAIL_INTRO_IMAGE_LEN) {
           return res.status(400).json({ error: '상세 소개 이미지 용량이 너무 큽니다. WebP 파일을 줄여서 다시 업로드해주세요.' })
         }
         if (!isValidWebpImage(url)) {
@@ -375,11 +415,18 @@ function normalizeDetailIntroImages(course) {
   return []
 }
 
+function isStorageImageUrl(value) {
+  return typeof value === 'string'
+    && /^https:\/\/(storage\.googleapis\.com|firebasestorage\.googleapis\.com)\/.+/i.test(value)
+}
+
 function isValidWebpImage(value) {
   if (!value) return true
   if (typeof value !== 'string') return false
-  if (value.length > MAX_DETAIL_INTRO_IMAGE_LEN) return false
-  if (/^data:image\/webp;base64,/.test(value)) return true
+  if (/^data:image\/webp;base64,/.test(value)) {
+    return value.length <= MAX_DETAIL_INTRO_IMAGE_LEN
+  }
+  if (isStorageImageUrl(value)) return true
   if (/^https?:\/\/.+/i.test(value)) return /\.webp(\?|#|$)/i.test(value)
   return false
 }
@@ -387,8 +434,10 @@ function isValidWebpImage(value) {
 function isValidImage(value) {
   if (!value) return true
   if (typeof value !== 'string') return false
-  if (value.length > MAX_IMAGE_LEN) return false
-  return /^https?:\/\/.+/i.test(value) || /^data:image\/(jpeg|jpg|png|webp);base64,/.test(value)
+  if (isStorageImageUrl(value)) return true
+  if (/^data:image\//.test(value)) return value.length <= MAX_IMAGE_LEN
+  if (/^https?:\/\/.+/i.test(value)) return true
+  return false
 }
 
 router.get('/site-settings/editor-apply', async (req, res) => {

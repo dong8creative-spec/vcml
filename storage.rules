@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 공개 읽기 (강의 마케팅 이미지). 쓰기는 서버 Admin SDK만.
+    match /courses/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

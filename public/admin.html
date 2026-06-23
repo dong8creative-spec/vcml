@@ -1784,11 +1784,32 @@
       return []
     }
 
+    function isStorageImageUrl(src) {
+      return /^https:\/\/(storage\.googleapis\.com|firebasestorage\.googleapis\.com)\/.+/i.test(String(src || '').trim())
+    }
+
     function isWebpImageSrc(src) {
       const s = String(src || '').trim()
       if (!s) return false
       if (s.startsWith('data:image/webp;base64,')) return true
+      if (isStorageImageUrl(s)) return true
       return /^https?:\/\/.+\.webp(\?|#|$)/i.test(s)
+    }
+
+    function dataUrlToBlob(dataUrl) {
+      const parts = String(dataUrl).split(',')
+      const mime = (parts[0].match(/:(.*?);/) || [])[1] || 'application/octet-stream'
+      const bin = atob(parts[1] || '')
+      const arr = new Uint8Array(bin.length)
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i)
+      return new Blob([arr], { type: mime })
+    }
+
+    async function uploadCourseImageBlob(blob, kind, courseId) {
+      const ext = blob.type === 'image/webp' ? 'webp' : blob.type === 'image/png' ? 'png' : 'jpg'
+      const file = blob instanceof File ? blob : new File([blob], `upload.${ext}`, { type: blob.type || 'image/jpeg' })
+      const data = await API.upload('/admin/uploads', file, { kind, course_id: courseId || '' })
+      return data.url
     }
 
     function renderDetailIntroImagesList() {
@@ -1833,17 +1854,22 @@
       renderDetailIntroImagesList()
     }
 
-    async function prepareDetailIntroImagesForSave(images) {
+    async function prepareDetailIntroImagesForSave(images, courseId) {
       const out = []
       for (const src of images) {
         const trimmed = String(src || '').trim()
         if (!trimmed) continue
-        if (isWebpImageSrc(trimmed)) {
+        if (trimmed.startsWith('http') && isWebpImageSrc(trimmed)) {
           out.push(trimmed)
           continue
         }
-        if (trimmed.startsWith('data:') || trimmed.startsWith('http')) {
-          out.push(await convertImageSrcToWebp(trimmed, { maxWidth: 1000, maxHeight: 5000, maxBase64Len: 950000 }))
+        if (trimmed.startsWith('data:')) {
+          const webp = trimmed.startsWith('data:image/webp')
+            ? trimmed
+            : await convertImageSrcToWebp(trimmed, { maxWidth: 1000, maxHeight: 5000, maxBase64Len: 950000 })
+          const url = await uploadCourseImageBlob(dataUrlToBlob(webp), 'detail-intro', courseId)
+          out.push(url)
+          continue
         }
       }
       return out.slice(0, 10)
@@ -1855,13 +1881,7 @@
       const btn = document.getElementById('detail-intro-save-btn')
       try {
         btn.disabled = true
-        const detailIntroImages = await prepareDetailIntroImagesForSave(_detailIntroImages)
-        for (const img of detailIntroImages) {
-          if (img.startsWith('data:') && img.length > 950000) {
-            alert('이미지 용량이 너무 큽니다. 더 작은 WebP 파일을 사용해주세요.')
-            return
-          }
-        }
+        const detailIntroImages = await prepareDetailIntroImagesForSave(_detailIntroImages, courseId)
         const payload = {
           detail_intro_text: document.getElementById('detail-intro-text').value.trim() || null,
           detail_intro_images: detailIntroImages.length ? detailIntroImages : null,
@@ -1898,8 +1918,8 @@
       const idx = parseInt(input.dataset.idx, 10)
       if (Number.isNaN(idx)) return
       const url = input.value.trim()
-      if (url && !/\.webp(\?|#|$)/i.test(url)) {
-        alert('WebP URL만 입력할 수 있습니다. (예: https://example.com/image.webp)')
+      if (url && !isWebpImageSrc(url)) {
+        alert('WebP URL 또는 Storage URL만 입력할 수 있습니다.')
         input.value = String(_detailIntroImages[idx] || '').startsWith('http') ? _detailIntroImages[idx] : ''
         return
       }
@@ -1926,10 +1946,15 @@
         return
       }
       try {
-        _detailIntroImages[idx] = await resizeDetailIntroWebp(file, { maxWidth: 1000, maxHeight: 5000, maxBase64Len: 950000 })
+        input.disabled = true
+        const blob = await resizeDetailIntroWebpToBlob(file, { maxWidth: 1000, maxHeight: 5000, maxBase64Len: 950000 })
+        const courseId = document.getElementById('curriculum-course-select')?.value
+        _detailIntroImages[idx] = await uploadCourseImageBlob(blob, 'detail-intro', courseId)
         renderDetailIntroImagesList()
       } catch (err) {
         alert(err.message || '이미지 처리 실패')
+      } finally {
+        input.disabled = false
       }
     })
 
@@ -2224,7 +2249,7 @@
       document.getElementById('cm-thumb-style').value = c.thumb_style === 'dark' ? 'dark' : 'light'
       _cmThumbPending = undefined
       document.getElementById('cm-thumb-url').value = (c.thumbnail_url && String(c.thumbnail_url).startsWith('http')) ? c.thumbnail_url : ''
-      renderCmThumbPreview(c.thumbnail_url || null)
+      renderCmThumbPreview(c.thumbnail_url && String(c.thumbnail_url).startsWith('http') ? c.thumbnail_url : (String(c.thumbnail_url || '').startsWith('data:') ? c.thumbnail_url : null))
       _cmHeroGallery = Array.isArray(c.hero_gallery) ? [...c.hero_gallery] : []
       renderCmHeroGalleryList()
       document.getElementById('course-modal').style.display = 'flex'
@@ -2786,6 +2811,65 @@
       return resizeCanvasImageToWebpFromSource(file, { maxWidth, maxHeight, maxBase64Len, quality })
     }
 
+    function resizeDetailIntroWebpToBlob(file, opts) {
+      if (file.type !== 'image/webp' && !file.name.toLowerCase().endsWith('.webp')) {
+        return Promise.reject(new Error('WebP 이미지만 업로드할 수 있습니다.'))
+      }
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const img = new Image()
+          img.onload = () => encodeCanvasWebpBlob(img, opts).then(resolve).catch(reject)
+          img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'))
+          img.src = reader.result
+        }
+        reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'))
+        reader.readAsDataURL(file)
+      })
+    }
+
+    function encodeCanvasWebpBlob(img, { maxWidth = 1000, maxHeight = 5000, maxBase64Len = 950000, quality = 0.85 } = {}) {
+      let w = img.width
+      let h = img.height
+      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth }
+      if (h > maxHeight) { w = Math.round(w * maxHeight / h); h = maxHeight }
+
+      const attempt = (width, height, q, scale) => new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+        canvas.toBlob(blob => {
+          if (!blob) {
+            reject(new Error('이 브라우저는 WebP 변환을 지원하지 않습니다.'))
+            return
+          }
+          const approxLen = Math.ceil(blob.size * 4 / 3) + 40
+          if (approxLen > maxBase64Len && q > 0.45) {
+            attempt(width, height, Math.round((q - 0.05) * 100) / 100, scale).then(resolve).catch(reject)
+            return
+          }
+          if (approxLen > maxBase64Len && scale > 0.5) {
+            const nextScale = Math.round((scale - 0.08) * 100) / 100
+            attempt(
+              Math.max(200, Math.round(w * nextScale)),
+              Math.max(200, Math.round(h * nextScale)),
+              Math.max(0.45, q),
+              nextScale
+            ).then(resolve).catch(reject)
+            return
+          }
+          if (approxLen > maxBase64Len) {
+            reject(new Error('이미지를 충분히 압축할 수 없습니다. 더 작은 WebP 파일을 사용해주세요.'))
+            return
+          }
+          resolve(blob)
+        }, 'image/webp', q)
+      })
+
+      return attempt(w, h, quality, 1)
+    }
+
     function convertImageSrcToWebp(src, opts) {
       return new Promise((resolve, reject) => {
         const img = new Image()
@@ -2995,10 +3079,12 @@
       if (!file) return
       if (file.size > 2 * 1024 * 1024) { alert('2MB 이하만 업로드할 수 있습니다.'); e.target.value = ''; return }
       try {
-        _cmThumbPending = await resizeSiteImage(file, 800)
-        document.getElementById('cm-thumb-url').value = ''
-        renderCmThumbPreview(_cmThumbPending)
-      } catch (err) { alert(err.message) }
+        const dataUrl = await resizeSiteImage(file, 800)
+        const url = await uploadCourseImageBlob(dataUrlToBlob(dataUrl), 'thumbnail', _courseEditId)
+        _cmThumbPending = url
+        document.getElementById('cm-thumb-url').value = url
+        renderCmThumbPreview(url)
+      } catch (err) { alert(err.message || '업로드 실패') }
       e.target.value = ''
     })
     document.getElementById('cm-thumb-url')?.addEventListener('input', e => {
