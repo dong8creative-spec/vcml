@@ -1142,6 +1142,34 @@ function stripLiveResourceUrls(course) {
   return rest
 }
 
+function pickCourseCardFields(course = {}) {
+  const pub = db.getCourseEnrollmentPublic(course)
+  return {
+    id: course.id,
+    slug: course.slug,
+    title: course.title,
+    category: course.category,
+    thumbnail_url: course.thumbnail_url || null,
+    thumbnail_image: course.thumbnail_image || null,
+    thumbnail_icon: course.thumbnail_icon || null,
+    thumb_style: course.thumb_style || null,
+    badge: course.badge || null,
+    course_type: course.course_type || 'recorded',
+    is_offline: course.is_offline || 0,
+    live_schedule: course.live_schedule || null,
+    live_starts_at: course.live_starts_at || null,
+    live_status: course.live_status || null,
+    price: Number(course.price || 0),
+    sale_price: Number(course.sale_price || 0),
+    rating: course.rating || 0,
+    review_count: course.review_count || 0,
+    student_count: course.student_count || 0,
+    sort_order: course.sort_order ?? 999,
+    is_published: course.is_published,
+    ...pub,
+  }
+}
+
 // ── DB API ──
 const db = {
   // users
@@ -1344,8 +1372,13 @@ const db = {
     }
   },
   async countEnrollmentsByCourse(courseId) {
+    const key = `enrollment_count:${courseId}`
+    const cached = cacheGet(key)
+    if (cached !== null) return cached
     const enrollees = await db.getActiveEnrolleesByCourse(courseId)
-    return enrollees.length
+    const count = enrollees.length
+    cacheSet(key, count, 30_000)
+    return count
   },
   async getActiveEnrolleesByCourse(courseId) {
     const enrollments = await db.getEnrollmentsByCourse(courseId)
@@ -1607,6 +1640,7 @@ const db = {
     const already = await db.isEnrolled(userId, courseId)
     if (already) return
     await fs.collection('enrollments').add({ user_id: userId, course_id: courseId, enrolled_at: now() })
+    cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data')
   },
   async enrollAtomically(userId, courseId, course) {
     const courseRef = fs.collection('courses').doc(courseId)
@@ -1624,6 +1658,7 @@ const db = {
     })
     if (enrollmentFull) return { error: 'enrollment_full' }
     await fs.collection('enrollments').add({ user_id: userId, course_id: courseId, enrolled_at: now() })
+    cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data')
     return { success: true }
   },
   async getEnrollmentsByUser(userId) {
@@ -1663,6 +1698,7 @@ const db = {
     const snap = await fs.collection('enrollments').where('user_id', '==', userId).get()
     const targets = snap.docs.filter(d => d.data().course_id === courseId)
     for (const doc of targets) await doc.ref.delete()
+    cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data')
     return targets.length
   },
   async deleteProgressByCourse(userId, courseId) {
@@ -1917,18 +1953,25 @@ const db = {
 
   // platform_reviews (실시간 후기 — 유형별 노출)
   async getPlatformReviewsByTypes(types) {
+    const key = `platform_reviews:${[...types].sort().join(',')}`
+    const cached = cacheGet(key)
+    if (cached) return cached
     const snap = await fs.collection('platform_reviews').where('is_public', '==', 1).get()
-    return snapToArr(snap)
+    const result = snapToArr(snap)
       .filter(r => types.includes(r.review_type) && !r.seed_key)
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    cacheSet(key, result, TTL.HOMEPAGE)
+    return result
   },
   async upsertPlatformReview(seedKey, data) {
     const snap = await fs.collection('platform_reviews').where('seed_key', '==', seedKey).limit(1).get()
     if (!snap.empty) {
       await snap.docs[0].ref.update({ ...data, updated_at: now() })
+      for (const k of _cache.keys()) if (k.startsWith('platform_reviews:')) _cache.delete(k)
       return snap.docs[0].id
     }
     const ref = await fs.collection('platform_reviews').add({ seed_key: seedKey, created_at: now(), is_public: 1, ...data })
+    for (const k of _cache.keys()) if (k.startsWith('platform_reviews:')) _cache.delete(k)
     return ref.id
   },
 
@@ -1978,6 +2021,7 @@ const db = {
     payload.created_at = now()
     payload.updated_at = now()
     const ref = await fs.collection('platform_reviews').add(payload)
+    for (const k of _cache.keys()) if (k.startsWith('platform_reviews:')) _cache.delete(k)
     return { id: ref.id, ...payload }
   },
 
@@ -1990,11 +2034,13 @@ const db = {
     }
     payload.updated_at = now()
     await fs.collection('platform_reviews').doc(id).update(payload)
+    for (const k of _cache.keys()) if (k.startsWith('platform_reviews:')) _cache.delete(k)
     return db.getPlatformReviewById(id)
   },
 
   async deletePlatformReview(id) {
     await fs.collection('platform_reviews').doc(id).delete()
+    for (const k of _cache.keys()) if (k.startsWith('platform_reviews:')) _cache.delete(k)
   },
 
   // anticipation_reviews (강의별 기대평)
@@ -3366,10 +3412,14 @@ const db = {
 
   // ── FAQ ──
   async getFaqs({ publicOnly = false } = {}) {
+    const key = publicOnly ? 'faqs:public' : 'faqs:all'
+    const cached = cacheGet(key)
+    if (cached) return cached
     const snap = await fs.collection('faqs').orderBy('sort_order', 'asc').get()
     const items = snapToArr(snap)
-    if (publicOnly) return items.filter(f => f.is_public)
-    return items
+    const result = publicOnly ? items.filter(f => f.is_public) : items
+    cacheSet(key, result, TTL.FAQS)
+    return result
   },
   async getFaqById(id) {
     const doc = await fs.collection('faqs').doc(id).get()
@@ -3380,6 +3430,7 @@ const db = {
     const order = sort_order !== undefined ? sort_order : (existing.length ? Math.max(...existing.map(f => f.sort_order || 0)) + 1 : 0)
     const data = { question, answer, category, is_public, sort_order: order, created_at: now(), updated_at: now() }
     const ref = await fs.collection('faqs').add(data)
+    cacheInvalidate('faqs:public', 'faqs:all')
     return { id: ref.id, ...data }
   },
   async updateFaq(id, { question, answer, category, is_public, sort_order }) {
@@ -3390,10 +3441,12 @@ const db = {
     if (is_public !== undefined) update.is_public = is_public
     if (sort_order !== undefined) update.sort_order = sort_order
     await fs.collection('faqs').doc(id).update(update)
+    cacheInvalidate('faqs:public', 'faqs:all')
     return db.getFaqById(id)
   },
   async deleteFaq(id) {
     await fs.collection('faqs').doc(id).delete()
+    cacheInvalidate('faqs:public', 'faqs:all')
   },
 
   // ── 사이트 설정 ──
@@ -3509,10 +3562,14 @@ const db = {
   },
 
   async getInstructors({ publicOnly = false } = {}) {
+    const key = publicOnly ? 'instructors:public' : 'instructors:all'
+    const cached = cacheGet(key)
+    if (cached) return cached
     const snap = await fs.collection('instructors').orderBy('sort_order', 'asc').get()
     const items = snapToArr(snap)
-    if (publicOnly) return items.filter(i => i.is_published)
-    return items
+    const result = publicOnly ? items.filter(i => i.is_published) : items
+    cacheSet(key, result, TTL.INSTRUCTORS)
+    return result
   },
 
   async getInstructorById(id) {
@@ -3538,6 +3595,7 @@ const db = {
     }
     if (!payload.name) throw new Error('강사 이름은 필수입니다.')
     const ref = await fs.collection('instructors').add(payload)
+    cacheInvalidate('instructors:public', 'instructors:all')
     return { id: ref.id, ...payload }
   },
 
@@ -3553,11 +3611,13 @@ const db = {
     if (data.sort_order !== undefined) update.sort_order = Number(data.sort_order) || 0
     if (data.is_published !== undefined) update.is_published = data.is_published ? 1 : 0
     await fs.collection('instructors').doc(id).update(update)
+    cacheInvalidate('instructors:public', 'instructors:all')
     return db.getInstructorById(id)
   },
 
   async deleteInstructor(id) {
     await fs.collection('instructors').doc(id).delete()
+    cacheInvalidate('instructors:public', 'instructors:all')
   },
 
   parseLiveStart,
@@ -3568,6 +3628,7 @@ const db = {
   getReplayOpensAt,
   getLiveResourceAccess,
   stripLiveResourceUrls,
+  pickCourseCardFields,
   _cacheGet: cacheGet,
   _cacheSet: cacheSet,
   _cacheInvalidate: cacheInvalidate,
@@ -3587,6 +3648,7 @@ module.exports.getAnticipationModifyMeta = getAnticipationModifyMeta
 module.exports.getReplayOpensAt = getReplayOpensAt
 module.exports.getLiveResourceAccess = getLiveResourceAccess
 module.exports.stripLiveResourceUrls = stripLiveResourceUrls
+module.exports.pickCourseCardFields = pickCourseCardFields
 module.exports.userPayload = userPayload
 module.exports.EDITOR_WORK_TYPES = EDITOR_WORK_TYPES
 module.exports.EDITOR_FEATURED_REASON = EDITOR_FEATURED_REASON

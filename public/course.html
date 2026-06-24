@@ -2,17 +2,27 @@
 <html lang="ko">
 <head>
   <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-13X3J2EYQ2"></script>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-13X3J2EYQ2');
+    window.addEventListener('load', () => {
+      const run = () => {
+        const s = document.createElement('script')
+        s.async = true
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-13X3J2EYQ2'
+        document.head.appendChild(s)
+        gtag('js', new Date())
+        gtag('config', 'G-13X3J2EYQ2')
+      }
+      if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 2000 })
+      else setTimeout(run, 1200)
+    })
   </script>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>강의 상세 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=17" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
 <body>
   <div data-site-header></div>
@@ -94,9 +104,28 @@
       try {
         const course = await API.get('/courses/' + slug)
         courseData = course
-        anticipationReviews = course.anticipation_reviews || []
+        anticipationReviews = []
         render(courseData)
+        loadCourseMedia()
+        loadAnticipationReviews()
       } catch { document.getElementById('course-wrap').innerHTML = '<p style="text-align:center;padding:60px;color:#aaa">강의를 찾을 수 없습니다.</p>' }
+    }
+
+    async function loadCourseMedia() {
+      try {
+        const media = await API.get('/courses/' + slug + '/media')
+        courseData = { ...courseData, ...media }
+        render(courseData)
+      } catch {}
+    }
+
+    async function loadAnticipationReviews() {
+      try {
+        const res = await API.get('/courses/' + slug + '/anticipation-reviews')
+        anticipationReviews = res.reviews || []
+        const el = document.getElementById('anticipation-feed-wrap')
+        if (el) el.innerHTML = renderAnticipationFeed(courseData)
+      } catch {}
     }
 
     function isFreeVod(c) {
@@ -266,7 +295,7 @@
             ${renderSideStats(c)}
             <div class="course-section">
               <h2>수강 기대평</h2>
-              ${renderAnticipationFeed(c)}
+              <div id="anticipation-feed-wrap">${renderAnticipationFeed(c)}</div>
             </div>
           </aside>
         </div>`
@@ -350,7 +379,7 @@
     function renderBuyThumb(c, thumbClass) {
       const thumbImg = c.thumbnail_url || c.thumbnail_image
       if (thumbImg) {
-        return `<div class="buy-thumb ${thumbClass}"><img src="${esc(thumbImg)}" alt="" /></div>`
+        return `<div class="buy-thumb ${thumbClass}"><img src="${esc(thumbImg)}" alt="" loading="lazy" decoding="async" /></div>`
       }
       return `<div class="buy-thumb ${thumbClass}"><i class="ti ${c.thumbnail_icon || 'ti-video'}"></i></div>`
     }
@@ -374,15 +403,25 @@
       }
       const slides = urls.map((url, i) => {
         const safeUrl = esc(url).replace(/'/g, '%27')
+        const bgAttrs = i === 0
+          ? `style="background-image:url('${safeUrl}')"`
+          : `data-bg="${safeUrl}"`
         return `<div class="course-hero-slide${i === 0 ? ' is-active' : ''}">
-          <div class="course-hero-slide-blur" style="background-image:url('${safeUrl}')"></div>
-          <div class="course-hero-slide-main" style="background-image:url('${safeUrl}')"></div>
+          <div class="course-hero-slide-blur" ${bgAttrs}></div>
+          <div class="course-hero-slide-main" ${bgAttrs}></div>
         </div>`
       }).join('')
       return `<div class="course-hero-bg" aria-hidden="true"><div class="course-hero-slides">${slides}</div></div><div class="course-hero-overlay" aria-hidden="true"></div>`
     }
 
     let _heroGalleryTimer = null
+    function hydrateHeroSlide(slide) {
+      slide?.querySelectorAll('[data-bg]').forEach(el => {
+        el.style.backgroundImage = `url('${el.dataset.bg}')`
+        el.removeAttribute('data-bg')
+      })
+    }
+
     function startHeroGallery(heroEl) {
       if (_heroGalleryTimer) {
         clearInterval(_heroGalleryTimer)
@@ -392,9 +431,12 @@
       const slides = heroEl.querySelectorAll('.course-hero-slide')
       if (slides.length <= 1) return
       let idx = 0
+      hydrateHeroSlide(slides[1])
       _heroGalleryTimer = setInterval(() => {
         slides[idx].classList.remove('is-active')
         idx = (idx + 1) % slides.length
+        hydrateHeroSlide(slides[idx])
+        hydrateHeroSlide(slides[(idx + 1) % slides.length])
         slides[idx].classList.add('is-active')
       }, 2000)
     }

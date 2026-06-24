@@ -26,9 +26,11 @@
     if (!location.pathname.endsWith('/mypage.html') && location.pathname !== '/mypage.html') return false
 
     try {
+      const coursesPromise = window.__myCoursesPromise || API.get('/my/courses').catch(() => [])
+      window.__myCoursesPromise = coursesPromise
       const [coupons, courses] = await Promise.all([
         API.get('/my/coupons'),
-        API.get('/my/courses').catch(() => []),
+        coursesPromise.catch(() => []),
       ])
       const available = (coupons || []).filter(c => c.status === 'available')
       const hasAnticipation = available.some(c => c.reason === 'anticipation_review')

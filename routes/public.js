@@ -1,6 +1,15 @@
 const router = require('express').Router()
 const db = require('../db/schema')
 
+function publicCache(req, res, next) {
+  if (req.method === 'GET') {
+    res.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120')
+  }
+  next()
+}
+
+router.use(publicCache)
+
 // 공지사항 공개 API
 router.get('/notices', async (req, res) => {
   const notices = await db.getNotices({ publicOnly: true })
@@ -101,7 +110,7 @@ router.get('/homepage', async (req, res) => {
       content: r.content, rating: r.rating || 5,
       context_label: r.context_label, created_at: r.created_at,
     }))
-    const data = { hero, courses, layout, orders: orders || [], liveReviews }
+    const data = { hero, courses: courses.map(db.pickCourseCardFields), layout, orders: orders || [], liveReviews }
     db._cacheSet('homepage:data', data, 30_000)
     res.json(data)
   } catch (e) {

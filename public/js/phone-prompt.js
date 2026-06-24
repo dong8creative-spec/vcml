@@ -20,6 +20,8 @@
   async function fetchPhone() {
     if (!window.API?.isLoggedIn?.()) return null
     if (cachedPhone) return cachedPhone
+    cachedPhone = API.user()?.phone || null
+    if (cachedPhone) return cachedPhone
     try {
       const p = await API.get('/my/profile')
       cachedPhone = p.phone || null

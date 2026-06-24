@@ -37,6 +37,24 @@
   }
 
   let layout = null
+  const CACHE_KEY = 'tc_homepage_layout_cache'
+  const CACHE_TTL = 5 * 60 * 1000
+
+  function readCachedLayout() {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null')
+      if (!cached || Date.now() - cached.saved_at > CACHE_TTL) return null
+      return cached.layout || null
+    } catch {
+      return null
+    }
+  }
+
+  function writeCachedLayout(value) {
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ saved_at: Date.now(), layout: value }))
+    } catch {}
+  }
 
   async function fetchLayout() {
     try {
@@ -44,7 +62,11 @@
       if (window._homepageData?.layout) {
         layout = window._homepageData.layout
       } else {
-        layout = await API.get('/homepage-layout')
+        layout = readCachedLayout()
+        if (!layout) {
+          layout = await API.get('/homepage-layout')
+          writeCachedLayout(layout)
+        }
       }
     } catch {
       layout = { ...DEFAULT, updated_at: null }

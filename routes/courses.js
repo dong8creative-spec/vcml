@@ -8,6 +8,27 @@ const {
   ANTICIPATION_MAX_LENGTH,
 } = require('../db/schema')
 
+function stripCourseMediaFields(course) {
+  if (!course || typeof course !== 'object') return course
+  const {
+    thumbnail_url,
+    thumbnail_image,
+    hero_gallery,
+    detail_intro_text,
+    detail_intro_images,
+    detail_intro_image,
+    live_curriculum_image,
+    instructor_avatar,
+    ...rest
+  } = course
+  return {
+    ...rest,
+    // URL 이미지는 가볍지만 base64는 media API로 지연 로드합니다.
+    thumbnail_url: typeof thumbnail_url === 'string' && thumbnail_url.startsWith('http') ? thumbnail_url : null,
+    thumbnail_image: typeof thumbnail_image === 'string' && thumbnail_image.startsWith('http') ? thumbnail_image : null,
+  }
+}
+
 function anticipationError(res, result) {
   if (result.error === 'already_submitted') {
     return res.status(409).json({ error: '이미 이 강의에 기대평을 작성하셨습니다.', review: result.review })
@@ -55,6 +76,11 @@ function enrollError(res, result) {
   return null
 }
 
+function publicCache(req, res, next) {
+  res.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120')
+  next()
+}
+
 function formatAnticipationCoupon(coupon) {
   if (!coupon) return null
   return {
@@ -75,13 +101,12 @@ async function optionalUser(req) {
   return null
 }
 
-router.get('/', async (req, res) => {
+router.get('/', publicCache, async (req, res) => {
   const courses = await db.getCourses()
-  const enriched = await Promise.all(courses.map(c => db.enrichCourseEnrollment(c)))
-  res.json(enriched)
+  res.json(courses.map(db.pickCourseCardFields))
 })
 
-router.get('/:slug/anticipation-reviews', async (req, res) => {
+router.get('/:slug/anticipation-reviews', publicCache, async (req, res) => {
   try {
     const course = await db.getCourseBySlug(req.params.slug)
     if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
@@ -94,6 +119,26 @@ router.get('/:slug/anticipation-reviews', async (req, res) => {
         content: r.content,
         created_at: r.created_at,
       })),
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+router.get('/:slug/media', publicCache, async (req, res) => {
+  try {
+    const course = await db.getCourseBySlug(req.params.slug)
+    if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    res.json({
+      thumbnail_url: course.thumbnail_url || null,
+      thumbnail_image: course.thumbnail_image || null,
+      hero_gallery: Array.isArray(course.hero_gallery) ? course.hero_gallery : [],
+      detail_intro_text: course.detail_intro_text || null,
+      detail_intro_images: Array.isArray(course.detail_intro_images) ? course.detail_intro_images : null,
+      detail_intro_image: course.detail_intro_image || null,
+      live_curriculum_image: course.live_curriculum_image || null,
+      live_curriculum_text: course.live_curriculum_text || null,
+      instructor_avatar: course.instructor_avatar || null,
     })
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -257,9 +302,8 @@ router.get('/:slug', async (req, res) => {
     const u = await optionalUser(req)
 
     // course.id가 확정된 후 나머지 쿼리를 모두 병렬로 실행
-    const [chapters, anticipationReviews, enrolledResult, myReview] = await Promise.all([
+    const [chapters, enrolledResult, myReview] = await Promise.all([
       db.getChaptersByCourse(course.id),
-      db.getCourseAnticipationReviews(course.id),
       u ? db.isEnrolled(u.id, course.id) : Promise.resolve(false),
       u ? db.getAnticipationReviewByUserAndCourse(u.id, course.id) : Promise.resolve(null),
     ])
@@ -273,15 +317,8 @@ router.get('/:slug', async (req, res) => {
     } : null
 
     const payload = {
-      ...(await db.enrichCourseEnrollment(db.stripLiveResourceUrls(course))),
+      ...(await db.enrichCourseEnrollment(stripCourseMediaFields(db.stripLiveResourceUrls(course)))),
       chapters,
-      anticipation_reviews: anticipationReviews.map(r => ({
-        id: r.id,
-        author_id_display: r.author_id_display || r.author_display,
-        author_display: r.author_display,
-        content: r.content,
-        created_at: r.created_at,
-      })),
       enrolled,
       my_anticipation,
       anticipation_modify,

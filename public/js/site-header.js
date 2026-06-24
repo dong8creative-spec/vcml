@@ -70,7 +70,8 @@
 
     renderHeaderAuth()
 
-    if (typeof applyHomepageLayout === 'function') {
+    const isHome = location.pathname === '/' || location.pathname.endsWith('/index.html')
+    if (!isHome && typeof applyHomepageLayout === 'function') {
       try { await applyHomepageLayout() } catch (_) {}
     }
     renderHeaderAuth()

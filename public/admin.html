@@ -6,7 +6,8 @@
   <title>타닥클래스 관리자</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/admin.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
 <body>
 
@@ -1168,7 +1169,7 @@
           </p>
           <div style="padding:0 20px 20px">
             <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.03)">
-              <iframe id="hp-preview-frame" title="홈페이지 미리보기" src="/index.html?preview=1" style="width:100%;height:min(720px,70vh);min-height:480px;border:0;display:block;background:#fff" loading="lazy"></iframe>
+              <iframe id="hp-preview-frame" title="홈페이지 미리보기" data-src="/index.html?preview=1" style="width:100%;height:min(720px,70vh);min-height:480px;border:0;display:block;background:#fff" loading="lazy"></iframe>
             </div>
             <p id="hp-preview-status" style="font-size:13px;color:#888;margin:10px 0 0;line-height:1.5"></p>
           </div>
@@ -1812,6 +1813,15 @@
       return data.url
     }
 
+    async function uploadCourseImageWithFallback(dataUrl, kind, courseId) {
+      try {
+        return await uploadCourseImageBlob(dataUrlToBlob(dataUrl), kind, courseId)
+      } catch (err) {
+        console.warn('Storage 업로드 실패, base64로 저장합니다:', err?.message || err)
+        return dataUrl
+      }
+    }
+
     function renderDetailIntroImagesList() {
       const list = document.getElementById('detail-intro-images-list')
       const addBtn = document.getElementById('detail-intro-images-add')
@@ -1867,7 +1877,7 @@
           const webp = trimmed.startsWith('data:image/webp')
             ? trimmed
             : await convertImageSrcToWebp(trimmed, { maxWidth: 1000, maxHeight: 5000, maxBase64Len: 950000 })
-          const url = await uploadCourseImageBlob(dataUrlToBlob(webp), 'detail-intro', courseId)
+          const url = await uploadCourseImageWithFallback(webp, 'detail-intro', courseId)
           out.push(url)
           continue
         }
@@ -1947,9 +1957,9 @@
       }
       try {
         input.disabled = true
-        const blob = await resizeDetailIntroWebpToBlob(file, { maxWidth: 1000, maxHeight: 5000, maxBase64Len: 950000 })
+        const dataUrl = await resizeDetailIntroWebp(file, { maxWidth: 1000, maxHeight: 5000, maxBase64Len: 950000 })
         const courseId = document.getElementById('curriculum-course-select')?.value
-        _detailIntroImages[idx] = await uploadCourseImageBlob(blob, 'detail-intro', courseId)
+        _detailIntroImages[idx] = await uploadCourseImageWithFallback(dataUrl, 'detail-intro', courseId)
         renderDetailIntroImagesList()
       } catch (err) {
         alert(err.message || '이미지 처리 실패')
@@ -3080,7 +3090,7 @@
       if (file.size > 2 * 1024 * 1024) { alert('2MB 이하만 업로드할 수 있습니다.'); e.target.value = ''; return }
       try {
         const dataUrl = await resizeSiteImage(file, 800)
-        const url = await uploadCourseImageBlob(dataUrlToBlob(dataUrl), 'thumbnail', _courseEditId)
+        const url = await uploadCourseImageWithFallback(dataUrl, 'thumbnail', _courseEditId)
         _cmThumbPending = url
         document.getElementById('cm-thumb-url').value = url
         renderCmThumbPreview(url)
@@ -3358,6 +3368,11 @@
       frame.src = base + '&_=' + Date.now()
     }
     window.reloadHomePreview = reloadHomePreview
+
+    function ensureHomePreviewFrame() {
+      const frame = document.getElementById('hp-preview-frame')
+      if (frame && !frame.src) frame.src = frame.dataset.src || '/index.html?preview=1'
+    }
 
     document.getElementById('hp-preview-refresh')?.addEventListener('click', reloadHomePreview)
 
@@ -4630,6 +4645,7 @@
       if (secEl) secEl.classList.add('active');
       document.getElementById('page-title').textContent = titles[name] || name;
 
+      if (name === 'homepage') ensureHomePreviewFrame()
       if (sectionLoaders[name]) sectionLoaders[name]();
     }
 
