@@ -1424,9 +1424,18 @@ const db = {
       ...db.getCourseEnrollmentPublic(course, count),
     }
   },
-  async enrichCourseEnrollment(course) {
-    const pub = await db.getCourseEnrollmentPublicAsync(course)
-    return { ...course, ...pub }
+  async enrichCourseEnrollment(course, { liveCount = false } = {}) {
+    if (!course) return course
+    if (liveCount) {
+      const pub = await db.getCourseEnrollmentPublicAsync(course)
+      return { ...course, ...pub }
+    }
+    const count = Math.max(0, parseInt(course.student_count, 10) || 0)
+    return {
+      ...course,
+      student_count: count,
+      ...db.getCourseEnrollmentPublic(course, count),
+    }
   },
   async updateCourse(id, data) {
     await fs.collection('courses').doc(id).update(data)

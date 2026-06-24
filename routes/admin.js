@@ -151,7 +151,7 @@ router.get('/courses', async (req, res) => {
   const courses = await db.getCourses(false)
   const enriched = await Promise.all(courses.map(async c => {
     const row = {
-      ...(await db.enrichCourseEnrollment(c)),
+      ...(await db.enrichCourseEnrollment(c, { liveCount: true })),
       is_catalog: TARGET_SLUGS.has(c.slug),
     }
     if (Number(c.student_count || 0) !== Number(row.student_count || 0)) {
@@ -342,7 +342,7 @@ router.patch('/courses/:id', async (req, res) => {
   }
   update.updated_at = new Date().toISOString()
   await db.updateCourse(req.params.id, update)
-  const course = await db.enrichCourseEnrollment(await db.getCourseById(req.params.id))
+  const course = await db.enrichCourseEnrollment(await db.getCourseById(req.params.id), { liveCount: true })
   res.json({ success: true, course })
 })
 
