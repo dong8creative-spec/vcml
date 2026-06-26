@@ -78,6 +78,15 @@ app.get('/course.html', async (req, res) => {
     "provider": { "@type": "Organization", "name": "타닥클래스", "url": "https://vcml.kr" },
     "offers": { "@type": "Offer", "price": course.sale_price || course.price || 0, "priceCurrency": "KRW", "availability": "https://schema.org/InStock" },
     "image": image,
+    ...(course.review_count >= 1 ? {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": String(course.rating || 0),
+        "reviewCount": String(course.review_count),
+        "bestRating": "5",
+        "worstRating": "1"
+      }
+    } : {}),
   })}</script>`
 
     // 기존 <title> 태그를 제거하고 메타태그 주입
