@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+User-agent: Yeti
+Allow: /
+
+Sitemap: https://vcml.kr/sitemap.xml
