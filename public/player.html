@@ -143,10 +143,25 @@
       btn.setAttribute('aria-expanded', isOpen)
     }
 
+    let _progressTimer = null
+
+    function scheduleProgressMark(chId) {
+      if (_progressTimer) clearTimeout(_progressTimer)
+      // 3초 후 수강 시작 기록 — 환불정책 "1초 이상 재생 시 수강으로 간주" 근거
+      _progressTimer = setTimeout(async () => {
+        try {
+          await API.post('/my/progress', { chapter_id: chId, completed: false, watched_sec: 1 })
+          const updated = await API.get('/courses/' + slug)
+          courseData.chapters = updated.chapters
+          renderChapterList(updated.chapters)
+        } catch (_) {}
+      }, 3000)
+    }
+
     async function loadChapter(id) {
       currentChapterId = id
+      if (_progressTimer) { clearTimeout(_progressTimer); _progressTimer = null }
       document.querySelectorAll('.chapter-item').forEach(el => el.classList.toggle('active', el.id === 'ch-item-'+id))
-      // 모바일에서 챕터 선택 후 사이드바 자동 닫기
       if (window.innerWidth <= 768) {
         const sidebar = document.getElementById('player-sidebar')
         const btn = document.getElementById('sidebar-toggle-btn')
@@ -160,6 +175,8 @@
         const ch = await API.get(`/courses/${slug}/chapters/${id}`)
         renderPlayer(ch)
         history.replaceState(null,'',`?slug=${slug}&chapter=${id}`)
+        // 영상이 있는 챕터만 수강 기록 — 미완료 상태일 때만
+        if (ch.video_url && !ch.progress?.completed) scheduleProgressMark(id)
       } catch(e) {
         document.getElementById('player-main').innerHTML = `<div class="empty-state"><i class="ti ti-lock"></i><p>${e.message}</p><a href="/course.html?slug=${slug}" class="btn-back">강의 페이지로 →</a></div>`
       }

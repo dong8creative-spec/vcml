@@ -3236,13 +3236,28 @@ const db = {
   async getStats() {
     const cached = cacheGet('admin:stats')
     if (cached) return cached
-    const [orders, enrollments, users] = await Promise.all([
+    const [orders, refunded, enrollments, users] = await Promise.all([
       fs.collection('orders').where('status', '==', 'paid').get(),
+      fs.collection('orders').where('status', '==', 'refunded').get(),
       fs.collection('enrollments').get(),
       fs.collection('users').where('role', '==', 'student').get(),
     ])
-    const revenue = orders.docs.reduce((s, d) => s + (d.data().amount || 0), 0)
-    const result = { revenue, newStudents: enrollments.size, orderCount: orders.size, refundPending: 0, totalStudents: users.size }
+    const todayStr = now().slice(0, 10)
+    const monthStr = now().slice(0, 7)
+    let revenue = 0, todayRevenue = 0, monthRevenue = 0, todayOrders = 0, monthOrders = 0, refundCount = 0
+    orders.docs.forEach(d => {
+      const o = d.data()
+      revenue += o.amount || 0
+      if ((o.paid_at || '').startsWith(todayStr)) { todayRevenue += o.amount || 0; todayOrders++ }
+      if ((o.paid_at || '').startsWith(monthStr)) { monthRevenue += o.amount || 0; monthOrders++ }
+    })
+    refunded.docs.forEach(d => { const o = d.data(); if ((o.refunded_at || '').startsWith(monthStr)) refundCount++ })
+    const result = {
+      revenue, todayRevenue, monthRevenue,
+      todayOrders, monthOrders,
+      newStudents: enrollments.size, orderCount: orders.size,
+      refundPending: refundCount, totalStudents: users.size,
+    }
     cacheSet('admin:stats', result, TTL.STATS)
     return result
   },

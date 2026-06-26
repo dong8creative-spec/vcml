@@ -110,32 +110,32 @@
           <div class="metric-icon purple"><i class="ti ti-currency-won"></i></div>
           <div class="metric-body">
             <div class="metric-label">이번 달 매출</div>
-            <div class="metric-num" id="stat-revenue">로딩 중...</div>
-            <div class="metric-change up"><i class="ti ti-trending-up"></i> 전월 대비 +12%</div>
+            <div class="metric-num" id="stat-revenue">-</div>
+            <div class="metric-change" id="stat-today-revenue" style="color:#666;font-size:13px"></div>
           </div>
         </div>
         <div class="metric-card">
           <div class="metric-icon blue"><i class="ti ti-users"></i></div>
           <div class="metric-body">
-            <div class="metric-label">이번 달 신규 수강생</div>
-            <div class="metric-num" id="stat-students">로딩 중...</div>
-            <div class="metric-change up"><i class="ti ti-trending-up"></i> 전월 대비 +8%</div>
+            <div class="metric-label">총 수강생</div>
+            <div class="metric-num" id="stat-students">-</div>
+            <div class="metric-change" style="color:#666;font-size:13px" id="stat-enroll-count"></div>
           </div>
         </div>
         <div class="metric-card">
           <div class="metric-icon green"><i class="ti ti-shopping-cart"></i></div>
           <div class="metric-body">
             <div class="metric-label">이번 달 결제 건수</div>
-            <div class="metric-num" id="stat-orders">로딩 중...</div>
-            <div class="metric-change up"><i class="ti ti-trending-up"></i> 전월 대비 +5%</div>
+            <div class="metric-num" id="stat-orders">-</div>
+            <div class="metric-change" style="color:#666;font-size:13px" id="stat-today-orders"></div>
           </div>
         </div>
         <div class="metric-card">
           <div class="metric-icon orange"><i class="ti ti-arrow-back-up"></i></div>
           <div class="metric-body">
-            <div class="metric-label">환불 요청</div>
-            <div class="metric-num" id="stat-refunds">로딩 중...</div>
-            <div class="metric-change down"><i class="ti ti-alert-circle"></i> 처리 대기 중</div>
+            <div class="metric-label">이번 달 환불</div>
+            <div class="metric-num" id="stat-refunds">-</div>
+            <div class="metric-change" style="color:#666;font-size:13px">이번 달 기준</div>
           </div>
         </div>
       </div>
@@ -546,30 +546,55 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title">수강생 목록</div>
+          <div class="filter-row">
+            <input type="search" id="student-search" placeholder="이름·이메일 검색" oninput="filterStudents()" style="width:220px">
+          </div>
         </div>
         <table class="data-table">
           <thead>
-            <tr><th>#</th><th>이름</th><th>이메일</th><th>수강 강의</th><th>총 결제금액</th><th>가입일</th></tr>
+            <tr><th>이름</th><th>이메일</th><th>연락처</th><th>수강 강의</th><th>총 결제금액</th><th>가입일</th><th></th></tr>
           </thead>
           <tbody id="students-table-body">
-            <tr><td colspan="6" style="text-align:center;color:#888">로딩 중...</td></tr>
+            <tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
+    <!-- 수강생 상세 모달 -->
+    <div id="student-modal-overlay" class="modal-overlay hidden" onclick="closeStudentModal()">
+      <div class="modal" style="max-width:640px;max-height:80vh;overflow-y:auto" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title" id="student-modal-title">수강생 상세</div>
+          <button class="modal-close" onclick="closeStudentModal()"><i class="ti ti-x"></i></button>
+        </div>
+        <div id="student-modal-body" style="padding:0 22px 22px"></div>
+      </div>
+    </div>
+
     <!-- ===== SECTION: ORDERS ===== -->
     <section class="section" id="sec-orders">
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">결제 내역</div>
+        <div class="card-header" style="flex-wrap:wrap;gap:10px">
+          <div class="card-title">결제 내역 <span id="orders-total-badge" style="font-size:14px;font-weight:400;color:#666;margin-left:8px"></span></div>
+          <div class="filter-row" style="flex-wrap:wrap;gap:8px">
+            <select id="order-filter-status" onchange="loadOrders()">
+              <option value="">전체 상태</option>
+              <option value="paid">결제완료</option>
+              <option value="refunded">환불</option>
+              <option value="cancelled">취소</option>
+            </select>
+            <input type="date" id="order-filter-from" onchange="loadOrders()" placeholder="시작일">
+            <input type="date" id="order-filter-to" onchange="loadOrders()" placeholder="종료일">
+            <button class="btn-sm" onclick="exportOrdersCSV()"><i class="ti ti-download"></i> CSV</button>
+          </div>
         </div>
         <table class="data-table">
           <thead>
-            <tr><th>#</th><th>수강생</th><th>강의</th><th>금액</th><th>결제 수단</th><th>상태</th><th>결제일</th></tr>
+            <tr><th>수강생</th><th>강의</th><th>결제금액</th><th>할인</th><th>환불액</th><th>수단</th><th>상태</th><th>결제일</th></tr>
           </thead>
           <tbody id="orders-table-body">
-            <tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>
+            <tr><td colspan="8" style="text-align:center;color:#888">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -683,7 +708,7 @@
         </div>
         <table class="data-table">
           <thead>
-            <tr><th>수강생</th><th>강의</th><th>결제일</th><th>환불 요청일</th><th>사유</th><th>금액</th><th>처리</th></tr>
+            <tr><th>수강생</th><th>강의</th><th>결제금액</th><th>실환불액</th><th>결제일</th><th>환불처리일</th><th>상태</th></tr>
           </thead>
           <tbody id="refunds-table-body">
             <tr class="empty-state-row"><td colspan="7">환불 요청이 없습니다.</td></tr>
@@ -1666,6 +1691,12 @@
         document.getElementById('stat-students').textContent = stats.totalStudents.toLocaleString() + '명';
         document.getElementById('stat-orders').textContent = stats.orderCount.toLocaleString() + '건';
         document.getElementById('stat-refunds').textContent = stats.refundPending.toLocaleString() + '건';
+        const todayRevEl = document.getElementById('stat-today-revenue')
+        if (todayRevEl) todayRevEl.textContent = `오늘 ${(stats.todayRevenue||0).toLocaleString()}원 · 이번달 ${(stats.monthRevenue||0).toLocaleString()}원`
+        const todayOrdEl = document.getElementById('stat-today-orders')
+        if (todayOrdEl) todayOrdEl.textContent = `오늘 ${stats.todayOrders||0}건 · 이번달 ${stats.monthOrders||0}건`
+        const enrollEl = document.getElementById('stat-enroll-count')
+        if (enrollEl) enrollEl.textContent = `총 수강 ${stats.newStudents||0}건`
 
         const tbody = document.getElementById('recent-orders-body');
         if (tbody) {
@@ -2401,35 +2432,141 @@
       loadCourses()
     }
 
+    let _allStudents = []
+
     async function loadStudents() {
-      const students = await API.get('/admin/students');
       const tbody = document.getElementById('students-table-body');
       if (!tbody) return;
-      tbody.innerHTML = students.map(s => `
-        <tr>
-          <td>${s.id}</td>
-          <td>${s.name}</td>
-          <td>${s.email}</td>
-          <td>${s.course_count}</td>
+      try {
+        _allStudents = await API.get('/admin/students');
+        renderStudentsTable(_allStudents);
+      } catch(e) {
+        tbody.innerHTML = `<tr class="empty-state-row"><td colspan="7">${esc(e.message)}</td></tr>`;
+      }
+    }
+
+    function renderStudentsTable(list) {
+      const tbody = document.getElementById('students-table-body');
+      if (!tbody) return;
+      if (!list.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">수강생이 없습니다.</td></tr>'; return; }
+      tbody.innerHTML = list.map(s => `
+        <tr style="cursor:pointer" onclick="openStudentModal('${esc(s.id)}')">
+          <td><div class="user-cell"><div class="avatar-sm">${esc((s.name||'?')[0])}</div> ${esc(s.name||'-')}</div></td>
+          <td>${esc(s.email||'-')}</td>
+          <td>${esc(s.phone||'-')}</td>
+          <td>${s.course_count||0}개</td>
           <td>${(s.total_paid||0).toLocaleString()}원</td>
-          <td class="td-date">${s.created_at}</td>
+          <td class="td-date">${fmtD(s.created_at)}</td>
+          <td><button class="btn-sm" onclick="event.stopPropagation();openStudentModal('${esc(s.id)}')">상세</button></td>
         </tr>`).join('');
     }
 
+    function filterStudents() {
+      const q = (document.getElementById('student-search')?.value || '').toLowerCase();
+      renderStudentsTable(q ? _allStudents.filter(s => (s.name||'').toLowerCase().includes(q) || (s.email||'').toLowerCase().includes(q)) : _allStudents);
+    }
+
+    async function openStudentModal(userId) {
+      const overlay = document.getElementById('student-modal-overlay');
+      const body = document.getElementById('student-modal-body');
+      const title = document.getElementById('student-modal-title');
+      if (!overlay || !body) return;
+      body.innerHTML = '<div class="spinner" style="margin:30px auto"></div>';
+      overlay.classList.remove('hidden');
+      try {
+        const d = await API.get('/admin/students/' + userId);
+        title.textContent = (d.name || '-') + ' 상세';
+        const genderLabel = { male: '남성', female: '여성' };
+        body.innerHTML = `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:20px;font-size:14px">
+            <div><span style="color:#888">이메일</span><div>${esc(d.email||'-')}</div></div>
+            <div><span style="color:#888">연락처</span><div>${esc(d.phone||'-')}</div></div>
+            <div><span style="color:#888">성별</span><div>${genderLabel[d.gender]||'-'}</div></div>
+            <div><span style="color:#888">출생연도</span><div>${d.birth_year||'-'}</div></div>
+            <div><span style="color:#888">가입 유형</span><div>${esc(d.login_type||'-')}</div></div>
+            <div><span style="color:#888">가입일</span><div>${fmtD(d.created_at)}</div></div>
+          </div>
+          <div style="font-weight:600;margin-bottom:8px">수강 강의 (${d.enrollments?.length||0})</div>
+          <table class="data-table" style="margin-bottom:20px">
+            <thead><tr><th>강의명</th><th>등록일</th></tr></thead>
+            <tbody>${(d.enrollments||[]).map(e=>`<tr><td>${esc(e.course_title||'-')}</td><td class="td-date">${fmtD(e.enrolled_at)}</td></tr>`).join('')||'<tr class="empty-state-row"><td colspan="2">수강 내역 없음</td></tr>'}</tbody>
+          </table>
+          <div style="font-weight:600;margin-bottom:8px">결제 내역 (${d.orders?.length||0})</div>
+          <table class="data-table">
+            <thead><tr><th>강의</th><th>금액</th><th>상태</th><th>결제일</th></tr></thead>
+            <tbody>${(d.orders||[]).map(o=>`<tr><td>${esc(o.course_title||'-')}</td><td>${(o.amount||0).toLocaleString()}원</td><td><span class="badge-status ${o.status==='paid'?'paid':'refund'}">${o.status==='paid'?'결제완료':'환불'}</span></td><td class="td-date">${fmtD(o.paid_at)}</td></tr>`).join('')||'<tr class="empty-state-row"><td colspan="4">결제 내역 없음</td></tr>'}</tbody>
+          </table>`;
+      } catch(e) {
+        body.innerHTML = `<p style="color:#e53e3e">${esc(e.message)}</p>`;
+      }
+    }
+
+    function closeStudentModal() {
+      document.getElementById('student-modal-overlay')?.classList.add('hidden');
+    }
+
+    let _allOrders = []
+
     async function loadOrders() {
-      const orders = await API.get('/admin/orders');
       const tbody = document.getElementById('orders-table-body');
       if (!tbody) return;
-      tbody.innerHTML = orders.map(o => `
+      try {
+        _allOrders = await API.get('/admin/orders');
+        renderOrdersTable();
+      } catch(e) {
+        tbody.innerHTML = `<tr class="empty-state-row"><td colspan="8">${esc(e.message)}</td></tr>`;
+      }
+    }
+
+    function renderOrdersTable() {
+      const tbody = document.getElementById('orders-table-body');
+      if (!tbody) return;
+      const status = document.getElementById('order-filter-status')?.value || '';
+      const from = document.getElementById('order-filter-from')?.value || '';
+      const to = document.getElementById('order-filter-to')?.value || '';
+      let list = _allOrders;
+      if (status) list = list.filter(o => o.status === status);
+      if (from) list = list.filter(o => (o.paid_at||'') >= from);
+      if (to) list = list.filter(o => (o.paid_at||'') <= to + 'T23:59:59');
+      const totalRevenue = list.filter(o=>o.status==='paid').reduce((s,o)=>s+(o.amount||0),0);
+      const badge = document.getElementById('orders-total-badge');
+      if (badge) badge.textContent = `${list.length}건 · 합계 ${totalRevenue.toLocaleString()}원`;
+      if (!list.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="8">결제 내역이 없습니다.</td></tr>'; return; }
+      const statusLabel = { paid:'결제완료', refunded:'환불', cancelled:'취소' };
+      const statusClass = { paid:'paid', refunded:'refund', cancelled:'refund' };
+      tbody.innerHTML = list.map(o => `
         <tr>
-          <td>${o.id}</td>
-          <td>${o.user_name||'-'}</td>
-          <td class="td-sub">${o.course_title||'-'}</td>
+          <td><div class="user-cell"><div class="avatar-sm">${esc((o.user_name||'?')[0])}</div> ${esc(o.user_name||'-')}</div></td>
+          <td class="td-sub">${esc(o.course_title||'-')}</td>
           <td>${(o.amount||0).toLocaleString()}원</td>
-          <td>${o.method||'-'}</td>
-          <td><span class="badge-status ${o.status==='paid'?'paid':'refund'}">${o.status==='paid'?'결제완료':'환불'}</span></td>
-          <td class="td-date">${o.paid_at||'-'}</td>
+          <td>${o.discount_amount ? (o.discount_amount).toLocaleString()+'원' : '-'}</td>
+          <td>${o.refund_amount ? (o.refund_amount).toLocaleString()+'원' : '-'}</td>
+          <td>${esc(o.method||'-')}</td>
+          <td><span class="badge-status ${statusClass[o.status]||'refund'}">${statusLabel[o.status]||esc(o.status)}</span></td>
+          <td class="td-date">${fmtD(o.paid_at)}</td>
         </tr>`).join('');
+    }
+
+    function exportOrdersCSV() {
+      const status = document.getElementById('order-filter-status')?.value || '';
+      const from = document.getElementById('order-filter-from')?.value || '';
+      const to = document.getElementById('order-filter-to')?.value || '';
+      let list = _allOrders;
+      if (status) list = list.filter(o => o.status === status);
+      if (from) list = list.filter(o => (o.paid_at||'') >= from);
+      if (to) list = list.filter(o => (o.paid_at||'') <= to + 'T23:59:59');
+      const header = ['수강생','이메일','강의','결제금액','할인','환불액','수단','상태','결제일'];
+      const rows = list.map(o => [
+        o.user_name||'', o.user_email||'', o.course_title||'',
+        o.amount||0, o.discount_amount||0, o.refund_amount||0,
+        o.method||'', o.status||'', o.paid_at||''
+      ]);
+      const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `orders_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
     }
 
     let adminCouponsCache = []
@@ -4554,20 +4691,21 @@
         if (countEl) countEl.textContent = refunds.length + '건'
         if (badgeEl) { badgeEl.textContent = refunds.length; badgeEl.style.display = refunds.length ? '' : 'none' }
         if (!refunds.length) {
-          tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">환불 요청이 없습니다.</td></tr>'
+          tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">환불 내역이 없습니다.</td></tr>'
           return
         }
+        const statusLabel = { refunded: '환불완료', cancelled: '취소' }
         tbody.innerHTML = refunds.map(o => `<tr>
-          <td>${esc(o.user_name || '-')}</td>
-          <td class="td-sub">${esc(o.course_title || '-')}</td>
-          <td class="td-date">${o.paid_at || '-'}</td>
-          <td class="td-date">-</td>
-          <td>-</td>
-          <td>${Number(o.amount || 0).toLocaleString()}원</td>
-          <td><span class="badge-status refund">${esc(o.status)}</span></td>
+          <td><div class="user-cell"><div class="avatar-sm">${esc((o.user_name||'?')[0])}</div> ${esc(o.user_name||'-')}</div></td>
+          <td class="td-sub">${esc(o.course_title||'-')}</td>
+          <td>${(o.amount||0).toLocaleString()}원</td>
+          <td>${o.refund_amount != null ? (o.refund_amount).toLocaleString()+'원' : '-'}</td>
+          <td class="td-date">${fmtD(o.paid_at)}</td>
+          <td class="td-date">${fmtD(o.refunded_at)}</td>
+          <td><span class="badge-status refund">${statusLabel[o.status]||esc(o.status)}</span></td>
         </tr>`).join('')
       } catch(e) {
-        if (tbody) tbody.innerHTML = `<tr class="empty-state-row"><td colspan="7">${esc(e.message || '불러오기 실패')}</td></tr>`
+        if (tbody) tbody.innerHTML = `<tr class="empty-state-row"><td colspan="7">${esc(e.message||'불러오기 실패')}</td></tr>`
       }
     }
 

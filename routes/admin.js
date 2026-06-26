@@ -121,6 +121,47 @@ router.get('/students', async (req, res) => {
   res.json(await db.getAllStudents())
 })
 
+router.get('/students/:id', async (req, res) => {
+  try {
+    const user = await db.findUserById(req.params.id)
+    if (!user) return res.status(404).json({ error: '회원을 찾을 수 없습니다.' })
+    const [orders, enrollments] = await Promise.all([
+      db.getOrdersByUser(user.id),
+      db.getEnrollmentsByUser(user.id),
+    ])
+    const courseIds = [...new Set([...orders.map(o => o.course_id), ...enrollments.map(e => e.course_id)].filter(Boolean))]
+    const courseMap = await db.batchGetCourses(courseIds)
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || null,
+      gender: user.gender || null,
+      birth_year: user.birth_year || null,
+      created_at: user.created_at || null,
+      login_type: user.google_id ? 'google' : user.kakao_id ? 'kakao' : 'email',
+      orders: orders.map(o => ({
+        id: o.id,
+        course_title: courseMap[o.course_id]?.title || '-',
+        amount: o.amount,
+        discount: o.discount || 0,
+        refund_amount: o.refund_amount || 0,
+        method: o.method,
+        status: o.status,
+        paid_at: o.paid_at,
+        refunded_at: o.refunded_at || null,
+      })),
+      enrollments: enrollments.map(e => ({
+        course_id: e.course_id,
+        course_title: courseMap[e.course_id]?.title || '-',
+        enrolled_at: e.enrolled_at || null,
+      })),
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.get('/reviews', async (req, res) => {
   const reviews = await db.getAllReviews()
   const userIds = [...new Set(reviews.map(r => r.user_id).filter(Boolean))]
