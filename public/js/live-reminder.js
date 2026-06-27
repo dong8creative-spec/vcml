@@ -263,7 +263,7 @@
       return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 대기중</span>`
     }
     if (r.material_available) {
-      return `<button type="button" class="btn-meet btn-meet--material btn-meet--material-active" onclick="LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</button>`
+      return `<a href="#" role="button" class="btn-meet btn-meet--material btn-meet--material-active" onclick="event.preventDefault();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</a>`
     }
     const hint = r.live_lecture_date ? ` (${r.live_lecture_date} 당일)` : ' (강의 당일)'
     return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 다운로드${hint}</span>`
@@ -299,7 +299,7 @@
     }
     if (includeMaterial && r.material_configured) {
       if (r.material_available) {
-        parts.push(`<button type="button" class="btn-live-extra btn-live-extra--material" onclick="LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 자료 다운로드</button>`)
+        parts.push(`<a href="#" role="button" class="btn-live-extra btn-live-extra--material" onclick="event.preventDefault();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 자료 다운로드</a>`)
       } else {
         const hint = r.live_lecture_date ? ` (${r.live_lecture_date} 당일)` : ' (강의 당일)'
         parts.push(`<span class="btn-live-extra btn-live-extra--material btn-live-extra--locked"><i class="ti ti-download"></i> 자료 다운로드${hint}</span>`)
@@ -309,32 +309,37 @@
     return `<div class="live-extra-actions">${parts.join('')}</div>`
   }
 
-  async function openReplay(courseId) {
+  function openExternalResource(apiPath, fallbackError) {
     if (!window.API?.isLoggedIn?.()) {
       location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.search)
       return
     }
-    try {
-      const { url } = await API.get('/my/courses/' + courseId + '/live-replay')
-      window.open(url, '_blank', 'noopener,noreferrer')
-    } catch (e) {
-      if (typeof toast === 'function') toast(e.message || '다시보기를 열 수 없습니다.', 'error')
-      else alert(e.message || '다시보기를 열 수 없습니다.')
+    const tab = window.open('about:blank', '_blank')
+    if (!tab) {
+      const blocked = '새 탭을 열 수 없습니다. 브라우저 팝업 차단을 해제해 주세요.'
+      if (typeof toast === 'function') toast(blocked, 'error')
+      else alert(blocked)
+      return
     }
+    try { tab.opener = null } catch (_) {}
+    API.get(apiPath)
+      .then(({ url }) => {
+        tab.location.href = url
+      })
+      .catch((e) => {
+        try { tab.close() } catch (_) {}
+        const msg = e.message || fallbackError
+        if (typeof toast === 'function') toast(msg, 'error')
+        else alert(msg)
+      })
   }
 
-  async function openMaterial(courseId) {
-    if (!window.API?.isLoggedIn?.()) {
-      location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.search)
-      return
-    }
-    try {
-      const { url } = await API.get('/my/courses/' + courseId + '/live-material')
-      window.open(url, '_blank', 'noopener,noreferrer')
-    } catch (e) {
-      if (typeof toast === 'function') toast(e.message || '자료를 다운로드할 수 없습니다.', 'error')
-      else alert(e.message || '자료를 다운로드할 수 없습니다.')
-    }
+  function openReplay(courseId) {
+    openExternalResource('/my/courses/' + courseId + '/live-replay', '다시보기를 열 수 없습니다.')
+  }
+
+  function openMaterial(courseId) {
+    openExternalResource('/my/courses/' + courseId + '/live-material', '자료를 다운로드할 수 없습니다.')
   }
 
   function showReminderPopup(course, start) {

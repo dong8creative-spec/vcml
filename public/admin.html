@@ -374,6 +374,22 @@
               <div id="cm-hero-gallery-list" style="display:flex;flex-direction:column;gap:8px"></div>
               <button type="button" class="btn-sm" id="cm-hero-gallery-add" style="margin-top:8px;width:fit-content">+ 이미지 추가</button>
             </div>
+            <div id="cm-live-links" style="display:none;border-top:1px solid #eee;padding-top:12px;margin-top:4px">
+              <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#111">라이브 링크 · 자료</div>
+              <div class="form-group">
+                <label>강의 자료 다운로드 링크 <span style="font-size:12px;color:#888">Google Drive 등 URL · 강의 당일만 다운로드</span></label>
+                <input type="url" id="cm-live-material-url" placeholder="https://..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>다시보기 링크 <span style="font-size:12px;color:#888">종료 후 다음 날 오후 1시 공개</span></label>
+                <input type="url" id="cm-live-replay-url" placeholder="https://..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>수강생 단톡방 링크</label>
+                <input type="url" id="cm-live-chat-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
+              </div>
+              <p style="font-size:12px;color:#888;margin:0">라이브 일정·Meet·상태는 목록의 「라이브」 버튼에서 설정합니다.</p>
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn-sm" onclick="document.getElementById('course-modal').style.display='none'">취소</button>
@@ -2293,6 +2309,14 @@
       renderCmThumbPreview(c.thumbnail_url && String(c.thumbnail_url).startsWith('http') ? c.thumbnail_url : (String(c.thumbnail_url || '').startsWith('data:') ? c.thumbnail_url : null))
       _cmHeroGallery = Array.isArray(c.hero_gallery) ? [...c.hero_gallery] : []
       renderCmHeroGalleryList()
+      const isLive = c.course_type === 'live'
+      const liveLinks = document.getElementById('cm-live-links')
+      if (liveLinks) liveLinks.style.display = isLive ? '' : 'none'
+      if (isLive) {
+        document.getElementById('cm-live-material-url').value = c.live_material_url || ''
+        document.getElementById('cm-live-replay-url').value = c.live_replay_url || ''
+        document.getElementById('cm-live-chat-url').value = c.live_chat_url || ''
+      }
       document.getElementById('course-modal').style.display = 'flex'
     }
 
@@ -2316,6 +2340,12 @@
       if (_cmThumbPending !== undefined) payload.thumbnail_url = _cmThumbPending
       else if (thumbUrl) payload.thumbnail_url = thumbUrl
       payload.hero_gallery = _cmHeroGallery.map(s => String(s || '').trim()).filter(Boolean).slice(0, 9)
+      const course = _courses.find(x => String(x.id) === String(_courseEditId))
+      if (course?.course_type === 'live') {
+        payload.live_material_url = document.getElementById('cm-live-material-url').value.trim() || null
+        payload.live_replay_url = document.getElementById('cm-live-replay-url').value.trim() || null
+        payload.live_chat_url = document.getElementById('cm-live-chat-url').value.trim() || null
+      }
       await API.patch('/admin/courses/' + _courseEditId, payload)
       document.getElementById('course-modal').style.display = 'none'
       loadCourses()

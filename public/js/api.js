@@ -329,7 +329,7 @@ window.addEventListener('resize', () => scheduleFitOneLineTexts())
 })()
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/live-reminder.js?v=14'
+  s.src = '/js/live-reminder.js?v=15'
   s.defer = true
   document.head.appendChild(s)
 })()
