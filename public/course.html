@@ -181,8 +181,12 @@
     const ANTICIPATION_SUBMIT_CREATE = '기대평 작성하고 쿠폰 받기'
     const ANTICIPATION_SUBMIT_EDIT = '기대평 수정하기'
 
+    function canWriteAnticipation(c) {
+      return c?.anticipation_modify?.can_modify !== false
+    }
+
     function canEditAnticipation(c) {
-      return c?.my_anticipation && c.my_anticipation.can_edit !== false && c.anticipation_modify?.can_modify !== false
+      return c?.my_anticipation && c.my_anticipation.can_edit !== false && canWriteAnticipation(c)
     }
 
     function renderAnticipationFeed(c) {
@@ -312,8 +316,8 @@
     }
 
     function renderAnticipationBtn(c) {
+      if (!canWriteAnticipation(c)) return ''
       if (c.my_anticipation) {
-        if (!canEditAnticipation(c)) return ''
         return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal(true)"><i class="ti ti-pencil"></i> 기대평 수정</button>`
       }
       return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal()"><i class="ti ti-message-heart"></i> 기대평 작성하고 쿠폰 받기</button>`
@@ -527,18 +531,23 @@
 
     function setAnticipationModalMode(edit) {
       const overlay = document.getElementById('anticipation-modal-overlay')
+      const isLive = courseData?.course_type === 'live'
       overlay.dataset.mode = edit ? 'edit' : 'create'
       document.getElementById('anticipation-modal-title').textContent = edit ? '기대평 수정' : '강의 기대평 작성'
       document.getElementById('anticipation-modal-note').textContent = edit
-        ? '작성하신 기대평을 수정할 수 있습니다. 쿠폰은 최초 작성 시에만 발급됩니다. 강의 시작 1시간 전까지만 수정·삭제할 수 있습니다.'
-        : '이 강의에 대한 기대평을 작성해 주세요. 작성 완료 시 할인 쿠폰이 발급되며, 수강 신청은 별도로 진행합니다.'
+        ? (isLive
+          ? '작성하신 기대평을 수정할 수 있습니다. 쿠폰은 최초 작성 시에만 발급됩니다. 강의 종료 전까지 수정·삭제할 수 있습니다.'
+          : '작성하신 기대평을 수정할 수 있습니다. 쿠폰은 최초 작성 시에만 발급됩니다.')
+        : (isLive
+          ? '이 강의에 대한 기대평을 작성해 주세요. 작성 완료 시 할인 쿠폰이 발급되며, 수강 신청은 별도로 진행합니다. 강의 종료 전까지 작성할 수 있습니다.'
+          : '이 강의에 대한 기대평을 작성해 주세요. 작성 완료 시 할인 쿠폰이 발급되며, 수강 신청은 별도로 진행합니다.')
       document.getElementById('btn-anticipation-submit').textContent = edit ? ANTICIPATION_SUBMIT_EDIT : ANTICIPATION_SUBMIT_CREATE
     }
 
     function openAnticipationModal(edit = false) {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
-      if (edit && !canEditAnticipation(courseData)) {
-        toast(courseData?.anticipation_modify?.message || '강의 시작 1시간 전부터는 기대평을 수정·삭제할 수 없습니다.', 'error')
+      if (!canWriteAnticipation(courseData)) {
+        toast(courseData?.anticipation_modify?.message || '강의 종료 후에는 기대평을 작성·수정·삭제할 수 없습니다.', 'error')
         return
       }
       const existing = courseData?.my_anticipation
@@ -605,8 +614,8 @@
 
     async function deleteAnticipationReview() {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
-      if (!canEditAnticipation(courseData)) {
-        toast(courseData?.anticipation_modify?.message || '강의 시작 1시간 전부터는 기대평을 수정·삭제할 수 없습니다.', 'error')
+      if (!canWriteAnticipation(courseData)) {
+        toast(courseData?.anticipation_modify?.message || '강의 종료 후에는 기대평을 작성·수정·삭제할 수 없습니다.', 'error')
         return
       }
       if (!confirm('기대평을 삭제할까요?\n발급된 기대평 할인 쿠폰도 회수됩니다.')) return

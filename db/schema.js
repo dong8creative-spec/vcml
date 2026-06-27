@@ -1062,19 +1062,24 @@ function isLiveCourseEnded(course, at = new Date()) {
   return at.getTime() > start.getTime() + LIVE_END_AFTER_MS
 }
 
+function canWriteAnticipationReview(course, at = new Date()) {
+  if (!course || course.course_type !== 'live') return true
+  if (course.live_status === 'ended') return false
+  return !isLiveCourseEnded(course, at)
+}
+
+/** 라이브 신청 취소 마감: 시작 1시간 전 */
 function canModifyAnticipationReview(course, at = new Date()) {
   const start = parseLiveStart(course)
   if (!start) return true
   return at.getTime() < start.getTime() - ANTICIPATION_MODIFY_LOCK_MS
 }
 
-function getAnticipationModifyMeta(course, at = new Date()) {
+function getLiveEnrollmentCancelLockMessage(course, at = new Date()) {
+  if (canModifyAnticipationReview(course, at)) return null
   const start = parseLiveStart(course)
-  if (!start) {
-    return { can_modify: true, locked: false, deadline: null, deadline_label: null, message: null }
-  }
+  if (!start) return '라이브 시작 1시간 전부터는 신청 취소할 수 없습니다.'
   const deadline = new Date(start.getTime() - ANTICIPATION_MODIFY_LOCK_MS)
-  const canModify = canModifyAnticipationReview(course, at)
   const deadlineLabel = deadline.toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
     month: 'long',
@@ -1083,15 +1088,44 @@ function getAnticipationModifyMeta(course, at = new Date()) {
     minute: '2-digit',
     hour12: true,
   })
-  return {
-    can_modify: canModify,
-    locked: !canModify,
-    deadline: deadline.toISOString(),
-    deadline_label: deadlineLabel,
-    message: canModify
-      ? null
-      : `강의 시작 1시간 전(${deadlineLabel})부터는 기대평을 수정·삭제할 수 없습니다.`,
+  return `라이브 시작 1시간 전(${deadlineLabel})부터는 신청 취소할 수 없습니다.`
+}
+
+function getAnticipationModifyMeta(course, at = new Date()) {
+  if (course?.course_type !== 'live') {
+    return { can_modify: true, locked: false, deadline: null, deadline_label: null, message: null }
   }
+  const start = parseLiveStart(course)
+  const canWrite = canWriteAnticipationReview(course, at)
+  let deadline = null
+  let deadlineLabel = null
+  if (start) {
+    deadline = new Date(start.getTime() + LIVE_END_AFTER_MS)
+    deadlineLabel = deadline.toLocaleString('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+  }
+  return {
+    can_modify: canWrite,
+    locked: !canWrite,
+    deadline: deadline ? deadline.toISOString() : null,
+    deadline_label: deadlineLabel,
+    message: canWrite
+      ? null
+      : (deadlineLabel
+        ? `강의 종료(${deadlineLabel}) 후에는 기대평을 작성·수정·삭제할 수 없습니다.`
+        : '종료된 강의에는 기대평을 작성·수정·삭제할 수 없습니다.'),
+  }
+}
+
+function anticipationWriteLockedResult(course) {
+  if (canWriteAnticipationReview(course)) return null
+  return { error: 'edit_locked', message: getAnticipationModifyMeta(course).message }
 }
 
 function formatReplayOpensLabel(opensAt) {
@@ -1725,7 +1759,7 @@ const db = {
   },
   async deleteAnticipationReviewByUserAndCourse(userId, courseId) {
     const course = await db.getCourseById(courseId)
-    if (course && !canModifyAnticipationReview(course)) return false
+    if (course && !canWriteAnticipationReview(course)) return false
     const snap = await fs.collection('anticipation_reviews').where('user_id', '==', userId).get()
     for (const doc of snap.docs) {
       if (doc.data().course_id === courseId) {
@@ -1784,7 +1818,7 @@ const db = {
         return { allowed: false, error: '진행 중인 라이브는 취소할 수 없습니다.' }
       }
       if (!canModifyAnticipationReview(course)) {
-        return { allowed: false, error: getAnticipationModifyMeta(course).message }
+        return { allowed: false, error: getLiveEnrollmentCancelLockMessage(course) || '라이브 시작 1시간 전부터는 신청 취소할 수 없습니다.' }
       }
       return { allowed: true, type: 'cancel', refund_amount: 0, label: '신청 취소' }
     }
@@ -2127,6 +2161,9 @@ const db = {
     const course = await db.getCourseById(courseId)
     if (!course) return { error: 'course_not_found' }
 
+    const writeLocked = anticipationWriteLockedResult(course)
+    if (writeLocked) return writeLocked
+
     const text = String(content || '').trim()
     if (text.length < ANTICIPATION_MIN_LENGTH) return { error: 'too_short' }
     if (text.length > ANTICIPATION_MAX_LENGTH) return { error: 'too_long' }
@@ -2210,8 +2247,9 @@ const db = {
     if (!review) return { error: 'not_found' }
 
     const course = await db.getCourseById(courseId)
-    if (course && !canModifyAnticipationReview(course)) {
-      return { error: 'edit_locked', message: getAnticipationModifyMeta(course).message }
+    if (course) {
+      const writeLocked = anticipationWriteLockedResult(course)
+      if (writeLocked) return writeLocked
     }
 
     const text = String(content || '').trim()
@@ -2235,9 +2273,8 @@ const db = {
   async deleteCourseAnticipationReview(userId, courseId) {
     const course = await db.getCourseById(courseId)
     if (!course) return { error: 'course_not_found' }
-    if (!canModifyAnticipationReview(course)) {
-      return { error: 'edit_locked', message: getAnticipationModifyMeta(course).message }
-    }
+    const writeLocked = anticipationWriteLockedResult(course)
+    if (writeLocked) return writeLocked
     const review = await db.getAnticipationReviewByUserAndCourse(userId, courseId)
     if (!review) return { error: 'not_found' }
     await fs.collection('anticipation_reviews').doc(review.id).delete()
@@ -3647,6 +3684,7 @@ const db = {
   parseLiveStart,
   isLiveLectureDay,
   isLiveCourseEnded,
+  canWriteAnticipationReview,
   canModifyAnticipationReview,
   getAnticipationModifyMeta,
   getReplayOpensAt,
@@ -3667,6 +3705,7 @@ module.exports = db
 module.exports.parseLiveStart = parseLiveStart
 module.exports.isLiveLectureDay = isLiveLectureDay
 module.exports.isLiveCourseEnded = isLiveCourseEnded
+module.exports.canWriteAnticipationReview = canWriteAnticipationReview
 module.exports.canModifyAnticipationReview = canModifyAnticipationReview
 module.exports.getAnticipationModifyMeta = getAnticipationModifyMeta
 module.exports.getReplayOpensAt = getReplayOpensAt

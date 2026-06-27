@@ -49,7 +49,7 @@ function anticipationError(res, result) {
     return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
   }
   if (result.error === 'edit_locked') {
-    return res.status(403).json({ error: result.message || '강의 시작 1시간 전부터는 기대평을 수정·삭제할 수 없습니다.' })
+    return res.status(403).json({ error: result.message || '강의 종료 후에는 기대평을 작성·수정·삭제할 수 없습니다.' })
   }
   if (result.error === 'enrollment_full') {
     return res.status(409).json({ error: '모집 정원이 마감되었습니다.', code: 'enrollment_full' })

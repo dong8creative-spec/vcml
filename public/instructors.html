@@ -23,148 +23,165 @@
 <main>
   <header class="instructor-hero">
     <p class="instructor-hero-eyebrow">Instructor</p>
-    <h1 class="instructor-hero-title" id="page-title">강사 소개</h1>
-    <p class="instructor-hero-subtitle" id="page-subtitle"></p>
-    <p class="instructor-hero-lead" id="page-intro">타닥클래스 대표 강사를 소개합니다.</p>
+    <h1 class="instructor-hero-title">강사 소개</h1>
+    <p class="instructor-hero-subtitle">타닥클래스의 도각쌤을 소개합니다</p>
+    <p class="instructor-hero-lead">현장 경험과 교육 노하우를 바탕으로 실무에 바로 쓸 수 있는 강의를 제공합니다</p>
   </header>
 
   <div class="instructor-main" id="instructor-main">
-    <div class="instructors-empty"><span class="spinner"></span></div>
+    <section class="instructor-profile">
+      <div class="instructor-profile__photo"><img src="data:image/jpeg;base64,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" alt="도각쌤 / 이동헌" /></div>
+      <div class="instructor-profile__body">
+        <h2 class="instructor-profile__name">도각쌤 / 이동헌</h2>
+        <p class="instructor-profile__role">세상에서 가장 빠른 영상편집기사가 될래요</p>
+        <div class="instructor-profile__tags"><span>프리미어 프로</span><span>애프터이펙트</span><span>캡컷</span><span>다빈치 리졸브</span></div>
+        <p class="instructor-profile__bio">여러분들 모두를 편집 초신속의 세계로 인도할 도각쌤입니다</p>
+      </div>
+    </section>
+
+    <section class="instructor-greeting">
+      <p class="instructor-section-eyebrow">Message</p>
+      <h2 class="instructor-section-title">인사말</h2>
+      <div class="instructor-greeting__body">이 곳에 와주신 우리 수강생 여러분들 반갑습니다<br><br>저는 타닥클래스 대표 강사, 도각쌤입니다.<br><br>저는 영상제작과 편집 등, 현장에서 직접 부딪히며 쌓아온 경험을<br>누구나 따라 할 수 있는 실전형 수업으로 풀어내고 있습니다.<br><br>타닥클래스는 단순히 버튼 하나, 기능 하나를 알려드리는 수업이 아닌<br>"어떻게 하면 더 빠르게 만들 수 있을까?"<br>"어떻게 하면 더 보기 좋은 영상이 될까?"<br>"어떻게 하면 내가 만든 콘텐츠가 사람들에게 닿을까?"<br><br>이 질문에 대한 답을 함께 찾아가는 수업입니다.<br><br>프리미어 프로든, 캡컷이든 아니면 애프터이펙트든<br><br>처음에는 어렵고 막막하게 느껴질 수 있습니다.<br>하지만 제대로 된 순서와 실무에서 쓰는 방식만 익히면<br>영상편집은 생각보다 훨씬 빠르게 내 것이 될 수 있습니다.<br><br>타닥클래스는 앞으로도 현장에서 바로 써먹을 수 있는 편집 노하우와<br>콘텐츠 제작 감각을 쉽고 친절하게 전해드리겠습니다.<br><br>영상이 막막했던 분들이<br>직접 만들고, 직접 수정하고, 직접 완성하는 순간까지<br>저 도각쌤이 함께하겠습니다.<br><br>감사합니다.</div>
+      <div class="instructor-greeting__sign">
+        <div class="instructor-greeting__sign-name">도각쌤 / 이동헌</div>
+        <div class="instructor-greeting__sign-role">세상에서 가장 빠른 영상편집기사가 될래요</div>
+      </div>
+    </section>
+
+    <section class="instructor-history">
+      <div class="instructor-history__head">
+        <p class="instructor-section-eyebrow">History</p>
+        <h2 class="instructor-section-title instructor-section-title--flush">주요 경력</h2>
+      </div>
+      <ol class="instructor-timeline">
+        <li class="instructor-timeline__item is-current">
+          <div class="instructor-timeline__year">2026</div>
+          <div class="instructor-timeline__track" aria-hidden="true"><span class="instructor-timeline__dot"></span></div>
+          <article class="instructor-timeline__card">
+            <time class="instructor-timeline__year-mobile">2026</time>
+            <h3 class="instructor-timeline__title">도각쌤의 타닥클래스 오픈</h3>
+            <p class="instructor-timeline__desc">여러분들을 위한 강의신청 사이트를 개설했어요</p>
+          </article>
+        </li>
+        <li class="instructor-timeline__item">
+          <div class="instructor-timeline__year">2024</div>
+          <div class="instructor-timeline__track" aria-hidden="true"><span class="instructor-timeline__dot"></span></div>
+          <article class="instructor-timeline__card">
+            <time class="instructor-timeline__year-mobile">2024</time>
+            <h3 class="instructor-timeline__title">편집 초신속의 세계에 오신 것을 환영합니다</h3>
+            <p class="instructor-timeline__desc">첫 소셜네트워크로 강의 런칭, 현재 5기까지 모집 및 이수완료</p>
+            <ul class="instructor-timeline__achievements">
+              <li>2024. 3 편집 초신속의 세계에 오신 것을 환영합니다 1기</li>
+              <li>2024. 4 편집 초신속의 세계에 오신 것을 환영합니다 2기</li>
+              <li>2024. 5 편집 초신속의 세계에 오신 것을 환영합니다 3기</li>
+              <li>2024. 7 편집 초신속의 세계에 오신 것을 환영합니다 4기</li>
+              <li>2025. 3 편집 초신속의 세계에 오신 것을 환영합니다 5기</li>
+            </ul>
+          </article>
+        </li>
+        <li class="instructor-timeline__item">
+          <div class="instructor-timeline__year">2023</div>
+          <div class="instructor-timeline__track" aria-hidden="true"><span class="instructor-timeline__dot"></span></div>
+          <article class="instructor-timeline__card">
+            <time class="instructor-timeline__year-mobile">2023</time>
+            <h3 class="instructor-timeline__title">유튜브 편집자 양성과정</h3>
+            <p class="instructor-timeline__desc">2025년까지 32기까지 모집 및 이수완료</p>
+            <ul class="instructor-timeline__achievements">
+              <li>2023. 1 유튜브 브이로그 편집자 양성과정 1기</li>
+              <li>2023. 3 유튜브 브이로그 편집자 양성과정 2기</li>
+              <li>2023. 5 유튜브 브이로그 편집자 양성과정 3기</li>
+              <li>2023. 7 유튜브 브이로그 편집자 양성과정 4기(공방운영자 대상)</li>
+              <li>2023. 8 유튜브 브이로그 편집자 양성과정 5기(공방운영자 대상)</li>
+            </ul>
+          </article>
+        </li>
+        <li class="instructor-timeline__item">
+          <div class="instructor-timeline__year">2022</div>
+          <div class="instructor-timeline__track" aria-hidden="true"><span class="instructor-timeline__dot"></span></div>
+          <article class="instructor-timeline__card">
+            <time class="instructor-timeline__year-mobile">2022</time>
+            <h3 class="instructor-timeline__title">김해 / 진해 소셜캠퍼스온 콘텐츠 컨설턴트</h3>
+            <p class="instructor-timeline__desc">사회적기업을 위한 소셜네트워크 콘텐츠 기획 및 컨설팅 / 제품사진 촬영을 진행하고 있습니다</p>
+            <ul class="instructor-timeline__achievements">
+              <li>김해 소셜캠퍼스온 / 틱톡 콘텐츠로 해외수출 실적 1억원 달성</li>
+              <li>김해 소셜캠퍼스온 / 제품사진 촬영 세팅</li>
+              <li>김해 소셜캠퍼스온 / 인물사진 촬영 세팅</li>
+              <li>진해 소셜캠퍼스온 / 제품사진 촬영강의 진행</li>
+              <li>김해 소셜캠퍼스온 / 제품사진 촬영강의 진행</li>
+            </ul>
+          </article>
+        </li>
+        <li class="instructor-timeline__item">
+          <div class="instructor-timeline__year instructor-timeline__year--repeat" aria-hidden="true"></div>
+          <div class="instructor-timeline__track" aria-hidden="true"><span class="instructor-timeline__dot"></span></div>
+          <article class="instructor-timeline__card">
+            <h3 class="instructor-timeline__title">유튜브 채널 편집대행</h3>
+            <p class="instructor-timeline__desc">클라우드 호스피탈 등의 국내외 채널 4곳 더빙 및 영상편집 업무를 도맡아 진행했습니다</p>
+            <ul class="instructor-timeline__achievements">
+              <li>2022 Cloud Hospital</li>
+              <li>2022 1분닥터</li>
+              <li>2022 우당탕으니</li>
+              <li>2022 가로세로연구소</li>
+              <li>2024 자영업자학교 인스타그램</li>
+              <li>2024 안리고택 인스타그램</li>
+              <li>2024 최선장 인스타그램</li>
+            </ul>
+          </article>
+        </li>
+        <li class="instructor-timeline__item">
+          <div class="instructor-timeline__year instructor-timeline__year--repeat" aria-hidden="true"></div>
+          <div class="instructor-timeline__track" aria-hidden="true"><span class="instructor-timeline__dot"></span></div>
+          <article class="instructor-timeline__card">
+            <h3 class="instructor-timeline__title">블루필드매뉴얼픽쳐스 대표</h3>
+            <p class="instructor-timeline__desc">영상제작 및 편집대행업체 사업체를 꾸려나가기 시작했어요</p>
+            <ul class="instructor-timeline__achievements">
+              <li>뮤직비디오 기획 및 제작</li>
+              <li>홈쇼핑 인서트 필름 제작</li>
+              <li>여성 인플루언서 브이로그 및 쇼츠 제작 전문</li>
+            </ul>
+          </article>
+        </li>
+        <li class="instructor-timeline__item">
+          <div class="instructor-timeline__year">2015</div>
+          <div class="instructor-timeline__track" aria-hidden="true"><span class="instructor-timeline__dot"></span></div>
+          <article class="instructor-timeline__card">
+            <time class="instructor-timeline__year-mobile">2015</time>
+            <h3 class="instructor-timeline__title">시청자미디어재단 책임강사</h3>
+            <p class="instructor-timeline__desc">시민 대상으로 영화영상제작 및 프리미어 프로 강의 시작</p>
+            <ul class="instructor-timeline__achievements">
+              <li>영도구노인복지관 2015~2018 영화제작 관련 수상</li>
+              <li>방과후 클래스 중고등학교 방송부, 영화제작반 동아리 출강 130회</li>
+              <li>자영업자 대상 광고만들기수업 24회</li>
+              <li>부산시청자미디어대상 대상 2년 연속 수상</li>
+            </ul>
+          </article>
+        </li>
+        <li class="instructor-timeline__item">
+          <div class="instructor-timeline__year">2012</div>
+          <div class="instructor-timeline__track" aria-hidden="true"><span class="instructor-timeline__dot"></span></div>
+          <article class="instructor-timeline__card">
+            <time class="instructor-timeline__year-mobile">2012</time>
+            <h3 class="instructor-timeline__title">제일기획 광고영상촬영 2팀</h3>
+            <p class="instructor-timeline__desc">서울 광고제작업체 촬영팀으로 직장생활 시작</p>
+          </article>
+        </li>
+        <li class="instructor-timeline__item">
+          <div class="instructor-timeline__year">2006</div>
+          <div class="instructor-timeline__track" aria-hidden="true"><span class="instructor-timeline__dot"></span></div>
+          <article class="instructor-timeline__card">
+            <time class="instructor-timeline__year-mobile">2006</time>
+            <h3 class="instructor-timeline__title">동서대학교 디지털콘텐츠학부 디지털 프로덕션 전공</h3>
+            <p class="instructor-timeline__desc">학사 졸업 / 디지털 비디오 및 사진 촬영전공</p>
+          </article>
+        </li>
+      </ol>
+    </section>
   </div>
 </main>
 
 <div data-chrome="footer"></div>
 
-<script src="/js/api.js"></script>
 <script src="/js/site-chrome.js"></script>
-<script>
-function escHtml(s) {
-  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
-
-function renderProfile(instructor) {
-  if (!instructor) return ''
-  const initial = (instructor.name || '?')[0]
-  const photo = instructor.profile_image
-    ? `<div class="instructor-profile__photo"><img src="${escHtml(instructor.profile_image)}" alt="${escHtml(instructor.name)}" /></div>`
-    : `<div class="instructor-profile__photo instructor-profile__photo--placeholder">${escHtml(initial)}</div>`
-  const tags = (instructor.tags || []).map(t => `<span>${escHtml(t)}</span>`).join('')
-  return `<section class="instructor-profile">
-    ${photo}
-    <div class="instructor-profile__body">
-      <h2 class="instructor-profile__name">${escHtml(instructor.name)}</h2>
-      ${instructor.role_title ? `<p class="instructor-profile__role">${escHtml(instructor.role_title)}</p>` : ''}
-      ${tags ? `<div class="instructor-profile__tags">${tags}</div>` : ''}
-      ${instructor.bio ? `<p class="instructor-profile__bio">${escHtml(instructor.bio)}</p>` : ''}
-    </div>
-  </section>`
-}
-
-function renderGreeting(intro, instructor) {
-  if (!intro.greeting_body && !intro.greeting_heading) return ''
-  const signName = instructor?.name || ''
-  const signRole = instructor?.role_title || ''
-  return `<section class="instructor-greeting">
-    ${intro.greeting_eyebrow ? `<p class="instructor-section-eyebrow">${escHtml(intro.greeting_eyebrow)}</p>` : ''}
-    <h2 class="instructor-section-title">${escHtml(intro.greeting_heading || '인사말')}</h2>
-    ${intro.greeting_body ? `<div class="instructor-greeting__body">${escHtml(intro.greeting_body)}</div>` : ''}
-    ${signName ? `<div class="instructor-greeting__sign">
-      <div class="instructor-greeting__sign-name">${escHtml(signName)}</div>
-      ${signRole ? `<div class="instructor-greeting__sign-role">${escHtml(signRole)}</div>` : ''}
-    </div>` : ''}
-  </section>`
-}
-
-function prepareTimelineForDisplay(items) {
-  const seenYears = new Set()
-  const seenRows = new Set()
-  const result = []
-
-  for (const raw of items || []) {
-    const year = String(raw.year || '').trim()
-    const title = String(raw.title || '').trim()
-    const description = String(raw.description || '').trim()
-    const achievements = []
-    const seenAch = new Set()
-    for (const a of raw.achievements || []) {
-      const text = String(a || '').trim()
-      if (!text || seenAch.has(text)) continue
-      seenAch.add(text)
-      achievements.push(text)
-    }
-
-    const rowKey = [year, title, description, achievements.join('\n')].join('||')
-    if (seenRows.has(rowKey)) continue
-    seenRows.add(rowKey)
-
-    const hideYear = !!(year && seenYears.has(year))
-    if (year) seenYears.add(year)
-
-    result.push({ year, title, description, achievements, hideYear })
-  }
-  return result
-}
-
-function renderTimeline(intro) {
-  const items = prepareTimelineForDisplay(intro.timeline || [])
-  if (!items.length) return ''
-  return `<section class="instructor-history">
-    <div class="instructor-history__head">
-      <p class="instructor-section-eyebrow">History</p>
-      <h2 class="instructor-section-title instructor-section-title--flush">${escHtml(intro.timeline_heading || '주요 경력')}</h2>
-    </div>
-    <ol class="instructor-timeline">
-      ${items.map((item, i) => `
-        <li class="instructor-timeline__item${i === 0 ? ' is-current' : ''}">
-          <div class="instructor-timeline__year${item.hideYear ? ' instructor-timeline__year--repeat' : ''}"${item.hideYear ? ' aria-hidden="true"' : ''}>${item.hideYear ? '' : (item.year ? escHtml(item.year) : '<span class="instructor-timeline__year--missing">연도 미입력</span>')}</div>
-          <div class="instructor-timeline__track" aria-hidden="true">
-            <span class="instructor-timeline__dot"></span>
-          </div>
-          <article class="instructor-timeline__card">
-            ${!item.hideYear && item.year ? `<time class="instructor-timeline__year-mobile">${escHtml(item.year)}</time>` : ''}
-            ${item.title ? `<h3 class="instructor-timeline__title">${escHtml(item.title)}</h3>` : ''}
-            ${item.description ? `<p class="instructor-timeline__desc">${escHtml(item.description)}</p>` : ''}
-            ${item.achievements.length ? `<ul class="instructor-timeline__achievements">${item.achievements.map(a => `<li>${escHtml(a)}</li>`).join('')}</ul>` : ''}
-          </article>
-        </li>`).join('')}
-    </ol>
-  </section>`
-}
-
-async function load() {
-  const main = document.getElementById('instructor-main')
-  try {
-    const data = await API.get('/instructors')
-    const intro = data.intro || {}
-    const instructor = (data.instructors || [])[0] || null
-
-    if (intro.section_title) document.getElementById('page-title').textContent = intro.section_title
-    const subtitleEl = document.getElementById('page-subtitle')
-    if (intro.section_subtitle) {
-      subtitleEl.textContent = intro.section_subtitle
-      subtitleEl.hidden = false
-    } else {
-      subtitleEl.hidden = true
-    }
-    if (intro.page_intro) document.getElementById('page-intro').textContent = intro.page_intro
-
-    if (!instructor && !intro.greeting_body && !(intro.timeline || []).length) {
-      main.innerHTML = '<p class="instructors-empty">등록된 강사 정보가 없습니다.</p>'
-      return
-    }
-
-    main.innerHTML = [
-      renderProfile(instructor),
-      renderGreeting(intro, instructor),
-      renderTimeline(intro),
-    ].filter(Boolean).join('')
-  } catch (e) {
-    console.error(e)
-    main.innerHTML = '<p class="instructors-empty">강사 정보를 불러오지 못했습니다.</p>'
-  }
-}
-
-load()
-</script>
 </body>
 </html>
