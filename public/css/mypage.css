@@ -305,6 +305,8 @@ body { background:#f5f6fa; }
     .mc-meta { font-size: 13.2px; color:#aaa; }
     .my-course-card--wrap { display:flex; flex-direction:column; }
     .my-course-card--wrap .mc-link { text-decoration:none; color:inherit; flex:1; display:block; }
+    .mc-live-actions { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .mc-live-actions .btn-meet { margin: 0; }
     .mc-actions { padding:0 12px 12px; display:flex; gap:8px; flex-wrap:wrap; }
     .mc-actions--live {
       flex-direction: column;

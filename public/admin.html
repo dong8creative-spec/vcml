@@ -377,6 +377,10 @@
             <div id="cm-live-links" style="display:none;border-top:1px solid #eee;padding-top:12px;margin-top:4px">
               <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#111">라이브 링크 · 자료</div>
               <div class="form-group">
+                <label>Google Meet 코드 <span style="font-size:12px;color:#888">예: abc-defg-hij · 시작 30분 전부터 입장 버튼 노출</span></label>
+                <input type="text" id="cm-live-meet-code" placeholder="meet.google.com/ 뒤 코드" maxlength="120" />
+              </div>
+              <div class="form-group">
                 <label>강의 자료 다운로드 링크 <span style="font-size:12px;color:#888">Google Drive 등 URL · 강의 당일만 다운로드</span></label>
                 <input type="url" id="cm-live-material-url" placeholder="https://..." maxlength="500" />
               </div>
@@ -388,7 +392,7 @@
                 <label>수강생 단톡방 링크</label>
                 <input type="url" id="cm-live-chat-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
               </div>
-              <p style="font-size:12px;color:#888;margin:0">라이브 일정·Meet·상태는 목록의 「라이브」 버튼에서 설정합니다.</p>
+              <p style="font-size:12px;color:#888;margin:0">라이브 일정·상태는 목록의 「라이브」 버튼에서 설정합니다.</p>
             </div>
           </div>
           <div class="modal-footer">
@@ -2313,6 +2317,7 @@
       const liveLinks = document.getElementById('cm-live-links')
       if (liveLinks) liveLinks.style.display = isLive ? '' : 'none'
       if (isLive) {
+        document.getElementById('cm-live-meet-code').value = c.meet_code || ''
         document.getElementById('cm-live-material-url').value = c.live_material_url || ''
         document.getElementById('cm-live-replay-url').value = c.live_replay_url || ''
         document.getElementById('cm-live-chat-url').value = c.live_chat_url || ''
@@ -2342,6 +2347,7 @@
       payload.hero_gallery = _cmHeroGallery.map(s => String(s || '').trim()).filter(Boolean).slice(0, 9)
       const course = _courses.find(x => String(x.id) === String(_courseEditId))
       if (course?.course_type === 'live') {
+        payload.meet_code = document.getElementById('cm-live-meet-code').value.trim() || null
         payload.live_material_url = document.getElementById('cm-live-material-url').value.trim() || null
         payload.live_replay_url = document.getElementById('cm-live-replay-url').value.trim() || null
         payload.live_chat_url = document.getElementById('cm-live-chat-url').value.trim() || null

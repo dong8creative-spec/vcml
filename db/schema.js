@@ -1038,6 +1038,7 @@ function kstDateKey(date) {
 }
 
 const LIVE_END_AFTER_MS = 3 * 60 * 60 * 1000
+const MEET_OPEN_BEFORE_MS = 30 * 60 * 1000
 const REPLAY_OPEN_HOUR_KST = 13
 const ANTICIPATION_MODIFY_LOCK_MS = 60 * 60 * 1000
 
@@ -1060,6 +1061,15 @@ function isLiveCourseEnded(course, at = new Date()) {
   const start = parseLiveStart(course)
   if (!start) return false
   return at.getTime() > start.getTime() + LIVE_END_AFTER_MS
+}
+
+function isMeetJoinAvailable(course, start, at = new Date()) {
+  if (course?.live_status === 'ended' || isLiveCourseEnded(course, at)) return false
+  if (!String(course?.meet_code || '').trim()) return false
+  if (!start) return false
+  const now = at.getTime()
+  const t = start.getTime()
+  return now >= t - MEET_OPEN_BEFORE_MS && now <= t + LIVE_END_AFTER_MS
 }
 
 function canWriteAnticipationReview(course, at = new Date()) {
@@ -1154,6 +1164,8 @@ function getLiveResourceAccess(course, { enrolled = false, at = new Date() } = {
   const lectureEnded = isLiveCourseEnded(course, at)
   const replayOpensAt = getReplayOpensAt(course)
   const replayReady = replayOpensAt ? at.getTime() >= replayOpensAt.getTime() : false
+  const meetConfigured = !!String(course?.meet_code || '').trim()
+  const meetJoinAvailable = meetConfigured && isMeetJoinAvailable(course, start, at)
   return {
     replay_configured: enrolled && !!replayUrl,
     replay_available: enrolled && !!replayUrl && lectureEnded && replayReady,
@@ -1164,6 +1176,8 @@ function getLiveResourceAccess(course, { enrolled = false, at = new Date() } = {
     material_configured: !!materialUrl,
     material_available: enrolled && !!materialUrl && lectureDay,
     material_lecture_day: lectureDay,
+    meet_configured: meetConfigured,
+    meet_join_available: enrolled && meetJoinAvailable,
     live_lecture_date: start
       ? start.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric' })
       : null,

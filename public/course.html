@@ -80,6 +80,7 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/live-reminder.js?v=18"></script>
   <script src="/js/auth-redirect.js"></script>
   <script src="/js/site-layout.js"></script>
   <script src="/js/site-header.js?v=9"></script>
@@ -106,6 +107,7 @@
     async function load() {
       if (!slug) { location.href = '/'; return }
       try {
+        if (window.LiveSession?.whenReady) await LiveSession.whenReady
         const course = await API.get('/courses/' + slug)
         courseData = course
         anticipationReviews = []
@@ -349,6 +351,17 @@
         ${renderAnticipationBtn(c)}`)
     }
 
+    function buildMeetPayload(c) {
+      if (window.LiveSession?.buildLiveMeetPayload) return LiveSession.buildLiveMeetPayload(c)
+      return encodeURIComponent(JSON.stringify({
+        meet_code: c.meet_code,
+        live_status: c.live_status,
+        live_starts_at: c.live_starts_at,
+        live_schedule: c.live_schedule,
+        live_resources: c.live_resources,
+      }))
+    }
+
     function renderLiveEnrolledAction(c) {
       const ended = c.live_status === 'ended' || c.live_resources?.live_ended
       const extras = c.enrolled && window.LiveSession?.liveResourceButtonsHtml
@@ -357,14 +370,25 @@
       if (ended) {
         return `<div class="btn-enroll enrolled buy-live-enrolled buy-live-enrolled--ended"><i class="ti ti-check"></i> 라이브 종료</div>${extras || ''}`
       }
-      const url = (c.live_chat_url || '').trim()
-      if (url) {
-        return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="btn-kakao-room">
+      const LS = window.LiveSession
+      const start = LS ? LS.parseLiveStart(c) : (c.live_starts_at ? new Date(c.live_starts_at) : null)
+      const canJoin = LS ? LS.canJoinMeet(c, start) : false
+      const chatUrl = (c.live_chat_url || '').trim()
+      const kakaoBtn = chatUrl && !canJoin
+        ? `<a href="${esc(chatUrl)}" target="_blank" rel="noopener noreferrer" class="btn-kakao-room">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1C4.582 1 1 3.925 1 7.5c0 2.286 1.417 4.294 3.563 5.467L3.67 16.14a.25.25 0 0 0 .37.278L8.13 13.96c.288.027.58.04.87.04 4.418 0 8-2.925 8-6.5S13.418 1 9 1z" fill="#3A1D1D"/></svg>
           수강생 대기실로 입장
-        </a>${extras || ''}`
+        </a>`
+        : ''
+      let mainBtn = `<div class="btn-enroll enrolled buy-live-enrolled"><i class="ti ti-check"></i> 신청 완료</div>`
+      if (String(c.meet_code || '').trim()) {
+        const payload = buildMeetPayload(c)
+        const meetHtml = LS
+          ? LS.meetButtonHtml(c, start, false, { enrolledMode: true })
+          : mainBtn
+        mainBtn = `<div data-live-meet-wrap data-live-meet-enrolled="1" data-live-meet-compact="0" data-live-course="${payload}">${meetHtml}</div>`
       }
-      return `<div class="btn-enroll enrolled buy-live-enrolled"><i class="ti ti-check"></i> 신청 완료</div>${extras || ''}`
+      return wrapBuyActions(`${kakaoBtn}${mainBtn}${extras || ''}`)
     }
 
     function renderApplyBtn(c, labelHtml, onclickAttr) {
@@ -527,6 +551,9 @@
           ${renderBodySection(c)}
         </div>`
       startHeroGallery(document.querySelector('.course-hero--gallery'))
+      if (c.enrolled && c.course_type === 'live' && window.LiveSession?.startCountdownTicker) {
+        LiveSession.startCountdownTicker()
+      }
     }
 
     function setAnticipationModalMode(edit) {

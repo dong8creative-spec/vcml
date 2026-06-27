@@ -1,7 +1,7 @@
 /**
  * 라이브 강의 — 카운트다운 · Google Meet · 1시간 전 알림 · 30분 전 입장
  */
-;(function () {
+if (!window.LiveSession) (function () {
   const REMIND_BEFORE_MS = 60 * 60 * 1000
   const MEET_OPEN_BEFORE_MS = 30 * 60 * 1000
   const LIVE_WINDOW_AFTER_MS = 3 * 60 * 60 * 1000
@@ -68,10 +68,15 @@
     return `${pad(hours)}:${pad(mins)}:${pad(secs)}`
   }
 
-  function canJoinMeet(course, start) {
-    if (!course?.meet_code || course.live_status === 'ended') return false
-    if (!start) return true
-    const now = Date.now()
+  function canJoinMeet(course, start, at = new Date()) {
+    return isMeetJoinAvailableClient(course, start, at)
+  }
+
+  function isMeetJoinAvailableClient(course, start, at = new Date()) {
+    if (course?.live_status === 'ended' || course?.live_resources?.live_ended) return false
+    if (!String(course?.meet_code || '').trim()) return false
+    if (!start) return false
+    const now = at.getTime()
     const t = start.getTime()
     return now >= t - MEET_OPEN_BEFORE_MS && now <= t + LIVE_WINDOW_AFTER_MS
   }
@@ -83,8 +88,24 @@
     return now >= t - REMIND_BEFORE_MS && now <= t + LIVE_WINDOW_AFTER_MS
   }
 
-  function dismissKey(courseId, startMs) {
-    return `live-remind-dismiss:${courseId}:${startMs}`
+  let whenReadyResolve
+  const whenReady = new Promise(resolve => { whenReadyResolve = resolve })
+
+  function buildLiveMeetPayload(course) {
+    return encodeURIComponent(JSON.stringify({
+      meet_code: course?.meet_code,
+      live_status: course?.live_status,
+      live_starts_at: course?.live_starts_at,
+      live_schedule: course?.live_schedule,
+      live_resources: course?.live_resources,
+    }))
+  }
+
+  function enrolledCompleteHtml(compact) {
+    if (compact) {
+      return `<span class="btn-meet btn-meet--enrolled"><i class="ti ti-check"></i> 신청 완료</span>`
+    }
+    return `<div class="btn-enroll enrolled buy-live-enrolled"><i class="ti ti-check"></i> 신청 완료</div>`
   }
 
   function injectStyles() {
@@ -110,6 +131,10 @@
       .btn-meet--waiting {
         background: #e8f0fe; color: #1a73e8; border: 1px solid #c5d9f7;
         cursor: default;
+      }
+      .btn-meet--enrolled {
+        background: #f5f5f5; color: #111; border: 1px solid #e8e8e8;
+        cursor: default; font-weight: 700;
       }
       .btn-meet--material-active {
         background: #111; color: #fff; border: none;
@@ -227,7 +252,9 @@
         const raw = wrap.getAttribute('data-live-course')
         const course = raw ? JSON.parse(decodeURIComponent(raw)) : {}
         const start = parseLiveStart(course)
-        const next = meetButtonHtml(course, start, true)
+        const enrolledMode = wrap.getAttribute('data-live-meet-enrolled') === '1'
+        const compact = wrap.getAttribute('data-live-meet-compact') !== '0'
+        const next = meetButtonHtml(course, start, compact, { enrolledMode })
         if (wrap.innerHTML.trim() !== next) wrap.innerHTML = next
       } catch (_) {}
     })
@@ -240,7 +267,8 @@
     countdownTimer = setInterval(updateCountdownElements, 1000)
   }
 
-  function meetButtonHtml(course, start, compact) {
+  function meetButtonHtml(course, start, compact, options = {}) {
+    const { enrolledMode = false } = options
     if (course?.live_status === 'ended' || course?.live_resources?.live_ended) {
       return `<span class="btn-meet btn-meet--waiting">라이브 종료</span>`
     }
@@ -248,11 +276,13 @@
     const join = canJoinMeet(course, start)
     const icon = `<span class="btn-meet__icon">${googleMeetIcon()}</span>`
     if (!url) {
+      if (enrolledMode) return enrolledCompleteHtml(compact)
       return `<span class="btn-meet btn-meet--waiting">${icon} Meet 링크 준비 중</span>`
     }
     if (join) {
       return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="btn-meet btn-meet--active">${icon} Google Meet 입장</a>`
     }
+    if (enrolledMode) return enrolledCompleteHtml(compact)
     const label = compact ? MEET_WAIT_LABEL : `Google Meet (${MEET_WAIT_LABEL})`
     return `<span class="btn-meet btn-meet--waiting">${icon} ${label}</span>`
   }
@@ -263,7 +293,7 @@
       return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 대기중</span>`
     }
     if (r.material_available) {
-      return `<a href="#" role="button" class="btn-meet btn-meet--material btn-meet--material-active" onclick="event.preventDefault();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</a>`
+      return `<button type="button" class="btn-meet btn-meet--material btn-meet--material-active" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</button>`
     }
     const hint = r.live_lecture_date ? ` (${r.live_lecture_date} 당일)` : ' (강의 당일)'
     return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 다운로드${hint}</span>`
@@ -299,7 +329,7 @@
     }
     if (includeMaterial && r.material_configured) {
       if (r.material_available) {
-        parts.push(`<a href="#" role="button" class="btn-live-extra btn-live-extra--material" onclick="event.preventDefault();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 자료 다운로드</a>`)
+        parts.push(`<button type="button" class="btn-live-extra btn-live-extra--material" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 자료 다운로드</button>`)
       } else {
         const hint = r.live_lecture_date ? ` (${r.live_lecture_date} 당일)` : ' (강의 당일)'
         parts.push(`<span class="btn-live-extra btn-live-extra--material btn-live-extra--locked"><i class="ti ti-download"></i> 자료 다운로드${hint}</span>`)
@@ -402,26 +432,30 @@
     } catch (_) {}
   }
 
+  function initLiveReminders() {
+    injectStyles()
+    startCountdownTicker()
+    whenReadyResolve()
+    document.dispatchEvent(new CustomEvent('live-session-ready'))
+    if (!window.API?.isLoggedIn?.()) return
+    checkLiveReminders()
+    setInterval(checkLiveReminders, POLL_MS)
+  }
+
   window.LiveSession = {
+    whenReady,
     parseLiveStart,
     parseKoreanLocaleDate,
     meetUrl,
     formatCountdown,
     canJoinMeet,
+    buildLiveMeetPayload,
     meetButtonHtml,
     materialButtonHtml,
     liveResourceButtonsHtml,
     openReplay,
     openMaterial,
     startCountdownTicker,
-  }
-
-  function initLiveReminders() {
-    injectStyles()
-    if (!window.API?.isLoggedIn?.()) return
-    checkLiveReminders()
-    setInterval(checkLiveReminders, POLL_MS)
-    startCountdownTicker()
   }
 
   if (document.readyState === 'loading') {
