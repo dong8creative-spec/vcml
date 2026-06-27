@@ -305,6 +305,26 @@ body { background:#f5f6fa; }
     .mc-meta { font-size: 13.2px; color:#aaa; }
     .my-course-card--wrap { display:flex; flex-direction:column; }
     .my-course-card--wrap .mc-link { text-decoration:none; color:inherit; flex:1; display:block; }
+    .my-course-card--review-layout {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+      align-items: stretch;
+    }
+    .my-course-card--review-layout:hover { transform: translateY(-3px); }
+    .mc-course-main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      border-right: 1px solid #f0f0f0;
+    }
+    .mc-review-panel {
+      background: #fafafa;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
     .mc-live-actions { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
     .mc-live-actions .btn-meet { margin: 0; }
     .mc-actions { padding:0 12px 12px; display:flex; gap:8px; flex-wrap:wrap; }
@@ -523,12 +543,15 @@ body { background:#f5f6fa; }
     .my-avatar.has-photo { background:#eee; padding:0; }
     .my-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
     .mc-review { padding: 0 16px 14px; border-top: 1px solid #f0f0f0; margin-top: -4px; }
+    .mc-review-panel .mc-review { padding: 0; margin: 0; border-top: 0; }
     .mc-review summary { cursor: pointer; font-size: 13.2px; font-weight: 700; color: #333; padding: 12px 0 8px; list-style: none; }
+    .mc-review-panel .mc-review summary { padding-top: 0; font-size: 14px; }
     .mc-review summary::-webkit-details-marker { display: none; }
     .mc-review-stars { display: flex; gap: 4px; margin-bottom: 8px; }
     .mc-review-star { border: none; background: none; font-size: 22px; color: #ddd; cursor: pointer; padding: 0; line-height: 1; }
     .mc-review-star.on { color: #f5a623; }
     .mc-review textarea { width: 100%; min-height: 72px; border: 1px solid #eee; border-radius: 8px; padding: 10px; font-size: 13px; resize: vertical; box-sizing: border-box; }
+    .mc-review-panel .mc-review textarea { min-height: 116px; background: #fff; }
     .mc-review-btn { margin-top: 8px; width: 100%; padding: 10px; border: none; border-radius: 8px; background: #111; color: #fff; font-weight: 700; cursor: pointer; font-size: 13px; }
     .mc-review-note { font-size: 11.5px; color: #888; margin-top: 6px; line-height: 1.45; }
 
@@ -544,4 +567,14 @@ body { background:#f5f6fa; }
       .my-sidebar { position:static; }
       .proj-card { flex-direction:column; align-items:flex-start; }
       .link-row { grid-template-columns:1fr; }
+      .my-course-card--review-layout {
+        grid-template-columns: 1fr;
+      }
+      .mc-course-main {
+        border-right: 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .mc-review-panel {
+        padding: 14px 16px 16px;
+      }
     }

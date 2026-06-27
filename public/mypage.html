@@ -530,25 +530,29 @@ function renderLiveCourseCard(c) {
     : renderLiveMeetBtn(c, start)
   const materialBtn = LS ? LS.materialButtonHtml(c) : ''
   const replayExtras = LS ? LS.liveResourceButtonsHtml(c, { includeMaterial: false, enrolled: true }) : ''
-  return `<div class="my-course-card my-course-card--live my-course-card--wrap">
-    <a href="/course.html?slug=${escapeHtml(c.slug)}" class="mc-link">
-    <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
-      ${renderCourseThumbBadge(c)}
-      ${renderCourseThumbInner(c, 'ti-broadcast')}
+  return `<div class="my-course-card my-course-card--live my-course-card--wrap my-course-card--review-layout">
+    <div class="mc-course-main">
+      <a href="/course.html?slug=${escapeHtml(c.slug)}" class="mc-link">
+      <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
+        ${renderCourseThumbBadge(c)}
+        ${renderCourseThumbInner(c, 'ti-broadcast')}
+      </div>
+      <div class="mc-body">
+        <div class="mc-cat">${escapeHtml(c.category)}</div>
+        <div class="mc-title">${escapeHtml(c.title)}</div>
+        ${c.live_schedule ? `<div class="mc-meta" style="color:#555555;margin-bottom:4px"><i class="ti ti-calendar"></i> ${escapeHtml(c.live_schedule)}</div>` : ''}
+      </div>
+      </a>
+      <div class="mc-live-actions">
+        ${materialBtn}
+        <div data-live-meet-wrap data-live-meet-enrolled="1" data-live-course="${meetPayload}">${meetBtn}</div>
+      </div>
+      ${replayExtras ? `<div class="mc-actions mc-actions--live">${replayExtras}</div>` : ''}
+      ${renderCancelAction(c)}
     </div>
-    <div class="mc-body">
-      <div class="mc-cat">${escapeHtml(c.category)}</div>
-      <div class="mc-title">${escapeHtml(c.title)}</div>
-      ${c.live_schedule ? `<div class="mc-meta" style="color:#555555;margin-bottom:4px"><i class="ti ti-calendar"></i> ${escapeHtml(c.live_schedule)}</div>` : ''}
+    <div class="mc-review-panel">
+      ${renderCourseReviewBlock(c, { open: true })}
     </div>
-    </a>
-    <div class="mc-live-actions">
-      ${materialBtn}
-      <div data-live-meet-wrap data-live-meet-enrolled="1" data-live-course="${meetPayload}">${meetBtn}</div>
-    </div>
-    ${replayExtras ? `<div class="mc-actions mc-actions--live">${replayExtras}</div>` : ''}
-    ${renderCourseReviewBlock(c)}
-    ${renderCancelAction(c)}
   </div>`
 }
 
@@ -596,7 +600,7 @@ async function cancelEnrollment(courseId) {
   }
 }
 
-function renderCourseReviewBlock(c) {
+function renderCourseReviewBlock(c, { open = false } = {}) {
   const rating = c.my_review?.rating || 0
   const content = escapeHtml(c.my_review?.content || '')
   const stars = [1, 2, 3, 4, 5].map(n =>
@@ -605,7 +609,7 @@ function renderCourseReviewBlock(c) {
   const doneNote = c.my_review?.rating === 5
     ? '<div class="mc-review-note">5점 후기가 저장되었습니다.</div>'
     : ''
-  return `<details class="mc-review">
+  return `<details class="mc-review" id="review-course-${escapeHtml(c.id)}"${open ? ' open' : ''}>
     <summary>${c.my_review ? '수강 후기 수정' : '수강 후기 작성'}</summary>
     <div class="mc-review-stars" id="review-stars-${c.id}">${stars}</div>
     <textarea id="review-content-${c.id}" placeholder="수강 후기를 남겨주세요.">${content}</textarea>
@@ -685,9 +689,20 @@ async function loadCourses() {
       </div>`
     }).join('')}</div>`
     if (window.LiveSession) LiveSession.startCountdownTicker()
+    openRequestedReview()
   } catch(e) {
     el.innerHTML = '<p style="color:#aaa;text-align:center">강의를 불러오지 못했습니다.</p>'
   }
+}
+
+function openRequestedReview() {
+  const courseId = new URLSearchParams(location.search).get('review_course')
+  if (!courseId) return
+  const review = document.getElementById('review-course-' + courseId)
+  if (!review) return
+  review.open = true
+  review.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  setTimeout(() => document.getElementById('review-content-' + courseId)?.focus(), 300)
 }
 
 // ── 내 클라이언츠 (의뢰인) ──

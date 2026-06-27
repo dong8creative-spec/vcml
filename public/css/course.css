@@ -235,6 +235,11 @@
   border: 1.5px solid var(--border);
 }
 .btn-enroll--secondary:hover { background: var(--bg-muted); }
+.btn-enroll--review {
+  background: #111;
+  color: #fff;
+}
+.btn-enroll--review:hover { background: #333; }
 .buy-features {
   list-style: none;
   display: flex;

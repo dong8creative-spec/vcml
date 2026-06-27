@@ -318,11 +318,18 @@
     }
 
     function renderAnticipationBtn(c) {
+      if (isCourseEnded(c) && c.enrolled) {
+        return `<a href="/mypage.html?tab=courses&review_course=${encodeURIComponent(c.id)}" class="btn-enroll btn-enroll--review"><i class="ti ti-star"></i> 수강 후기 작성하기</a>`
+      }
       if (!canWriteAnticipation(c)) return ''
       if (c.my_anticipation) {
         return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal(true)"><i class="ti ti-pencil"></i> 기대평 수정</button>`
       }
       return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal()"><i class="ti ti-message-heart"></i> 기대평 작성하고 쿠폰 받기</button>`
+    }
+
+    function isCourseEnded(c) {
+      return c?.live_status === 'ended' || c?.live_resources?.live_ended === true
     }
 
     function wrapBuyActions(html) {
