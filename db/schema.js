@@ -702,11 +702,6 @@ async function seed() {
   const courses = COURSES
 
   const chapterDefs = {
-    'premiere-beginner': [
-      { t:'강의 소개', d:'10분', free:1 },
-      { t:'핵심 1강', d:'30분', free:0 },
-      { t:'핵심 2강', d:'35분', free:0 },
-    ],
     'after-effects': [
       { t:'After Effects 인터페이스와 핵심 개념', d:'18분', free:1 },
       { t:'키프레임 애니메이션 — 위치·크기·불투명도', d:'35분', free:1 },
@@ -819,8 +814,6 @@ const DEFAULT_FOOTER_CONFIG = {
       links: [
         { label: '전체 강의', href: '/#all' },
         { label: '캡컷 PRO', href: '/?cat=capcut#all' },
-        { label: '프리미어 프로', href: '/?cat=premiere#all' },
-        { label: 'AI 콘텐츠 제작', href: '/?cat=ai#all' },
       ],
     },
     {
@@ -1040,6 +1033,7 @@ const MEET_OPEN_BEFORE_MS = 30 * 60 * 1000
 const REPLAY_OPEN_HOUR_KST = 13
 const ANTICIPATION_MODIFY_LOCK_MS = 60 * 60 * 1000
 const LIVE_REVIEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000  // 강의 종료 후 7일
+const LIVE_MATERIAL_AFTER_REVIEW_MS = 7 * 24 * 60 * 60 * 1000
 
 function kstCalendarParts(date) {
   const t = date.getTime() + 9 * 3600000
@@ -1164,10 +1158,20 @@ function isLiveLectureDay(course, at = new Date()) {
   return kstDateKey(at) === kstDateKey(start)
 }
 
-function getLiveResourceAccess(course, { enrolled = false, at = new Date() } = {}) {
+function isLiveMaterialOpenByReview(reviewSubmittedAt, at = new Date()) {
+  if (!reviewSubmittedAt) return true
+  const submittedMs = new Date(reviewSubmittedAt).getTime()
+  if (isNaN(submittedMs)) return true
+  const now = at.getTime()
+  return now >= submittedMs && now <= submittedMs + LIVE_MATERIAL_AFTER_REVIEW_MS
+}
+
+function getLiveResourceAccess(course, { enrolled = false, hasReview = false, reviewSubmittedAt = null, at = new Date() } = {}) {
   const replayUrl = String(course?.live_replay_url || '').trim()
   const materialUrl = String(course?.live_material_url || '').trim()
   const lectureDay = isLiveLectureDay(course, at)
+  const materialShow = enrolled && !!materialUrl && hasReview
+  const materialOpen = hasReview && isLiveMaterialOpenByReview(reviewSubmittedAt, at)
   const start = parseLiveStart(course)
   const lectureEnded = isLiveCourseEnded(course, at)
   const replayOpensAt = getReplayOpensAt(course)
@@ -1183,8 +1187,10 @@ function getLiveResourceAccess(course, { enrolled = false, at = new Date() } = {
     replay_opens_label: replayPending && replayOpensAt ? formatReplayOpensLabel(replayOpensAt) : null,
     live_ended: lectureEnded,
     material_configured: !!materialUrl,
-    material_available: enrolled && !!materialUrl && lectureDay,
+    material_show: materialShow,
+    material_available: materialShow && materialOpen,
     material_lecture_day: lectureDay,
+    material_open: materialOpen,
     meet_configured: meetConfigured,
     meet_join_available: enrolled && meetJoinAvailable,
     review_open: isLiveReviewOpen(course, at),
@@ -3713,6 +3719,7 @@ const db = {
 
   parseLiveStart,
   isLiveLectureDay,
+  isLiveMaterialOpenByReview,
   isLiveCourseEnded,
   canWriteAnticipationReview,
   canModifyAnticipationReview,
@@ -3734,6 +3741,7 @@ seedInstructorsIntroDefaults().catch(console.error)
 module.exports = db
 module.exports.parseLiveStart = parseLiveStart
 module.exports.isLiveLectureDay = isLiveLectureDay
+module.exports.isLiveMaterialOpenByReview = isLiveMaterialOpenByReview
 module.exports.isLiveCourseEnded = isLiveCourseEnded
 module.exports.isLiveReviewOpen = isLiveReviewOpen
 module.exports.canWriteAnticipationReview = canWriteAnticipationReview

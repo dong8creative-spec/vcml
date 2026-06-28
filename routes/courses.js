@@ -360,17 +360,18 @@ router.get('/:slug', async (req, res) => {
     const u = await optionalUser(req)
 
     // course.id가 확정된 후 나머지 쿼리를 모두 병렬로 실행
-    const [chapters, enrolledResult, myReview] = await Promise.all([
+    const [chapters, enrolledResult, myAnticipation, myCourseReview] = await Promise.all([
       db.getChaptersByCourse(course.id),
       u ? db.isEnrolled(u.id, course.id) : Promise.resolve(false),
       u ? db.getAnticipationReviewByUserAndCourse(u.id, course.id) : Promise.resolve(null),
+      u ? db.getReviewByUserAndCourse(u.id, course.id) : Promise.resolve(null),
     ])
 
     const enrolled = enrolledResult
-    const my_anticipation = myReview ? {
-      id: myReview.id,
-      content: myReview.content,
-      created_at: myReview.created_at,
+    const my_anticipation = myAnticipation ? {
+      id: myAnticipation.id,
+      content: myAnticipation.content,
+      created_at: myAnticipation.created_at,
       can_edit: anticipation_modify.can_modify,
     } : null
 
@@ -379,12 +380,21 @@ router.get('/:slug', async (req, res) => {
       chapters,
       enrolled,
       my_anticipation,
+      my_review: myCourseReview ? {
+        rating: myCourseReview.rating,
+        content: myCourseReview.content || '',
+        created_at: myCourseReview.created_at || null,
+      } : null,
       anticipation_modify,
       live_ended: course.course_type === 'live' ? db.isLiveCourseEnded(course) : false,
     }
     if (!enrolled) delete payload.live_chat_url
     if (course.course_type === 'live' && (enrolled || db.isLiveCourseEnded(course))) {
-      payload.live_resources = db.getLiveResourceAccess(course, { enrolled: !!enrolled })
+      payload.live_resources = db.getLiveResourceAccess(course, {
+        enrolled: !!enrolled,
+        hasReview: !!(myCourseReview && myCourseReview.rating),
+        reviewSubmittedAt: myCourseReview?.created_at || myCourseReview?.updated_at || null,
+      })
     }
     res.json(payload)
   } catch (e) {

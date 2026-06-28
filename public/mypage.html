@@ -22,7 +22,7 @@
   <title>마이페이지 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=6" />
   <link rel="stylesheet" href="/css/common.css?v=2" />
-  <link rel="stylesheet" href="/css/mypage.css?v=7" />
+  <link rel="stylesheet" href="/css/mypage.css?v=8" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 
@@ -142,7 +142,7 @@
 </div>
 
 <script src="/js/api.js"></script>
-<script src="/js/live-reminder.js?v=20"></script>
+<script src="/js/live-reminder.js?v=23"></script>
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=6"></script>
 <script>
@@ -522,18 +522,24 @@ function renderLiveMeetBtn(c, start) {
   return ''
 }
 
+function renderLiveMaterialButton(c) {
+  if (c.course_type !== 'live' || !c.my_review?.rating) return ''
+  if (!c.live_resources?.material_available) return ''
+  return `<button type="button" class="btn-enroll btn-enroll--material" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(c.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</button>`
+}
+
 function renderLiveCourseCard(c) {
   const LS = window.LiveSession
   const start = LS ? LS.parseLiveStart(c) : (c.live_starts_at ? new Date(c.live_starts_at) : null)
   const meetPayload = buildMeetPayload(c)
   const isEnded = c.live_resources?.live_ended || c.live_ended || c.live_status === 'ended'
 
-  const materialBtn = LS ? LS.materialButtonHtml(c) : ''
   const replayBtn = LS && isEnded ? (LS.endedReplayButtonHtml?.(c) || '') : ''
+  const materialBtn = renderLiveMaterialButton(c)
   const meetWrap = !isEnded
     ? `<div data-live-meet-wrap data-live-meet-enrolled="1" data-live-meet-compact="1" data-live-course="${meetPayload}">${renderLiveMeetBtn(c, start)}</div>`
     : ''
-  const hasActions = materialBtn || replayBtn || meetWrap
+  const hasActions = replayBtn || materialBtn || meetWrap
 
   return `<div class="my-lc-card">
     <a href="/course.html?slug=${escapeHtml(c.slug)}" class="my-lc-main">
@@ -549,7 +555,7 @@ function renderLiveCourseCard(c) {
         ${c.live_schedule ? `<div class="my-lc-meta"><i class="ti ti-calendar-event"></i> ${escapeHtml(c.live_schedule)}</div>` : ''}
       </div>
     </a>
-    ${hasActions ? `<div class="my-lc-actions">${materialBtn}${replayBtn}${meetWrap}</div>` : ''}
+    ${hasActions ? `<div class="my-lc-actions">${replayBtn}${materialBtn}${meetWrap}</div>` : ''}
     ${renderCourseReviewBlock(c)}
     ${renderCancelAction(c)}
   </div>`
@@ -610,6 +616,10 @@ function renderCourseReviewBlock(c) {
   ).join('')
 
   if (c.my_review) {
+    if (c.course_type === 'live' && c.live_resources?.material_available) {
+      return `<div class="my-lc-review my-lc-review--material-only" id="review-course-${escapeHtml(c.id)}" hidden></div>`
+    }
+
     // 기간 만료 시 수정 버튼 숨김
     const editBtn = reviewOpen
       ? `<button type="button" class="lc-edit-btn" onclick="toggleReviewEdit('${c.id}')">수정</button>`
@@ -672,7 +682,7 @@ function setReviewStar(courseId, rating) {
 
 async function submitCourseReview(courseId) {
   const stars = document.getElementById('review-stars-' + courseId)
-  const active = stars?.querySelectorAll('.mc-review-star.on').length || reviewRatings[courseId] || 0
+  const active = stars?.querySelectorAll('.lc-star.on').length || reviewRatings[courseId] || 0
   const rating = reviewRatings[courseId] || active
   if (!rating) {
     toast('별점을 선택해주세요.', 'error')
@@ -685,18 +695,18 @@ async function submitCourseReview(courseId) {
     document.getElementById('my-courses').dataset.loaded = ''
     myCoursesPromise = null
     window.__myCoursesPromise = null
-    loadCourses()
+    await loadCourses({ refresh: true })
   } catch (e) {
     toast(e.message || '후기 저장 중 오류가 발생했습니다.', 'error')
   }
 }
 
-async function loadCourses() {
+async function loadCourses({ refresh = false } = {}) {
   const el = document.getElementById('my-courses')
-  if (el.dataset.loaded) return
+  if (!refresh && el.dataset.loaded) return
   try {
     if (window.LiveSession?.whenReady) await LiveSession.whenReady
-    const courses = await getMyCourses()
+    const courses = await getMyCourses({ refresh })
     el.dataset.loaded = '1'
     courses.forEach(c => {
       if (c.my_review?.rating) reviewRatings[c.id] = c.my_review.rating

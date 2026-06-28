@@ -162,11 +162,19 @@ router.get('/courses', authMiddleware, async (req, res) => {
       cancel_label: cancelPlan.label || (Number(order?.amount || 0) > 0 ? '환불 신청' : '신청 취소'),
       cancel_hint: cancelPlan.error || null,
       refund_preview: cancelPlan.refund_amount || 0,
-      my_review: myReview ? { rating: myReview.rating, content: myReview.content || '' } : null,
+      my_review: myReview ? {
+        rating: myReview.rating,
+        content: myReview.content || '',
+        created_at: myReview.created_at || null,
+      } : null,
     }
     if (c.course_type === 'live') {
       row.live_ended = db.isLiveCourseEnded(c)
-      row.live_resources = db.getLiveResourceAccess(c, { enrolled: true })
+      row.live_resources = db.getLiveResourceAccess(c, {
+        enrolled: true,
+        hasReview: !!(myReview && myReview.rating),
+        reviewSubmittedAt: myReview?.created_at || myReview?.updated_at || null,
+      })
     }
     return row
   }))
@@ -204,8 +212,13 @@ router.get('/courses/:courseId/live-material', authMiddleware, async (req, res) 
   if (!await db.isEnrolled(req.user.id, course.id)) {
     return res.status(403).json({ error: '수강 신청 후 이용할 수 있습니다.' })
   }
-  if (!db.isLiveLectureDay(course)) {
-    return res.status(403).json({ error: '강의 자료는 강의 당일에만 다운로드할 수 있습니다.' })
+  const myReview = await db.getReviewByUserAndCourse(req.user.id, course.id)
+  if (!myReview?.rating) {
+    return res.status(403).json({ error: '후기 작성 후 이용할 수 있습니다.' })
+  }
+  const reviewSubmittedAt = myReview.created_at || myReview.updated_at || null
+  if (!db.isLiveMaterialOpenByReview(reviewSubmittedAt)) {
+    return res.status(403).json({ error: '강의자료 다운로드 기간이 종료되었습니다.' })
   }
   const url = String(course.live_material_url || '').trim()
   if (!url || !/^https?:\/\/.+/i.test(url)) {

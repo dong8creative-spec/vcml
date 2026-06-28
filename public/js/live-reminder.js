@@ -174,15 +174,8 @@ if (!window.LiveSession) (function () {
 
   function materialButtonHtml(course) {
     const r = course?.live_resources
-    if (!r?.material_configured) return ''
-    if (r.material_available) {
-      return `<button type="button" class="btn-meet btn-meet--material btn-meet--material-active" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</button>`
-    }
-    // 강의 당일에만 "대기중" 표시. 날이 지났으면 숨김
-    if (r.material_lecture_day) {
-      return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 준비 중</span>`
-    }
-    return ''
+    if (!r?.material_available) return ''
+    return `<button type="button" class="btn-enroll btn-enroll--material" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</button>`
   }
 
   function youtubeReplayIcon() {
@@ -219,10 +212,9 @@ if (!window.LiveSession) (function () {
     return ''
   }
 
-  function liveResourceButtonsHtml(course, { includeMaterial = true, includeReplay = true, enrolled } = {}) {
+  function liveResourceButtonsHtml(course, { includeReplay = true } = {}) {
     const r = course?.live_resources
     if (!r) return ''
-    const isEnrolled = enrolled ?? course?.enrolled
     const parts = []
     if (includeReplay) {
       if (r.replay_available) {
@@ -231,15 +223,6 @@ if (!window.LiveSession) (function () {
       } else if (r.replay_pending) {
         parts.push(replayPendingHtml(course))
       }
-    }
-    if (includeMaterial && isEnrolled !== false && r.material_configured) {
-      if (r.material_available) {
-        parts.push(`<button type="button" class="btn-live-extra btn-live-extra--material" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 자료 다운로드</button>`)
-      } else if (r.material_lecture_day) {
-        // 강의 당일이지만 아직 URL 미설정 — 준비 중 표시
-        parts.push(`<span class="btn-live-extra btn-live-extra--material btn-live-extra--locked"><i class="ti ti-download"></i> 자료 준비 중</span>`)
-      }
-      // 강의 당일 아님(이전 또는 이후) → 숨김
     }
     if (!parts.length) return ''
     return `<div class="live-extra-actions">${parts.join('')}</div>`
@@ -276,7 +259,13 @@ if (!window.LiveSession) (function () {
   }
 
   function openMaterial(courseId) {
-    openExternalResource('/my/courses/' + courseId + '/live-material', '자료를 다운로드할 수 없습니다.')
+    API.get('/my/courses/' + encodeURIComponent(courseId) + '/live-material')
+      .then(({ url }) => { location.href = url })
+      .catch((e) => {
+        const msg = e.message || '자료를 다운로드할 수 없습니다.'
+        if (typeof toast === 'function') toast(msg, 'error')
+        else alert(msg)
+      })
   }
 
   function showReminderPopup(course, start) {

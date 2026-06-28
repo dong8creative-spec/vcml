@@ -16,8 +16,6 @@
       all: true,
       instructors: true,
       capcut: true,
-      premiere: false,
-      ai: false,
       editors: false,
       projects: false,
     },
@@ -30,8 +28,6 @@
     },
     categories: [
       { key: 'capcut', label: '캡컷 PRO', style: 'capcut', image: null },
-      { key: 'premiere', label: '프리미어 프로', style: 'premiere', image: null },
-      { key: 'ai', label: 'AI 콘텐츠 제작', style: 'ai', image: null },
     ],
     site: { brand_name: '타닥클래스' },
   }

@@ -200,7 +200,7 @@
         <div class="card-header">
           <div>
             <div class="card-title">강의 목록 <span id="courses-count-label" class="td-sub fw-600"></span></div>
-            <p class="sec-sub">사이트에 노출되는 운영 강의는 카탈로그 11개 기준입니다.</p>
+            <p class="sec-sub">사이트에 노출되는 운영 강의 목록입니다.</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto">
             <div class="filter-tabs" id="course-filter-tabs">
@@ -587,6 +587,11 @@
       <div class="modal" style="max-width:640px;max-height:80vh;overflow-y:auto" onclick="event.stopPropagation()">
         <div class="modal-header">
           <div class="modal-title" id="student-modal-title">수강생 상세</div>
+          <div class="seq-nav" id="student-seq-nav" style="display:none">
+            <button class="seq-nav-btn" id="student-seq-prev" onclick="seqStep('student',-1)"><i class="ti ti-chevron-left"></i></button>
+            <span class="seq-nav-label" id="student-seq-label"></span>
+            <button class="seq-nav-btn" id="student-seq-next" onclick="seqStep('student',1)"><i class="ti ti-chevron-right"></i></button>
+          </div>
           <button class="modal-close" onclick="closeStudentModal()"><i class="ti ti-x"></i></button>
         </div>
         <div id="student-modal-body" style="padding:0 22px 22px"></div>
@@ -937,6 +942,11 @@
         <div class="modal" style="max-width:560px">
           <div class="modal-header">
             <div class="modal-title" id="editor-modal-title">에디터즈 신청 상세</div>
+            <div class="seq-nav" id="editor-seq-nav" style="display:none">
+              <button class="seq-nav-btn" id="editor-seq-prev" onclick="seqStep('editor',-1)"><i class="ti ti-chevron-left"></i></button>
+              <span class="seq-nav-label" id="editor-seq-label"></span>
+              <button class="seq-nav-btn" id="editor-seq-next" onclick="seqStep('editor',1)"><i class="ti ti-chevron-right"></i></button>
+            </div>
             <button class="modal-close" onclick="document.getElementById('editor-detail-modal').style.display='none'">✕</button>
           </div>
           <div id="editor-modal-body" style="padding:20px;font-size: 16.8px;line-height:1.8;color:#333;max-height:60vh;overflow-y:auto"></div>
@@ -1138,6 +1148,11 @@
         <div class="modal" style="max-width:640px">
           <div class="modal-header">
             <div class="modal-title" id="ticket-modal-title">문의 상세</div>
+            <div class="seq-nav" id="ticket-seq-nav" style="display:none">
+              <button class="seq-nav-btn" id="ticket-seq-prev" onclick="seqStep('ticket',-1)"><i class="ti ti-chevron-left"></i></button>
+              <span class="seq-nav-label" id="ticket-seq-label"></span>
+              <button class="seq-nav-btn" id="ticket-seq-next" onclick="seqStep('ticket',1)"><i class="ti ti-chevron-right"></i></button>
+            </div>
             <button class="modal-close" onclick="document.getElementById('ticket-modal').style.display='none'">✕</button>
           </div>
           <div id="ticket-modal-body" style="padding:20px;max-height:55vh;overflow-y:auto"></div>
@@ -1364,8 +1379,6 @@
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="all" checked /><span>전체강의</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="instructors" checked /><span>강사 소개</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="capcut" checked /><span>캡컷 PRO</span></label>
-                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="premiere" checked /><span>프리미어 프로</span></label>
-                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="ai" checked /><span>AI 콘텐츠</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="editors" checked /><span>에디터즈</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="projects" checked /><span>클라이언츠</span></label>
                 </div>
@@ -2469,6 +2482,37 @@
       loadCourses()
     }
 
+    // ── 순차 네비게이션 ──
+    window._seq = {}
+    window.seqSet = function(key, list, idx, openFn) {
+      window._seq[key] = { list: list, idx: idx, open: openFn }
+    }
+    window.seqUpdateNav = function(key) {
+      const s = window._seq[key]
+      if (!s || s.idx < 0) return
+      const nav = document.getElementById(key + '-seq-nav')
+      const label = document.getElementById(key + '-seq-label')
+      const prev = document.getElementById(key + '-seq-prev')
+      const next = document.getElementById(key + '-seq-next')
+      if (!nav) return
+      if (s.list.length > 1) {
+        nav.style.display = 'flex'
+        label.textContent = (s.idx + 1) + ' / ' + s.list.length
+        prev.disabled = s.idx === 0
+        next.disabled = s.idx === s.list.length - 1
+      } else {
+        nav.style.display = 'none'
+      }
+    }
+    window.seqStep = function(key, delta) {
+      const s = window._seq[key]
+      if (!s) return
+      const newIdx = s.idx + delta
+      if (newIdx < 0 || newIdx >= s.list.length) return
+      s.idx = newIdx
+      s.open(s.list[newIdx])
+    }
+
     let _allStudents = []
 
     async function loadStudents() {
@@ -2486,16 +2530,22 @@
       const tbody = document.getElementById('students-table-body');
       if (!tbody) return;
       if (!list.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">수강생이 없습니다.</td></tr>'; return; }
-      tbody.innerHTML = list.map(s => `
-        <tr style="cursor:pointer" onclick="openStudentModal('${esc(s.id)}')">
+      window.seqSet('student', list, -1, item => openStudentModal(item.id || item))
+      tbody.innerHTML = list.map((s, i) => `
+        <tr style="cursor:pointer" onclick="openStudentSeq(${i})">
           <td><div class="user-cell"><div class="avatar-sm">${esc((s.name||'?')[0])}</div> ${esc(s.name||'-')}</div></td>
           <td>${esc(s.email||'-')}</td>
           <td>${esc(s.phone||'-')}</td>
           <td>${s.course_count||0}개</td>
           <td>${(s.total_paid||0).toLocaleString()}원</td>
           <td class="td-date">${fmtD(s.created_at)}</td>
-          <td><button class="btn-sm" onclick="event.stopPropagation();openStudentModal('${esc(s.id)}')">상세</button></td>
+          <td><button class="btn-sm" onclick="event.stopPropagation();openStudentSeq(${i})">상세</button></td>
         </tr>`).join('');
+    }
+    window.openStudentSeq = function(idx) {
+      if (!window._seq.student) return;
+      window._seq.student.idx = idx;
+      openStudentModal(window._seq.student.list[idx].id);
     }
 
     function filterStudents() {
@@ -2510,6 +2560,7 @@
       if (!overlay || !body) return;
       body.innerHTML = '<div class="spinner" style="margin:30px auto"></div>';
       overlay.classList.remove('hidden');
+      window.seqUpdateNav('student');
       try {
         const d = await API.get('/admin/students/' + userId);
         title.textContent = (d.name || '-') + ' 상세';
@@ -2848,20 +2899,21 @@
         if (badge) { badge.textContent = pending; badge.style.display = pending ? '' : 'none' }
 
         if (!apps.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#aaa;padding:24px">신청 내역이 없습니다.</td></tr>'; return }
-        tbody.innerHTML = apps.map(a => {
+        window.seqSet('editor', apps, -1, item => openEditorDetail(item.id || item))
+        tbody.innerHTML = apps.map((a, i) => {
           const statusMap = { pending:'<span class="status-tag pending">대기중</span>', approved:'<span class="status-tag done">승인</span>', rejected:'<span class="status-tag refund">거절</span>' }
           const tools = Array.isArray(a.tools) ? a.tools.join(', ') : ''
-          return `<tr>
+          return `<tr style="cursor:pointer" onclick="openEditorSeq(${i})">
             <td><strong>${a.user_name||'-'}</strong></td>
             <td>${a.email||'-'}</td>
             <td style="font-size: 14.4px;color:#666">${a.location||'-'} · ${({remote:'원격',hybrid:'하이브리드',onsite:'현장',project:'프로젝트',fulltime:'풀타임'})[a.work_type]||'-'}</td>
             <td style="font-size: 14.4px;color:#666">${tools||'-'}</td>
             <td style="font-size: 14.4px;color:#666">${a.skills||'-'}</td>
             <td>${expLabel[a.experience_years]||'-'}</td>
-            <td>${a.portfolio_url ? `<a href="${a.portfolio_url}" target="_blank" style="color:#111111;font-size: 14.4px">보기 →</a>` : '-'}</td>
+            <td>${a.portfolio_url ? `<a href="${a.portfolio_url}" target="_blank" style="color:#111111;font-size: 14.4px" onclick="event.stopPropagation()">보기 →</a>` : '-'}</td>
             <td class="td-date">${(a.applied_at||'').slice(0,10)}</td>
             <td>${statusMap[a.status]||a.status}</td>
-            <td class="td-actions"><button class="btn-sm" onclick="openEditorDetail('${a.id}')">상세</button></td>
+            <td class="td-actions"><button class="btn-sm" onclick="event.stopPropagation();openEditorSeq(${i})">상세</button></td>
           </tr>`
         }).join('')
       } catch(e) {
@@ -2869,8 +2921,14 @@
       }
     }
 
+    window.openEditorSeq = function(idx) {
+      if (!window._seq.editor) return
+      window._seq.editor.idx = idx
+      openEditorDetail(window._seq.editor.list[idx].id)
+    }
     async function openEditorDetail(appId) {
       currentAppId = appId
+      window.seqUpdateNav('editor')
       const apps = await API.get('/admin/editor-applications')
       const app = apps.find(a => a.id === appId)
       if (!app) return
@@ -4944,8 +5002,9 @@
         if (!tickets.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">문의가 없습니다.</td></tr>'; return }
         const smap = { open: '미답변', answered: '답변완료', closed: '종료' }
         const scls = { open: 'pending', answered: 'answered', closed: 'draft' }
-        tbody.innerHTML = tickets.map(t => `
-          <tr class="ticket-row" onclick="openTicket('${t.id}')">
+        window.seqSet('ticket', tickets, -1, item => openTicket(item.id || item))
+        tbody.innerHTML = tickets.map((t, i) => `
+          <tr class="ticket-row" onclick="openTicketSeq(${i})">
             <td><span class="pill ${scls[t.status]||'pending'}">${t.type||'일반'}</span></td>
             <td>
               <div class="ticket-subject">${esc(t.subject)}</div>
@@ -4961,8 +5020,14 @@
           </tr>`).join('')
       } catch(e) { tbody.innerHTML = `<tr class="empty-state-row"><td colspan="7">${e.message}</td></tr>` }
     }
+    window.openTicketSeq = function(idx) {
+      if (!window._seq.ticket) return
+      window._seq.ticket.idx = idx
+      openTicket(window._seq.ticket.list[idx].id)
+    }
     window.openTicket = async (id) => {
       _ticketId = id
+      window.seqUpdateNav('ticket')
       try {
         const t = await API.get('/admin/tickets/' + id)
         document.getElementById('ticket-modal-title').textContent = `문의 — ${esc(t.subject)}`

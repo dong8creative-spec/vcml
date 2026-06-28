@@ -4,8 +4,6 @@
     { id: 'all_courses', label: '전체 강의 보기', href: '#all' },
     { id: 'instructors', label: '강사 소개', href: '/instructors.html' },
     { id: 'capcut', label: '캡컷 PRO 강의', href: '/?cat=capcut#all' },
-    { id: 'premiere', label: '프리미어 프로 강의', href: '/?cat=premiere#all' },
-    { id: 'ai', label: 'AI 콘텐츠 제작', href: '/?cat=ai#all' },
     { id: 'editors', label: '에디터즈', href: '/editors.html' },
     { id: 'editor_apply', label: '에디터즈 신청', href: '/editor-program.html' },
     { id: 'projects', label: '클라이언츠', href: '/projects.html' },

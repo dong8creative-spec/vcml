@@ -606,13 +606,44 @@ body { background:#f5f6fa; }
 
     .my-lc-actions {
       display: flex;
+      flex-direction: column;
       gap: 8px;
       padding: 0 16px 14px;
-      flex-wrap: wrap;
     }
+    .my-lc-actions [data-live-meet-wrap] { width: 100%; }
     .my-lc-actions .btn-enroll,
     .my-lc-actions .btn-live-extra,
-    .my-lc-actions .btn-meet { flex: 1; min-width: 120px; font-size: 13px; padding: 9px 12px; border-radius: 8px; }
+    .my-lc-actions .btn-meet {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      flex: none;
+      min-height: 40px;
+      min-width: 0;
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.2;
+      padding: 9px 12px;
+      border-radius: 8px;
+      box-sizing: border-box;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .my-lc-actions .btn-enroll--replay {
+      background: #111;
+      color: #fff;
+    }
+    .my-lc-actions .btn-enroll--replay:hover { background: #333; }
+    .my-lc-actions .btn-enroll--material {
+      background: #1a73e8;
+      color: #fff;
+    }
+    .my-lc-actions .btn-enroll--material:hover { background: #1557b0; }
     .my-lc-actions .btn-enroll__sub,
     .my-lc-actions .btn-live-extra__sub { font-size: 11px; color: #bbb; }
 

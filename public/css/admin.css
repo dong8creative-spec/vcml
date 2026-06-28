@@ -1085,6 +1085,36 @@ body.is-timeline-dragging .instructor-timeline-row.is-dragging { cursor: grabbin
 /* inline hint label (span inside label) */
 label span.hint { font-size: 11.5px; font-weight: 400; color: var(--adm-text-hint); }
 
+/* ===== SEQUENTIAL NAV ===== */
+.seq-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 12px;
+}
+.seq-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--adm-border);
+  border-radius: 6px;
+  background: var(--adm-bg-main);
+  color: var(--adm-text-main);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.seq-nav-btn:hover:not(:disabled) { background: var(--adm-bg-soft); }
+.seq-nav-btn:disabled { opacity: 0.35; cursor: default; }
+.seq-nav-label {
+  font-size: 12px;
+  color: var(--adm-text-hint);
+  min-width: 48px;
+  text-align: center;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
   .metric-grid { grid-template-columns: repeat(2, 1fr); }

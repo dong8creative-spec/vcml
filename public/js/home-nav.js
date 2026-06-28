@@ -2,12 +2,10 @@
 // index.html 인라인 스크립트와 함께 동작
 
 const CAT_MATCH = {
-  capcut:   c => (c.category || '').includes('캡컷') || String(c.slug || '').startsWith('capcut'),
-  premiere: c => (c.category || '').includes('프리미어') || String(c.slug || '').startsWith('premiere'),
-  ai:       c => /ai/i.test(c.category || '') || String(c.slug || '').startsWith('ai'),
+  capcut: c => (c.category || '').includes('캡컷') || String(c.slug || '').startsWith('capcut'),
 }
 
-let CAT_LABELS = { capcut: '캡컷 PRO', premiere: '프리미어 프로', ai: 'AI 콘텐츠 제작' }
+let CAT_LABELS = { capcut: '캡컷 PRO' }
 
 window.setHomepageCategoryLabels = function (categories) {
   if (!Array.isArray(categories)) return
