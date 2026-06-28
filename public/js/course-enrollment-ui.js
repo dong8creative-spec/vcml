@@ -45,9 +45,21 @@
     return `<div class="enroll-cat-row"><span class="${catClass}">${c.category || ''}</span>${countHtml}${gauge}</div>`
   }
 
+  function isLiveEnded(c) {
+    if (!c || c.course_type !== 'live') return false
+    return c.live_status === 'ended'
+      || c.live_ended === true
+      || c.live_resources?.live_ended === true
+  }
+
+  function isCapacityClosed(c) {
+    const m = meta(c)
+    return m.full && m.hasLimit && !isLiveEnded(c)
+  }
+
   function enrollBtnLabel(c, liveStatusMap) {
     const isLive = c.course_type === 'live'
-    if (isLive && c.live_status === 'ended') return '종료된 강의'
+    if (isLive && isLiveEnded(c)) return '종료된 강의'
     const isFree = isLive || Number(c.sale_price) === 0
     if (isLive) {
       const status = liveStatusMap[c.live_status || 'upcoming'] || '신청 가능'
@@ -58,20 +70,18 @@
   }
 
   function isClosedForCard(c) {
-    const m = meta(c)
-    return m.full && m.hasLimit && c.live_status !== 'ended'
+    return isCapacityClosed(c)
   }
 
   function isClosedForApply(c) {
-    const m = meta(c)
-    return m.full && m.hasLimit && !c.enrolled && c.live_status !== 'ended'
+    return !c?.enrolled && (isLiveEnded(c) || isCapacityClosed(c))
   }
 
   /** 강의 상세 buy-card — 풀폭 신청 버튼 */
   function cardEnrollBtnHtml(c, liveStatusMap) {
     const isLive = c.course_type === 'live'
     const label = enrollBtnLabel(c, liveStatusMap)
-    const ended = isLive && c.live_status === 'ended'
+    const ended = isLive && isLiveEnded(c)
     const baseClass = `card-enroll-btn${ended ? ' card-enroll-btn--muted' : ''}`
     return `<div class="${baseClass}"><span class="card-enroll-btn-label">${label}</span></div>`
   }
@@ -98,15 +108,15 @@
   }
 
   function buyCardPanelClass(c) {
-    return isClosedForApply(c) ? ' enrollment-closed-panel' : ''
+    return isCapacityClosed(c) ? ' enrollment-closed-panel' : ''
   }
 
   function buyCardPanelOpen(c) {
-    return isClosedForApply(c) ? '<div class="enrollment-closed-panel__content">' : ''
+    return isCapacityClosed(c) ? '<div class="enrollment-closed-panel__content">' : ''
   }
 
   function buyCardPanelClose(c) {
-    return isClosedForApply(c) ? '</div><span class="enrollment-closed-panel__label">모집마감</span>' : ''
+    return isCapacityClosed(c) ? '</div><span class="enrollment-closed-panel__label">모집마감</span>' : ''
   }
 
   global.CourseEnrollmentUI = {
@@ -115,6 +125,7 @@
     gaugeFillStyle,
     gaugeCapacityStyle,
     catRowHtml,
+    isLiveEnded,
     cardEnrollBtnHtml,
     wrapBlockButton,
     isClosedForApply,

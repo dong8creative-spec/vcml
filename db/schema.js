@@ -1166,13 +1166,14 @@ function getLiveResourceAccess(course, { enrolled = false, at = new Date() } = {
   const replayReady = replayOpensAt ? at.getTime() >= replayOpensAt.getTime() : false
   const meetConfigured = !!String(course?.meet_code || '').trim()
   const meetJoinAvailable = meetConfigured && isMeetJoinAvailable(course, start, at)
+  const replayPending = !!replayUrl && lectureEnded && !replayReady
   return {
-    replay_configured: enrolled && !!replayUrl,
-    replay_available: enrolled && !!replayUrl && lectureEnded && replayReady,
-    replay_pending: enrolled && !!replayUrl && lectureEnded && !replayReady,
-    replay_opens_at: enrolled && replayOpensAt ? replayOpensAt.toISOString() : null,
-    replay_opens_label: enrolled && replayOpensAt ? formatReplayOpensLabel(replayOpensAt) : null,
-    live_ended: enrolled ? lectureEnded : false,
+    replay_configured: !!replayUrl,
+    replay_available: !!replayUrl && lectureEnded && replayReady,
+    replay_pending: replayPending,
+    replay_opens_at: replayPending && replayOpensAt ? replayOpensAt.toISOString() : null,
+    replay_opens_label: replayPending && replayOpensAt ? formatReplayOpensLabel(replayOpensAt) : null,
+    live_ended: lectureEnded,
     material_configured: !!materialUrl,
     material_available: enrolled && !!materialUrl && lectureDay,
     material_lecture_day: lectureDay,
@@ -1207,6 +1208,7 @@ function pickCourseCardFields(course = {}) {
     live_schedule: course.live_schedule || null,
     live_starts_at: course.live_starts_at || null,
     live_status: course.live_status || null,
+    live_ended: course.course_type === 'live' && isLiveCourseEnded(course),
     price: Number(course.price || 0),
     sale_price: Number(course.sale_price || 0),
     rating: course.rating || 0,
@@ -1825,7 +1827,7 @@ const db = {
     const isFree = paidAmount === 0
 
     if (isLive) {
-      if (course.live_status === 'ended') {
+      if (isLiveCourseEnded(course)) {
         return { allowed: false, error: '종료된 라이브 강의는 취소할 수 없습니다.' }
       }
       if (course.live_status === 'live') {
@@ -2150,7 +2152,7 @@ const db = {
     const isLive = course.course_type === 'live'
     const isFreeVod = !isLive && Number(course.sale_price) === 0
     if (!isLive && !isFreeVod) return { error: 'payment_required' }
-    if (isLive && course.live_status === 'ended') return { error: 'live_ended' }
+    if (isLive && isLiveCourseEnded(course)) return { error: 'live_ended' }
 
     const enrollResult = await db.enrollAtomically(userId, courseId, course)
     if (enrollResult.error) return enrollResult

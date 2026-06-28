@@ -22,7 +22,7 @@
   <title>마이페이지 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=6" />
   <link rel="stylesheet" href="/css/common.css" />
-  <link rel="stylesheet" href="/css/mypage.css?v=3" />
+  <link rel="stylesheet" href="/css/mypage.css?v=4" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 
@@ -142,7 +142,7 @@
 </div>
 
 <script src="/js/api.js"></script>
-<script src="/js/live-reminder.js?v=18"></script>
+<script src="/js/live-reminder.js?v=19"></script>
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=6"></script>
 <script>
@@ -508,6 +508,7 @@ function buildMeetPayload(c) {
   return encodeURIComponent(JSON.stringify({
     meet_code: c.meet_code,
     live_status: c.live_status,
+    live_ended: c.live_ended,
     live_starts_at: c.live_starts_at,
     live_schedule: c.live_schedule,
     live_resources: c.live_resources,
@@ -518,41 +519,39 @@ function renderLiveMeetBtn(c, start) {
   if (window.LiveSession?.meetButtonHtml) {
     return LiveSession.meetButtonHtml(c, start, true, { enrolledMode: true })
   }
-  return `<span class="btn-meet btn-meet--enrolled"><i class="ti ti-check"></i> 신청 완료</span>`
+  return ''
 }
 
 function renderLiveCourseCard(c) {
   const LS = window.LiveSession
   const start = LS ? LS.parseLiveStart(c) : (c.live_starts_at ? new Date(c.live_starts_at) : null)
   const meetPayload = buildMeetPayload(c)
-  const meetBtn = (c.live_resources?.live_ended || c.live_status === 'ended')
-    ? `<span class="btn-meet btn-meet--waiting">라이브 종료</span>`
-    : renderLiveMeetBtn(c, start)
+  const isEnded = c.live_resources?.live_ended || c.live_ended || c.live_status === 'ended'
+
   const materialBtn = LS ? LS.materialButtonHtml(c) : ''
-  const replayExtras = LS ? LS.liveResourceButtonsHtml(c, { includeMaterial: false, enrolled: true }) : ''
-  return `<div class="my-course-card my-course-card--live my-course-card--wrap my-course-card--review-layout">
-    <div class="mc-course-main">
-      <a href="/course.html?slug=${escapeHtml(c.slug)}" class="mc-link">
-      <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
-        ${renderCourseThumbBadge(c)}
-        ${renderCourseThumbInner(c, 'ti-broadcast')}
+  const replayBtn = LS && isEnded ? (LS.endedReplayButtonHtml?.(c) || '') : ''
+  const meetWrap = !isEnded
+    ? `<div data-live-meet-wrap data-live-meet-enrolled="1" data-live-meet-compact="1" data-live-course="${meetPayload}">${renderLiveMeetBtn(c, start)}</div>`
+    : ''
+  const hasActions = materialBtn || replayBtn || meetWrap
+
+  return `<div class="my-lc-card">
+    <a href="/course.html?slug=${escapeHtml(c.slug)}" class="my-lc-main">
+      <div class="lc-thumb-wrap">
+        <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
+          ${renderCourseThumbBadge(c)}
+          ${renderCourseThumbInner(c, 'ti-broadcast')}
+        </div>
       </div>
-      <div class="mc-body">
-        <div class="mc-cat">${escapeHtml(c.category)}</div>
-        <div class="mc-title">${escapeHtml(c.title)}</div>
-        ${c.live_schedule ? `<div class="mc-meta" style="color:#555555;margin-bottom:4px"><i class="ti ti-calendar"></i> ${escapeHtml(c.live_schedule)}</div>` : ''}
+      <div class="my-lc-info">
+        <span class="mc-cat">${escapeHtml(c.category)}</span>
+        <div class="my-lc-title">${escapeHtml(c.title)}</div>
+        ${c.live_schedule ? `<div class="my-lc-meta"><i class="ti ti-calendar-event"></i> ${escapeHtml(c.live_schedule)}</div>` : ''}
       </div>
-      </a>
-      <div class="mc-live-actions">
-        ${materialBtn}
-        <div data-live-meet-wrap data-live-meet-enrolled="1" data-live-course="${meetPayload}">${meetBtn}</div>
-      </div>
-      ${replayExtras ? `<div class="mc-actions mc-actions--live">${replayExtras}</div>` : ''}
-      ${renderCancelAction(c)}
-    </div>
-    <div class="mc-review-panel">
-      ${renderCourseReviewBlock(c, { open: true })}
-    </div>
+    </a>
+    ${hasActions ? `<div class="my-lc-actions">${materialBtn}${replayBtn}${meetWrap}</div>` : ''}
+    ${renderCourseReviewBlock(c)}
+    ${renderCancelAction(c)}
   </div>`
 }
 
@@ -600,22 +599,51 @@ async function cancelEnrollment(courseId) {
   }
 }
 
-function renderCourseReviewBlock(c, { open = false } = {}) {
+function renderCourseReviewBlock(c) {
   const rating = c.my_review?.rating || 0
   const content = escapeHtml(c.my_review?.content || '')
-  const stars = [1, 2, 3, 4, 5].map(n =>
-    `<button type="button" class="mc-review-star ${n <= rating ? 'on' : ''}" data-star="${n}" onclick="setReviewStar('${c.id}', ${n})">★</button>`
+  const makeStars = (r) => [1,2,3,4,5].map(n =>
+    `<button type="button" class="lc-star ${n <= r ? 'on' : ''}" data-star="${n}" onclick="setReviewStar('${c.id}',${n})">★</button>`
   ).join('')
-  const doneNote = c.my_review?.rating === 5
-    ? '<div class="mc-review-note">5점 후기가 저장되었습니다.</div>'
-    : ''
-  return `<details class="mc-review" id="review-course-${escapeHtml(c.id)}"${open ? ' open' : ''}>
-    <summary>${c.my_review ? '수강 후기 수정' : '수강 후기 작성'}</summary>
-    <div class="mc-review-stars" id="review-stars-${c.id}">${stars}</div>
-    <textarea id="review-content-${c.id}" placeholder="수강 후기를 남겨주세요.">${content}</textarea>
-    ${doneNote}
-    <button type="button" class="mc-review-btn" onclick="submitCourseReview('${c.id}')">후기 저장</button>
-  </details>`
+
+  if (c.my_review) {
+    return `<div class="my-lc-review" id="review-course-${escapeHtml(c.id)}">
+      <div class="lc-review-done">
+        <div class="lc-review-done-left">
+          <div class="lc-stars-row">${makeStars(rating)}</div>
+          <span class="lc-review-done-txt">후기를 남겨주셨어요</span>
+        </div>
+        <button type="button" class="lc-edit-btn" onclick="toggleReviewEdit('${c.id}')">수정</button>
+      </div>
+      <div class="lc-review-form" id="review-form-${escapeHtml(c.id)}" style="display:none">
+        <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(rating)}</div>
+        <textarea class="lc-review-ta" id="review-content-${c.id}" placeholder="수강 후기를 남겨주세요.">${content}</textarea>
+        <div class="lc-review-footer">
+          <button type="button" class="lc-review-save" onclick="submitCourseReview('${c.id}')">후기 저장</button>
+        </div>
+      </div>
+    </div>`
+  }
+
+  return `<div class="my-lc-review" id="review-course-${escapeHtml(c.id)}">
+    <div class="lc-review-form" id="review-form-${escapeHtml(c.id)}">
+      <div class="lc-review-header">
+        <span class="lc-review-label">강의 어떠셨나요?</span>
+        <span class="lc-coupon-badge">후기 작성 시 10% 쿠폰 지급</span>
+      </div>
+      <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(0)}</div>
+      <textarea class="lc-review-ta" id="review-content-${c.id}" placeholder="자유롭게 작성해주세요. (선택)"></textarea>
+      <div class="lc-review-footer">
+        <button type="button" class="lc-review-save" onclick="submitCourseReview('${c.id}')">저장하기</button>
+      </div>
+    </div>
+  </div>`
+}
+
+function toggleReviewEdit(courseId) {
+  const form = document.getElementById('review-form-' + courseId)
+  if (!form) return
+  form.style.display = form.style.display === 'none' ? '' : 'none'
 }
 
 const reviewRatings = {}
@@ -624,7 +652,7 @@ function setReviewStar(courseId, rating) {
   reviewRatings[courseId] = rating
   const wrap = document.getElementById('review-stars-' + courseId)
   if (!wrap) return
-  wrap.querySelectorAll('.mc-review-star').forEach(btn => {
+  wrap.querySelectorAll('.lc-star').forEach(btn => {
     btn.classList.toggle('on', Number(btn.dataset.star) <= rating)
   })
 }

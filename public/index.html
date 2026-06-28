@@ -166,19 +166,22 @@ function courseCard(c) {
     ? '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating))
     : ''
   const liveStatusMap = { upcoming: '신청 가능', live: '진행 중', ended: '종료' }
+  const uiCourse = isLive && CourseEnrollmentUI.isLiveEnded(c)
+    ? { ...c, live_status: 'ended' }
+    : c
   const thumbImg = c.thumbnail_url || c.thumbnail_image
   const thumbInner = thumbImg
     ? `<img src="${thumbImg.replace(/"/g, '&quot;')}" alt="" loading="lazy" decoding="async" />`
     : `<i class="ti ${c.thumbnail_icon || 'ti-video'}"></i>`
   return `
-  <a href="/course.html?slug=${c.slug}" class="ccard${CourseEnrollmentUI.catalogCardPanelClass(c)}">
-    ${CourseEnrollmentUI.catalogCardPanelOpen(c)}
+  <a href="/course.html?slug=${c.slug}" class="ccard${CourseEnrollmentUI.catalogCardPanelClass(uiCourse)}">
+    ${CourseEnrollmentUI.catalogCardPanelOpen(uiCourse)}
     <div class="ccard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
       ${isLive ? googleMeetBadgeHtml('badge-live') : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
       ${thumbInner}
     </div>
     <div class="ccard-body">
-      ${CourseEnrollmentUI.catRowHtml(c, 'ccard-cat')}
+      ${CourseEnrollmentUI.catRowHtml(uiCourse, 'ccard-cat')}
       <div class="ccard-title">${c.title}</div>
       ${isLive
         ? `<div class="ccard-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule || '일정 공지 예정'}</div>`
@@ -187,7 +190,7 @@ function courseCard(c) {
             : `<div class="ccard-rating"><span class="ccard-rnum" style="color:#aaa;font-size:13px">후기 없음</span></div>`)}
       <div class="ccard-price-row">
         ${isLive || (c.enrollment_has_limit && c.enrollment_full)
-          ? CourseEnrollmentUI.cardEnrollBtnHtml(c, liveStatusMap)
+          ? CourseEnrollmentUI.cardEnrollBtnHtml(uiCourse, liveStatusMap)
           : (isFree
               ? `<span class="price-free">무료</span>`
               : `${c.price !== c.sale_price ? `<span class="price-ori">₩${Number(c.price).toLocaleString()}</span>` : ''}
@@ -195,7 +198,7 @@ function courseCard(c) {
                  ${c.price !== c.sale_price ? `<span class="disc-badge">${Math.round((1 - c.sale_price / c.price) * 100)}%</span>` : ''}`)}
       </div>
     </div>
-    ${CourseEnrollmentUI.catalogCardPanelClose(c)}
+    ${CourseEnrollmentUI.catalogCardPanelClose(uiCourse)}
   </a>`
 }
 
@@ -208,19 +211,22 @@ function freeCourseCard(c) {
     ? '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating))
     : ''
   const liveStatusMap = { upcoming: '신청 가능', live: '진행 중', ended: '종료' }
+  const uiCourse = isLive && CourseEnrollmentUI.isLiveEnded(c)
+    ? { ...c, live_status: 'ended' }
+    : c
   const thumbImg = c.thumbnail_url || c.thumbnail_image
   const thumbInner = thumbImg
     ? `<img src="${thumbImg.replace(/"/g, '&quot;')}" alt="" loading="lazy" decoding="async" />`
     : `<i class="ti ${c.thumbnail_icon || 'ti-video'}"></i>`
   return `
-  <a href="/course.html?slug=${c.slug}" class="fcard${CourseEnrollmentUI.catalogCardPanelClass(c)}">
-    ${CourseEnrollmentUI.catalogCardPanelOpen(c)}
+  <a href="/course.html?slug=${c.slug}" class="fcard${CourseEnrollmentUI.catalogCardPanelClass(uiCourse)}">
+    ${CourseEnrollmentUI.catalogCardPanelOpen(uiCourse)}
     <div class="fcard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
       ${isLive ? googleMeetBadgeHtml('badge-live') : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
       ${thumbInner}
     </div>
     <div class="fcard-body">
-      ${CourseEnrollmentUI.catRowHtml(c, 'fcard-cat')}
+      ${CourseEnrollmentUI.catRowHtml(uiCourse, 'fcard-cat')}
       <div class="fcard-title">${c.title}</div>
       ${isLive
         ? `<div class="fcard-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule || '일정 공지 예정'}</div>`
@@ -228,10 +234,10 @@ function freeCourseCard(c) {
             ? `<div class="fcard-rating"><span class="fcard-stars">${stars}</span><span class="fcard-rnum">${rating} (${reviewCount.toLocaleString()})</span></div>`
             : `<div class="fcard-rating"><span class="fcard-rnum fcard-rnum--muted">후기 없음</span></div>`)}
       <div class="fcard-foot fcard-foot--btn">
-        ${CourseEnrollmentUI.cardEnrollBtnHtml(c, liveStatusMap)}
+        ${CourseEnrollmentUI.cardEnrollBtnHtml(uiCourse, liveStatusMap)}
       </div>
     </div>
-    ${CourseEnrollmentUI.catalogCardPanelClose(c)}
+    ${CourseEnrollmentUI.catalogCardPanelClose(uiCourse)}
   </a>`
 }
 

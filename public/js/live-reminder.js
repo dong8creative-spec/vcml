@@ -73,7 +73,7 @@ if (!window.LiveSession) (function () {
   }
 
   function isMeetJoinAvailableClient(course, start, at = new Date()) {
-    if (course?.live_status === 'ended' || course?.live_resources?.live_ended) return false
+    if (course?.live_status === 'ended' || course?.live_ended || course?.live_resources?.live_ended) return false
     if (!String(course?.meet_code || '').trim()) return false
     if (!start) return false
     const now = at.getTime()
@@ -82,7 +82,7 @@ if (!window.LiveSession) (function () {
   }
 
   function isWithinReminderWindow(course, start) {
-    if (!start || course.live_status === 'ended') return false
+    if (!start || course.live_status === 'ended' || course.live_ended || course.live_resources?.live_ended) return false
     const now = Date.now()
     const t = start.getTime()
     return now >= t - REMIND_BEFORE_MS && now <= t + LIVE_WINDOW_AFTER_MS
@@ -95,6 +95,7 @@ if (!window.LiveSession) (function () {
     return encodeURIComponent(JSON.stringify({
       meet_code: course?.meet_code,
       live_status: course?.live_status,
+      live_ended: course?.live_ended,
       live_starts_at: course?.live_starts_at,
       live_schedule: course?.live_schedule,
       live_resources: course?.live_resources,
@@ -269,7 +270,7 @@ if (!window.LiveSession) (function () {
 
   function meetButtonHtml(course, start, compact, options = {}) {
     const { enrolledMode = false } = options
-    if (course?.live_status === 'ended' || course?.live_resources?.live_ended) {
+    if (course?.live_status === 'ended' || course?.live_ended || course?.live_resources?.live_ended) {
       return `<span class="btn-meet btn-meet--waiting">라이브 종료</span>`
     }
     const url = meetUrl(course.meet_code)
@@ -303,31 +304,50 @@ if (!window.LiveSession) (function () {
     return `<svg class="replay-youtube-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/><path fill="#FFF" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`
   }
 
-  function replayButtonContentHtml() {
-    return `${youtubeReplayIcon()}<span>강의 다시보기</span>`
+  function replayButtonContentHtml(label = '강의 다시보기') {
+    return `${youtubeReplayIcon()}<span>${escapeHtml(label)}</span>`
   }
 
-  function replayPendingHtml(course) {
+  function replayPendingHtml(course, { label = '강의 다시보기', compact = false } = {}) {
     const r = course?.live_resources
     const when = r?.replay_opens_label || '다음 날 오후 1시'
+    if (compact) {
+      return `<div class="btn-enroll btn-enroll--replay btn-enroll--replay-pending" aria-disabled="true">
+        <i class="ti ti-player-play"></i> ${escapeHtml(label)}
+        <span class="btn-enroll__sub">${escapeHtml(when)}에 제공</span>
+      </div>`
+    }
     return `<span class="btn-live-extra btn-live-extra--replay btn-live-extra--locked btn-live-extra--replay-pending">
-      <span style="display:inline-flex;align-items:center;justify-content:center;gap:8px">${replayButtonContentHtml()}</span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;gap:8px">${replayButtonContentHtml(label)}</span>
       <span class="btn-live-extra__sub">${escapeHtml(when)}에 제공됩니다</span>
     </span>`
   }
 
-  function liveResourceButtonsHtml(course, { includeMaterial = true, enrolled } = {}) {
+  function endedReplayButtonHtml(course, { label = '다시보기' } = {}) {
+    const r = course?.live_resources
+    if (!r?.replay_configured) return ''
+    if (r.replay_available) {
+      const slug = escapeHtml(course.slug || '')
+      return `<button type="button" class="btn-enroll btn-enroll--replay" onclick="LiveSession.openReplay(null, '${slug}')"><i class="ti ti-player-play"></i> ${escapeHtml(label)}</button>`
+    }
+    if (r.replay_pending) return replayPendingHtml(course, { label, compact: true })
+    return ''
+  }
+
+  function liveResourceButtonsHtml(course, { includeMaterial = true, includeReplay = true, enrolled } = {}) {
     const r = course?.live_resources
     if (!r) return ''
     const isEnrolled = enrolled ?? course?.enrolled
-    if (isEnrolled === false) return ''
     const parts = []
-    if (r.replay_available) {
-      parts.push(`<button type="button" class="btn-live-extra btn-live-extra--replay" onclick="LiveSession.openReplay('${escapeHtml(course.id)}')">${replayButtonContentHtml()}</button>`)
-    } else if (r.replay_pending) {
-      parts.push(replayPendingHtml(course))
+    if (includeReplay) {
+      if (r.replay_available) {
+        const slug = course.slug ? `, '${escapeHtml(course.slug)}'` : ''
+        parts.push(`<button type="button" class="btn-live-extra btn-live-extra--replay" onclick="LiveSession.openReplay('${escapeHtml(course.id)}'${slug})">${replayButtonContentHtml()}</button>`)
+      } else if (r.replay_pending) {
+        parts.push(replayPendingHtml(course))
+      }
     }
-    if (includeMaterial && r.material_configured) {
+    if (includeMaterial && isEnrolled !== false && r.material_configured) {
       if (r.material_available) {
         parts.push(`<button type="button" class="btn-live-extra btn-live-extra--material" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 자료 다운로드</button>`)
       } else {
@@ -339,8 +359,8 @@ if (!window.LiveSession) (function () {
     return `<div class="live-extra-actions">${parts.join('')}</div>`
   }
 
-  function openExternalResource(apiPath, fallbackError) {
-    if (!window.API?.isLoggedIn?.()) {
+  function openExternalResource(apiPath, fallbackError, { requireLogin = true } = {}) {
+    if (requireLogin && !window.API?.isLoggedIn?.()) {
       location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.search)
       return
     }
@@ -364,8 +384,11 @@ if (!window.LiveSession) (function () {
       })
   }
 
-  function openReplay(courseId) {
-    openExternalResource('/my/courses/' + courseId + '/live-replay', '다시보기를 열 수 없습니다.')
+  function openReplay(courseId, slug) {
+    const path = slug
+      ? '/courses/' + encodeURIComponent(slug) + '/live-replay'
+      : '/my/courses/' + encodeURIComponent(courseId) + '/live-replay'
+    openExternalResource(path, '다시보기를 열 수 없습니다.', { requireLogin: false })
   }
 
   function openMaterial(courseId) {
@@ -453,6 +476,7 @@ if (!window.LiveSession) (function () {
     meetButtonHtml,
     materialButtonHtml,
     liveResourceButtonsHtml,
+    endedReplayButtonHtml,
     openReplay,
     openMaterial,
     startCountdownTicker,

@@ -20,7 +20,7 @@
     })
   </script>
   <title>강의 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=17" />
+  <link rel="stylesheet" href="/css/style.css?v=6" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/course.css?v=22" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -46,6 +46,52 @@
           <span>최소 20자</span>
         </div>
         <button class="btn-anticipation-submit" id="btn-anticipation-submit" onclick="submitAnticipationReview()">기대평 작성하고 쿠폰 받기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 다시보기 전 후기 모달 -->
+  <div id="review-before-replay-overlay" class="modal-overlay hidden" onclick="closeReviewBeforeReplay()">
+    <div class="modal review-before-replay-modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">수강 후기를 남겨주세요</div>
+        <button class="modal-close" onclick="closeReviewBeforeReplay()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="rbr-body">
+        <p class="rbr-desc">강의 어떠셨나요? 후기를 남기시면 <strong>10% 할인 쿠폰</strong>을 드립니다.</p>
+        <div class="rbr-stars" id="rbr-stars">
+          <button type="button" class="rbr-star" data-val="1" onclick="setReviewStar(1)"><i class="ti ti-star"></i></button>
+          <button type="button" class="rbr-star" data-val="2" onclick="setReviewStar(2)"><i class="ti ti-star"></i></button>
+          <button type="button" class="rbr-star" data-val="3" onclick="setReviewStar(3)"><i class="ti ti-star"></i></button>
+          <button type="button" class="rbr-star" data-val="4" onclick="setReviewStar(4)"><i class="ti ti-star"></i></button>
+          <button type="button" class="rbr-star" data-val="5" onclick="setReviewStar(5)"><i class="ti ti-star"></i></button>
+        </div>
+        <textarea id="rbr-content" maxlength="500" placeholder="강의 내용, 강사님, 실습 등 자유롭게 작성해주세요. (선택)"></textarea>
+        <div class="rbr-actions">
+          <button type="button" class="rbr-btn-skip" onclick="skipReviewAndReplay()">건너뛰고 바로 보기</button>
+          <button type="button" class="rbr-btn-submit" id="rbr-btn-submit" onclick="submitReviewAndReplay()">후기 제출하고 다시보기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 후기 제출 완료 모달 (자료 + 쿠폰 안내) -->
+  <div id="review-thanks-overlay" class="modal-overlay hidden" onclick="closeReviewThanks()">
+    <div class="modal review-thanks-modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">감사합니다! 🎉</div>
+        <button class="modal-close" onclick="closeReviewThanks()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="rbt-body">
+        <div class="rbt-coupon" id="rbt-coupon">
+          <i class="ti ti-ticket"></i>
+          <div>
+            <div class="rbt-coupon-title">10% 할인 쿠폰이 발급되었습니다</div>
+            <div class="rbt-coupon-desc">마이페이지 &gt; 내 쿠폰에서 확인하세요</div>
+          </div>
+        </div>
+        <div class="rbt-material" id="rbt-material"></div>
+        <button type="button" class="rbt-btn-replay" onclick="closeReviewThanksAndReplay()"><i class="ti ti-player-play"></i> 다시보기 시작하기</button>
       </div>
     </div>
   </div>
@@ -80,7 +126,7 @@
   </div>
 
   <script src="/js/api.js"></script>
-  <script src="/js/live-reminder.js?v=18"></script>
+  <script src="/js/live-reminder.js?v=19"></script>
   <script src="/js/auth-redirect.js"></script>
   <script src="/js/site-layout.js"></script>
   <script src="/js/site-header.js?v=9"></script>
@@ -90,6 +136,7 @@
     const slug = new URLSearchParams(location.search).get('slug')
     let courseData = null
     let anticipationReviews = []
+    let courseReviews = []
     const ANTICIPATION_MIN = 20
     const ANTICIPATION_MAX = 150
 
@@ -111,9 +158,11 @@
         const course = await API.get('/courses/' + slug)
         courseData = course
         anticipationReviews = []
+        courseReviews = []
         render(courseData)
         loadCourseMedia()
         loadAnticipationReviews()
+        loadCourseReviews()
       } catch { document.getElementById('course-wrap').innerHTML = '<p style="text-align:center;padding:60px;color:#aaa">강의를 찾을 수 없습니다.</p>' }
     }
 
@@ -131,6 +180,19 @@
         anticipationReviews = res.reviews || []
         const el = document.getElementById('anticipation-feed-wrap')
         if (el) el.innerHTML = renderAnticipationFeed(courseData)
+      } catch {}
+    }
+
+    async function loadCourseReviews() {
+      try {
+        const res = await API.get('/courses/' + slug + '/reviews')
+        courseReviews = res.reviews || []
+        const el = document.getElementById('reviews-feed-wrap')
+        if (el) el.innerHTML = renderReviewsFeed()
+        const breakdown = document.getElementById('rating-breakdown-wrap')
+        if (breakdown) breakdown.innerHTML = renderRatingBreakdown()
+        const badge = document.getElementById('tab-review-count')
+        if (badge && courseReviews.length) { badge.textContent = courseReviews.length; badge.style.display = '' }
       } catch {}
     }
 
@@ -210,9 +272,9 @@
         return `
         <article class="anticipation-card${isMine ? ' anticipation-card--mine' : ''}">
           <div class="anticipation-card-head">
-            <div>
+            <div class="anticipation-card-author">
               <div class="anticipation-card-id">${esc(r.author_id_display || r.author_display)}${isMine ? ' <span class="anticipation-card-mine-label">내 기대평</span>' : ''}</div>
-              <div class="anticipation-card-date">작성 ${formatDate(r.created_at)}</div>
+              <div class="anticipation-card-date">${formatDate(r.created_at)}</div>
             </div>
             ${actions}
           </div>
@@ -274,41 +336,169 @@
       </div>`
     }
 
-    function renderSideStats(c) {
-      const rating = Number(c.rating) || 0
-      const reviewCount = Number(c.review_count) || 0
-      const studentCount = Number(c.student_count) || 0
-      if (!reviewCount && !studentCount) return ''
-      return `<div class="course-section side-stats-section">
-        <h2>수강생 통계</h2>
-        <div class="side-stats">
-          ${studentCount ? `<div class="side-stat-item"><i class="ti ti-users" aria-hidden="true"></i><span><strong>${studentCount.toLocaleString()}명</strong> 수강 중</span></div>` : ''}
-          ${reviewCount ? `<div class="side-stat-item"><i class="ti ti-star" aria-hidden="true"></i><span><strong>${rating}</strong> / 5.0 (${reviewCount.toLocaleString()}개 후기)</span></div>` : ''}
+    function renderStars(rating, size) {
+      const r = Math.round(Number(rating || 0) * 2) / 2
+      const sz = size || 16
+      return [1,2,3,4,5].map(i => {
+        const cls = r >= i ? 'ti-star-filled' : (r >= i - 0.5 ? 'ti-star-half-filled' : 'ti-star')
+        return `<i class="ti ${cls}" style="font-size:${sz}px;color:${r >= i - 0.5 ? '#f59e0b' : '#ddd'}"></i>`
+      }).join('')
+    }
+
+    function renderRatingBreakdown() {
+      const total = courseReviews.length
+      if (!total) return ''
+      const counts = [0,0,0,0,0]
+      courseReviews.forEach(r => { const i = Math.min(5,Math.max(1,Math.round(r.rating)))-1; counts[i]++ })
+      const avg = courseReviews.reduce((s,r) => s + r.rating, 0) / total
+      const rows = [5,4,3,2,1].map(star => {
+        const cnt = counts[star-1]
+        const pct = Math.round(cnt/total*100)
+        return `<div class="rb-row">
+          <span class="rb-label">${star}점</span>
+          <div class="rb-bar"><div class="rb-fill" style="width:${pct}%"></div></div>
+          <span class="rb-cnt">${cnt}</span>
+        </div>`
+      }).join('')
+      return `<div class="rating-breakdown">
+        <div class="rb-summary">
+          <div class="rb-avg">${avg.toFixed(1)}</div>
+          <div class="rb-stars">${renderStars(avg, 22)}</div>
+          <div class="rb-total">총 ${total.toLocaleString()}개 후기</div>
         </div>
+        <div class="rb-bars">${rows}</div>
+      </div>`
+    }
+
+    function renderReviewsFeed() {
+      if (!courseReviews.length) {
+        return `<div class="reviews-empty"><i class="ti ti-message-off"></i><p>아직 수강 후기가 없습니다.<br>수강을 완료하면 후기를 남길 수 있어요!</p></div>`
+      }
+      return `<div class="reviews-list">${courseReviews.map(r => `
+        <article class="review-card">
+          <div class="review-card-head">
+            <div class="review-card-author">
+              <span class="review-author">${esc(r.author_display || '수강생')}</span>
+              <span class="review-date">${formatDate(r.created_at)}</span>
+            </div>
+            <div class="review-stars-row">${renderStars(r.rating, 15)}</div>
+          </div>
+          <p class="review-content">${esc(r.content)}</p>
+        </article>`).join('')}</div>`
+    }
+
+    function renderAnticipationWriteBtn(c) {
+      if (!canWriteAnticipation(c)) return ''
+      if (c.my_anticipation) {
+        return `<div class="anticipation-write-bar">
+          <button type="button" class="btn-write-anticipation btn-write-anticipation--edit" onclick="openAnticipationModal(true)"><i class="ti ti-pencil"></i> 내 기대평 수정하기</button>
+        </div>`
+      }
+      return `<div class="anticipation-write-bar">
+        <button type="button" class="btn-write-anticipation" onclick="openAnticipationModal()"><i class="ti ti-message-heart"></i> 기대평 작성하기</button>
+        <span class="anticipation-coupon-badge"><i class="ti ti-ticket"></i> 10% 할인쿠폰 즉시 발급</span>
+      </div>`
+    }
+
+    function renderBuyCard(c) {
+      const thumbClass = c.thumb_style === 'dark' ? 'thumb-dark' : 'thumb-light'
+      const freeVod = isFreeVod(c)
+      const salePriceLabel = formatSalePrice(c)
+      return `<div class="course-buy-card${CourseEnrollmentUI.buyCardPanelClass(c)}" id="course-buy-card">
+        ${CourseEnrollmentUI.buyCardPanelOpen(c)}
+        ${renderBuyThumb(c, thumbClass)}
+        <div class="buy-body">
+          ${c.course_type !== 'live' && !freeVod ? `
+          <div class="buy-guarantee"><i class="ti ti-shield-check"></i> 7일 이내 전액 환불 보장</div>` : ''}
+          ${c.course_type === 'live' ? `
+          <div class="buy-intro">
+            <div class="buy-live-head">
+              <div class="buy-live-price">무료</div>
+              <div class="buy-live-sub">라이브 강의 · 무료 참여</div>
+            </div>
+            ${c.live_schedule ? `<div class="buy-live-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule}</div>` : ''}
+          </div>
+          ${renderBuyEnrollmentNote(c)}
+          ${renderEnrollActions(c)}
+          <ul class="buy-features">
+            <li><span class="feat-icon feat-icon--live"><i class="ti ti-broadcast"></i></span> 라이브 실시간 강의</li>
+            <li><span class="feat-icon feat-icon--meet"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span> Google Meet 참여</li>
+            ${c.live_ended || c.live_resources?.live_ended ? `<li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 강의 종료 후 다음 날 오후 1시 다시보기</li>` : (c.enrolled ? `<li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 강의 종료 후 다음 날 오후 1시 다시보기 (수강생 전용)</li>` : '')}
+            <li><span class="feat-icon feat-icon--material"><i class="ti ti-download"></i></span> 자료 다운로드 강의 당일(1일)</li>
+          </ul>` : `
+          ${renderBuyEnrollmentNote(c)}
+          <div class="buy-pricing">
+            <div class="buy-price-row">
+              ${!freeVod && c.price !== c.sale_price ? `<span class="buy-original">₩${Number(c.price).toLocaleString()}</span><span class="buy-disc">${Math.round((1-c.sale_price/c.price)*100)}%</span>` : ''}
+            </div>
+            <div class="buy-price${freeVod ? ' buy-price--free' : ''}">${salePriceLabel}</div>
+          </div>
+          ${renderEnrollActions(c)}
+          <ul class="buy-features">
+            <li><span class="feat-icon feat-icon--lifetime"><i class="ti ti-infinity"></i></span> 평생 소장</li>
+            <li><span class="feat-icon feat-icon--mobile"><i class="ti ti-device-mobile"></i></span> 모바일 수강 가능</li>
+            <li><span class="feat-icon feat-icon--cert"><i class="ti ti-certificate"></i></span> 수료증 발급</li>
+            <li><span class="feat-icon feat-icon--refund"><i class="ti ti-rotate-clockwise"></i></span> 7일 이내 환불 보장</li>
+          </ul>`}
+        </div>
+        ${CourseEnrollmentUI.buyCardPanelClose(c)}
       </div>`
     }
 
     function renderBodySection(c) {
+      const reviewCount = Number(c.review_count) || 0
       return `
+        <nav class="course-tab-nav" id="course-tab-nav" aria-label="강의 섹션">
+          <div class="course-tab-nav-inner container">
+            <button class="tab-btn is-active" data-tab="intro" onclick="switchTab('intro',this)">강의 소개</button>
+            <button class="tab-btn" data-tab="curriculum" onclick="switchTab('curriculum',this)">커리큘럼</button>
+            <button class="tab-btn" data-tab="reviews" onclick="switchTab('reviews',this)">수강 후기${reviewCount ? ` <span class="tab-count" id="tab-review-count">${reviewCount}</span>` : `<span class="tab-count" id="tab-review-count" style="display:none"></span>`}</button>
+            <button class="tab-btn" data-tab="anticipation" onclick="switchTab('anticipation',this)">기대평</button>
+          </div>
+        </nav>
         <div class="course-body-inner">
           <div class="course-body-main">
-            ${renderLearningOutcomes(c)}
-            ${renderTargetAudience(c)}
-            ${renderDetailIntro(c)}
-            <div class="course-section">
-              <h2>커리큘럼</h2>
-              ${renderCurriculumSection(c)}
+            <div id="tab-intro" class="tab-panel is-active">
+              ${renderLearningOutcomes(c)}
+              ${renderTargetAudience(c)}
+              ${renderDetailIntro(c)}
+              ${renderInstructor(c)}
             </div>
-            ${renderInstructor(c)}
+            <div id="tab-curriculum" class="tab-panel">
+              <div class="course-section">
+                <h2>커리큘럼</h2>
+                ${renderCurriculumSection(c)}
+              </div>
+            </div>
+            <div id="tab-reviews" class="tab-panel">
+              <div class="course-section">
+                <h2>수강 후기</h2>
+                <div id="rating-breakdown-wrap">${renderRatingBreakdown()}</div>
+                <div id="reviews-feed-wrap">${renderReviewsFeed()}</div>
+              </div>
+            </div>
+            <div id="tab-anticipation" class="tab-panel">
+              <div class="course-section">
+                <h2>수강 기대평 <span class="section-subtitle">작성 시 10% 할인쿠폰 즉시 발급</span></h2>
+                ${renderAnticipationWriteBtn(c)}
+                <div id="anticipation-feed-wrap">${renderAnticipationFeed(c)}</div>
+              </div>
+            </div>
           </div>
           <aside class="course-body-side" aria-label="수강 정보">
-            ${renderSideStats(c)}
-            <div class="course-section">
-              <h2>수강 기대평</h2>
-              <div id="anticipation-feed-wrap">${renderAnticipationFeed(c)}</div>
+            <div class="course-side-sticky" id="course-side-sticky">
+              ${renderBuyCard(c)}
             </div>
           </aside>
         </div>`
+    }
+
+    function switchTab(tab, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('is-active'))
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('is-active'))
+      const panel = document.getElementById('tab-' + tab)
+      if (panel) panel.classList.add('is-active')
+      if (btn) btn.classList.add('is-active')
     }
 
     function enrollButtonLabel(c) {
@@ -318,24 +508,27 @@
     }
 
     function renderAnticipationBtn(c) {
+      // buy card에는 후기 작성 버튼만 노출 (기대평은 탭으로 이동)
       if (isCourseEnded(c) && c.enrolled) {
         return `<a href="/mypage.html?tab=courses&review_course=${encodeURIComponent(c.id)}" class="btn-enroll btn-enroll--review"><i class="ti ti-star"></i> 수강 후기 작성하기</a>`
       }
-      if (!canWriteAnticipation(c)) return ''
-      if (c.my_anticipation) {
-        return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal(true)"><i class="ti ti-pencil"></i> 기대평 수정</button>`
-      }
-      return `<button type="button" class="btn-enroll btn-enroll--secondary" onclick="openAnticipationModal()"><i class="ti ti-message-heart"></i> 기대평 작성하고 쿠폰 받기</button>`
+      return ''
     }
 
     function isCourseEnded(c) {
-      return c?.live_status === 'ended' || c?.live_resources?.live_ended === true
+      if (window.CourseEnrollmentUI?.isLiveEnded) return CourseEnrollmentUI.isLiveEnded(c)
+      return c?.live_status === 'ended' || c?.live_ended === true || c?.live_resources?.live_ended === true
     }
 
     function wrapBuyActions(html) {
       const inner = String(html || '').trim()
       if (!inner) return ''
       return `<div class="buy-actions">${inner}</div>`
+    }
+
+    function renderEndedLiveActions(c) {
+      const replay = window.LiveSession?.endedReplayButtonHtml?.(c) || ''
+      return replay ? wrapBuyActions(replay) : ''
     }
 
     function renderEnrollActions(c) {
@@ -346,7 +539,7 @@
         return wrapBuyActions(`<a href="/player.html?slug=${c.slug}&chapter=first" class="btn-enroll enrolled"><i class="ti ti-player-play"></i> 이어서 수강하기</a>${renderAnticipationBtn(c)}`)
       }
       if (c.course_type === 'live') {
-        if (c.live_status === 'ended') return wrapBuyActions(`<div class="btn-enroll buy-live-ended">종료된 강의입니다</div>`)
+        if (isCourseEnded(c)) return renderEndedLiveActions(c)
         return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-user-plus"></i> ${enrollButtonLabel(c)}`, `onclick="submitCourseEnroll()"`)}
           ${renderAnticipationBtn(c)}`)
       }
@@ -363,6 +556,7 @@
       return encodeURIComponent(JSON.stringify({
         meet_code: c.meet_code,
         live_status: c.live_status,
+        live_ended: c.live_ended,
         live_starts_at: c.live_starts_at,
         live_schedule: c.live_schedule,
         live_resources: c.live_resources,
@@ -370,12 +564,15 @@
     }
 
     function renderLiveEnrolledAction(c) {
-      const ended = c.live_status === 'ended' || c.live_resources?.live_ended
+      const ended = isCourseEnded(c)
+      const replayBtn = ended && window.LiveSession?.endedReplayButtonHtml
+        ? LiveSession.endedReplayButtonHtml(c)
+        : ''
       const extras = c.enrolled && window.LiveSession?.liveResourceButtonsHtml
-        ? LiveSession.liveResourceButtonsHtml(c, { enrolled: true })
+        ? LiveSession.liveResourceButtonsHtml(c, { enrolled: true, includeReplay: !ended })
         : ''
       if (ended) {
-        return `<div class="btn-enroll enrolled buy-live-enrolled buy-live-enrolled--ended"><i class="ti ti-check"></i> 라이브 종료</div>${extras || ''}`
+        return `${replayBtn}${extras || ''}`
       }
       const LS = window.LiveSession
       const start = LS ? LS.parseLiveStart(c) : (c.live_starts_at ? new Date(c.live_starts_at) : null)
@@ -387,7 +584,7 @@
           수강생 대기실로 입장
         </a>`
         : ''
-      let mainBtn = `<div class="btn-enroll enrolled buy-live-enrolled"><i class="ti ti-check"></i> 신청 완료</div>`
+      let mainBtn = ``
       if (String(c.meet_code || '').trim()) {
         const payload = buildMeetPayload(c)
         const meetHtml = LS
@@ -492,75 +689,74 @@
 
       const heroGalleryUrls = buildHeroGalleryUrls(c)
       document.title = c.title + ' — 타닥클래스'
+      const instructorLine = c.instructor_name
+        ? `<div class="ch-instructor-line">
+            ${c.instructor_avatar ? `<img src="${esc(c.instructor_avatar)}" class="ch-instructor-avatar" alt="">` : `<span class="ch-instructor-avatar ch-instructor-avatar--ph"><i class="ti ti-user"></i></span>`}
+            <span class="ch-instructor-name">${esc(c.instructor_name)}</span>
+            ${c.instructor_role ? `<span class="ch-instructor-role">${esc(c.instructor_role)}</span>` : ''}
+          </div>`
+        : ''
+      const categoryLine = c.category
+        ? `<div class="ch-category">${esc(c.category)}</div>`
+        : ''
+
       document.getElementById('course-wrap').innerHTML = `
         <div class="course-hero course-hero--gallery">
           ${renderHeroBackground(heroGalleryUrls)}
           <div class="container course-hero-inner">
             <div class="course-hero-text">
+              ${categoryLine}
               ${badgeHtml ? `<div class="course-hero-badges">${badgeHtml}</div>` : ''}
               <div class="course-hero-copy">
                 <h1>${c.title}</h1>
-                <p class="ch-desc">${c.description||''}</p>
+                ${c.description ? `<p class="ch-desc">${esc(c.description)}</p>` : ''}
                 <div class="ch-meta">
-                  <span><i class="ti ti-star-filled"></i> ${Number(c.review_count) > 0 ? `${c.rating} (${Number(c.review_count).toLocaleString()}개 후기)` : '후기 없음'}</span>
-                  <span><i class="ti ti-users"></i> ${Number(c.student_count).toLocaleString()}명 수강 중</span>
+                  ${Number(c.review_count) > 0
+                    ? `<span><i class="ti ti-star-filled"></i> <strong>${c.rating}</strong> (${Number(c.review_count).toLocaleString()}개 후기)</span>`
+                    : ''}
+                  <span><i class="ti ti-users"></i> ${Number(c.student_count).toLocaleString()}명 수강</span>
                   <span><i class="ti ti-list"></i> 총 ${totalChapters}강</span>
-                  <span><i class="ti ti-player-play"></i> 무료 ${freeChapters}강 제공</span>
+                  ${freeChapters > 0 ? `<span><i class="ti ti-player-play"></i> 무료 ${freeChapters}강</span>` : ''}
                 </div>
+                ${instructorLine}
               </div>
-            </div>
-            <div class="course-buy-card${CourseEnrollmentUI.buyCardPanelClass(c)}">
-              ${CourseEnrollmentUI.buyCardPanelOpen(c)}
-              ${renderBuyThumb(c, thumbClass)}
-              <div class="buy-body">
-                ${c.course_type !== 'live' && !isFreeVod(c) ? `
-                <div class="buy-guarantee"><i class="ti ti-shield-check"></i> 7일 이내 전액 환불 보장</div>
-              ` : ''}
-              ${c.course_type === 'live' ? `
-                <div class="buy-intro">
-                  <div class="buy-live-head">
-                    <div class="buy-live-price">무료</div>
-                    <div class="buy-live-sub">라이브 강의 · 무료 참여</div>
-                  </div>
-                  ${c.live_schedule ? `<div class="buy-live-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule}</div>` : ''}
-                </div>
-                ${renderBuyEnrollmentNote(c)}
-                ${renderEnrollActions(c)}
-                <ul class="buy-features">
-                  <li><span class="feat-icon feat-icon--live"><i class="ti ti-broadcast"></i></span> 라이브 실시간 강의</li>
-                  <li><span class="feat-icon feat-icon--meet"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span> Google Meet 참여</li>
-                  ${c.enrolled ? `<li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 강의 종료 후 다음 날 오후 1시 다시보기 (수강생 전용)</li>` : ''}
-                  <li><span class="feat-icon feat-icon--material"><i class="ti ti-download"></i></span> 자료 다운로드 강의 당일(1일)</li>
-                </ul>
-              ` : `
-                ${renderBuyEnrollmentNote(c)}
-                <div class="buy-pricing">
-                  <div class="buy-price-row">
-                    ${!freeVod && c.price!==c.sale_price ? `<span class="buy-original">₩${Number(c.price).toLocaleString()}</span><span class="buy-disc">${Math.round((1-c.sale_price/c.price)*100)}%</span>` : ''}
-                  </div>
-                  <div class="buy-price${freeVod ? ' buy-price--free' : ''}">${salePriceLabel}</div>
-                </div>
-                ${renderEnrollActions(c)}
-                <ul class="buy-features">
-                  <li><span class="feat-icon feat-icon--lifetime"><i class="ti ti-infinity"></i></span> 평생 소장</li>
-                  <li><span class="feat-icon feat-icon--mobile"><i class="ti ti-device-mobile"></i></span> 모바일 수강 가능</li>
-                  <li><span class="feat-icon feat-icon--cert"><i class="ti ti-certificate"></i></span> 수료증 발급</li>
-                  <li><span class="feat-icon feat-icon--refund"><i class="ti ti-rotate-clockwise"></i></span> 7일 이내 환불 보장</li>
-                </ul>
-              `}
-              </div>
-              ${CourseEnrollmentUI.buyCardPanelClose(c)}
             </div>
           </div>
         </div>
 
-        <div class="container course-body-wrap">
-          ${renderBodySection(c)}
+        <div class="course-body-wrap">
+          <div class="container course-body-inner-wrap">
+            ${renderBodySection(c)}
+          </div>
         </div>`
       startHeroGallery(document.querySelector('.course-hero--gallery'))
       if (c.enrolled && c.course_type === 'live' && window.LiveSession?.startCountdownTicker) {
         LiveSession.startCountdownTicker()
       }
+    }
+
+    function hydrateSideSticky() {
+      const sideEl = document.getElementById('course-side-sticky')
+      const heroCard = document.querySelector('.course-buy-card')
+      if (!sideEl || !heroCard) return
+      const clone = heroCard.cloneNode(true)
+      clone.classList.add('course-buy-card--side')
+      clone.querySelectorAll('[id]').forEach(el => { el.id = 'side-' + el.id })
+      sideEl.innerHTML = ''
+      sideEl.appendChild(clone)
+      // 히어로 카드가 뷰포트에서 사라지면 사이드 카드 표시 (scroll에서 재탐색)
+      const aside = document.querySelector('.course-body-side')
+      if (!aside) return
+      if (window._sideScrollOff) window._sideScrollOff()
+      const update = () => {
+        const card = document.querySelector('.course-buy-card:not(.course-buy-card--side)')
+        const a = document.querySelector('.course-body-side')
+        if (!card || !a) return
+        a.style.visibility = card.getBoundingClientRect().bottom > 0 ? 'hidden' : 'visible'
+      }
+      update()
+      window.addEventListener('scroll', update, { passive: true })
+      window._sideScrollOff = () => window.removeEventListener('scroll', update, { passive: true })
     }
 
     function setAnticipationModalMode(edit) {
@@ -664,6 +860,10 @@
 
     async function submitCourseEnroll() {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
+      if (courseData?.course_type === 'live' && isCourseEnded(courseData)) {
+        toast('종료된 강의입니다.', 'error')
+        return
+      }
       if (CourseEnrollmentUI.isClosedForApply(courseData)) {
         toast('모집 정원이 마감되었습니다.', 'error')
         return
@@ -739,6 +939,96 @@
         return false
       }
       return true
+    }
+
+    // ── 다시보기 전 후기 흐름 ──
+    let _replaySlug = null
+    let _replayStarVal = 0
+
+    // LiveSession.openReplay 가로채기 (페이지 로드 후 등록)
+    window.addEventListener('load', () => {
+      if (!window.LiveSession) return
+      const _origOpenReplay = LiveSession.openReplay.bind(LiveSession)
+      LiveSession.openReplay = (courseId, slugArg) => {
+        _replaySlug = slugArg || slug
+        // 비로그인이거나 이미 후기 작성 → 바로 재생
+        if (!API.isLoggedIn() || courseData?.my_review) {
+          _origOpenReplay(courseId, slugArg)
+          return
+        }
+        // 후기 미작성 → 후기 모달
+        _replayStarVal = 0
+        document.getElementById('rbr-content').value = ''
+        updateRbrStars(0)
+        document.getElementById('review-before-replay-overlay').classList.remove('hidden')
+      }
+      window._origOpenReplay = _origOpenReplay
+    })
+
+    function setReviewStar(val) {
+      _replayStarVal = val
+      updateRbrStars(val)
+    }
+
+    function updateRbrStars(val) {
+      document.querySelectorAll('.rbr-star').forEach(btn => {
+        const v = Number(btn.dataset.val)
+        btn.innerHTML = v <= val
+          ? '<i class="ti ti-star-filled" style="color:#f59e0b"></i>'
+          : '<i class="ti ti-star" style="color:#ddd"></i>'
+      })
+    }
+
+    function closeReviewBeforeReplay() {
+      document.getElementById('review-before-replay-overlay').classList.add('hidden')
+    }
+
+    function skipReviewAndReplay() {
+      closeReviewBeforeReplay()
+      window._origOpenReplay(null, _replaySlug)
+    }
+
+    async function submitReviewAndReplay() {
+      if (!_replayStarVal) { toast('별점을 선택해주세요.', 'error'); return }
+      const content = document.getElementById('rbr-content').value.trim()
+      const btn = document.getElementById('rbr-btn-submit')
+      btn.disabled = true; btn.textContent = '제출 중...'
+      try {
+        const res = await API.post('/my/reviews', {
+          course_id: courseData.id,
+          rating: _replayStarVal,
+          content,
+        })
+        closeReviewBeforeReplay()
+        // 쿠폰 안내
+        const couponEl = document.getElementById('rbt-coupon')
+        if (res.coupon) {
+          couponEl.style.display = ''
+        } else {
+          couponEl.style.display = 'none'
+        }
+        // 자료 다운로드 버튼
+        const matEl = document.getElementById('rbt-material')
+        matEl.innerHTML = courseData.id
+          ? `<button type="button" class="rbt-btn-material" onclick="LiveSession.openMaterial('${courseData.id}')"><i class="ti ti-download"></i> 강의 자료 다운로드</button>`
+          : ''
+        document.getElementById('review-thanks-overlay').classList.remove('hidden')
+        // courseData 갱신
+        courseData = { ...courseData, my_review: { rating: _replayStarVal, content } }
+        loadCourseReviews()
+      } catch (err) {
+        toast(err.message || '오류가 발생했습니다.', 'error')
+        btn.disabled = false; btn.textContent = '후기 제출하고 다시보기'
+      }
+    }
+
+    function closeReviewThanks() {
+      document.getElementById('review-thanks-overlay').classList.add('hidden')
+    }
+
+    function closeReviewThanksAndReplay() {
+      closeReviewThanks()
+      window._origOpenReplay(null, _replaySlug)
     }
 
     load()

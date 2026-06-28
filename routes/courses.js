@@ -106,6 +106,37 @@ router.get('/', publicCache, async (req, res) => {
   res.json(courses.map(db.pickCourseCardFields))
 })
 
+router.get('/:slug/reviews', publicCache, async (req, res) => {
+  try {
+    const course = await db.getCourseBySlug(req.params.slug)
+    if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    const reviews = await db.getReviews(course.id)
+    const sorted = [...reviews].sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
+    const userIds = [...new Set(sorted.map(r => r.user_id).filter(Boolean))]
+    const users = {}
+    await Promise.all(userIds.map(async id => {
+      const u = await db.findUserById(id)
+      if (u?.name) {
+        const n = String(u.name).trim()
+        users[id] = n.length <= 1 ? n + '**' : n[0] + '**'
+      }
+    }))
+    res.json({
+      reviews: sorted.map(r => ({
+        id: r.id,
+        rating: r.rating || 5,
+        content: r.content || '',
+        author_display: users[r.user_id] || r.author_display || '수강생',
+        created_at: r.created_at,
+      })),
+      rating: course.rating || 0,
+      review_count: course.review_count || 0,
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.get('/:slug/anticipation-reviews', publicCache, async (req, res) => {
   try {
     const course = await db.getCourseBySlug(req.params.slug)
@@ -293,6 +324,33 @@ router.post('/:slug/apply-with-anticipation', authMiddleware, async (req, res) =
   }
 })
 
+router.get('/:slug/live-replay', async (req, res) => {
+  try {
+    const course = await db.getCourseBySlug(req.params.slug)
+    if (!course || !course.is_published || course.course_type !== 'live') {
+      return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    }
+    const access = db.getLiveResourceAccess(course, { enrolled: false })
+    if (!access.replay_available) {
+      if (access.replay_pending) {
+        const when = access.replay_opens_label || '다음 날 오후 1시'
+        return res.status(403).json({ error: `강의 다시보기는 ${when}부터 이용할 수 있습니다.` })
+      }
+      if (!access.live_ended) {
+        return res.status(403).json({ error: '라이브 강의 종료 후 다시보기가 제공됩니다.' })
+      }
+      return res.status(404).json({ error: '다시보기 링크가 아직 준비되지 않았습니다.' })
+    }
+    const url = String(course.live_replay_url || '').trim()
+    if (!url || !/^https?:\/\/.+/i.test(url)) {
+      return res.status(404).json({ error: '다시보기 링크가 아직 준비되지 않았습니다.' })
+    }
+    res.json({ url })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.get('/:slug', async (req, res) => {
   try {
     const course = await db.getCourseBySlug(req.params.slug)
@@ -322,10 +380,11 @@ router.get('/:slug', async (req, res) => {
       enrolled,
       my_anticipation,
       anticipation_modify,
+      live_ended: course.course_type === 'live' ? db.isLiveCourseEnded(course) : false,
     }
     if (!enrolled) delete payload.live_chat_url
-    if (enrolled && course.course_type === 'live') {
-      payload.live_resources = db.getLiveResourceAccess(course, { enrolled: true })
+    if (course.course_type === 'live' && (enrolled || db.isLiveCourseEnded(course))) {
+      payload.live_resources = db.getLiveResourceAccess(course, { enrolled: !!enrolled })
     }
     res.json(payload)
   } catch (e) {

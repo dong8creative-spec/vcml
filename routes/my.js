@@ -106,7 +106,7 @@ router.get('/live-sessions', authMiddleware, async (req, res) => {
   for (const e of enrollments) {
     const c = await db.getCourseById(e.course_id)
     if (!c || c.course_type !== 'live') continue
-    if (c.live_status === 'ended') continue
+    if (db.isLiveCourseEnded(c)) continue
     sessions.push({
       id: c.id,
       slug: c.slug,
@@ -165,6 +165,7 @@ router.get('/courses', authMiddleware, async (req, res) => {
       my_review: myReview ? { rating: myReview.rating, content: myReview.content || '' } : null,
     }
     if (c.course_type === 'live') {
+      row.live_ended = db.isLiveCourseEnded(c)
       row.live_resources = db.getLiveResourceAccess(c, { enrolled: true })
     }
     return row
@@ -177,10 +178,7 @@ router.get('/courses/:courseId/live-replay', authMiddleware, async (req, res) =>
   if (!course || course.course_type !== 'live') {
     return res.status(404).json({ error: '라이브 강의를 찾을 수 없습니다.' })
   }
-  if (!await db.isEnrolled(req.user.id, course.id)) {
-    return res.status(403).json({ error: '수강 신청 후 이용할 수 있습니다.' })
-  }
-  const access = db.getLiveResourceAccess(course, { enrolled: true })
+  const access = db.getLiveResourceAccess(course, { enrolled: false })
   if (!access.replay_available) {
     if (access.replay_pending) {
       const when = access.replay_opens_label || '다음 날 오후 1시'
