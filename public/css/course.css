@@ -848,10 +848,13 @@
   gap: 0;
   overflow-x: auto;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
 }
 .course-tab-nav-inner::-webkit-scrollbar { display: none; }
 .tab-btn {
   flex-shrink: 0;
+  scroll-snap-align: start;
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
@@ -1252,4 +1255,23 @@
   .rb-avg { font-size: 40px; }
   .tab-btn { padding: 12px 14px; font-size: 14px; }
   .anticipation-write-bar { flex-direction: column; align-items: flex-start; }
+  /* 구매 카드 패딩·여백 축소 */
+  .course-buy-card { --buy-section: 14px; }
+  .outcomes-grid { padding: 20px; gap: 12px 20px; }
+}
+
+@media (max-width: 600px) {
+  /* 탭 버튼 추가 축소 */
+  .tab-btn { padding: 11px 14px; font-size: 13.5px; }
+  /* 배우는 것 1열 */
+  .outcomes-grid { grid-template-columns: 1fr; padding: 16px; }
+  /* 후기 1열 + 카드 패딩 축소 */
+  .reviews-list,
+  .anticipation-feed { gap: 10px; }
+  .review-card,
+  .anticipation-card { padding: 16px 16px; }
+  /* 결제 옵션 1열 */
+  .pay-options { grid-template-columns: 1fr; }
+  /* 구매 카드 패딩 축소 */
+  .course-buy-card { --buy-section: 12px; --buy-gap: 8px; }
 }

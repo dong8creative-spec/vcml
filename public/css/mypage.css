@@ -737,9 +737,55 @@ body { background:#f5f6fa; }
     .lc-star:not(button) { cursor: default; }
 
     @media(max-width:700px) {
-      .mypage-wrap { grid-template-columns:1fr; }
-      .my-sidebar { position:static; }
+      .mypage-wrap { grid-template-columns:1fr; margin:0 auto; padding:16px 14px 80px; gap:16px; }
+      .my-sidebar { position:static; padding:14px; }
       .proj-card { flex-direction:column; align-items:flex-start; }
       .link-row { grid-template-columns:1fr; }
       .my-lc-title { white-space: normal; }
+
+      /* 프로필 카드 — 아바타 좌 / 이름·이메일 우 */
+      #my-profile {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 14px;
+        row-gap: 2px;
+        align-items: center;
+        text-align: left;
+      }
+      #my-profile .my-avatar { grid-column: 1; grid-row: 1 / span 2; margin: 0; width: 46px; height: 46px; font-size: 21px; }
+      #my-profile .my-name { grid-column: 2; grid-row: 1; margin: 0; font-size: 17px; }
+      #my-profile .my-email { grid-column: 2; grid-row: 2; margin: 0; }
+      #my-profile .my-bio-preview { grid-column: 1 / -1; margin-top: 8px; }
+      #my-profile .my-role-badges { grid-column: 1 / -1; justify-content: flex-start; margin: 8px 0 0; }
+
+      /* 사이드 메뉴 → 상단 가로 스크롤 탭 */
+      .my-sidebar-menus { margin-top: 12px; gap: 8px; }
+      .my-nav-panel { padding: 6px; }
+      .my-nav {
+        flex-direction: row;
+        gap: 6px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        scroll-snap-type: x proximity;
+      }
+      .my-nav::-webkit-scrollbar { display: none; }
+      .my-nav-item { flex-shrink: 0; white-space: nowrap; scroll-snap-align: start; padding: 9px 14px; }
+
+      /* 메인 */
+      .section-title { font-size: 20px; margin-bottom: 14px; }
+
+      /* 강의 카드 그리드 — 2열 */
+      .my-course-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+      /* 라이브 강의 카드 — 세로 스택 */
+      .my-lc-main { flex-direction: column; align-items: stretch; gap: 10px; }
+      .lc-thumb-wrap { width: 100%; height: 160px; }
+    }
+
+    @media(max-width:480px) {
+      /* 강의 카드 1열 */
+      .my-course-grid { grid-template-columns: 1fr; }
+      .lc-thumb-wrap { height: 140px; }
+      .my-nav-item span { font-size: 13px; }
     }

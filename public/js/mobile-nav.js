@@ -77,14 +77,21 @@
       <div class="nav-drawer-label">${sec.section}</div>
       ${sec.items.map(it => `<a href="${it.href}">${it.label}</a>`).join('')}
       <div class="nav-drawer-divider"></div>`).join('')
+    body.querySelectorAll('a').forEach(a => a.addEventListener('click', closeDrawer))
     overlay.classList.remove('hidden')
     document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', onDrawerKeydown)
+  }
+
+  function onDrawerKeydown(e) {
+    if (e.key === 'Escape') closeDrawer()
   }
 
   function closeDrawer() {
     const overlay = document.getElementById('nav-drawer-overlay')
     if (overlay) overlay.classList.add('hidden')
     document.body.style.overflow = ''
+    document.removeEventListener('keydown', onDrawerKeydown)
   }
 
   function mountMenuButton() {

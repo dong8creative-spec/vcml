@@ -772,8 +772,19 @@ img { display: block; max-width: 100%; }
     grid-template-columns: auto 1fr auto;
   }
   .gnb { display: none; }
-  .hero { min-height: 360px; padding: 56px 20px; }
-  .hero-text h1 { font-size: 28.8px; }
+  /* 헤더 축소 */
+  .header-inner { height: 54px; min-height: 54px; padding: 0 14px; }
+  .logo { font-size: 20px; }
+  .container { padding: 0 16px; }
+  /* 히어로 */
+  .hero { min-height: 320px; padding: 48px 20px; }
+  .hero-text { padding-left: 0; }
+  .hero-text h1 { font-size: 28px; }
+  .hero-text p { font-size: 15.5px; margin-bottom: 18px; }
+  .hero-btns { width: 100%; }
+  .btn-hero-primary,
+  .btn-hero-ghost,
+  .btn-hero-knockout { width: 100%; }
   .success-grid { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
   .shelf-arrow { display: none; }
@@ -785,6 +796,10 @@ img { display: block; max-width: 100%; }
   .cat-grid-row-last .cat-tile { grid-column: auto; }
 }
 @media (max-width: 600px) {
+  .header-inner { height: 52px; min-height: 52px; padding: 0 12px; }
+  .logo { font-size: 18px; }
+  .hero { min-height: 280px; padding: 40px 16px; }
+  .hero-text h1 { font-size: 24px; }
   .review-grid { grid-template-columns: 1fr 1fr; }
   .footer-grid { grid-template-columns: 1fr; }
   .footer-bottom { flex-direction: column; align-items: flex-start; }
@@ -794,6 +809,13 @@ img { display: block; max-width: 100%; }
   .cat-grid-row-last .cat-tile { grid-column: auto; }
   .cat-tile { padding: 0 16px; }
   .cat-tile-label { font-size: 21.6px; text-align: right; }
+  /* 무료강의 카드 본문 축소 */
+  .fcard-body { padding: 14px 14px 16px; }
+  .fcard-title { font-size: 18px; }
+  .fcard-cat,
+  .fcard-schedule,
+  .fcard-rating { font-size: 13.5px; }
+  .fcard-thumb { font-size: 56px; }
 }
 
 @media (min-width: 1440px) {

@@ -341,7 +341,7 @@ window.addEventListener('resize', () => scheduleFitOneLineTexts())
 })()
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/mobile-nav.js?v=6'
+  s.src = '/js/mobile-nav.js?v=7'
   s.defer = true
   document.head.appendChild(s)
 })()

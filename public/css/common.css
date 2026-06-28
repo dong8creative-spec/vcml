@@ -233,3 +233,33 @@
 /* 기본: 한 줄 (mypage 등 compact 컨텍스트) */
 .btn-live-extra--replay-pending { flex-direction: row; gap: 6px; line-height: 1.3; }
 .btn-live-extra__sub { font-size: 11px; font-weight: 500; color: #888; }
+
+/* ── 모바일 공통 컴포넌트 ── */
+@media (max-width: 600px) {
+  /* Toast — 화면 폭에 맞게 줄바꿈 허용 */
+  .toast {
+    left: 16px;
+    right: 16px;
+    bottom: 20px;
+    transform: translateY(20px);
+    max-width: none;
+    width: auto;
+    white-space: normal;
+    text-align: center;
+    font-size: 15px;
+    padding: 12px 18px;
+  }
+  .toast.show { transform: translateY(0); }
+
+  /* 모달 — 좁은 화면 여백 축소 */
+  .google-member-modal,
+  .live-remind-overlay { padding: 12px; }
+  .google-member-dialog { padding: 20px 16px 16px; }
+  .google-member-title { font-size: 19px; }
+  .live-remind-modal { padding: 22px 18px; }
+
+  /* Empty state 축소 */
+  .empty-state { padding: 40px 16px; }
+  .empty-state .ti { font-size: 48px; }
+  .empty-state p { font-size: 16px; }
+}
