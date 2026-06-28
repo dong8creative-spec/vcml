@@ -835,8 +835,6 @@ const DEFAULT_FOOTER_CONFIG = {
       title: '안내',
       links: [
         { label: '공지사항', href: '/notices.html' },
-        { label: '개인정보처리방침', href: '/privacy.html', emphasis: true },
-        { label: '청소년보호정책', href: '/youth.html' },
       ],
     },
   ],
@@ -847,7 +845,7 @@ const DEFAULT_FOOTER_CONFIG = {
   ],
   copyright: '© 2025 타닥클래스. All rights reserved.',
   policy_links: [
-    { label: '개인정보처리방침', href: '/privacy.html' },
+    { label: '개인정보처리방침', href: '/privacy.html', emphasis: true },
     { label: '이용약관', href: '/terms.html' },
     { label: '청소년보호정책', href: '/youth.html' },
     { label: '환불정책', href: '/refund.html' },
@@ -1041,6 +1039,7 @@ const LIVE_END_AFTER_MS = 3 * 60 * 60 * 1000
 const MEET_OPEN_BEFORE_MS = 30 * 60 * 1000
 const REPLAY_OPEN_HOUR_KST = 13
 const ANTICIPATION_MODIFY_LOCK_MS = 60 * 60 * 1000
+const LIVE_REVIEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000  // 강의 종료 후 7일
 
 function kstCalendarParts(date) {
   const t = date.getTime() + 9 * 3600000
@@ -1061,6 +1060,15 @@ function isLiveCourseEnded(course, at = new Date()) {
   const start = parseLiveStart(course)
   if (!start) return false
   return at.getTime() > start.getTime() + LIVE_END_AFTER_MS
+}
+
+function isLiveReviewOpen(course, at = new Date()) {
+  if (course?.course_type !== 'live') return true  // VOD는 제한 없음
+  const start = parseLiveStart(course)
+  if (!start) return true
+  const liveEndsAt = start.getTime() + LIVE_END_AFTER_MS
+  if (at.getTime() < liveEndsAt) return false  // 강의 종료 전에는 후기 불가
+  return at.getTime() <= liveEndsAt + LIVE_REVIEW_WINDOW_MS
 }
 
 function isMeetJoinAvailable(course, start, at = new Date()) {
@@ -1179,6 +1187,12 @@ function getLiveResourceAccess(course, { enrolled = false, at = new Date() } = {
     material_lecture_day: lectureDay,
     meet_configured: meetConfigured,
     meet_join_available: enrolled && meetJoinAvailable,
+    review_open: isLiveReviewOpen(course, at),
+    review_closes_at: (() => {
+      if (!start) return null
+      const closeAt = new Date(start.getTime() + LIVE_END_AFTER_MS + LIVE_REVIEW_WINDOW_MS)
+      return closeAt.toISOString()
+    })(),
     live_lecture_date: start
       ? start.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric' })
       : null,
@@ -3721,6 +3735,7 @@ module.exports = db
 module.exports.parseLiveStart = parseLiveStart
 module.exports.isLiveLectureDay = isLiveLectureDay
 module.exports.isLiveCourseEnded = isLiveCourseEnded
+module.exports.isLiveReviewOpen = isLiveReviewOpen
 module.exports.canWriteAnticipationReview = canWriteAnticipationReview
 module.exports.canModifyAnticipationReview = canModifyAnticipationReview
 module.exports.getAnticipationModifyMeta = getAnticipationModifyMeta

@@ -109,122 +109,6 @@ if (!window.LiveSession) (function () {
     return `<div class="btn-enroll enrolled buy-live-enrolled"><i class="ti ti-check"></i> 신청 완료</div>`
   }
 
-  function injectStyles() {
-    if (document.getElementById('live-reminder-styles')) return
-    const style = document.createElement('style')
-    style.id = 'live-reminder-styles'
-    style.textContent = `
-      .live-countdown {
-        font-size: 13px; font-weight: 700; color: #111;
-        background: #f5f5f5; border-radius: 8px; padding: 8px 10px;
-        margin: 8px 0; text-align: center; font-variant-numeric: tabular-nums;
-      }
-      .live-countdown.is-live { color: #111; background: #eee; }
-      .live-countdown.is-ended { color: #888; background: #f5f5f5; }
-      .btn-meet {
-        display: flex; align-items: center; justify-content: center; gap: 8px;
-        width: 100%; padding: 10px 12px; border-radius: 8px; font-size: 14px;
-        font-weight: 700; text-decoration: none; border: none; cursor: pointer;
-        transition: .15s; box-sizing: border-box;
-      }
-      .btn-meet--active { background: #1a73e8; color: #fff; }
-      .btn-meet--active:hover { background: #1557b0; }
-      .btn-meet--waiting {
-        background: #e8f0fe; color: #1a73e8; border: 1px solid #c5d9f7;
-        cursor: default;
-      }
-      .btn-meet--enrolled {
-        background: #f5f5f5; color: #111; border: 1px solid #e8e8e8;
-        cursor: default; font-weight: 700;
-      }
-      .btn-meet--material-active {
-        background: #111; color: #fff; border: none;
-      }
-      .btn-meet--material-active:hover { background: #333; }
-      .btn-meet--material-waiting {
-        background: #f5f5f5; color: #888; border: 1px solid #e8e8e8;
-        cursor: default; font-weight: 600;
-      }
-      .btn-meet--material { margin: 8px 0; }
-      .btn-meet__icon { display: inline-flex; align-items: center; flex-shrink: 0; line-height: 0; }
-      .btn-meet .meet-google-icon { display: block; width: 18px; height: 18px; }
-      .live-remind-overlay {
-        position: fixed; inset: 0; z-index: 10000;
-        background: rgba(0,0,0,.45); display: flex; align-items: center;
-        justify-content: center; padding: 20px;
-      }
-      .live-remind-modal {
-        background: #fff; border-radius: 16px; max-width: 420px; width: 100%;
-        padding: 28px 24px; box-shadow: 0 20px 60px rgba(0,0,0,.2);
-        animation: liveRemindIn .25s ease;
-      }
-      @keyframes liveRemindIn {
-        from { opacity: 0; transform: translateY(12px) scale(.98); }
-        to { opacity: 1; transform: none; }
-      }
-      .live-remind-badge {
-        display: inline-flex; align-items: center; gap: 6px;
-        background: #f0f0f0; color: #111; font-size: 12px; font-weight: 800;
-        padding: 4px 10px; border-radius: 20px; margin-bottom: 12px;
-      }
-      .live-remind-title { font-size: 20px; font-weight: 900; line-height: 1.35; margin-bottom: 8px; }
-      .live-remind-schedule { font-size: 14px; color: #888; margin-bottom: 16px; }
-      .live-remind-countdown {
-        font-size: 28px; font-weight: 900; color: #111;
-        text-align: center; margin: 16px 0; font-variant-numeric: tabular-nums;
-      }
-      .live-remind-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-      .live-remind-dismiss {
-        background: none; border: none; color: #aaa; font-size: 13px;
-        cursor: pointer; padding: 8px; margin-top: 4px;
-      }
-      .live-remind-dismiss:hover { color: #666; }
-      .my-course-card--live { cursor: default; }
-      .my-course-card--live:hover { transform: none; }
-      .live-extra-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-      .btn-live-extra {
-        display: flex; align-items: center; justify-content: center; gap: 6px;
-        width: 100%; padding: 10px 12px; border-radius: 8px; font-size: 14px;
-        font-weight: 700; text-decoration: none; border: none; cursor: pointer;
-        box-sizing: border-box; transition: .15s;
-      }
-      .btn-live-extra--replay {
-        background: #fff;
-        color: #111;
-        border: 1px solid #e8e8e8;
-        gap: 8px;
-      }
-      .btn-live-extra--replay:hover { background: #fafafa; border-color: #ddd; }
-      .btn-live-extra--replay .replay-youtube-icon {
-        flex-shrink: 0;
-        display: block;
-        width: 22px;
-        height: 22px;
-      }
-      .btn-live-extra--replay.btn-live-extra--locked {
-        background: #fff;
-        color: #666;
-        border: 1px solid #eee;
-        cursor: default;
-      }
-      .btn-live-extra--replay.btn-live-extra--locked .replay-youtube-icon { opacity: 0.45; }
-      .btn-live-extra--material { background: #f5f5f5; color: #111; border: 1px solid #ddd; }
-      .btn-live-extra--material:hover { background: #eee; }
-      .btn-live-extra--locked {
-        background: #f5f5f5; color: #999; border: 1px solid #e8e8e8;
-        cursor: default; font-weight: 600;
-      }
-      .btn-live-extra--replay-pending {
-        flex-direction: column; gap: 4px; line-height: 1.4;
-        padding: 12px; text-align: center;
-      }
-      .btn-live-extra__sub {
-        font-size: 11px; font-weight: 500; color: #888;
-      }
-    `
-    document.head.appendChild(style)
-  }
-
   function updateCountdownElements() {
     document.querySelectorAll('[data-live-countdown]').forEach(el => {
       const startMs = Number(el.dataset.liveStartsAt)
@@ -290,14 +174,15 @@ if (!window.LiveSession) (function () {
 
   function materialButtonHtml(course) {
     const r = course?.live_resources
-    if (!r?.material_configured) {
-      return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 대기중</span>`
-    }
+    if (!r?.material_configured) return ''
     if (r.material_available) {
       return `<button type="button" class="btn-meet btn-meet--material btn-meet--material-active" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</button>`
     }
-    const hint = r.live_lecture_date ? ` (${r.live_lecture_date} 당일)` : ' (강의 당일)'
-    return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 다운로드${hint}</span>`
+    // 강의 당일에만 "대기중" 표시. 날이 지났으면 숨김
+    if (r.material_lecture_day) {
+      return `<span class="btn-meet btn-meet--material btn-meet--material-waiting"><i class="ti ti-download"></i> 강의자료 준비 중</span>`
+    }
+    return ''
   }
 
   function youtubeReplayIcon() {
@@ -328,7 +213,7 @@ if (!window.LiveSession) (function () {
     if (!r?.replay_configured) return ''
     if (r.replay_available) {
       const slug = escapeHtml(course.slug || '')
-      return `<button type="button" class="btn-enroll btn-enroll--replay" onclick="LiveSession.openReplay(null, '${slug}')"><i class="ti ti-player-play"></i> ${escapeHtml(label)}</button>`
+      return `<button type="button" class="btn-enroll btn-enroll--replay" onclick="LiveSession.openReplay(null, '${slug}')">${youtubeReplayIcon()} ${escapeHtml(label)}</button>`
     }
     if (r.replay_pending) return replayPendingHtml(course, { label, compact: true })
     return ''
@@ -350,10 +235,11 @@ if (!window.LiveSession) (function () {
     if (includeMaterial && isEnrolled !== false && r.material_configured) {
       if (r.material_available) {
         parts.push(`<button type="button" class="btn-live-extra btn-live-extra--material" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(course.id)}')"><i class="ti ti-download"></i> 자료 다운로드</button>`)
-      } else {
-        const hint = r.live_lecture_date ? ` (${r.live_lecture_date} 당일)` : ' (강의 당일)'
-        parts.push(`<span class="btn-live-extra btn-live-extra--material btn-live-extra--locked"><i class="ti ti-download"></i> 자료 다운로드${hint}</span>`)
+      } else if (r.material_lecture_day) {
+        // 강의 당일이지만 아직 URL 미설정 — 준비 중 표시
+        parts.push(`<span class="btn-live-extra btn-live-extra--material btn-live-extra--locked"><i class="ti ti-download"></i> 자료 준비 중</span>`)
       }
+      // 강의 당일 아님(이전 또는 이후) → 숨김
     }
     if (!parts.length) return ''
     return `<div class="live-extra-actions">${parts.join('')}</div>`
@@ -373,9 +259,7 @@ if (!window.LiveSession) (function () {
     }
     try { tab.opener = null } catch (_) {}
     API.get(apiPath)
-      .then(({ url }) => {
-        tab.location.href = url
-      })
+      .then(({ url }) => { tab.location.href = url })
       .catch((e) => {
         try { tab.close() } catch (_) {}
         const msg = e.message || fallbackError
@@ -400,7 +284,6 @@ if (!window.LiveSession) (function () {
     const startMs = start.getTime()
     const url = meetUrl(course.meet_code)
     const join = canJoinMeet(course, start)
-
     const overlay = document.createElement('div')
     overlay.className = 'live-remind-overlay'
     overlay.innerHTML = `
@@ -456,7 +339,6 @@ if (!window.LiveSession) (function () {
   }
 
   function initLiveReminders() {
-    injectStyles()
     startCountdownTicker()
     whenReadyResolve()
     document.dispatchEvent(new CustomEvent('live-session-ready'))

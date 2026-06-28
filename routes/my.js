@@ -269,6 +269,10 @@ router.post('/reviews', authMiddleware, async (req, res) => {
   const { course_id, rating, content } = req.body
   if (!course_id || !rating) return res.status(400).json({ error: '필수 항목 누락' })
   if (!await db.isEnrolled(req.user.id, course_id)) return res.status(403).json({ error: '수강생만 후기를 작성할 수 있습니다.' })
+  const course = await db.getCourseById(course_id)
+  if (course && !db.isLiveReviewOpen(course)) {
+    return res.status(403).json({ error: '후기 작성 기간이 종료되었습니다. (강의 종료 후 7일 이내에만 작성 가능)' })
+  }
   const result = await db.upsertReview(req.user.id, course_id, rating, content)
   res.json({
     success: true,

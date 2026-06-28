@@ -21,8 +21,8 @@
   </script>
   <title>마이페이지 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=6" />
-  <link rel="stylesheet" href="/css/common.css" />
-  <link rel="stylesheet" href="/css/mypage.css?v=4" />
+  <link rel="stylesheet" href="/css/common.css?v=2" />
+  <link rel="stylesheet" href="/css/mypage.css?v=7" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 
@@ -142,7 +142,7 @@
 </div>
 
 <script src="/js/api.js"></script>
-<script src="/js/live-reminder.js?v=19"></script>
+<script src="/js/live-reminder.js?v=20"></script>
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=6"></script>
 <script>
@@ -602,26 +602,39 @@ async function cancelEnrollment(courseId) {
 function renderCourseReviewBlock(c) {
   const rating = c.my_review?.rating || 0
   const content = escapeHtml(c.my_review?.content || '')
-  const makeStars = (r) => [1,2,3,4,5].map(n =>
-    `<button type="button" class="lc-star ${n <= r ? 'on' : ''}" data-star="${n}" onclick="setReviewStar('${c.id}',${n})">★</button>`
+  const reviewOpen = c.live_resources?.review_open !== false  // undefined(VOD 등)는 열린 것으로 간주
+  const makeStars = (r, disabled) => [1,2,3,4,5].map(n =>
+    disabled
+      ? `<span class="lc-star ${n <= r ? 'on' : ''}">★</span>`
+      : `<button type="button" class="lc-star ${n <= r ? 'on' : ''}" data-star="${n}" onclick="setReviewStar('${c.id}',${n})">★</button>`
   ).join('')
 
   if (c.my_review) {
+    // 기간 만료 시 수정 버튼 숨김
+    const editBtn = reviewOpen
+      ? `<button type="button" class="lc-edit-btn" onclick="toggleReviewEdit('${c.id}')">수정</button>`
+      : `<span class="lc-review-closed-badge">수정 기간 종료</span>`
     return `<div class="my-lc-review" id="review-course-${escapeHtml(c.id)}">
       <div class="lc-review-done">
         <div class="lc-review-done-left">
-          <div class="lc-stars-row">${makeStars(rating)}</div>
+          <div class="lc-stars-row">${makeStars(rating, true)}</div>
           <span class="lc-review-done-txt">후기를 남겨주셨어요</span>
         </div>
-        <button type="button" class="lc-edit-btn" onclick="toggleReviewEdit('${c.id}')">수정</button>
+        ${editBtn}
       </div>
-      <div class="lc-review-form" id="review-form-${escapeHtml(c.id)}" style="display:none">
-        <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(rating)}</div>
+      ${reviewOpen ? `<div class="lc-review-form" id="review-form-${escapeHtml(c.id)}" style="display:none">
+        <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(rating, false)}</div>
         <textarea class="lc-review-ta" id="review-content-${c.id}" placeholder="수강 후기를 남겨주세요.">${content}</textarea>
         <div class="lc-review-footer">
           <button type="button" class="lc-review-save" onclick="submitCourseReview('${c.id}')">후기 저장</button>
         </div>
-      </div>
+      </div>` : ''}
+    </div>`
+  }
+
+  if (!reviewOpen) {
+    return `<div class="my-lc-review my-lc-review--closed">
+      <span class="lc-review-closed-msg">후기 작성 기간이 종료되었습니다. (강의 종료 후 7일)</span>
     </div>`
   }
 
@@ -631,7 +644,7 @@ function renderCourseReviewBlock(c) {
         <span class="lc-review-label">강의 어떠셨나요?</span>
         <span class="lc-coupon-badge">후기 작성 시 10% 쿠폰 지급</span>
       </div>
-      <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(0)}</div>
+      <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(0, false)}</div>
       <textarea class="lc-review-ta" id="review-content-${c.id}" placeholder="자유롭게 작성해주세요. (선택)"></textarea>
       <div class="lc-review-footer">
         <button type="button" class="lc-review-save" onclick="submitCourseReview('${c.id}')">저장하기</button>
