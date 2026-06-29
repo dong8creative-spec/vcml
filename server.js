@@ -16,6 +16,7 @@ app.get('/sitemap.xml', async (req, res) => {
     const today = new Date().toISOString().slice(0, 10)
     const staticPages = [
       { url: 'https://vcml.kr/', priority: '1.0', changefreq: 'weekly' },
+      { url: 'https://vcml.kr/free.html', priority: '0.9', changefreq: 'weekly' },
       { url: 'https://vcml.kr/instructors.html', priority: '0.7', changefreq: 'monthly' },
       { url: 'https://vcml.kr/refund.html', priority: '0.5', changefreq: 'monthly' },
       { url: 'https://vcml.kr/privacy.html', priority: '0.5', changefreq: 'monthly' },

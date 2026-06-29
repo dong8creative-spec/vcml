@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>무료 영상편집 강의 — 타닥클래스</title>
+  <meta name="description" content="무료로 배우는 영상편집 강의. 캡컷 PC 무료 강의, 맛집 릴스 만들기 등 실무 중심 무료 교육 과정을 타닥클래스에서 시작하세요. 회원가입 후 수강신청으로 바로 시작." />
+  <meta name="keywords" content="무료 영상편집 강의, 영상편집 무료 교육, 캡컷 무료 강의, 무료 영상편집 배우기, 영상편집 독학, 무료 온라인 영상강의, 캡컷 강의 무료" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="무료 영상편집 강의 — 타닥클래스" />
+  <meta property="og:description" content="캡컷 무료 강의, 릴스 만들기 등 실무 중심 무료 영상편집 교육. 회원가입만 하면 바로 수강!" />
+  <meta property="og:url" content="https://vcml.kr/free.html" />
+  <meta property="og:image" content="https://vcml.kr/images/og-default.png" />
+  <meta property="og:site_name" content="타닥클래스" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="무료 영상편집 강의 — 타닥클래스" />
+  <meta name="twitter:description" content="캡컷 무료 강의, 릴스 만들기 등 실무 중심 무료 영상편집 교육. 회원가입만 하면 바로 수강!" />
+  <meta name="twitter:image" content="https://vcml.kr/images/og-default.png" />
+  <link rel="canonical" href="https://vcml.kr/free.html" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "무료 영상편집 강의 목록",
+    "description": "타닥클래스의 무료 영상편집 강의 모음. 캡컷 PC 기초부터 실전 릴스 제작까지 무료로 수강 가능.",
+    "url": "https://vcml.kr/free.html",
+    "itemListElement": []
+  }
+  </script>
+  <link rel="stylesheet" href="/css/style.css?v=14" />
+  <link rel="stylesheet" href="/css/common.css?v=3" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+</head>
+<body>
+
+<div data-site-header></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-overlay" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-badge"><i class="ti ti-gift"></i> 완전 무료 · 수강신청 후 바로 시작</div>
+      <h1>영상편집,<br><em>무료로 시작하세요</em></h1>
+      <p>현업 15년 전문가가 직접 만든 무료 영상편집 강의<br>캡컷 PC부터 릴스 제작까지 — 비용 없이 바로 시작</p>
+      <div class="hero-btns">
+        <a href="/login.html" class="btn-hero-primary"><span class="btn-hero-ghost__label"><i class="ti ti-player-play-filled"></i> 무료 강의 수강신청 하기</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 무료 강의 목록 -->
+<section class="shelf-section shelf-section-gray">
+  <div class="container">
+    <div class="shelf-header shelf-header--left">
+      <div>
+        <h2 class="shelf-title">무료 영상편집 강의</h2>
+        <p class="shelf-sub">지금 바로 무료로 수강할 수 있는 강의입니다</p>
+      </div>
+    </div>
+    <div class="shelf-wrap shelf-wrap--free">
+      <button class="shelf-arrow left" onclick="scroll_shelf('free',-1)"><i class="ti ti-chevron-left"></i></button>
+      <div class="shelf shelf--free" id="shelf-free"><div class="spinner"></div></div>
+      <button class="shelf-arrow right" onclick="scroll_shelf('free',1)"><i class="ti ti-chevron-right"></i></button>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="shelf-section">
+  <div class="container">
+    <div class="shelf-header">
+      <div>
+        <h2 class="shelf-title">자주 묻는 질문</h2>
+        <p class="shelf-sub">무료 강의에 대해 궁금한 점을 확인하세요</p>
+      </div>
+    </div>
+    <div id="faq-list"></div>
+  </div>
+</section>
+
+<div data-chrome="footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/site-header.js?v=7"></script>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/course-enrollment-ui.js"></script>
+<script>
+const FREE_FAQS = [
+  { q: '무료 강의를 수강하려면 어떻게 해야 하나요?', a: '회원가입 후 로그인하면 바로 무료 강의를 수강할 수 있습니다. 별도의 결제나 카드 등록이 필요 없습니다.' },
+  { q: '어떤 프로그램으로 영상편집을 배우나요?', a: '현재 무료 강의는 캡컷 PC 버전을 기준으로 진행됩니다. 캡컷은 무료로 다운로드해서 사용할 수 있습니다.' },
+  { q: '완전 초보자도 따라갈 수 있나요?', a: '네, 영상편집 경험이 전혀 없는 분들도 충분히 따라올 수 있도록 설계되었습니다. 현업 전문가가 단계별로 친절하게 안내합니다.' },
+  { q: '무료 강의 수강 후 유료 강의로 연결이 되나요?', a: '무료 강의로 기초를 다진 후, 더 심화된 내용을 원하시면 유료 강의로 이어서 수강하실 수 있습니다. 강제는 없습니다.' },
+]
+
+document.getElementById('faq-list').innerHTML = FREE_FAQS.map(f => `
+  <div style="border-bottom:1px solid var(--border);padding:20px 0;">
+    <p style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0 0 8px;">Q. ${f.q}</p>
+    <p style="font-size:15px;color:var(--text-secondary);margin:0;line-height:1.6;">${f.a}</p>
+  </div>
+`).join('')
+
+function scroll_shelf(id, dir) {
+  const el = document.querySelector('.shelf--' + id)
+  if (!el) return
+  el.scrollBy({ left: dir * (el.querySelector('.fcard')?.offsetWidth + 16 || 640), behavior: 'smooth' })
+}
+
+;(async () => {
+  try {
+    const courses = await (await fetch('/api/courses')).json()
+    const free = (courses || []).filter(c => c.is_published && c.sale_price === 0 && c.course_type !== 'live')
+    const shelf = document.getElementById('shelf-free')
+    if (!free.length) {
+      shelf.innerHTML = '<p class="empty">현재 무료 강의를 준비 중입니다.</p>'
+      return
+    }
+    shelf.innerHTML = free.map(c => freeCourseCard(c)).join('')
+
+    // JSON-LD 업데이트
+    const ldEl = document.querySelector('script[type="application/ld+json"]')
+    const ld = JSON.parse(ldEl.textContent)
+    ld.itemListElement = free.map((c, i) => ({
+      '@type': 'ListItem', 'position': i + 1,
+      'item': {
+        '@type': 'Course', 'name': c.title,
+        'description': c.description || c.title,
+        'url': `https://vcml.kr/course.html?slug=${encodeURIComponent(c.slug)}`,
+        'provider': { '@type': 'Organization', 'name': '타닥클래스', 'url': 'https://vcml.kr' },
+        'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'KRW' }
+      }
+    }))
+    ldEl.textContent = JSON.stringify(ld)
+  } catch(e) {
+    document.getElementById('shelf-free').innerHTML = '<p class="empty">강의를 불러오지 못했습니다.</p>'
+  }
+})()
+</script>
+</body>
+</html>
