@@ -1,6 +1,6 @@
 /** 앱 공통 상단 메뉴 — 1단 (로고 · GNB · 로그인) */
 ;(function () {
-  const SHOW_LOGIN_LINK = false // 임시: 「로그인」 텍스트 링크 숨김
+
 
   const guestAuthHtml = (next) => {
     const nextQ = next && next !== encodeURIComponent('/') ? `?next=${next}` : ''
@@ -77,7 +77,6 @@
   }
 
   window.renderHeaderAuth = renderHeaderAuth
-  window.updateNav = renderHeaderAuth
 
   function scheduleBoot() {
     boot().catch(() => renderHeaderAuth())

@@ -1,20 +1,9 @@
 (function () {
-  const SHOW_LOGIN_LINK = false // 임시: 「로그인」 텍스트 링크 숨김
 
   function guestChromeAuthHtml(next) {
     const nextQ = next && next !== encodeURIComponent('/') ? `?next=${next}` : ''
     return `<a href="/login.html${nextQ}" class="nav-btn nav-btn-primary">로그인 / 가입</a>`
   }
-  const SUBPAGE_NAV = [
-    { href: '/notices.html', key: 'notices', label: '공지사항' },
-    { href: '/support.html', key: 'support', label: '고객지원' },
-    { href: '/faq.html', key: 'faq', label: 'FAQ' },
-    { href: '/inquiry.html', key: 'inquiry', label: '1:1 문의' },
-    { href: '/privacy.html', key: 'privacy', label: '개인정보' },
-    { href: '/terms.html', key: 'terms', label: '이용약관' },
-    { href: '/refund.html', key: 'refund', label: '환불정책' },
-    { href: '/youth.html', key: 'youth', label: '청소년보호' },
-  ]
 
   const DEFAULT_FOOTER = {
     brand_name: '타닥클래스',
@@ -77,29 +66,24 @@
     if (api.isLoggedIn()) {
       const user = api.user()
       const name = user?.name ? esc(user.name) : '마이페이지'
-      hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${name}</a><a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>`
+      hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${name}</a><a href="#" class="nav-btn nav-btn-outline" onclick="API.logout();return false">로그아웃</a>`
     } else {
-      const auth = guestChromeAuthHtml(next)
-      const homeBtn = hr.id === 'chrome-header-right'
-        ? `<a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>`
-        : ''
-      hr.innerHTML = auth + homeBtn
+      hr.innerHTML = guestChromeAuthHtml(next)
     }
   }
 
-  function renderHeader(activeKey) {
-    const nav = SUBPAGE_NAV.map(item => {
-      const active = item.key === activeKey ? ' is-active' : ''
-      return `<a href="${item.href}" data-legal-nav="${item.key}"${active}>${item.label}</a>`
-    }).join('')
-
-    return `<header class="header header--subpage">
+  function renderHeader() {
+    return `<header class="header">
   <div class="header-inner">
     <a href="/" class="logo">타닥클래스</a>
-    <nav class="gnb gnb--legal" aria-label="정책 및 지원">${nav}</nav>
+    <nav class="gnb" aria-label="주요 메뉴">
+      <a href="/#all">전체강의</a>
+      <a href="/?cat=capcut#all">캡컷 PRO</a>
+      <a href="/instructors.html">강사 소개</a>
+      <a href="/notices.html">공지사항</a>
+    </nav>
     <div class="header-right" id="chrome-header-right">
       ${guestChromeAuthHtml(encodeURIComponent('/'))}
-      <a href="/" class="nav-btn nav-btn-outline"><i class="ti ti-home"></i> 홈</a>
     </div>
   </div>
 </header>`

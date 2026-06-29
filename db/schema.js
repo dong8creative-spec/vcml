@@ -509,21 +509,6 @@ const EDITOR_WORKBOOK_SEED = [
     pass_message: '✅ 미션 통과! 오디오 밸런스 처리 능력이 확인되었습니다.',
   },
   {
-    slug: 'wb-ai-tool',
-    order_num: 7,
-    from_name: '윤태호',
-    from_email: 'taeho@quickai.kr',
-    from_company: '퀵AI',
-    subject: 'AI 자막·업스케일 활용 숏폼 편집 테스트',
-    received_at: '2026-06-16T13:55:00',
-    body: `안녕하세요, 퀵AI 윤태호입니다.\n\n스타트업 소개 40초 숏폼을 편집해주시되,\nAI 도구(자막 생성, 업스케일, 노이즈 제거 등)를 1가지 이상 활용해주세요.\n\n■ 조건\n- 어떤 AI 툴을 썼는지 명시\n- 수작업만으로도 가능하지만 AI로 시간 단축한 구간 설명\n- 9:16, 40초 내외\n\n원본: https://drive.google.com/example/quickai-raw\n\nCapCut AI, Premiere Speech to Text, Topaz 등 자유롭게 사용하세요.`,
-    mission_title: 'AI 도구 활용 편집',
-    mission_brief: 'AI 도구 1가지 이상을 활용한 40초 숏폼을 제출하고, 사용 AI와 단축 구간을 설명하세요.',
-    min_note_length: 50,
-    required_keywords: ['AI'],
-    pass_message: '✅ 미션 통과! AI 활용 워크플로우가 확인되었습니다.',
-  },
-  {
     slug: 'wb-brand-film',
     order_num: 8,
     from_name: '서예린',
@@ -915,7 +900,7 @@ const DEFAULT_INSTRUCTORS_INTRO = {
   timeline_heading: '주요 경력',
   timeline: [
     { year: '2024', title: '타닥클래스 런칭', description: '실무 중심 영상·콘텐츠 교육 플랫폼 설립' },
-    { year: '2020', title: '방송·광고 현장 활동', description: '프리미어 프로·에프터 이펙트 기반 상업 영상 제작' },
+    { year: '2020', title: '방송·광고 현장 활동', description: '캡컷·다빈치 리졸브 기반 상업 영상 제작' },
     { year: '2010', title: '영상 제작 경력 시작', description: '편집·모션그래픽 분야 현장 경험 축적' },
   ],
 }

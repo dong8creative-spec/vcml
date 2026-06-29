@@ -14,14 +14,10 @@
     { section: '강의', items: [
       { href: '/#all', label: '전체강의' },
       { href: '/?cat=capcut#all', label: '캡컷 PRO' },
-    ]},
-    { section: '서비스', items: [
       { href: '/instructors.html', label: '강사 소개' },
-      { href: '/editors.html', label: '에디터즈' },
-      { href: '/projects.html', label: '클라이언츠' },
+      { href: '/notices.html', label: '공지사항' },
     ]},
     { section: '고객지원', items: [
-      { href: '/notices.html', label: '공지사항' },
       { href: '/faq.html', label: 'FAQ' },
       { href: '/inquiry.html', label: '1:1 문의' },
       { href: '/support.html', label: '고객지원' },
