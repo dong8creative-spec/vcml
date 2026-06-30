@@ -27,6 +27,46 @@
     "itemListElement": []
   }
   </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "무료 강의를 수강하려면 어떻게 해야 하나요?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "회원가입 후 로그인하면 바로 무료 강의를 수강할 수 있습니다. 별도의 결제나 카드 등록이 필요 없습니다."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "어떤 프로그램으로 영상편집을 배우나요?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "현재 무료 강의는 캡컷 PC 버전을 기준으로 진행됩니다. 캡컷은 무료로 다운로드해서 사용할 수 있습니다."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "완전 초보자도 따라갈 수 있나요?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "네, 영상편집 경험이 전혀 없는 분들도 충분히 따라올 수 있도록 설계되었습니다. 현업 전문가가 단계별로 친절하게 안내합니다."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "무료 강의 수강 후 유료 강의로 연결이 되나요?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "무료 강의로 기초를 다진 후, 더 심화된 내용을 원하시면 유료 강의로 이어서 수강하실 수 있습니다. 강제는 없습니다."
+        }
+      }
+    ]
+  }
+  </script>
   <link rel="stylesheet" href="/css/style.css?v=14" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -77,7 +117,24 @@
         <p class="shelf-sub">무료 강의에 대해 궁금한 점을 확인하세요</p>
       </div>
     </div>
-    <div id="faq-list"></div>
+    <div id="faq-list">
+      <div style="border-bottom:1px solid var(--border);padding:20px 0;">
+        <p style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0 0 8px;">Q. 무료 강의를 수강하려면 어떻게 해야 하나요?</p>
+        <p style="font-size:15px;color:var(--text-secondary);margin:0;line-height:1.6;">회원가입 후 로그인하면 바로 무료 강의를 수강할 수 있습니다. 별도의 결제나 카드 등록이 필요 없습니다.</p>
+      </div>
+      <div style="border-bottom:1px solid var(--border);padding:20px 0;">
+        <p style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0 0 8px;">Q. 어떤 프로그램으로 영상편집을 배우나요?</p>
+        <p style="font-size:15px;color:var(--text-secondary);margin:0;line-height:1.6;">현재 무료 강의는 캡컷 PC 버전을 기준으로 진행됩니다. 캡컷은 무료로 다운로드해서 사용할 수 있습니다.</p>
+      </div>
+      <div style="border-bottom:1px solid var(--border);padding:20px 0;">
+        <p style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0 0 8px;">Q. 완전 초보자도 따라갈 수 있나요?</p>
+        <p style="font-size:15px;color:var(--text-secondary);margin:0;line-height:1.6;">네, 영상편집 경험이 전혀 없는 분들도 충분히 따라올 수 있도록 설계되었습니다. 현업 전문가가 단계별로 친절하게 안내합니다.</p>
+      </div>
+      <div style="border-bottom:1px solid var(--border);padding:20px 0;">
+        <p style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0 0 8px;">Q. 무료 강의 수강 후 유료 강의로 연결이 되나요?</p>
+        <p style="font-size:15px;color:var(--text-secondary);margin:0;line-height:1.6;">무료 강의로 기초를 다진 후, 더 심화된 내용을 원하시면 유료 강의로 이어서 수강하실 수 있습니다. 강제는 없습니다.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -88,19 +145,6 @@
 <script src="/js/site-chrome.js"></script>
 <script src="/js/course-enrollment-ui.js"></script>
 <script>
-const FREE_FAQS = [
-  { q: '무료 강의를 수강하려면 어떻게 해야 하나요?', a: '회원가입 후 로그인하면 바로 무료 강의를 수강할 수 있습니다. 별도의 결제나 카드 등록이 필요 없습니다.' },
-  { q: '어떤 프로그램으로 영상편집을 배우나요?', a: '현재 무료 강의는 캡컷 PC 버전을 기준으로 진행됩니다. 캡컷은 무료로 다운로드해서 사용할 수 있습니다.' },
-  { q: '완전 초보자도 따라갈 수 있나요?', a: '네, 영상편집 경험이 전혀 없는 분들도 충분히 따라올 수 있도록 설계되었습니다. 현업 전문가가 단계별로 친절하게 안내합니다.' },
-  { q: '무료 강의 수강 후 유료 강의로 연결이 되나요?', a: '무료 강의로 기초를 다진 후, 더 심화된 내용을 원하시면 유료 강의로 이어서 수강하실 수 있습니다. 강제는 없습니다.' },
-]
-
-document.getElementById('faq-list').innerHTML = FREE_FAQS.map(f => `
-  <div style="border-bottom:1px solid var(--border);padding:20px 0;">
-    <p style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0 0 8px;">Q. ${f.q}</p>
-    <p style="font-size:15px;color:var(--text-secondary);margin:0;line-height:1.6;">${f.a}</p>
-  </div>
-`).join('')
 
 function scroll_shelf(id, dir) {
   const el = document.querySelector('.shelf--' + id)

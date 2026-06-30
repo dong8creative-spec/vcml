@@ -90,10 +90,17 @@ app.get('/course.html', async (req, res) => {
     } : {}),
   })}</script>`
 
-    // 기존 <title> 태그를 제거하고 메타태그 주입
+    // 기존 <title> 태그를 제거하고 메타태그 + SSR 본문 주입
+    // 스피너 대신 SSR 콘텐츠를 초기 상태로 렌더링 — JS 로드 후 course-wrap이 덮어씀
+    const ssrBody = `<div id="course-ssr-stub" style="padding:48px 24px;max-width:800px;margin:0 auto;">
+  <h1 style="font-size:28px;font-weight:800;color:#111;margin:0 0 16px;">${esc(course.title)}</h1>
+  ${desc ? `<p style="font-size:16px;color:#555;line-height:1.7;margin:0 0 12px;">${esc(desc)}</p>` : ''}
+  ${priceStr ? `<p style="font-size:15px;color:#888;">수강료: ${esc(priceStr)}</p>` : ''}
+</div>`
     const html = courseHtmlTemplate
       .replace(/<title>[^<]*<\/title>/, '')
       .replace('</head>', metaTags + '\n</head>')
+      .replace('<div id="course-wrap"><div class="spinner"></div></div>', '<div id="course-wrap">' + ssrBody + '</div>')
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')

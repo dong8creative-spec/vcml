@@ -20,17 +20,17 @@
       else setTimeout(run, 1200)
     })
   </script>
-  <title>타닥클래스 — 영상제작 전문 온라인 강의</title>
+  <title>캡컷·프리미어 영상편집 온라인 강의 | 타닥클래스</title>
   <meta name="description" content="캡컷 PRO · 프리미어 프로로 배우는 실전 영상편집 강의. 독학으로 시작해 숏폼·납품 부업까지, 도각쌤의 타닥클래스에서 바로 시작하세요." />
   <meta name="keywords" content="영상편집 강의, 영상편집 독학, 영상편집 부업, 영상편집 배우기, 캡컷 강의, 캡컷 배우기, 프리미어프로 강의, 프리미어프로 독학, 숏폼 편집, 타닥클래스" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="타닥클래스 — 영상제작 전문 온라인 강의" />
+  <meta property="og:title" content="캡컷·프리미어 영상편집 온라인 강의 | 타닥클래스" />
   <meta property="og:description" content="캡컷 PRO · 프리미어 프로로 배우는 실전 영상편집 강의. 독학으로 시작해 숏폼·납품 부업까지, 도각쌤의 타닥클래스에서 바로 시작하세요." />
   <meta property="og:url" content="https://vcml.kr/" />
   <meta property="og:image" content="https://vcml.kr/images/og-default.png" />
   <meta property="og:site_name" content="타닥클래스" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="타닥클래스 — 영상제작 전문 온라인 강의" />
+  <meta name="twitter:title" content="캡컷·프리미어 영상편집 온라인 강의 | 타닥클래스" />
   <meta name="twitter:description" content="캡컷 PRO · 프리미어 프로로 배우는 실전 영상편집 강의. 독학으로 시작해 숏폼·납품 부업까지, 도각쌤의 타닥클래스." />
   <meta name="twitter:image" content="https://vcml.kr/images/og-default.png" />
   <link rel="canonical" href="https://vcml.kr/" />
@@ -63,7 +63,7 @@
     }
   }
   </script>
-  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <link rel="stylesheet" href="/css/style.css?v=17" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
@@ -85,8 +85,8 @@ if (new URLSearchParams(location.search).get('preview') === '1') {
   <div class="hero-inner" id="hero-inner">
     <div class="hero-text" id="hero-content">
       <div class="hero-badge" id="hero-badge"><i class="ti ti-star-filled"></i> 타닥클래스만의 편집 방식</div>
-      <h1 id="hero-title">편집기능 외우는 강의 말고,<br><em id="hero-title-em">타닥타닥 완성되는 강의</em></h1>
-      <p id="hero-subtitle">도각쌤이 현장에서 쓰는 방식 그대로<br>숏폼·납품 결과물을 직접 만듭니다</p>
+      <h1 id="hero-title">버튼 외우는 강의 말고,<br><em id="hero-title-em">타닥타닥 완성되는 캡컷 강의</em></h1>
+      <p id="hero-subtitle">영상편집 초보도 스텝 바이 스텝!<br>캡컷‧프리미어 프로, 온라인 라이브 강의로 함께 완성해요</p>
       <div class="hero-btns" id="hero-btns">
         <a href="#all" class="btn-hero-primary" id="hero-primary-btn"><span class="btn-hero-ghost__label">전체 강의 보기</span></a>
         <a href="/course.html?slug=capcut-beginner-free" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-player-play-filled"></i><span class="btn-hero-ghost__label">무료강의 신청하기</span></a>
@@ -439,10 +439,6 @@ async function loadHero() {
     const h = (window._homepageData?.hero) || await API.get('/hero')
     const badge = document.getElementById('hero-badge')
     if (badge) badge.innerHTML = `<i class="ti ti-star-filled"></i> ${escHtml(h.badge_text)}`
-    const title = document.getElementById('hero-title')
-    if (title) title.innerHTML = `${escHtml(h.title)}<br><em id="hero-title-em">${escHtml(h.title_emphasis)}</em>`
-    const sub = document.getElementById('hero-subtitle')
-    if (sub) sub.innerHTML = escHtml(h.subtitle).replace(/\n/g, '<br>')
 
     const heroSection = document.querySelector('.hero')
     const heroBg = document.getElementById('hero-bg')
