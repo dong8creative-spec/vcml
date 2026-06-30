@@ -867,10 +867,10 @@ function normalizeFooterConfig(data = {}) {
 }
 
 const DEFAULT_HERO_CONFIG = {
-  badge_text: '실무 중심 영상편집 강의',
-  title: '현업 15년 전문가의 스킬을',
-  title_emphasis: '흡수하는 초고속 편집강의',
-  subtitle: '완전초보자들도 4시간 과정으로\n중급단계까지 퀀텀점프!',
+  badge_text: '타닥클래스만의 편집 방식',
+  title: '편집기능 외우는 강의 말고,',
+  title_emphasis: '타닥타닥 완성되는 강의',
+  subtitle: '도각쌤이 현장에서 쓰는 방식 그대로\n숏폼·납품 결과물을 직접 만듭니다',
   primary_btn: { label: '전체 강의 보기', href: '#all', action: 'all_courses' },
   secondary_btn: { label: '무료강의 신청하기', href: '/course.html?slug=capcut-beginner-free', show_icon: true, action: 'custom' },
   image: null,

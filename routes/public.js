@@ -95,22 +95,47 @@ router.get('/homepage', async (req, res) => {
   try {
     const cached = db._cacheGet('homepage:data')
     if (cached) return res.json(cached)
-    const [hero, courses, layout, orders, platformReviews] = await Promise.all([
+    const [hero, courses, layout, orders, platformReviews, allOrders, allReviews] = await Promise.all([
       db.getHeroConfig(),
       db.getCourses(true),
       db.getHomepageLayout(),
       db.getRecentPublicOrders(20),
       db.getPlatformReviewsByTypes(['student', 'client', 'editor']).catch(() => []),
+      db.getAllOrders().catch(() => []),
+      db.getAllReviews().catch(() => []),
     ])
     const TYPE_LABEL = { student: '수강생 후기', client: '의뢰인 후기', editor: '에디터즈 후기' }
-    const liveReviews = platformReviews.map(r => ({
+    const liveFromPlatform = platformReviews.map(r => ({
       id: r.id, review_type: r.review_type,
       type_label: TYPE_LABEL[r.review_type] || r.review_type,
       author_name: r.author_name, author_initial: r.author_initial,
       content: r.content, rating: r.rating || 5,
       context_label: r.context_label, created_at: r.created_at,
     }))
-    const data = { hero, courses: courses.map(db.pickCourseCardFields), layout, orders: orders || [], liveReviews }
+    // platform_reviews가 없으면 course reviews(수강 후기)로 보완
+    const liveFromCourse = liveFromPlatform.length === 0
+      ? (allReviews || [])
+          .filter(r => r.is_public === 1 && r.content)
+          .map((r, i) => ({
+            id: r.id || `cr-${i}`,
+            review_type: 'student',
+            type_label: '수강생 후기',
+            author_name: '수강생',
+            author_initial: '수',
+            content: r.content,
+            rating: r.rating || 5,
+            context_label: '타닥클래스 수강생',
+            created_at: r.created_at,
+          }))
+      : []
+    const liveReviews = [...liveFromPlatform, ...liveFromCourse]
+    const studentCount = new Set((allOrders || []).map(o => o.user_id).filter(Boolean)).size
+    const publicReviews = (allReviews || []).filter(r => r.is_public === 1 && r.rating)
+    const avgRating = publicReviews.length
+      ? (publicReviews.reduce((s, r) => s + r.rating, 0) / publicReviews.length).toFixed(1)
+      : null
+    const stats = { student_count: studentCount, review_count: publicReviews.length, avg_rating: avgRating }
+    const data = { hero, courses: courses.map(db.pickCourseCardFields), layout, orders: orders || [], liveReviews, stats }
     db._cacheSet('homepage:data', data, 30_000)
     res.json(data)
   } catch (e) {
