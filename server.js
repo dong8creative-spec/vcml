@@ -114,6 +114,46 @@ function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
+// ── 홈페이지 SSR — 강의 목록을 HTML에 직접 삽입 ──
+const indexHtmlTemplate = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
+
+app.get('/', async (req, res) => {
+  try {
+    const courses = await db.getCourses(true)
+    const published = (courses || []).filter(c => c.is_published !== false)
+
+    const ssrCards = published.map(c => {
+      const price = c.sale_price > 0 ? `${c.sale_price.toLocaleString()}원` : c.price > 0 ? `${c.price.toLocaleString()}원` : '무료'
+      const thumb = c.thumbnail_url ? `<img src="${esc(c.thumbnail_url)}" alt="${esc(c.title)}" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px 10px 0 0;">` : ''
+      return `<a href="/course.html?slug=${esc(c.slug)}" class="ssr-course-card" style="display:block;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;text-decoration:none;">
+  ${thumb}
+  <div style="padding:16px;">
+    <p style="font-size:12px;color:var(--text-hint);margin:0 0 6px;">${esc(c.category || '')}</p>
+    <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0 0 8px;line-height:1.4;">${esc(c.title)}</h3>
+    <p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px;line-height:1.5;">${esc((c.description || '').slice(0, 80))}</p>
+    <p style="font-size:15px;font-weight:700;color:var(--primary);margin:0;">${esc(price)}</p>
+  </div>
+</a>`
+    }).join('\n')
+
+    const ssrGrid = ssrCards
+      ? `<div id="course-grid-332-ssr" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;">${ssrCards}</div>`
+      : ''
+
+    const html = indexHtmlTemplate
+      .replace(
+        '<div class="course-grid-332" id="course-grid-332">\n      <div class="spinner"></div>\n    </div>',
+        `<div class="course-grid-332" id="course-grid-332">${ssrGrid}</div>`
+      )
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    res.send(html)
+  } catch (e) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'))
+  }
+})
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
