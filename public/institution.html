@@ -26,6 +26,18 @@
       <a href="/login.html?next=%2Finstitution.html" class="btn-primary" style="display:inline-block;padding:12px 28px;background:var(--primary);color:#fff;border-radius:8px;font-weight:600;text-decoration:none;font-size:15px">로그인 / 회원가입</a>
     </div>
 
+    <!-- 후기 미작성 안내 -->
+    <div id="review-required-notice" style="display:none;background:#fff8ed;border:1px solid #fcd34d;border-radius:12px;padding:24px 28px;margin-bottom:24px">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <i class="ti ti-alert-triangle" style="font-size:24px;color:#f59e0b;flex-shrink:0;margin-top:2px"></i>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#92400e;margin-bottom:6px">수강 후기 작성 후 열람 가능합니다</div>
+          <p style="font-size:14px;color:#78350f;margin:0 0 14px;line-height:1.6">열람실 자료를 보려면 수강한 강의의 후기를 <strong>130자 이상</strong> 작성해야 합니다.<br>후기를 작성한 뒤 다시 시도해 주세요.</p>
+          <a href="/mypage.html" style="display:inline-block;padding:9px 20px;background:#f59e0b;color:#fff;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none">내 강의 / 후기 작성하기</a>
+        </div>
+      </div>
+    </div>
+
     <!-- 코드 입력 박스 -->
     <div id="inst-code-box" style="display:none;background:#fff;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:32px">
       <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:14px"><i class="ti ti-key" style="margin-right:6px"></i>접근 코드 입력</div>
@@ -166,6 +178,11 @@
     }
   }
 
+  function showReviewRequired() {
+    document.getElementById('review-required-notice').style.display = 'block'
+    document.getElementById('review-required-notice').scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
   async function openCourse(courseId) {
     try {
       const data = await API.get('/institution/courses/' + courseId + '/slides')
@@ -179,7 +196,11 @@
       document.getElementById('slide-viewer').style.display = 'flex'
       document.addEventListener('keydown', onKeyDown)
     } catch (e) {
-      alert('오류: ' + e.message)
+      if (e.message === 'REVIEW_REQUIRED') {
+        showReviewRequired()
+      } else {
+        alert('오류: ' + e.message)
+      }
     }
   }
 

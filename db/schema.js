@@ -1957,6 +1957,10 @@ const db = {
     const snap = await fs.collection('reviews').orderBy('created_at', 'desc').get()
     return snapToArr(snap)
   },
+  async hasQualifiedReview(userId, minLength = 130) {
+    const snap = await fs.collection('reviews').where('user_id', '==', userId).get()
+    return snap.docs.some(d => (d.data().content || '').length >= minLength)
+  },
   async getReviewByUserAndCourse(userId, courseId) {
     const snap = await fs.collection('reviews').where('user_id', '==', userId).where('course_id', '==', courseId).limit(1).get()
     if (snap.empty) return null

@@ -76,7 +76,7 @@ router.get('/my-courses', requireAuth, async (req, res) => {
   }
 })
 
-// 슬라이드 열람 (열람 권한 확인 후 이미지 URL 반환)
+// 슬라이드 열람 (열람 권한 + 후기 130자 조건 확인 후 이미지 URL 반환)
 router.get('/courses/:id/slides', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id
@@ -84,6 +84,8 @@ router.get('/courses/:id/slides', requireAuth, async (req, res) => {
     const access = await db.getUserInstitutionAccess(userId)
     const hasAccess = access.some(a => a.course_id === courseId)
     if (!hasAccess) return res.status(403).json({ error: '열람 권한이 없습니다.' })
+    const qualified = await db.hasQualifiedReview(userId, 130)
+    if (!qualified) return res.status(403).json({ error: 'REVIEW_REQUIRED', message: '수강 후기를 130자 이상 작성해야 열람할 수 있습니다.' })
     const course = await db.getInstitutionCourseById(courseId)
     if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
     res.set('Cache-Control', 'no-store')
