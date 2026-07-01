@@ -156,7 +156,7 @@
         return
       }
       grid.innerHTML = courses.map(c => `
-        <div onclick="openCourse('${c.id}')" style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:box-shadow .2s" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+        <div onclick="openCourse('${c.id}','${esc(c.title).replace(/'/g,"\\'")}') " style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:box-shadow .2s" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
           ${c.cover_image
             ? `<img src="${esc(c.cover_image)}" alt="${esc(c.title)}" style="width:100%;aspect-ratio:16/9;object-fit:cover" draggable="false" oncontextmenu="return false">`
             : `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center"><i class="ti ti-presentation" style="font-size:40px;color:rgba(255,255,255,0.6)"></i></div>`}
@@ -192,13 +192,17 @@
 
   let _pendingCourseId = null
 
-  function openReviewModal(courseId) {
+  function openReviewModal(courseId, courseTitle) {
     _pendingCourseId = courseId
-    document.getElementById('review-textarea').value = ''
+    const ta = document.getElementById('review-textarea')
+    ta.value = ''
+    ta.placeholder = courseTitle
+      ? `"${courseTitle}"에 대한 솔직한 후기를 남겨주세요. (최소 130자)`
+      : '강의 자료에 대한 솔직한 후기를 남겨주세요. (최소 130자)'
     document.getElementById('review-char-count').textContent = '0'
     document.getElementById('review-submit-btn').disabled = true
     document.getElementById('review-modal').style.display = 'flex'
-    document.getElementById('review-textarea').focus()
+    ta.focus()
   }
 
   function closeReviewModal() {
@@ -229,7 +233,7 @@
     }
   }
 
-  async function openCourse(courseId) {
+  async function openCourse(courseId, courseTitle) {
     try {
       const data = await API.get('/institution/courses/' + courseId + '/slides')
       if (!data.slides || !data.slides.length) { alert('슬라이드가 없습니다.'); return }
@@ -243,7 +247,7 @@
       document.addEventListener('keydown', onKeyDown)
     } catch (e) {
       if (e.message === 'REVIEW_REQUIRED') {
-        openReviewModal(courseId)
+        openReviewModal(courseId, courseTitle || '')
       } else {
         alert('오류: ' + e.message)
       }
