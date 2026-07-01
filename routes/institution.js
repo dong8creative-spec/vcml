@@ -2,11 +2,15 @@ const router = require('express').Router()
 const multer = require('multer')
 const db = require('../db/schema')
 const { uploadImageBuffer } = require('../utils/storage')
+const { optionalAuth, adminMiddleware } = require('../middleware/auth')
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 }, // 슬라이드 이미지 최대 20MB
 })
+
+// 토큰이 있으면 req.user 파싱, 없어도 통과 (공개 엔드포인트 유지)
+router.use(optionalAuth)
 
 function requireAuth(req, res, next) {
   if (!req.user) return res.status(401).json({ error: '로그인이 필요합니다.' })
@@ -97,7 +101,7 @@ function requireAdmin(req, res, next) {
 }
 
 // 이미지 업로드 (커버 or 슬라이드 단건) — multipart/form-data
-router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
+router.post('/upload', adminMiddleware, upload.single('file'), async (req, res) => {
   try {
     if (!req.file?.buffer?.length) return res.status(400).json({ error: '파일을 선택해주세요.' })
     const ct = String(req.file.mimetype || '').toLowerCase()
@@ -115,7 +119,7 @@ router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => 
   }
 })
 
-router.post('/courses', requireAdmin, async (req, res) => {
+router.post('/courses', adminMiddleware, async (req, res) => {
   try {
     const { title, description, cover_image, slides } = req.body
     if (!title) return res.status(400).json({ error: '제목을 입력하세요.' })
@@ -126,7 +130,7 @@ router.post('/courses', requireAdmin, async (req, res) => {
   }
 })
 
-router.put('/courses/:id', requireAdmin, async (req, res) => {
+router.put('/courses/:id', adminMiddleware, async (req, res) => {
   try {
     const { title, description, cover_image, slides } = req.body
     await db.updateInstitutionCourse(req.params.id, { title, description, cover_image, slides })
@@ -136,7 +140,7 @@ router.put('/courses/:id', requireAdmin, async (req, res) => {
   }
 })
 
-router.delete('/courses/:id', requireAdmin, async (req, res) => {
+router.delete('/courses/:id', adminMiddleware, async (req, res) => {
   try {
     await db.deleteInstitutionCourse(req.params.id)
     res.json({ ok: true })
@@ -146,7 +150,7 @@ router.delete('/courses/:id', requireAdmin, async (req, res) => {
 })
 
 // 관리자용 강의 전체 조회 (슬라이드 포함)
-router.get('/courses/:id', requireAdmin, async (req, res) => {
+router.get('/courses/:id', adminMiddleware, async (req, res) => {
   try {
     const course = await db.getInstitutionCourseById(req.params.id)
     if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
@@ -156,7 +160,7 @@ router.get('/courses/:id', requireAdmin, async (req, res) => {
   }
 })
 
-router.post('/courses/:id/codes', requireAdmin, async (req, res) => {
+router.post('/courses/:id/codes', adminMiddleware, async (req, res) => {
   try {
     const { code, max_uses, note } = req.body
     if (!code || !max_uses) return res.status(400).json({ error: '코드와 최대 사용 횟수를 입력하세요.' })
@@ -172,7 +176,7 @@ router.post('/courses/:id/codes', requireAdmin, async (req, res) => {
   }
 })
 
-router.get('/courses/:id/codes', requireAdmin, async (req, res) => {
+router.get('/courses/:id/codes', adminMiddleware, async (req, res) => {
   try {
     const codes = await db.getInstitutionCodesByCourse(req.params.id)
     res.json(codes)
