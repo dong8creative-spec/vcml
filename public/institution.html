@@ -26,18 +26,6 @@
       <a href="/login.html?next=%2Finstitution.html" class="btn-primary" style="display:inline-block;padding:12px 28px;background:var(--primary);color:#fff;border-radius:8px;font-weight:600;text-decoration:none;font-size:15px">로그인 / 회원가입</a>
     </div>
 
-    <!-- 후기 미작성 안내 -->
-    <div id="review-required-notice" style="display:none;background:#fff8ed;border:1px solid #fcd34d;border-radius:12px;padding:24px 28px;margin-bottom:24px">
-      <div style="display:flex;align-items:flex-start;gap:14px">
-        <i class="ti ti-alert-triangle" style="font-size:24px;color:#f59e0b;flex-shrink:0;margin-top:2px"></i>
-        <div>
-          <div style="font-size:16px;font-weight:700;color:#92400e;margin-bottom:6px">수강 후기 작성 후 열람 가능합니다</div>
-          <p style="font-size:14px;color:#78350f;margin:0 0 14px;line-height:1.6">열람실 자료를 보려면 수강한 강의의 후기를 <strong>130자 이상</strong> 작성해야 합니다.<br>후기를 작성한 뒤 다시 시도해 주세요.</p>
-          <a href="/mypage.html" style="display:inline-block;padding:9px 20px;background:#f59e0b;color:#fff;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none">내 강의 / 후기 작성하기</a>
-        </div>
-      </div>
-    </div>
-
     <!-- 코드 입력 박스 -->
     <div id="inst-code-box" style="display:none;background:#fff;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:32px">
       <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:14px"><i class="ti ti-key" style="margin-right:6px"></i>접근 코드 입력</div>
@@ -62,6 +50,30 @@
     </div>
 
   </main>
+
+  <!-- 후기 작성 모달 -->
+  <div id="review-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto">
+      <div style="font-size:18px;font-weight:700;color:#111;margin-bottom:6px">자료 열람 전 후기 작성</div>
+      <p style="font-size:14px;color:#888;margin:0 0 20px;line-height:1.6">이 강의 자료에 대한 후기를 <strong style="color:#111">130자 이상</strong> 작성하면 슬라이드를 열람할 수 있습니다.</p>
+
+      <textarea id="review-textarea" rows="6" placeholder="강의 자료에 대한 솔직한 후기를 남겨주세요. (최소 130자)"
+        oninput="updateReviewCount()"
+        style="width:100%;padding:12px 14px;border:1px solid #e0e0e0;border-radius:10px;font-size:14px;line-height:1.7;resize:vertical;box-sizing:border-box;outline:none;font-family:inherit"></textarea>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+        <span id="review-char-count" style="font-size:13px;color:#aaa">0 / 130자</span>
+        <div style="display:flex;gap:10px">
+          <button onclick="closeReviewModal()" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:14px;cursor:pointer">취소</button>
+          <button id="review-submit-btn" onclick="submitReview()"
+            style="padding:10px 24px;border:none;border-radius:8px;background:#d1d5db;color:#fff;font-size:14px;font-weight:600;cursor:not-allowed" disabled>
+            후기 제출 후 열람
+          </button>
+        </div>
+      </div>
+      <p id="review-modal-status" style="font-size:13px;color:#e74c3c;margin:10px 0 0;text-align:center"></p>
+    </div>
+  </div>
 
   <!-- 슬라이드 뷰어 오버레이 -->
   <div id="slide-viewer" style="display:none;position:fixed;inset:0;background:#111;z-index:2000;flex-direction:column">
@@ -178,9 +190,43 @@
     }
   }
 
-  function showReviewRequired() {
-    document.getElementById('review-required-notice').style.display = 'block'
-    document.getElementById('review-required-notice').scrollIntoView({ behavior: 'smooth', block: 'center' })
+  let _pendingCourseId = null
+
+  function openReviewModal(courseId) {
+    _pendingCourseId = courseId
+    document.getElementById('review-textarea').value = ''
+    document.getElementById('review-char-count').textContent = '0'
+    document.getElementById('review-submit-btn').disabled = true
+    document.getElementById('review-modal').style.display = 'flex'
+    document.getElementById('review-textarea').focus()
+  }
+
+  function closeReviewModal() {
+    document.getElementById('review-modal').style.display = 'none'
+    _pendingCourseId = null
+  }
+
+  function updateReviewCount() {
+    const len = document.getElementById('review-textarea').value.length
+    document.getElementById('review-char-count').textContent = len
+    document.getElementById('review-submit-btn').disabled = len < 130
+  }
+
+  async function submitReview() {
+    const content = document.getElementById('review-textarea').value.trim()
+    if (content.length < 130) return
+    const btn = document.getElementById('review-submit-btn')
+    btn.disabled = true
+    btn.textContent = '제출 중...'
+    try {
+      await API.post('/institution/courses/' + _pendingCourseId + '/review', { content })
+      closeReviewModal()
+      openCourse(_pendingCourseId)
+    } catch (e) {
+      alert('오류: ' + e.message)
+      btn.disabled = false
+      btn.textContent = '후기 제출하고 자료 열람하기'
+    }
   }
 
   async function openCourse(courseId) {
@@ -197,7 +243,7 @@
       document.addEventListener('keydown', onKeyDown)
     } catch (e) {
       if (e.message === 'REVIEW_REQUIRED') {
-        showReviewRequired()
+        openReviewModal(courseId)
       } else {
         alert('오류: ' + e.message)
       }
