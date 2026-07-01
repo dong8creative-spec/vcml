@@ -5364,11 +5364,15 @@
     try {
       if (id) {
         await API.put('/institution/courses/' + id, { title, description, cover_image, slides })
+        instCloseModal()
+        loadInstitutionCourses()
       } else {
-        await API.post('/institution/courses', { title, description, cover_image, slides })
+        const created = await API.post('/institution/courses', { title, description, cover_image, slides })
+        instCloseModal()
+        await loadInstitutionCourses()
+        // 신규 등록 직후 코드 발급 모달 자동 오픈
+        if (created?.id) instOpenCodes(created.id, title)
       }
-      instCloseModal()
-      loadInstitutionCourses()
     } catch (e) {
       statusEl.textContent = '오류: ' + e.message
     } finally {
