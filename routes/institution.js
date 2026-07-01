@@ -1,5 +1,12 @@
 const router = require('express').Router()
+const multer = require('multer')
 const db = require('../db/schema')
+const { uploadImageBuffer } = require('../utils/storage')
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 슬라이드 이미지 최대 20MB
+})
 
 function requireAuth(req, res, next) {
   if (!req.user) return res.status(401).json({ error: '로그인이 필요합니다.' })
@@ -88,6 +95,25 @@ function requireAdmin(req, res, next) {
   if (!req.user || req.user.role !== 'admin') return res.status(403).json({ error: '권한이 없습니다.' })
   next()
 }
+
+// 이미지 업로드 (커버 or 슬라이드 단건) — multipart/form-data
+router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file?.buffer?.length) return res.status(400).json({ error: '파일을 선택해주세요.' })
+    const ct = String(req.file.mimetype || '').toLowerCase()
+    if (!['image/webp', 'image/jpeg', 'image/jpg', 'image/png'].includes(ct)) {
+      return res.status(400).json({ error: 'WebP, JPEG, PNG 이미지만 업로드할 수 있습니다.' })
+    }
+    const kind = req.body?.kind === 'cover' ? 'cover' : 'slide'
+    const url = await uploadImageBuffer(req.file.buffer, {
+      folder: `institution/${kind}s`,
+      contentType: ct === 'image/jpg' ? 'image/jpeg' : ct,
+    })
+    res.json({ url })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
 
 router.post('/courses', requireAdmin, async (req, res) => {
   try {
