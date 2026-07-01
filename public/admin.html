@@ -77,9 +77,9 @@
         <i class="ti ti-help-circle"></i> FAQ 관리
       </a>
 
-      <div class="nav-group-label">기관강의</div>
+      <div class="nav-group-label">열람실</div>
       <a href="#institution" class="nav-item" data-section="institution">
-        <i class="ti ti-building"></i> 기관강의 관리
+        <i class="ti ti-building"></i> 열람실 관리
       </a>
 
       <div class="nav-group-label">설정</div>
@@ -1636,7 +1636,7 @@
     <section class="section" id="sec-institution">
       <div class="sec-header">
         <div>
-          <div class="sec-title">기관강의 관리</div>
+          <div class="sec-title">열람실 관리</div>
           <div class="sec-sub">기관 대상 강의 자료(슬라이드)를 등록하고, 접근 코드를 발급합니다.</div>
         </div>
         <div class="sec-actions">
@@ -1644,7 +1644,7 @@
         </div>
       </div>
 
-      <!-- 기관강의 목록 -->
+      <!-- 열람실 목록 -->
       <div class="card" style="margin-top:0">
         <div id="inst-course-list">
           <div style="text-align:center;padding:40px;color:#aaa;font-size:14px">불러오는 중...</div>
@@ -1654,11 +1654,11 @@
 
   </main>
 
-  <!-- 기관강의 등록/편집 모달 -->
+  <!-- 열람실 등록/편집 모달 -->
   <div id="inst-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:16px;padding:28px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <div style="font-size:18px;font-weight:700;color:#111" id="inst-modal-title"><i class="ti ti-building"></i> 기관강의 등록</div>
+        <div style="font-size:18px;font-weight:700;color:#111" id="inst-modal-title"><i class="ti ti-building"></i> 열람실 등록</div>
         <button onclick="instCloseModal()" style="background:none;border:none;font-size:22px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
       </div>
 
@@ -5318,7 +5318,7 @@
     })
     document.getElementById('sub-filter-status')?.addEventListener('change', loadSubmissions)
 
-  // ===== 기관강의 관리 =====
+  // ===== 열람실 관리 =====
   let _instCourseId = null
 
   async function loadInstitutionCourses() {
@@ -5326,7 +5326,7 @@
     try {
       const courses = await API.get('/institution/courses')
       if (!courses.length) {
-        el.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;font-size:14px">등록된 기관강의가 없습니다.</div>'
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;font-size:14px">등록된 열람실가 없습니다.</div>'
         return
       }
       el.innerHTML = `<table class="data-table">
@@ -5366,7 +5366,7 @@
 
   function instOpenCreateModal() {
     document.getElementById('inst-edit-id').value = ''
-    document.getElementById('inst-modal-title').innerHTML = '<i class="ti ti-building"></i> 기관강의 등록'
+    document.getElementById('inst-modal-title').innerHTML = '<i class="ti ti-building"></i> 열람실 등록'
     instResetModal()
     document.getElementById('inst-modal-overlay').style.display = 'flex'
   }
@@ -5378,7 +5378,7 @@
     try {
       const c = await API.get('/institution/courses/' + id)
       document.getElementById('inst-edit-id').value = id
-      document.getElementById('inst-modal-title').innerHTML = '<i class="ti ti-pencil"></i> 기관강의 편집'
+      document.getElementById('inst-modal-title').innerHTML = '<i class="ti ti-pencil"></i> 열람실 편집'
       document.getElementById('inst-field-title').value = c.title || ''
       document.getElementById('inst-field-desc').value = c.description || ''
       document.getElementById('inst-field-cover').value = c.cover_image || ''
@@ -5623,7 +5623,7 @@
     }
   }
 
-  // 섹션 진입 시 기관강의 목록 로드
+  // 섹션 진입 시 열람실 목록 로드
   document.querySelectorAll('[data-section="institution"]').forEach(el => {
     el.addEventListener('click', () => setTimeout(loadInstitutionCourses, 100))
   })
