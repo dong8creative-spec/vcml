@@ -5468,7 +5468,7 @@
     statusEl.textContent = '저장 중...'
     try {
       if (id) {
-        await API.put('/institution/courses/' + id, { title, description, cover_image, slides })
+        await API.req('PUT', '/institution/courses/' + id, { title, description, cover_image, slides })
         instCloseModal()
         loadInstitutionCourses()
       } else {
