@@ -13,11 +13,11 @@
   <div class="header-inner">
     <a href="/" class="logo">타닥클래스</a>
     <nav class="gnb" aria-label="주요 메뉴">
+      <a href="/instructors.html" data-nav-key="instructors">강사 소개</a>
+      <a href="/notices.html" data-nav-key="notices">공지사항</a>
       <a href="/#all" data-gnb-all data-nav-key="all">전체강의</a>
       <a href="/?cat=capcut#all" data-gnb-cat="capcut" data-nav-key="capcut">캡컷 PRO</a>
       <a href="/institution.html" data-nav-key="institution">열람실</a>
-      <a href="/instructors.html" data-nav-key="instructors">강사 소개</a>
-      <a href="/notices.html" data-nav-key="notices">공지사항</a>
     </nav>
     <div class="header-right" id="header-right">${DEFAULT_AUTH_HTML}</div>
   </div>
