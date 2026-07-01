@@ -173,6 +173,7 @@ app.use('/api/editor',   require('./routes/editor'))
 app.use('/api/projects', require('./routes/project'))
 app.use('/api/messages', require('./routes/messages'))
 app.use('/api/reviews',  require('./routes/reviews'))
+app.use('/api/institution', require('./routes/institution'))
 app.use('/api/anticipation', require('./routes/anticipation'))
 app.use('/api',          require('./routes/public'))
 

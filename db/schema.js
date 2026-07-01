@@ -3757,3 +3757,89 @@ module.exports.DEFAULT_FOOTER_CONFIG = DEFAULT_FOOTER_CONFIG
 module.exports.DEFAULT_HERO_CONFIG = DEFAULT_HERO_CONFIG
 module.exports.DEFAULT_COUPON_ISSUANCE_CONFIG = DEFAULT_COUPON_ISSUANCE_CONFIG
 module.exports.DEFAULT_INSTRUCTORS_INTRO = DEFAULT_INSTRUCTORS_INTRO
+
+// ── 기관강의 (institution_courses / institution_codes) ──
+
+async function getInstitutionCourses() {
+  const snap = await fs.collection('institution_courses').orderBy('created_at', 'desc').get()
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+async function getInstitutionCourseById(id) {
+  const doc = await fs.collection('institution_courses').doc(id).get()
+  if (!doc.exists) return null
+  return { id: doc.id, ...doc.data() }
+}
+
+async function createInstitutionCourse(data) {
+  const ref = await fs.collection('institution_courses').add({ ...data, created_at: now() })
+  return { id: ref.id, ...data }
+}
+
+async function updateInstitutionCourse(id, data) {
+  await fs.collection('institution_courses').doc(id).update({ ...data, updated_at: now() })
+}
+
+async function deleteInstitutionCourse(id) {
+  await fs.collection('institution_courses').doc(id).delete()
+}
+
+async function createInstitutionCode(data) {
+  // data: { course_id, code, max_uses, note }
+  const ref = await fs.collection('institution_codes').add({
+    ...data,
+    used_count: 0,
+    used_by: [],
+    created_at: now(),
+  })
+  return { id: ref.id, ...data, used_count: 0, used_by: [] }
+}
+
+async function getInstitutionCodesByCourse(courseId) {
+  const snap = await fs.collection('institution_codes').where('course_id', '==', courseId).get()
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+async function validateInstitutionCode(code, userId) {
+  const snap = await fs.collection('institution_codes').where('code', '==', code.toUpperCase()).limit(1).get()
+  if (snap.empty) return { ok: false, reason: 'not_found' }
+  const doc = snap.docs[0]
+  const data = doc.data()
+  if (data.used_by && data.used_by.includes(userId)) {
+    return { ok: true, already: true, courseId: data.course_id, codeId: doc.id }
+  }
+  if (data.used_count >= data.max_uses) return { ok: false, reason: 'limit_reached' }
+  return { ok: true, already: false, courseId: data.course_id, codeId: doc.id }
+}
+
+async function redeemInstitutionCode(codeId, userId) {
+  const ref = fs.collection('institution_codes').doc(codeId)
+  await ref.update({
+    used_count: admin.firestore.FieldValue.increment(1),
+    used_by: admin.firestore.FieldValue.arrayUnion(userId),
+  })
+  await fs.collection('institution_access').add({
+    user_id: userId,
+    code_id: codeId,
+    redeemed_at: now(),
+  })
+}
+
+async function getUserInstitutionAccess(userId) {
+  const snap = await fs.collection('institution_access').where('user_id', '==', userId).get()
+  const codeIds = snap.docs.map(d => d.data().code_id)
+  if (!codeIds.length) return []
+  const codeDocs = await fs.getAll(...codeIds.map(id => fs.collection('institution_codes').doc(id)))
+  return codeDocs.filter(d => d.exists).map(d => ({ id: d.id, ...d.data() }))
+}
+
+module.exports.getInstitutionCourses = getInstitutionCourses
+module.exports.getInstitutionCourseById = getInstitutionCourseById
+module.exports.createInstitutionCourse = createInstitutionCourse
+module.exports.updateInstitutionCourse = updateInstitutionCourse
+module.exports.deleteInstitutionCourse = deleteInstitutionCourse
+module.exports.createInstitutionCode = createInstitutionCode
+module.exports.getInstitutionCodesByCourse = getInstitutionCodesByCourse
+module.exports.validateInstitutionCode = validateInstitutionCode
+module.exports.redeemInstitutionCode = redeemInstitutionCode
+module.exports.getUserInstitutionAccess = getUserInstitutionAccess
