@@ -119,6 +119,17 @@ router.delete('/courses/:id', requireAdmin, async (req, res) => {
   }
 })
 
+// 관리자용 강의 전체 조회 (슬라이드 포함)
+router.get('/courses/:id', requireAdmin, async (req, res) => {
+  try {
+    const course = await db.getInstitutionCourseById(req.params.id)
+    if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    res.json(course)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.post('/courses/:id/codes', requireAdmin, async (req, res) => {
   try {
     const { code, max_uses, note } = req.body

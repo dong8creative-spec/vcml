@@ -77,6 +77,11 @@
         <i class="ti ti-help-circle"></i> FAQ 관리
       </a>
 
+      <div class="nav-group-label">기관강의</div>
+      <a href="#institution" class="nav-item" data-section="institution">
+        <i class="ti ti-building"></i> 기관강의 관리
+      </a>
+
       <div class="nav-group-label">설정</div>
       <a href="#settings" class="nav-item" data-section="settings">
         <i class="ti ti-settings"></i> 사이트 설정
@@ -1627,7 +1632,102 @@
       </div>
     </section>
 
+    <!-- ===== SECTION: INSTITUTION ===== -->
+    <section class="section" id="sec-institution">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">기관강의 관리</div>
+          <div class="sec-sub">기관 대상 강의 자료(슬라이드)를 등록하고, 접근 코드를 발급합니다.</div>
+        </div>
+        <div class="sec-actions">
+          <button class="btn-save" onclick="instOpenCreateModal()"><i class="ti ti-plus"></i> 새 강의 등록</button>
+        </div>
+      </div>
+
+      <!-- 기관강의 목록 -->
+      <div class="card" style="margin-top:0">
+        <div id="inst-course-list">
+          <div style="text-align:center;padding:40px;color:#aaa;font-size:14px">불러오는 중...</div>
+        </div>
+      </div>
+    </section>
+
   </main>
+
+  <!-- 기관강의 등록/편집 모달 -->
+  <div id="inst-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:28px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size:18px;font-weight:700;color:#111" id="inst-modal-title"><i class="ti ti-building"></i> 기관강의 등록</div>
+        <button onclick="instCloseModal()" style="background:none;border:none;font-size:22px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
+      </div>
+
+      <input type="hidden" id="inst-edit-id" value="">
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block">강의명 *</label>
+          <input type="text" id="inst-field-title" placeholder="강의명을 입력하세요" style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block">설명</label>
+          <textarea id="inst-field-desc" rows="3" placeholder="강의 설명 (선택)" style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;resize:vertical;box-sizing:border-box"></textarea>
+        </div>
+        <div>
+          <label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block">커버 이미지 URL</label>
+          <input type="text" id="inst-field-cover" placeholder="https://..." style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block">슬라이드 이미지 URL 목록 <span style="font-weight:400;color:#aaa">(한 줄에 하나씩)</span></label>
+          <textarea id="inst-field-slides" rows="8" placeholder="https://example.com/slide1.webp&#10;https://example.com/slide2.webp&#10;..." style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;font-family:monospace;resize:vertical;box-sizing:border-box"></textarea>
+          <p style="font-size:12px;color:#aaa;margin:6px 0 0">슬라이드 이미지는 Firebase Storage 또는 외부 URL을 사용하세요. 순서대로 표시됩니다.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="instCloseModal()" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:14px;cursor:pointer">취소</button>
+        <button onclick="instSaveCourse()" class="btn-save" id="inst-save-btn"><i class="ti ti-check"></i> 저장</button>
+      </div>
+      <p id="inst-modal-status" style="font-size:13px;color:#e74c3c;margin-top:10px;text-align:center"></p>
+    </div>
+  </div>
+
+  <!-- 접근 코드 관리 모달 -->
+  <div id="inst-codes-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:28px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:18px;font-weight:700;color:#111"><i class="ti ti-key"></i> 접근 코드 관리</div>
+        <button onclick="instCloseCodesModal()" style="background:none;border:none;font-size:22px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
+      </div>
+      <p id="inst-codes-course-name" style="font-size:13px;color:#888;margin:0 0 18px"></p>
+
+      <!-- 코드 발급 -->
+      <div style="background:#f8f9fa;border-radius:10px;padding:16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">새 코드 발급</div>
+        <div style="display:flex;gap:10px;align-items:flex-end">
+          <div style="flex:1">
+            <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">코드 (대문자/숫자)</label>
+            <input type="text" id="inst-new-code" placeholder="예: SCHOOL2024" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;text-transform:uppercase;box-sizing:border-box">
+          </div>
+          <div style="width:90px">
+            <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">최대 사용 횟수</label>
+            <input type="number" id="inst-new-max" value="20" min="1" max="999" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box">
+          </div>
+          <div style="width:120px">
+            <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">메모</label>
+            <input type="text" id="inst-new-note" placeholder="예: A반" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box">
+          </div>
+          <button onclick="instCreateCode()" class="btn-save" style="white-space:nowrap;padding:9px 16px"><i class="ti ti-plus"></i> 발급</button>
+        </div>
+        <p id="inst-code-status" style="font-size:12px;color:#e74c3c;margin:8px 0 0"></p>
+      </div>
+
+      <!-- 코드 목록 -->
+      <div id="inst-codes-list">
+        <div style="text-align:center;padding:30px;color:#aaa;font-size:14px">불러오는 중...</div>
+      </div>
+    </div>
+  </div>
 
   <!-- 라이브 강의 등록 모달 -->
   <div id="live-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
@@ -5187,6 +5287,176 @@
       loadSubmissions()
     })
     document.getElementById('sub-filter-status')?.addEventListener('change', loadSubmissions)
+
+  // ===== 기관강의 관리 =====
+  let _instCourseId = null
+
+  async function loadInstitutionCourses() {
+    const el = document.getElementById('inst-course-list')
+    try {
+      const courses = await API.get('/institution/courses')
+      if (!courses.length) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;font-size:14px">등록된 기관강의가 없습니다.</div>'
+        return
+      }
+      el.innerHTML = `<table class="data-table">
+        <thead><tr><th>강의명</th><th>슬라이드 수</th><th>설명</th><th style="text-align:center">코드 관리</th><th style="text-align:center">편집</th><th style="text-align:center">삭제</th></tr></thead>
+        <tbody>${courses.map(c => `<tr>
+          <td><strong>${esc(c.title)}</strong></td>
+          <td>${c.slide_count || 0}장</td>
+          <td style="color:#888;font-size:13px">${esc((c.description||'').slice(0,60))}</td>
+          <td style="text-align:center"><button class="btn-sm" onclick="instOpenCodes('${c.id}','${esc(c.title)}')"><i class="ti ti-key"></i> 코드</button></td>
+          <td style="text-align:center"><button class="btn-sm" onclick="instOpenEdit('${c.id}')"><i class="ti ti-pencil"></i> 편집</button></td>
+          <td style="text-align:center"><button class="btn-sm" style="color:#e74c3c" onclick="instDelete('${c.id}','${esc(c.title)}')"><i class="ti ti-trash"></i></button></td>
+        </tr>`).join('')}</tbody>
+      </table>`
+    } catch (e) {
+      el.innerHTML = `<div style="text-align:center;padding:40px;color:#e74c3c;font-size:14px">오류: ${e.message}</div>`
+    }
+  }
+
+  function instOpenCreateModal() {
+    document.getElementById('inst-edit-id').value = ''
+    document.getElementById('inst-modal-title').innerHTML = '<i class="ti ti-building"></i> 기관강의 등록'
+    document.getElementById('inst-field-title').value = ''
+    document.getElementById('inst-field-desc').value = ''
+    document.getElementById('inst-field-cover').value = ''
+    document.getElementById('inst-field-slides').value = ''
+    document.getElementById('inst-modal-status').textContent = ''
+    document.getElementById('inst-modal-overlay').style.display = 'flex'
+  }
+
+  async function instOpenEdit(id) {
+    document.getElementById('inst-modal-status').textContent = '불러오는 중...'
+    document.getElementById('inst-modal-overlay').style.display = 'flex'
+    try {
+      const full = await API.get('/institution/courses/' + id)
+      const c = full
+      document.getElementById('inst-edit-id').value = id
+      document.getElementById('inst-modal-title').innerHTML = '<i class="ti ti-pencil"></i> 기관강의 편집'
+      document.getElementById('inst-field-title').value = c.title || ''
+      document.getElementById('inst-field-desc').value = c.description || ''
+      document.getElementById('inst-field-cover').value = c.cover_image || ''
+      document.getElementById('inst-field-slides').value = (c.slides || []).join('\n')
+      document.getElementById('inst-modal-status').textContent = ''
+    } catch (e) {
+      document.getElementById('inst-modal-status').textContent = '오류: ' + e.message
+    }
+  }
+
+  function instCloseModal() {
+    document.getElementById('inst-modal-overlay').style.display = 'none'
+  }
+
+  async function instSaveCourse() {
+    const id = document.getElementById('inst-edit-id').value
+    const title = document.getElementById('inst-field-title').value.trim()
+    const description = document.getElementById('inst-field-desc').value.trim()
+    const cover_image = document.getElementById('inst-field-cover').value.trim()
+    const slides = document.getElementById('inst-field-slides').value
+      .split('\n').map(s => s.trim()).filter(Boolean)
+    const statusEl = document.getElementById('inst-modal-status')
+
+    if (!title) { statusEl.textContent = '강의명을 입력하세요.'; return }
+    const btn = document.getElementById('inst-save-btn')
+    btn.disabled = true
+    statusEl.textContent = '저장 중...'
+    try {
+      if (id) {
+        await API.put('/institution/courses/' + id, { title, description, cover_image, slides })
+      } else {
+        await API.post('/institution/courses', { title, description, cover_image, slides })
+      }
+      instCloseModal()
+      loadInstitutionCourses()
+    } catch (e) {
+      statusEl.textContent = '오류: ' + e.message
+    } finally {
+      btn.disabled = false
+    }
+  }
+
+  async function instDelete(id, title) {
+    if (!confirm(`"${title}" 강의를 삭제하시겠습니까?\n접근 코드도 모두 삭제됩니다.`)) return
+    try {
+      await API.delete('/institution/courses/' + id)
+      loadInstitutionCourses()
+    } catch (e) {
+      alert('삭제 오류: ' + e.message)
+    }
+  }
+
+  async function instOpenCodes(courseId, courseTitle) {
+    _instCourseId = courseId
+    document.getElementById('inst-codes-course-name').textContent = courseTitle
+    document.getElementById('inst-new-code').value = ''
+    document.getElementById('inst-new-max').value = '20'
+    document.getElementById('inst-new-note').value = ''
+    document.getElementById('inst-code-status').textContent = ''
+    document.getElementById('inst-codes-overlay').style.display = 'flex'
+    loadInstCodes()
+  }
+
+  function instCloseCodesModal() {
+    document.getElementById('inst-codes-overlay').style.display = 'none'
+    _instCourseId = null
+  }
+
+  async function loadInstCodes() {
+    const el = document.getElementById('inst-codes-list')
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa;font-size:14px">불러오는 중...</div>'
+    try {
+      const codes = await API.get('/institution/courses/' + _instCourseId + '/codes')
+      if (!codes.length) { el.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa;font-size:14px">발급된 코드가 없습니다.</div>'; return }
+      el.innerHTML = `<table class="data-table">
+        <thead><tr><th>코드</th><th>사용 현황</th><th>메모</th><th>발급일</th></tr></thead>
+        <tbody>${codes.map(c => {
+          const pct = Math.round((c.used_count || 0) / (c.max_uses || 1) * 100)
+          const full = (c.used_count || 0) >= (c.max_uses || 0)
+          return `<tr>
+            <td><code style="font-size:14px;font-weight:700;letter-spacing:1px;color:${full?'#e74c3c':'#2563eb'}">${esc(c.code)}</code></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden">
+                  <div style="width:${pct}%;height:100%;background:${full?'#e74c3c':'#2563eb'};border-radius:3px"></div>
+                </div>
+                <span style="font-size:12px;color:${full?'#e74c3c':'#666'};white-space:nowrap">${c.used_count||0}/${c.max_uses}</span>
+              </div>
+            </td>
+            <td style="font-size:13px;color:#888">${esc(c.note||'-')}</td>
+            <td style="font-size:12px;color:#aaa">${c.created_at ? new Date(c.created_at._seconds*1000).toLocaleDateString('ko-KR') : '-'}</td>
+          </tr>`
+        }).join('')}</tbody>
+      </table>`
+    } catch (e) {
+      el.innerHTML = `<div style="text-align:center;padding:20px;color:#e74c3c;font-size:14px">오류: ${e.message}</div>`
+    }
+  }
+
+  async function instCreateCode() {
+    const code = document.getElementById('inst-new-code').value.trim().toUpperCase()
+    const max_uses = parseInt(document.getElementById('inst-new-max').value) || 20
+    const note = document.getElementById('inst-new-note').value.trim()
+    const statusEl = document.getElementById('inst-code-status')
+    if (!code) { statusEl.textContent = '코드를 입력하세요.'; return }
+    if (!/^[A-Z0-9]{3,20}$/.test(code)) { statusEl.textContent = '코드는 영문 대문자와 숫자 3~20자로 입력하세요.'; return }
+    statusEl.textContent = '발급 중...'
+    try {
+      await API.post('/institution/courses/' + _instCourseId + '/codes', { code, max_uses, note })
+      document.getElementById('inst-new-code').value = ''
+      document.getElementById('inst-new-note').value = ''
+      statusEl.textContent = ''
+      loadInstCodes()
+    } catch (e) {
+      statusEl.textContent = '오류: ' + e.message
+    }
+  }
+
+  // 섹션 진입 시 기관강의 목록 로드
+  document.querySelectorAll('[data-section="institution"]').forEach(el => {
+    el.addEventListener('click', () => setTimeout(loadInstitutionCourses, 100))
+  })
+
   </script>
 
 </body>
