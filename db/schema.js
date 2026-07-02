@@ -3837,6 +3837,27 @@ async function getUserInstitutionAccess(userId) {
   return codeDocs.filter(d => d.exists).map(d => ({ id: d.id, ...d.data() }))
 }
 
+// 열람실 전용 후기
+async function getInstitutionReview(userId, courseId) {
+  const snap = await fs.collection('institution_reviews')
+    .where('user_id', '==', userId).where('course_id', '==', courseId).limit(1).get()
+  if (snap.empty) return null
+  return { id: snap.docs[0].id, ...snap.docs[0].data() }
+}
+
+async function submitInstitutionReview(userId, courseId, content) {
+  const existing = await getInstitutionReview(userId, courseId)
+  if (existing) {
+    await fs.collection('institution_reviews').doc(existing.id).update({ content, updated_at: now() })
+    return { id: existing.id }
+  }
+  const ref = await fs.collection('institution_reviews').add({ user_id: userId, course_id: courseId, content, created_at: now() })
+  return { id: ref.id }
+}
+
+module.exports.getInstitutionReview = getInstitutionReview
+module.exports.submitInstitutionReview = submitInstitutionReview
+
 module.exports.getInstitutionCourses = getInstitutionCourses
 module.exports.getInstitutionCourseById = getInstitutionCourseById
 module.exports.createInstitutionCourse = createInstitutionCourse

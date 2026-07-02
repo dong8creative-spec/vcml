@@ -76,7 +76,7 @@ router.get('/my-courses', requireAuth, async (req, res) => {
   }
 })
 
-// 슬라이드 열람 (열람 권한 + 후기 130자 조건 확인 후 이미지 URL 반환)
+// 슬라이드 열람 (열람 권한 + 열람실 전용 후기 130자 조건 확인)
 router.get('/courses/:id/slides', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id
@@ -84,12 +84,30 @@ router.get('/courses/:id/slides', requireAuth, async (req, res) => {
     const access = await db.getUserInstitutionAccess(userId)
     const hasAccess = access.some(a => a.course_id === courseId)
     if (!hasAccess) return res.status(403).json({ error: '열람 권한이 없습니다.' })
-    const qualified = await db.hasQualifiedReview(userId, 130)
-    if (!qualified) return res.status(403).json({ error: 'REVIEW_REQUIRED', message: '수강 후기를 130자 이상 작성해야 열람할 수 있습니다.' })
+    const review = await db.getInstitutionReview(userId, courseId)
+    if (!review || (review.content || '').length < 130) {
+      return res.status(403).json({ error: 'REVIEW_REQUIRED' })
+    }
     const course = await db.getInstitutionCourseById(courseId)
     if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
     res.set('Cache-Control', 'no-store')
     res.json({ slides: course.slides || [], title: course.title })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// 열람실 전용 후기 제출
+router.post('/courses/:id/review', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id
+    const courseId = req.params.id
+    const content = (req.body.content || '').trim()
+    if (content.length < 130) return res.status(400).json({ error: `후기를 ${130 - content.length}자 더 작성해주세요.` })
+    const access = await db.getUserInstitutionAccess(userId)
+    if (!access.some(a => a.course_id === courseId)) return res.status(403).json({ error: '열람 권한이 없습니다.' })
+    await db.submitInstitutionReview(userId, courseId, content)
+    res.json({ ok: true })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
