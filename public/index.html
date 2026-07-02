@@ -516,10 +516,10 @@ function renderReviewCard(r) {
   const maskedName = escHtml(maskReviewName(r.author_name))
   const initialChar = r.author_initial || (r.author_name && r.author_name.trim() ? r.author_name.trim()[0] : '수')
   const initial = escHtml(initialChar)
-  const typeLabel = r.type_label ? `<div class="rticker-course">${escHtml(r.type_label)}</div>` : ''
+  const courseLabel = r.course_title ? `<div class="rticker-course">${escHtml(r.course_title)}</div>` : ''
   return `<div class="rticker-card">
     <div class="rticker-stars">${stars}</div>
-    ${typeLabel}
+    ${courseLabel}
     <div class="rticker-text">${preview}</div>
     <div class="rticker-author">
       <div class="rticker-dot">${initial}</div>
