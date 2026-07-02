@@ -1,10 +1,5 @@
 (function () {
 
-  function guestChromeAuthHtml(next) {
-    const nextQ = next && next !== encodeURIComponent('/') ? `?next=${next}` : ''
-    return `<a href="/login.html${nextQ}" class="nav-btn nav-btn-primary">로그인 / 가입</a>`
-  }
-
   const DEFAULT_FOOTER = {
     brand_name: '타닥클래스',
     tagline: '현업 전문가에게 배우는 실무 중심 영상 강의',
@@ -37,56 +32,6 @@
 
   function esc(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  }
-
-  function currentPageKey() {
-    const fromBody = document.body.dataset.legalPage
-    if (fromBody) return fromBody
-    const path = location.pathname
-    if (path.includes('notice')) return 'notices'
-    if (path.includes('privacy')) return 'privacy'
-    if (path.includes('terms')) return 'terms'
-    if (path.includes('refund')) return 'refund'
-    if (path.includes('youth')) return 'youth'
-    if (path.includes('support')) return 'support'
-    if (path.includes('faq')) return 'faq'
-    if (path.includes('inquiry')) return 'inquiry'
-    return ''
-  }
-
-  function getApi() {
-    return window.API || (typeof API !== 'undefined' ? API : null)
-  }
-
-  function renderChromeAuth() {
-    const hr = document.getElementById('chrome-header-right')
-    const api = getApi()
-    if (!hr || !api) return
-    const next = encodeURIComponent(location.pathname + location.search)
-    if (api.isLoggedIn()) {
-      const user = api.user()
-      const name = user?.name ? esc(user.name) : '마이페이지'
-      hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${name}</a><a href="#" class="nav-btn nav-btn-outline" onclick="API.logout();return false">로그아웃</a>`
-    } else {
-      hr.innerHTML = guestChromeAuthHtml(next)
-    }
-  }
-
-  function renderHeader() {
-    return `<header class="header">
-  <div class="header-inner">
-    <a href="/" class="logo">타닥클래스</a>
-    <nav class="gnb" aria-label="주요 메뉴">
-      <a href="/#all">전체강의</a>
-      <a href="/?cat=capcut#all">캡컷 PRO</a>
-      <a href="/instructors.html">강사 소개</a>
-      <a href="/notices.html">공지사항</a>
-    </nav>
-    <div class="header-right" id="chrome-header-right">
-      ${guestChromeAuthHtml(encodeURIComponent('/'))}
-    </div>
-  </div>
-</header>`
   }
 
   function renderFooter(cfg) {
@@ -135,27 +80,19 @@
     return DEFAULT_FOOTER
   }
 
-  async function mount() {
-    const key = currentPageKey()
-    const headerEl = document.querySelector('[data-chrome="header"]')
-    if (headerEl) headerEl.outerHTML = renderHeader(key)
+  async function mountFooter() {
     const footerEl = document.querySelector('[data-chrome="footer"]')
-    if (footerEl) {
-      const cfg = await fetchFooterConfig()
-      footerEl.outerHTML = renderFooter(cfg)
-    }
-    renderChromeAuth()
-    document.dispatchEvent(new Event('site-header-ready'))
+    if (!footerEl) return
+    const cfg = await fetchFooterConfig()
+    footerEl.outerHTML = renderFooter(cfg)
   }
 
   window.renderSiteFooter = renderFooter
   window.fetchSiteFooterConfig = fetchFooterConfig
-  window.renderChromeAuth = renderChromeAuth
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mount)
+    document.addEventListener('DOMContentLoaded', mountFooter)
   } else {
-    mount()
+    mountFooter()
   }
-  window.addEventListener('load', renderChromeAuth)
 })()

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타닥클래스 관리자</title>
   <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/admin.css?v=3" />
+  <link rel="stylesheet" href="css/admin.css?v=4" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -419,7 +419,14 @@
             <div class="enrollments-table-wrap">
               <table class="data-table enrollments-table">
                 <thead>
-                  <tr><th>이름</th><th>이메일</th><th>연락처</th><th>유형</th><th>결제</th><th>신청일</th></tr>
+                  <tr>
+                    <th class="th-sortable" data-sort="name" onclick="sortCourseEnrollments('name')">이름 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+                    <th class="th-sortable" data-sort="email" onclick="sortCourseEnrollments('email')">이메일 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+                    <th class="th-sortable" data-sort="phone" onclick="sortCourseEnrollments('phone')">연락처 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+                    <th class="th-sortable" data-sort="member_type" onclick="sortCourseEnrollments('member_type')">유형 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+                    <th class="th-sortable" data-sort="payment" onclick="sortCourseEnrollments('payment')">결제 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+                    <th class="th-sortable" data-sort="enrolled_at" onclick="sortCourseEnrollments('enrolled_at')">신청일 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+                  </tr>
                 </thead>
                 <tbody id="course-enrollments-body">
                   <tr><td colspan="6" style="text-align:center;color:#888;padding:24px">로딩 중...</td></tr>
@@ -578,7 +585,15 @@
         </div>
         <table class="data-table">
           <thead>
-            <tr><th>이름</th><th>이메일</th><th>연락처</th><th>수강 강의</th><th>총 결제금액</th><th>가입일</th><th></th></tr>
+            <tr>
+              <th class="th-sortable" data-sort="name" onclick="sortStudentList('name')">이름 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+              <th class="th-sortable" data-sort="email" onclick="sortStudentList('email')">이메일 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+              <th class="th-sortable" data-sort="phone" onclick="sortStudentList('phone')">연락처 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+              <th class="th-sortable" data-sort="course_count" onclick="sortStudentList('course_count')">수강 강의 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+              <th class="th-sortable" data-sort="total_paid" onclick="sortStudentList('total_paid')">총 결제금액 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+              <th class="th-sortable" data-sort="created_at" onclick="sortStudentList('created_at')">가입일 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+              <th></th>
+            </tr>
           </thead>
           <tbody id="students-table-body">
             <tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>
@@ -2355,6 +2370,34 @@
       return `${amountLabel} · ${method}`
     }
 
+    function renderCourseEnrollmentsTable(rows) {
+      const tbody = document.getElementById('course-enrollments-body')
+      if (!tbody) return
+      const sorted = sortRows(rows, _enrollmentSort, ENROLLMENT_SORT_GETTERS)
+      if (!sorted.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">신청한 수강생이 없습니다.</td></tr>'
+        updateSortHeaders(document.querySelector('.enrollments-table'), _enrollmentSort)
+        return
+      }
+      tbody.innerHTML = sorted.map(row => `
+          <tr>
+            <td class="enrollments-col-name">${esc(row.name)}</td>
+            <td class="td-sub enrollments-col-email">${esc(row.email)}</td>
+            <td class="enrollments-col-phone">${esc(row.phone || '-')}</td>
+            <td class="enrollments-col-type">${esc(memberTypeLabel[row.member_type] || row.member_type || '-')}</td>
+            <td class="enrollments-col-pay">${esc(formatEnrollmentPayment(row))}</td>
+            <td class="td-date enrollments-col-date">${formatAdminDate(row.enrolled_at || row.paid_at)}</td>
+          </tr>
+        `).join('')
+      updateSortHeaders(document.querySelector('.enrollments-table'), _enrollmentSort)
+    }
+
+    function sortCourseEnrollments(key) {
+      toggleSortState(_enrollmentSort, key)
+      renderCourseEnrollmentsTable(_courseEnrollmentRows)
+    }
+    window.sortCourseEnrollments = sortCourseEnrollments
+
     async function openCourseEnrollmentsModal(courseId) {
       const c = _courses.find(x => String(x.id) === String(courseId))
       const modal = document.getElementById('course-enrollments-modal')
@@ -2368,22 +2411,11 @@
       modal.style.display = 'flex'
       try {
         const data = await API.get('/admin/courses/' + courseId + '/enrollments')
-        const rows = data.enrollments || []
-        summaryEl.textContent = `현재 수강 중 ${data.count || rows.length}명 · 취소·환불 완료 신청자는 제외됩니다.`
-        if (!rows.length) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">신청한 수강생이 없습니다.</td></tr>'
-          return
-        }
-        tbody.innerHTML = rows.map(row => `
-          <tr>
-            <td class="enrollments-col-name">${esc(row.name)}</td>
-            <td class="td-sub enrollments-col-email">${esc(row.email)}</td>
-            <td class="enrollments-col-phone">${esc(row.phone || '-')}</td>
-            <td class="enrollments-col-type">${esc(memberTypeLabel[row.member_type] || row.member_type || '-')}</td>
-            <td class="enrollments-col-pay">${esc(formatEnrollmentPayment(row))}</td>
-            <td class="td-date enrollments-col-date">${formatAdminDate(row.enrolled_at || row.paid_at)}</td>
-          </tr>
-        `).join('')
+        _courseEnrollmentRows = data.enrollments || []
+        _enrollmentSort.key = 'enrolled_at'
+        _enrollmentSort.dir = 'desc'
+        summaryEl.textContent = `현재 수강 중 ${data.count || _courseEnrollmentRows.length}명 · 취소·환불 완료 신청자는 제외됩니다.`
+        renderCourseEnrollmentsTable(_courseEnrollmentRows)
         const course = _courses.find(x => String(x.id) === String(courseId))
         if (course) {
           course.student_count = data.count
@@ -2627,17 +2659,87 @@
     }
 
     let _allStudents = []
+    const _studentSort = { key: 'created_at', dir: 'desc' }
+    const _enrollmentSort = { key: 'enrolled_at', dir: 'desc' }
+    let _courseEnrollmentRows = []
+
+    const STUDENT_SORT_GETTERS = {
+      name: s => (s.name || '').trim(),
+      email: s => (s.email || '').trim().toLowerCase(),
+      phone: s => (s.phone || '').replace(/\D/g, ''),
+      course_count: s => Number(s.course_count) || 0,
+      total_paid: s => Number(s.total_paid) || 0,
+      created_at: s => s.created_at || '',
+    }
+
+    const ENROLLMENT_SORT_GETTERS = {
+      name: r => (r.name || '').trim(),
+      email: r => (r.email || '').trim().toLowerCase(),
+      phone: r => (r.phone || '').replace(/\D/g, ''),
+      member_type: r => (r.member_type || '').trim(),
+      payment: r => Number(r.paid_amount) || 0,
+      enrolled_at: r => r.enrolled_at || r.paid_at || '',
+    }
+
+    function sortRows(list, sortState, getters) {
+      const get = getters[sortState.key]
+      if (!get) return list
+      const mult = sortState.dir === 'desc' ? -1 : 1
+      return [...list].sort((a, b) => {
+        const av = get(a)
+        const bv = get(b)
+        if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * mult
+        return String(av).localeCompare(String(bv), 'ko', { numeric: true, sensitivity: 'base' }) * mult
+      })
+    }
+
+    function toggleSortState(sortState, key) {
+      if (sortState.key === key) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc'
+      else {
+        sortState.key = key
+        sortState.dir = 'asc'
+      }
+    }
+
+    function updateSortHeaders(tableEl, sortState) {
+      if (!tableEl) return
+      tableEl.querySelectorAll('th[data-sort]').forEach(th => {
+        const active = th.dataset.sort === sortState.key
+        th.classList.toggle('is-sorted', active)
+        const icon = th.querySelector('.th-sort-icon')
+        if (!icon) return
+        icon.className = 'th-sort-icon ti ' + (active
+          ? (sortState.dir === 'asc' ? 'ti-arrow-up' : 'ti-arrow-down')
+          : 'ti-arrows-sort')
+      })
+    }
+
+    function getFilteredStudents() {
+      const q = (document.getElementById('student-search')?.value || '').toLowerCase()
+      const filtered = q
+        ? _allStudents.filter(s => (s.name || '').toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q))
+        : _allStudents
+      return sortRows(filtered, _studentSort, STUDENT_SORT_GETTERS)
+    }
 
     async function loadStudents() {
       const tbody = document.getElementById('students-table-body');
       if (!tbody) return;
       try {
         _allStudents = await API.get('/admin/students');
-        renderStudentsTable(_allStudents);
+        renderStudentsTable(getFilteredStudents());
+        updateSortHeaders(document.querySelector('#sec-students .data-table'), _studentSort);
       } catch(e) {
         tbody.innerHTML = `<tr class="empty-state-row"><td colspan="7">${esc(e.message)}</td></tr>`;
       }
     }
+
+    function sortStudentList(key) {
+      toggleSortState(_studentSort, key)
+      renderStudentsTable(getFilteredStudents())
+      updateSortHeaders(document.querySelector('#sec-students .data-table'), _studentSort)
+    }
+    window.sortStudentList = sortStudentList
 
     function renderStudentsTable(list) {
       const tbody = document.getElementById('students-table-body');
@@ -2662,8 +2764,8 @@
     }
 
     function filterStudents() {
-      const q = (document.getElementById('student-search')?.value || '').toLowerCase();
-      renderStudentsTable(q ? _allStudents.filter(s => (s.name||'').toLowerCase().includes(q) || (s.email||'').toLowerCase().includes(q)) : _allStudents);
+      renderStudentsTable(getFilteredStudents())
+      updateSortHeaders(document.querySelector('#sec-students .data-table'), _studentSort)
     }
 
     async function openStudentModal(userId) {

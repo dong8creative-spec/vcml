@@ -19,7 +19,6 @@ const API = {
     localStorage.setItem('tc_token', token)
     localStorage.setItem('tc_user', JSON.stringify(user))
     if (typeof renderHeaderAuth === 'function') renderHeaderAuth()
-    if (typeof renderChromeAuth === 'function') renderChromeAuth()
     if (typeof syncAdminFab === 'function') syncAdminFab().catch(() => {})
   },
   logout() {

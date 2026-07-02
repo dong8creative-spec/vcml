@@ -61,6 +61,26 @@
     })
   }
 
+  function initGnbCatLinks() {
+    document.querySelectorAll('[data-gnb-cat]').forEach(a => {
+      a.addEventListener('click', e => {
+        if (location.pathname === '/' || location.pathname === '/index.html') {
+          e.preventDefault()
+          if (typeof toggleCategory === 'function') toggleCategory(a.dataset.gnbCat)
+        }
+      })
+    })
+    document.querySelectorAll('[data-gnb-all]').forEach(a => {
+      a.addEventListener('click', e => {
+        if (location.pathname === '/' || location.pathname === '/index.html') {
+          e.preventDefault()
+          if (typeof applyFilter === 'function') applyFilter({ cat: null, q: '', filter: null }, true)
+          document.getElementById('all')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      })
+    })
+  }
+
   async function boot() {
     mountHeaderMarkup()
     const hr = document.getElementById('header-right')
@@ -73,7 +93,7 @@
       try { await applyHomepageLayout() } catch (_) {}
     }
     renderHeaderAuth()
-    if (typeof initGnbCatLinks === 'function') initGnbCatLinks()
+    initGnbCatLinks()
     document.dispatchEvent(new Event('site-header-ready'))
   }
 

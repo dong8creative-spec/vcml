@@ -148,28 +148,7 @@ function initCategoryTiles() {
   })
 }
 
-// 인라인 GNB 카테고리 링크 핸들링 (홈에서는 SPA 필터, 다른 페이지에서는 이동)
-function initGnbCatLinks() {
-  document.querySelectorAll('[data-gnb-cat]').forEach(a => {
-    a.addEventListener('click', e => {
-      if (location.pathname === '/' || location.pathname === '/index.html') {
-        e.preventDefault()
-        toggleCategory(a.dataset.gnbCat)
-      }
-      // 다른 페이지에서는 기본 href(/?cat=...) 그대로 이동
-    })
-  })
-  // "전체강의" 링크
-  document.querySelectorAll('[data-gnb-all]').forEach(a => {
-    a.addEventListener('click', e => {
-      if (location.pathname === '/' || location.pathname === '/index.html') {
-        e.preventDefault()
-        applyFilter({ cat: null, q: '', filter: null }, true)
-        document.getElementById('all')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    })
-  })
-}
+// 인라인 GNB 카테고리 링크 — site-header.js에서 공통 처리
 
 // 검색창 이벤트 바인딩
 function initSearch() {
@@ -186,7 +165,6 @@ function initSearch() {
 }
 
 function bootHomeNavHeader() {
-  initGnbCatLinks()
   if (location.pathname === '/' || location.pathname === '/index.html') {
     initSearch()
   }
