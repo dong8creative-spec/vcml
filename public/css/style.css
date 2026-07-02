@@ -798,7 +798,7 @@ img { display: block; max-width: 100%; }
 .review-ticker-inner:hover { animation-play-state: paused; }
 @keyframes review-ticker { from { transform: translateX(0) } to { transform: translateX(-50%) } }
 .rticker-card { background: #fff; border-radius: 14px; padding: 20px 22px; border: 1px solid var(--border); width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
-.rticker-stars { color: var(--warning); font-size: 15px; letter-spacing: 1px; }
+.rticker-stars { color: var(--warning); font-size: 11px; letter-spacing: 1px; }
 .rticker-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; flex: 1; }
 .rticker-author { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .rticker-dot { width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }

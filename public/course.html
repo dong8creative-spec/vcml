@@ -339,8 +339,13 @@
       const r = Math.round(Number(rating || 0) * 2) / 2
       const sz = size || 16
       return [1,2,3,4,5].map(i => {
-        const cls = r >= i ? 'ti-star-filled' : (r >= i - 0.5 ? 'ti-star-half-filled' : 'ti-star')
-        return `<i class="ti ${cls}" style="font-size:${sz}px;color:${r >= i - 0.5 ? '#f59e0b' : '#ddd'}"></i>`
+        if (r >= i) {
+          return `<span style="font-size:${sz}px;line-height:1;color:#f59e0b">★</span>`
+        }
+        if (r >= i - 0.5) {
+          return `<span style="position:relative;display:inline-block;font-size:${sz}px;line-height:1;color:#ddd">★<span style="position:absolute;left:0;top:0;width:50%;overflow:hidden;color:#f59e0b">★</span></span>`
+        }
+        return `<span style="font-size:${sz}px;line-height:1;color:#ddd">★</span>`
       }).join('')
     }
 
@@ -711,7 +716,7 @@
                 ${c.description ? `<p class="ch-desc">${esc(c.description)}</p>` : ''}
                 <div class="ch-meta">
                   ${Number(c.review_count) > 0
-                    ? `<span><i class="ti ti-star-filled"></i> <strong>${c.rating}</strong> (${Number(c.review_count).toLocaleString()}개 후기)</span>`
+                    ? `<span><span style="color:#f59e0b">★</span> <strong>${c.rating}</strong> (${Number(c.review_count).toLocaleString()}개 후기)</span>`
                     : ''}
                   <span><i class="ti ti-users"></i> ${Number(c.student_count).toLocaleString()}명 수강</span>
                   <span><i class="ti ti-list"></i> 총 ${totalChapters}강</span>
@@ -973,7 +978,7 @@
       document.querySelectorAll('.rbr-star').forEach(btn => {
         const v = Number(btn.dataset.val)
         btn.innerHTML = v <= val
-          ? '<i class="ti ti-star-filled" style="color:#f59e0b"></i>'
+          ? '<span style="color:#f59e0b">★</span>'
           : '<i class="ti ti-star" style="color:#ddd"></i>'
       })
     }
