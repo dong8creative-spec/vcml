@@ -84,12 +84,12 @@ if (new URLSearchParams(location.search).get('preview') === '1') {
   <div class="hero-overlay" aria-hidden="true"></div>
   <div class="hero-inner" id="hero-inner">
     <div class="hero-text" id="hero-content">
-      <div class="hero-badge" id="hero-badge"><i class="ti ti-star-filled"></i> 타닥클래스만의 편집 방식</div>
+      <div class="hero-badge" id="hero-badge"><i class="ti ti-star"></i> 타닥클래스만의 편집 방식</div>
       <h1 id="hero-title">버튼 외우는 강의 말고,<br><em id="hero-title-em">타닥타닥 완성되는 캡컷 강의</em></h1>
       <p id="hero-subtitle">영상편집 초보도 스텝 바이 스텝!<br>캡컷‧프리미어 프로 온라인 라이브 강의로 함께 완성하는 과정</p>
       <div class="hero-btns" id="hero-btns">
         <a href="#all" class="btn-hero-primary" id="hero-primary-btn"><span class="btn-hero-ghost__label">전체 강의 보기</span></a>
-        <a href="/course.html?slug=capcut-beginner-free" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-player-play-filled"></i><span class="btn-hero-ghost__label">무료강의 신청하기</span></a>
+        <a href="/course.html?slug=capcut-beginner-free" class="btn-hero-ghost" id="hero-secondary-btn"><i class="ti ti-player-play"></i><span class="btn-hero-ghost__label">무료강의 신청하기</span></a>
       </div>
     </div>
   </div>
@@ -402,6 +402,10 @@ function syncHeroKnockoutBackground(heroSection, imageUrl) {
   heroSection.style.setProperty('--hero-knockout-bg-image', value)
 }
 
+function cssUrlValue(url) {
+  return `url("${String(url || '').replace(/"/g, '%22').replace(/'/g, '%27')}")`
+}
+
 function applyHeroButton(el, cfg, slot) {
   if (!el || !cfg) return
   const resolved = typeof resolveHeroButton === 'function'
@@ -425,7 +429,7 @@ function applyHeroButton(el, cfg, slot) {
   if (isGhost) {
     el.classList.add('btn-hero-ghost')
     const icon = cfg.show_icon !== false && slot === 'secondary'
-      ? '<i class="ti ti-player-play-filled"></i>'
+      ? '<i class="ti ti-player-play"></i>'
       : ''
     el.innerHTML = `${icon}<span class="btn-hero-ghost__label">${escHtml(label)}</span>`
     return
@@ -438,16 +442,16 @@ async function loadHero() {
   try {
     const h = (window._homepageData?.hero) || await API.get('/hero')
     const badge = document.getElementById('hero-badge')
-    if (badge) badge.innerHTML = `<i class="ti ti-star-filled"></i> ${escHtml(h.badge_text)}`
+    if (badge) badge.innerHTML = `<i class="ti ti-star"></i> ${escHtml(h.badge_text)}`
 
     const heroSection = document.querySelector('.hero')
     const heroBg = document.getElementById('hero-bg')
     if (heroSection && heroBg) {
       if (h.image) {
-        heroBg.style.backgroundImage = `url("${h.image}")`
+        heroBg.style.backgroundImage = cssUrlValue(h.image)
         heroSection.classList.add('hero--has-image')
         syncHeroKnockoutBackground(heroSection, h.image)
-        if (h.image_alt) heroSection.setAttribute('aria-label', h.image_alt)
+        if (h.image_alt) heroSection.setAttribute('aria-label', escHtml(h.image_alt))
         else heroSection.removeAttribute('aria-label')
       } else {
         heroBg.style.backgroundImage = ''
@@ -479,7 +483,7 @@ async function loadPurchaseTicker() {
       return
     }
     const tickerItems = orders.map(o =>
-      `<span class="ticker-item"><span class="ticker-user">${o.user_name}</span>님이 <strong>${o.course_title}</strong>을(를) 구매했습니다.</span>`
+      `<span class="ticker-item"><span class="ticker-user">${escHtml(o.user_name)}</span>님이 <strong>${escHtml(o.course_title)}</strong>을(를) 구매했습니다.</span>`
     )
     inner.innerHTML = [...tickerItems, ...tickerItems].join('')
     section.style.display = ''
@@ -491,11 +495,13 @@ async function loadPurchaseTicker() {
 
 function interleaveReviews(reviews) {
   const buckets = { student: [], client: [], editor: [] }
-  reviews.forEach(r => { if (buckets[r.review_type]) buckets[r.review_type].push(r) })
+  const valid = (reviews || []).filter(r => buckets[r.review_type])
+  valid.forEach(r => { buckets[r.review_type].push(r) })
   const order = ['student', 'client', 'editor'].filter(t => buckets[t].length)
+  if (!order.length) return []
   const out = []
   let i = 0
-  while (out.length < reviews.length) {
+  while (out.length < valid.length) {
     const t = order[i % order.length]
     const item = buckets[t].shift()
     if (item) out.push(item)
@@ -505,8 +511,9 @@ function interleaveReviews(reviews) {
 }
 
 function maskReviewName(name) {
-  if (!name || name.length < 2) return name || '수강생'
-  return name[0] + '**'
+  const n = String(name || '').trim()
+  if (!n) return '수강생'
+  return n[0] + '**'
 }
 
 function renderReviewCard(r) {
@@ -541,8 +548,9 @@ async function loadLiveReviews() {
   if (!grid) return
   try {
     const data = window._homepageData
-      ? { reviews: window._homepageData.liveReviews || [], visible_types: [{ type: 'student', label: '수강생 후기' }, { type: 'client', label: '의뢰인 후기' }, { type: 'editor', label: '에디터즈 후기' }] }
+      ? { reviews: window._homepageData.liveReviews || [], visible_types: window._homepageData.visible_types || [{ type: 'student', label: '수강생 후기' }] }
       : await API.get('/reviews/live')
+    if (sub) sub.textContent = reviewSubtitle(data.visible_types || [], API.isLoggedIn())
     const mixed = interleaveReviews(data.reviews || [])
     if (!mixed.length) {
       grid.innerHTML = '<p class="empty">표시할 후기가 없습니다.</p>'

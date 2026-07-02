@@ -34,7 +34,16 @@ function cacheSet(key, value, ttlMs) {
   _cache.set(key, { value, expiresAt: Date.now() + ttlMs })
 }
 function cacheInvalidate(...keys) {
-  keys.forEach(k => _cache.delete(k))
+  keys.forEach(k => {
+    if (String(k).endsWith('*')) {
+      const prefix = String(k).slice(0, -1)
+      for (const key of _cache.keys()) {
+        if (key.startsWith(prefix)) _cache.delete(key)
+      }
+      return
+    }
+    _cache.delete(k)
+  })
 }
 const TTL = {
   COURSES: 30_000,       // 강의 목록 30초
@@ -727,6 +736,16 @@ function maskPublicName(name) {
   return n[0] + '**'
 }
 
+function isPublicReview(review) {
+  return review?.is_public === 1 || review?.is_public === true || review?.is_public === '1'
+}
+
+function normalizeReviewRating(value, fallback = 0) {
+  const n = Number(value)
+  if (!Number.isFinite(n) || n <= 0) return fallback
+  return Math.max(1, Math.min(5, n))
+}
+
 const DEFAULT_HOMEPAGE_LAYOUT = require('../lib/homepage-layout-defaults')
 
 const DEFAULT_HOMEPAGE_COPY = DEFAULT_HOMEPAGE_LAYOUT.copy
@@ -1227,6 +1246,10 @@ function pickCourseCardFields(course = {}) {
 
 // ── DB API ──
 const db = {
+  maskPublicName,
+  isPublicReview,
+  normalizeReviewRating,
+
   // users
   async batchGetUsers(ids) {
     if (!ids.length) return {}
@@ -1494,7 +1517,7 @@ const db = {
   },
   async updateCourse(id, data) {
     await fs.collection('courses').doc(id).update(data)
-    cacheInvalidate('courses:pub', 'courses:all', 'homepage:data')
+    cacheInvalidate('courses:pub', 'courses:all', 'homepage:data*')
     // slug 캐시도 무효화 (slug를 모르면 전체 패턴 삭제)
     for (const k of _cache.keys()) {
       if (k.startsWith('course:slug:')) _cache.delete(k)
@@ -1704,7 +1727,7 @@ const db = {
     const already = await db.isEnrolled(userId, courseId)
     if (already) return
     await fs.collection('enrollments').add({ user_id: userId, course_id: courseId, enrolled_at: now() })
-    cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data')
+    cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data*')
   },
   async enrollAtomically(userId, courseId, course) {
     const courseRef = fs.collection('courses').doc(courseId)
@@ -1722,7 +1745,7 @@ const db = {
     })
     if (enrollmentFull) return { error: 'enrollment_full' }
     await fs.collection('enrollments').add({ user_id: userId, course_id: courseId, enrolled_at: now() })
-    cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data')
+    cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data*')
     return { success: true }
   },
   async getEnrollmentsByUser(userId) {
@@ -1762,7 +1785,7 @@ const db = {
     const snap = await fs.collection('enrollments').where('user_id', '==', userId).get()
     const targets = snap.docs.filter(d => d.data().course_id === courseId)
     for (const doc of targets) await doc.ref.delete()
-    cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data')
+    cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data*')
     return targets.length
   },
   async deleteProgressByCourse(userId, courseId) {
@@ -1916,6 +1939,10 @@ const db = {
     const snap = await fs.collection('orders').orderBy('paid_at', 'desc').get()
     return snapToArr(snap)
   },
+  async getPublicStudentCount() {
+    const snap = await fs.collection('orders').where('status', '==', 'paid').get()
+    return new Set(snapToArr(snap).map(o => o.user_id).filter(Boolean)).size
+  },
 
   // progress
   async getProgress(userId, chapterId) {
@@ -1962,6 +1989,18 @@ const db = {
     if (snap.empty) return null
     return { id: snap.docs[0].id, ...snap.docs[0].data() }
   },
+  async syncCourseReviewStats(courseId) {
+    const pub = await db.getReviews(courseId)
+    const ratings = pub
+      .map(r => db.normalizeReviewRating(r.rating, 0))
+      .filter(n => Number.isFinite(n) && n > 0)
+    const avg = ratings.length
+      ? Math.round((ratings.reduce((s, n) => s + n, 0) / ratings.length) * 10) / 10
+      : 0
+    await db.updateCourse(courseId, { rating: avg, review_count: pub.length })
+    cacheInvalidate('homepage:data*', 'reviews:live:*')
+    return { rating: avg, review_count: pub.length }
+  },
   async upsertReview(userId, courseId, rating, content) {
     const snap = await fs.collection('reviews').where('user_id', '==', userId).where('course_id', '==', courseId).limit(1).get()
     const numRating = Math.max(1, Math.min(5, parseInt(rating, 10) || 0))
@@ -1970,9 +2009,7 @@ const db = {
     } else {
       await fs.collection('reviews').add({ user_id: userId, course_id: courseId, rating: numRating, content, is_public: 1, created_at: now() })
     }
-    const pub = await db.getReviews(courseId)
-    const avg = pub.reduce((s, r) => s + r.rating, 0) / (pub.length || 1)
-    await db.updateCourse(courseId, { rating: Math.round(avg * 10) / 10, review_count: pub.length })
+    await db.syncCourseReviewStats(courseId)
 
     let coupon = null
     if (numRating === 5) {
@@ -2009,10 +2046,18 @@ const db = {
     return { rating: numRating, coupon }
   },
   async deleteReview(id) {
+    const existing = await fs.collection('reviews').doc(id).get()
+    const courseId = existing.exists ? existing.data().course_id : null
     await fs.collection('reviews').doc(id).delete()
+    if (courseId) await db.syncCourseReviewStats(courseId)
+    cacheInvalidate('homepage:data*', 'reviews:live:*')
   },
   async updateReviewPublic(id, isPublic) {
+    const existing = await fs.collection('reviews').doc(id).get()
+    const courseId = existing.exists ? existing.data().course_id : null
     await fs.collection('reviews').doc(id).update({ is_public: isPublic ? 1 : 0 })
+    if (courseId) await db.syncCourseReviewStats(courseId)
+    cacheInvalidate('homepage:data*', 'reviews:live:*')
   },
 
   // platform_reviews (실시간 후기 — 유형별 노출)
@@ -2031,11 +2076,11 @@ const db = {
     const snap = await fs.collection('platform_reviews').where('seed_key', '==', seedKey).limit(1).get()
     if (!snap.empty) {
       await snap.docs[0].ref.update({ ...data, updated_at: now() })
-      for (const k of _cache.keys()) if (k.startsWith('platform_reviews:')) _cache.delete(k)
+      cacheInvalidate('platform_reviews:*', 'homepage:data*', 'reviews:live:*')
       return snap.docs[0].id
     }
     const ref = await fs.collection('platform_reviews').add({ seed_key: seedKey, created_at: now(), is_public: 1, ...data })
-    for (const k of _cache.keys()) if (k.startsWith('platform_reviews:')) _cache.delete(k)
+    cacheInvalidate('platform_reviews:*', 'homepage:data*', 'reviews:live:*')
     return ref.id
   },
 
@@ -2098,13 +2143,13 @@ const db = {
     }
     payload.updated_at = now()
     await fs.collection('platform_reviews').doc(id).update(payload)
-    for (const k of _cache.keys()) if (k.startsWith('platform_reviews:')) _cache.delete(k)
+    cacheInvalidate('platform_reviews:*', 'homepage:data*', 'reviews:live:*')
     return db.getPlatformReviewById(id)
   },
 
   async deletePlatformReview(id) {
     await fs.collection('platform_reviews').doc(id).delete()
-    for (const k of _cache.keys()) if (k.startsWith('platform_reviews:')) _cache.delete(k)
+    cacheInvalidate('platform_reviews:*', 'homepage:data*', 'reviews:live:*')
   },
 
   // anticipation_reviews (강의별 기대평)
@@ -3370,17 +3415,20 @@ const db = {
   },
 
   async getPublicSiteStats() {
-    const [courses, enrollSnap, reviewSnap] = await Promise.all([
+    const [courses, studentCount, reviewSnap] = await Promise.all([
       db.getCourses(true),
-      fs.collection('enrollments').get(),
+      db.getPublicStudentCount(),
       fs.collection('reviews').where('is_public', '==', 1).get(),
     ])
     const reviews = reviewSnap.docs.map(d => d.data())
-    const avgRating = reviews.length
-      ? Math.round(reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length * 10) / 10
+    const ratings = reviews
+      .map(r => db.normalizeReviewRating(r.rating, 0))
+      .filter(n => Number.isFinite(n) && n > 0)
+    const avgRating = ratings.length
+      ? Math.round(ratings.reduce((s, n) => s + n, 0) / ratings.length * 10) / 10
       : 0
     return {
-      studentCount: enrollSnap.size,
+      studentCount,
       avgRating,
       courseCount: courses.length,
     }
@@ -3561,7 +3609,7 @@ const db = {
   },
 
   async updateHomepageLayout({ sections, nav, copy, categories, site } = {}) {
-    cacheInvalidate('site:homepage', 'homepage:data')
+    cacheInvalidate('site:homepage', 'homepage:data*')
     const current = await db.getHomepageLayout()
     const next = normalizeHomepageLayout({
       sections: sections ? { ...current.sections, ...sections } : current.sections,
@@ -3604,7 +3652,7 @@ const db = {
   async updateHeroConfig(data) {
     const next = normalizeHeroConfig(data)
     await fs.collection('site_settings').doc('hero').set({ ...next, updated_at: now() })
-    cacheInvalidate('site:hero', 'homepage:data')
+    cacheInvalidate('site:hero', 'homepage:data*')
     return db.getHeroConfig()
   },
 
@@ -3713,6 +3761,9 @@ const db = {
   getLiveResourceAccess,
   stripLiveResourceUrls,
   pickCourseCardFields,
+  maskPublicName,
+  isPublicReview,
+  normalizeReviewRating,
   _cacheGet: cacheGet,
   _cacheSet: cacheSet,
   _cacheInvalidate: cacheInvalidate,
@@ -3736,6 +3787,9 @@ module.exports.getReplayOpensAt = getReplayOpensAt
 module.exports.getLiveResourceAccess = getLiveResourceAccess
 module.exports.stripLiveResourceUrls = stripLiveResourceUrls
 module.exports.pickCourseCardFields = pickCourseCardFields
+module.exports.maskPublicName = maskPublicName
+module.exports.isPublicReview = isPublicReview
+module.exports.normalizeReviewRating = normalizeReviewRating
 module.exports.userPayload = userPayload
 module.exports.EDITOR_WORK_TYPES = EDITOR_WORK_TYPES
 module.exports.EDITOR_FEATURED_REASON = EDITOR_FEATURED_REASON

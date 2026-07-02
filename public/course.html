@@ -20,7 +20,7 @@
     })
   </script>
   <title>강의 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=14" /><link rel="stylesheet" href="/css/common.css?v=3" /><link rel="stylesheet" href="/css/course.css?v=24" />
+  <link rel="stylesheet" href="/css/style.css?v=14" /><link rel="stylesheet" href="/css/common.css?v=3" /><link rel="stylesheet" href="/css/course.css?v=25" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -692,7 +692,7 @@
         : (c.badge ? `<span class="ch-badge ch-badge--${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')
 
       const heroGalleryUrls = buildHeroGalleryUrls(c)
-      document.title = c.title + ' — 타닥클래스'
+      document.title = String(c.title || '') + ' — 타닥클래스'
       const instructorLine = c.instructor_name
         ? `<div class="ch-instructor-line">
             ${c.instructor_avatar ? `<img src="${esc(c.instructor_avatar)}" class="ch-instructor-avatar" alt="">` : `<span class="ch-instructor-avatar ch-instructor-avatar--ph"><i class="ti ti-user"></i></span>`}
@@ -712,7 +712,7 @@
               ${categoryLine}
               ${badgeHtml ? `<div class="course-hero-badges">${badgeHtml}</div>` : ''}
               <div class="course-hero-copy">
-                <h1>${c.title}</h1>
+                <h1>${esc(c.title)}</h1>
                 ${c.description ? `<p class="ch-desc">${esc(c.description)}</p>` : ''}
                 <div class="ch-meta">
                   ${Number(c.review_count) > 0
@@ -895,7 +895,7 @@
         toast('모집 정원이 마감되었습니다.', 'error')
         return
       }
-      document.getElementById('modal-course-info').innerHTML = `<div class="mci-title">${courseData.title}</div>`
+      document.getElementById('modal-course-info').innerHTML = `<div class="mci-title">${esc(courseData.title)}</div>`
       document.getElementById('modal-coupon-info').innerHTML = ''
       selectedCouponCode = null
       let total = Number(courseData.sale_price)

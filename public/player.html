@@ -193,11 +193,11 @@
               <a href="${esc(ch.video_url)}" target="_blank" rel="noopener noreferrer" class="vp-play-btn"><i class="ti ti-external-link"></i> 영상 페이지에서 보기</a>
             </div>`
           : `<div class="video-placeholder">
-              <div class="vp-icon"><i class="ti ti-player-play-filled"></i></div>
+              <div class="vp-icon"><i class="ti ti-player-play"></i></div>
               <div class="vp-title">${esc(ch.title)}</div>
               <div class="vp-note">영상 파일 업로드 후 이 영역에서 자동 재생됩니다.<br>현재는 수강 완료 처리만 가능합니다.</div>
               <button class="vp-play-btn" onclick="simulateWatch('${esc(ch.id)}', ${ch.next_id ? `'${esc(ch.next_id)}'` : 'null'})">
-                <i class="ti ti-player-play-filled"></i> 수강 완료 처리하기
+                <i class="ti ti-player-play"></i> 수강 완료 처리하기
               </button>
             </div>`
 
@@ -215,7 +215,7 @@
           <div class="ci-nav">
             ${ch.prev_id ? `<button onclick="loadChapter('${esc(ch.prev_id)}')" class="ci-btn"><i class="ti ti-arrow-left"></i> 이전 강의</button>` : '<span></span>'}
             <span class="ci-status ${isCompleted?'done':''}">
-              ${isCompleted ? '<i class="ti ti-circle-check-filled"></i> 수강 완료' : '<i class="ti ti-circle-dashed"></i> 미완료'}
+              ${isCompleted ? '<i class="ti ti-circle-check"></i> 수강 완료' : '<i class="ti ti-circle-dashed"></i> 미완료'}
             </span>
             ${ch.next_id ? `<button onclick="loadChapter('${esc(ch.next_id)}')" class="ci-btn next"><i class="ti ti-arrow-right"></i> 다음 강의</button>` : ''}
           </div>

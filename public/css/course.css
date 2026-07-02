@@ -160,7 +160,7 @@
 }
 .ch-meta span { display: flex; align-items: center; gap: 5px; }
 .ch-meta strong { color: #f5a623; font-weight: 700; }
-.ch-meta .ti-star-filled { color: #f5a623; }
+.ch-meta .ti-star { color: #f5a623; }
 
 /* 히어로: 카테고리 */
 .ch-category {

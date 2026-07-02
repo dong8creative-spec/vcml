@@ -71,7 +71,7 @@
     function statusLabel(status) {
       if (status === 'refunded') return '<span class="order-status refunded"><i class="ti ti-receipt-refund"></i> 환불완료</span>'
       if (status === 'cancelled') return '<span class="order-status cancelled"><i class="ti ti-x"></i> 취소됨</span>'
-      return '<span class="order-status paid"><i class="ti ti-circle-check-filled"></i> 결제완료</span>'
+      return '<span class="order-status paid"><i class="ti ti-circle-check"></i> 결제완료</span>'
     }
 
     async function refundOrder(courseId) {

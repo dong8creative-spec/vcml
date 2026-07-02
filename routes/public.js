@@ -1,5 +1,6 @@
 const router = require('express').Router()
 const db = require('../db/schema')
+const { optionalAuth, allowedReviewTypes } = require('../middleware/auth')
 
 function publicCache(req, res, next) {
   if (req.method === 'GET') {
@@ -91,66 +92,86 @@ router.get('/recent-orders', async (req, res) => {
 })
 
 // 홈페이지 전체 데이터를 한 번에 반환 — API 요청 5개 → 1개로 줄임
-router.get('/homepage', async (req, res) => {
+router.get('/homepage', optionalAuth, async (req, res) => {
   try {
-    const cached = db._cacheGet('homepage:data')
+    res.set('Cache-Control', 'private, no-store')
+
+    const cacheKey = `homepage:data:${req.user?.id || 'anon'}`
+    const cached = db._cacheGet(cacheKey)
     if (cached) return res.json(cached)
-    const [hero, courses, layout, orders, platformReviews, allOrders, allReviews] = await Promise.all([
+
+    const types = allowedReviewTypes(req.user)
+    const platformTypes = types.filter(t => t !== 'student')
+    const settled = await Promise.allSettled([
       db.getHeroConfig(),
       db.getCourses(true),
       db.getHomepageLayout(),
       db.getRecentPublicOrders(20),
-      db.getPlatformReviewsByTypes(['student', 'client', 'editor']).catch(() => []),
-      db.getAllOrders().catch(() => []),
-      db.getAllReviews().catch(() => []),
+      platformTypes.length ? db.getPlatformReviewsByTypes(platformTypes) : Promise.resolve([]),
+      db.getPublicStudentCount(),
+      db.getAllReviews(),
     ])
+    const value = (idx, fallback) => settled[idx].status === 'fulfilled' ? settled[idx].value : fallback
+    const hero = value(0, null)
+    const courses = value(1, [])
+    const layout = value(2, null)
+    const orders = value(3, [])
+    const platformReviews = value(4, [])
+    const studentCount = value(5, 0)
+    const allReviews = value(6, [])
+
     const TYPE_LABEL = { student: '수강생 후기', client: '의뢰인 후기', editor: '에디터즈 후기' }
-    function maskName(name) {
-      if (!name || name.length < 2) return name || '수강생'
-      return name[0] + '**'
-    }
 
     // 수강생 후기 — 실제 reviews 컬렉션 (이름·강의명 조인)
-    const studentReviews = (allReviews || []).filter(r => r.is_public == 1 && r.content)
+    const studentReviews = types.includes('student')
+      ? (allReviews || []).filter(r => db.isPublicReview(r) && r.content)
+      : []
     const courseIds = [...new Set(studentReviews.map(r => r.course_id).filter(Boolean))]
-    const courseMap = courseIds.length ? await db.batchGetCourses(courseIds) : {}
-    const liveFromCourse = await Promise.all(studentReviews.map(async r => {
-      const user = await db.findUserById(r.user_id)
+    const userIds = [...new Set(studentReviews.map(r => r.user_id).filter(Boolean))]
+    const [courseMap, userMap] = await Promise.all([
+      courseIds.length ? db.batchGetCourses(courseIds) : {},
+      userIds.length ? db.batchGetUsers(userIds) : {},
+    ])
+    const liveFromCourse = studentReviews.map(r => {
+      const user = userMap[r.user_id]
       const name = user?.name || ''
       return {
         id: r.id,
         review_type: 'student',
         type_label: TYPE_LABEL.student,
-        author_name: maskName(name),
+        author_name: db.maskPublicName(name || '수강생'),
         author_initial: name.trim() ? name.trim()[0] : '수',
         content: r.content,
-        rating: r.rating || 5,
+        rating: db.normalizeReviewRating(r.rating, 5),
         course_title: courseMap[r.course_id]?.title || '',
         created_at: r.created_at,
       }
-    }))
+    })
 
     // 의뢰인·에디터즈 후기 — platform_reviews 유지
     const liveFromPlatform = platformReviews
-      .filter(r => r.review_type !== 'student')
+      .filter(r => platformTypes.includes(r.review_type))
       .map(r => ({
         id: r.id, review_type: r.review_type,
         type_label: TYPE_LABEL[r.review_type] || r.review_type,
-        author_name: maskName(r.author_name), author_initial: r.author_initial || (r.author_name ? r.author_name[0] : '?'),
-        content: r.content, rating: r.rating || 5,
+        author_name: db.maskPublicName(r.author_name), author_initial: r.author_initial || (r.author_name ? r.author_name[0] : '?'),
+        content: r.content, rating: db.normalizeReviewRating(r.rating, 5),
         course_title: r.context_label || '', created_at: r.created_at,
       }))
 
     const liveReviews = [...liveFromCourse, ...liveFromPlatform]
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
-    const studentCount = new Set((allOrders || []).map(o => o.user_id).filter(Boolean)).size
-    const publicReviews = (allReviews || []).filter(r => r.is_public === 1 && r.rating)
-    const avgRating = publicReviews.length
-      ? (publicReviews.reduce((s, r) => s + r.rating, 0) / publicReviews.length).toFixed(1)
+    const publicRatings = (allReviews || [])
+      .filter(r => db.isPublicReview(r))
+      .map(r => db.normalizeReviewRating(r.rating, 0))
+      .filter(n => Number.isFinite(n) && n > 0)
+    const avgRating = publicRatings.length
+      ? (publicRatings.reduce((s, n) => s + n, 0) / publicRatings.length).toFixed(1)
       : null
-    const stats = { student_count: studentCount, review_count: publicReviews.length, avg_rating: avgRating }
-    const data = { hero, courses: courses.map(db.pickCourseCardFields), layout, orders: orders || [], liveReviews, stats }
-    db._cacheSet('homepage:data', data, 30_000)
+    const stats = { student_count: studentCount, review_count: publicRatings.length, avg_rating: avgRating }
+    const visibleTypes = types.map(t => ({ type: t, label: TYPE_LABEL[t] }))
+    const data = { hero, courses: courses.map(db.pickCourseCardFields), layout, orders: orders || [], liveReviews, visible_types: visibleTypes, stats }
+    db._cacheSet(cacheKey, data, 30_000)
     res.json(data)
   } catch (e) {
     res.status(500).json({ error: e.message })
