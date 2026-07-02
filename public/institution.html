@@ -156,7 +156,7 @@
         return
       }
       grid.innerHTML = courses.map(c => `
-        <div onclick="openCourse('${c.id}','${esc(c.title).replace(/'/g,"\\'")}') " style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:box-shadow .2s" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+        <div data-course-id="${esc(c.id)}" data-course-title="${esc(c.title)}" onclick="openCourse(this.dataset.courseId,this.dataset.courseTitle)" style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:box-shadow .2s" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
           ${c.cover_image
             ? `<img src="${esc(c.cover_image)}" alt="${esc(c.title)}" style="width:100%;aspect-ratio:16/9;object-fit:cover" draggable="false" oncontextmenu="return false">`
             : `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center"><i class="ti ti-presentation" style="font-size:40px;color:rgba(255,255,255,0.6)"></i></div>`}
@@ -191,9 +191,11 @@
   }
 
   let _pendingCourseId = null
+  let _pendingCourseTitle = ''
 
   function openReviewModal(courseId, courseTitle) {
     _pendingCourseId = courseId
+    _pendingCourseTitle = courseTitle || ''
     const ta = document.getElementById('review-textarea')
     ta.value = ''
     ta.placeholder = courseTitle
@@ -211,9 +213,10 @@
   }
 
   function updateReviewCount() {
-    const len = document.getElementById('review-textarea').value.length
-    document.getElementById('review-char-count').textContent = len
-    document.getElementById('review-submit-btn').disabled = len < 130
+    const val = document.getElementById('review-textarea').value
+    const trimLen = val.trim().length
+    document.getElementById('review-char-count').textContent = trimLen
+    document.getElementById('review-submit-btn').disabled = trimLen < 130
   }
 
   async function submitReview() {
@@ -225,11 +228,11 @@
     try {
       await API.post('/institution/courses/' + _pendingCourseId + '/review', { content })
       closeReviewModal()
-      openCourse(_pendingCourseId)
+      openCourse(_pendingCourseId, _pendingCourseTitle)
     } catch (e) {
       alert('오류: ' + e.message)
       btn.disabled = false
-      btn.textContent = '후기 제출하고 자료 열람하기'
+      btn.textContent = '후기 제출 후 열람'
     }
   }
 
