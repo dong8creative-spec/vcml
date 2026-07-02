@@ -17,28 +17,26 @@ router.get('/live', optionalAuth, async (req, res) => {
     // 수강생 후기 — 실제 reviews 컬렉션에서 강의명·이름 조인
     if (types.includes('student')) {
       const all = await db.getAllReviews()
-      const public_ = all.filter(r => r.is_public === 1 || r.is_public === true)
+      const public_ = all.filter(r => r.is_public == 1)
       if (public_.length) {
-        const userIds = [...new Set(public_.map(r => r.user_id).filter(Boolean))]
         const courseIds = [...new Set(public_.map(r => r.course_id).filter(Boolean))]
-        const [userMap, courseMap] = await Promise.all([
-          db.batchGetUsers(userIds),
-          db.batchGetCourses(courseIds),
-        ])
-        public_.forEach(r => {
-          const name = userMap[r.user_id]?.name || ''
-          results.push({
+        const courseMap = await db.batchGetCourses(courseIds)
+        const enriched = await Promise.all(public_.map(async r => {
+          const user = await db.findUserById(r.user_id)
+          const name = user?.name || ''
+          return {
             id: r.id,
             review_type: 'student',
             type_label: TYPE_LABEL.student,
             author_name: maskName(name),
-            author_initial: name ? name[0] : '수',
+            author_initial: name.trim() ? name.trim()[0] : '수',
             content: r.content || '',
             rating: r.rating || 5,
             course_title: courseMap[r.course_id]?.title || '',
             created_at: r.created_at,
-          })
-        })
+          }
+        }))
+        results.push(...enriched)
       }
     }
 
