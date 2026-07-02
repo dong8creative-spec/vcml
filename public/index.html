@@ -504,15 +504,24 @@ function interleaveReviews(reviews) {
   return out
 }
 
+function maskReviewName(name) {
+  if (!name || name.length < 2) return name || '수강생'
+  return name[0] + '**'
+}
+
 function renderReviewCard(r) {
   const stars = '⭐'.repeat(r.rating || 5)
   const preview = r.content.length > 60 ? r.content.slice(0, 60) + '…' : r.content
+  const maskedName = maskReviewName(r.author_name)
+  const initial = r.author_initial || (r.author_name ? r.author_name[0] : '수')
+  const courseLabel = r.context_label ? `<div class="rticker-course">${r.context_label}</div>` : ''
   return `<div class="rticker-card">
     <div class="rticker-stars">${stars}</div>
+    ${courseLabel}
     <div class="rticker-text">${preview}</div>
     <div class="rticker-author">
-      <div class="rticker-dot">${r.author_initial || '수'}</div>
-      <span>${r.author_name}</span>
+      <div class="rticker-dot">${initial}</div>
+      <span>${maskedName} 수강생</span>
     </div>
   </div>`
 }
