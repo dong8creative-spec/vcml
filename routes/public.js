@@ -105,30 +105,44 @@ router.get('/homepage', async (req, res) => {
       db.getAllReviews().catch(() => []),
     ])
     const TYPE_LABEL = { student: '수강생 후기', client: '의뢰인 후기', editor: '에디터즈 후기' }
-    const liveFromPlatform = platformReviews.map(r => ({
-      id: r.id, review_type: r.review_type,
-      type_label: TYPE_LABEL[r.review_type] || r.review_type,
-      author_name: r.author_name, author_initial: r.author_initial,
-      content: r.content, rating: r.rating || 5,
-      context_label: r.context_label, created_at: r.created_at,
+    function maskName(name) {
+      if (!name || name.length < 2) return name || '수강생'
+      return name[0] + '**'
+    }
+
+    // 수강생 후기 — 실제 reviews 컬렉션 (이름·강의명 조인)
+    const studentReviews = (allReviews || []).filter(r => r.is_public == 1 && r.content)
+    const courseIds = [...new Set(studentReviews.map(r => r.course_id).filter(Boolean))]
+    const courseMap = courseIds.length ? await db.batchGetCourses(courseIds) : {}
+    const liveFromCourse = await Promise.all(studentReviews.map(async r => {
+      const user = await db.findUserById(r.user_id)
+      const name = user?.name || ''
+      return {
+        id: r.id,
+        review_type: 'student',
+        type_label: TYPE_LABEL.student,
+        author_name: maskName(name),
+        author_initial: name.trim() ? name.trim()[0] : '수',
+        content: r.content,
+        rating: r.rating || 5,
+        course_title: courseMap[r.course_id]?.title || '',
+        created_at: r.created_at,
+      }
     }))
-    // platform_reviews가 없으면 course reviews(수강 후기)로 보완
-    const liveFromCourse = liveFromPlatform.length === 0
-      ? (allReviews || [])
-          .filter(r => r.is_public === 1 && r.content)
-          .map((r, i) => ({
-            id: r.id || `cr-${i}`,
-            review_type: 'student',
-            type_label: '수강생 후기',
-            author_name: '수강생',
-            author_initial: '수',
-            content: r.content,
-            rating: r.rating || 5,
-            context_label: '타닥클래스 수강생',
-            created_at: r.created_at,
-          }))
-      : []
-    const liveReviews = [...liveFromPlatform, ...liveFromCourse]
+
+    // 의뢰인·에디터즈 후기 — platform_reviews 유지
+    const liveFromPlatform = platformReviews
+      .filter(r => r.review_type !== 'student')
+      .map(r => ({
+        id: r.id, review_type: r.review_type,
+        type_label: TYPE_LABEL[r.review_type] || r.review_type,
+        author_name: maskName(r.author_name), author_initial: r.author_initial || (r.author_name ? r.author_name[0] : '?'),
+        content: r.content, rating: r.rating || 5,
+        course_title: r.context_label || '', created_at: r.created_at,
+      }))
+
+    const liveReviews = [...liveFromCourse, ...liveFromPlatform]
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
     const studentCount = new Set((allOrders || []).map(o => o.user_id).filter(Boolean)).size
     const publicReviews = (allReviews || []).filter(r => r.is_public === 1 && r.rating)
     const avgRating = publicReviews.length
