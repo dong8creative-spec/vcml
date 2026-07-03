@@ -322,9 +322,42 @@ window.addEventListener('resize', () => scheduleFitOneLineTexts())
 
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/admin-fab.js?v=1'
+  s.src = '/js/admin-fab.js?v=2'
   s.defer = true
   document.head.appendChild(s)
+})()
+;(function bootTestRoomFabLoader() {
+  function ensureStyles() {
+    if (document.querySelector('link[href*="test-room-fab.css"]')) return
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = '/css/test-room-fab.css?v=16'
+    document.head.appendChild(link)
+  }
+
+  function runWidget() {
+    if (typeof window.syncTestRoomFab === 'function') {
+      window.syncTestRoomFab().catch(() => {})
+      return
+    }
+    if (document.getElementById('test-room-fab-loader')) return
+    const s = document.createElement('script')
+    s.id = 'test-room-fab-loader'
+    s.src = '/js/test-room-fab.js?v=16'
+    s.onload = () => window.syncTestRoomFab?.().catch(() => {})
+    document.body.appendChild(s)
+  }
+
+  function start() {
+    ensureStyles()
+    runWidget()
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start)
+  } else {
+    start()
+  }
 })()
 ;(function () {
   const s = document.createElement('script')

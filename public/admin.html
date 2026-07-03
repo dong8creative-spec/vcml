@@ -1644,6 +1644,52 @@
             </div>
           </div>
         </div>
+
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-header"><div class="card-title">테스트룸 — 우측 고정 커뮤니티 버튼</div></div>
+          <p style="font-size:15px;color:#666;line-height:1.6;margin-bottom:20px">
+            사이트 우측에 인스타그램·카카오 오픈채팅 버튼을 고정 노출합니다. 편집 테스트 대기자 커뮤니티 안내용으로 사용하세요.
+          </p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px">
+            <div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:16px;cursor:pointer">
+                <input type="checkbox" id="tr-enabled" /> 우측 버튼 노출
+              </label>
+              <div class="form-group">
+                <label>버튼 라벨</label>
+                <input type="text" id="tr-label" maxlength="20" placeholder="테스트룸" />
+              </div>
+              <div class="form-group">
+                <label>안내 문구 <span style="font-size:13px;color:#aaa">(PC에서만 표시)</span></label>
+                <input type="text" id="tr-hint" maxlength="80" placeholder="편집 테스트 · 대기자 커뮤니티" />
+              </div>
+            </div>
+            <div>
+              <div class="form-group">
+                <label>인스타그램 URL</label>
+                <input type="url" id="tr-instagram-url" placeholder="https://instagram.com/..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>인스타 버튼 이름</label>
+                <input type="text" id="tr-instagram-label" maxlength="24" placeholder="인스타그램" />
+              </div>
+            </div>
+            <div>
+              <div class="form-group">
+                <label>카카오 오픈채팅 URL</label>
+                <input type="url" id="tr-kakao-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>카카오 버튼 이름</label>
+                <input type="text" id="tr-kakao-label" maxlength="24" placeholder="카카오 대기방" />
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding-top:8px;border-top:1px solid var(--border);margin-top:8px">
+            <button type="button" class="btn-save" id="tr-save-btn">테스트룸 저장</button>
+            <span id="tr-save-status" style="font-size:14px;color:#888"></span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -3237,6 +3283,30 @@
         if (statusEl) statusEl.textContent = '설정을 불러오지 못했습니다.'
       }
       await loadFooterSettings()
+      await loadTestRoomSettings()
+    }
+
+    function fillTestRoomEditor(cfg) {
+      document.getElementById('tr-enabled').checked = !!cfg.enabled
+      document.getElementById('tr-label').value = cfg.label || '테스트룸'
+      document.getElementById('tr-hint').value = cfg.hint || ''
+      document.getElementById('tr-instagram-url').value = cfg.instagram_url || ''
+      document.getElementById('tr-instagram-label').value = cfg.instagram_label || '인스타그램'
+      document.getElementById('tr-kakao-url').value = cfg.kakao_url || ''
+      document.getElementById('tr-kakao-label').value = cfg.kakao_label || '카카오 대기방'
+    }
+
+    async function loadTestRoomSettings() {
+      const statusEl = document.getElementById('tr-save-status')
+      try {
+        const cfg = await API.get('/admin/test-room')
+        fillTestRoomEditor(cfg)
+        if (statusEl && cfg.updated_at) {
+          statusEl.textContent = '마지막 저장: ' + cfg.updated_at.slice(0, 16).replace('T', ' ')
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = '테스트룸 설정을 불러오지 못했습니다.'
+      }
     }
 
     let _heroPendingImage = undefined
@@ -4815,6 +4885,31 @@
         alert('제거되었습니다.')
       } catch (e) {
         alert(e.message || '제거 중 오류가 발생했습니다.')
+      }
+    })
+
+    document.getElementById('tr-save-btn')?.addEventListener('click', async () => {
+      const statusEl = document.getElementById('tr-save-status')
+      const btn = document.getElementById('tr-save-btn')
+      try {
+        btn.disabled = true
+        const result = await API.patch('/admin/test-room', {
+          enabled: document.getElementById('tr-enabled').checked,
+          label: document.getElementById('tr-label').value.trim(),
+          hint: document.getElementById('tr-hint').value.trim(),
+          instagram_url: document.getElementById('tr-instagram-url').value.trim(),
+          instagram_label: document.getElementById('tr-instagram-label').value.trim(),
+          kakao_url: document.getElementById('tr-kakao-url').value.trim(),
+          kakao_label: document.getElementById('tr-kakao-label').value.trim(),
+        })
+        fillTestRoomEditor(result)
+        if (statusEl) {
+          statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+        }
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      } finally {
+        btn.disabled = false
       }
     })
 

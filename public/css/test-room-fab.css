@@ -1,0 +1,195 @@
+/* 테스트룸 — 우측 고정 심볼 모듈 */
+.test-room-fab {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10001;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.test-room-fab.is-active {
+  visibility: visible;
+}
+
+.test-room-fab__panel {
+  pointer-events: auto;
+  padding: 8px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  box-shadow:
+    0 14px 36px rgba(17, 17, 17, 0.15),
+    0 2px 8px rgba(17, 17, 17, 0.09);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  transform: translateX(110%);
+  transform-origin: center right;
+  will-change: transform, opacity;
+}
+
+.test-room-fab.is-active:not(.is-entering):not(.is-leaving) .test-room-fab__panel {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.test-room-fab.is-active.is-entering .test-room-fab__panel {
+  opacity: 0;
+  transform: translateX(110%);
+  animation: trf-panel-in 0.52s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.test-room-fab.is-active.is-leaving .test-room-fab__panel {
+  animation: trf-panel-out 0.28s cubic-bezier(0.4, 0, 0.8, 0.2) forwards;
+}
+
+@keyframes trf-panel-in {
+  0% {
+    opacity: 0;
+    transform: translateX(110%);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes trf-panel-out {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(110%);
+  }
+}
+
+.test-room-fab__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.test-room-fab__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.06);
+}
+
+.test-room-fab__btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 0 1px rgba(17, 17, 17, 0.08),
+    0 8px 20px rgba(17, 17, 17, 0.14);
+}
+
+.test-room-fab__btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.test-room-fab__symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.test-room-fab__symbol svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.test-room-fab__btn--room {
+  background: #111;
+  color: #fff;
+}
+
+.test-room-fab__btn--room:hover {
+  background: #222;
+  color: #fff;
+}
+
+.test-room-fab__btn--instagram {
+  background: linear-gradient(135deg, #f58529 0%, #dd2a7b 52%, #8134af 100%);
+  color: #fff;
+}
+
+.test-room-fab__btn--instagram:hover {
+  color: #fff;
+}
+
+.test-room-fab__btn--kakao {
+  background: #fee500;
+  color: #3a1d1d;
+}
+
+.test-room-fab__btn--kakao:hover {
+  color: #3a1d1d;
+}
+
+@media (max-width: 900px) {
+  .test-room-fab {
+    right: 12px;
+    top: auto;
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    transform: none;
+  }
+
+  body.has-mobile-nav .test-room-fab {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.has-mobile-nav .site-admin-fab ~ .test-room-fab,
+  .site-admin-fab ~ .test-room-fab {
+    bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .test-room-fab__panel {
+    padding: 7px;
+    border-radius: 18px;
+  }
+
+  .test-room-fab__btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+  }
+
+  .test-room-fab__symbol,
+  .test-room-fab__symbol svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .test-room-fab.is-active.is-entering .test-room-fab__panel,
+  .test-room-fab.is-active.is-leaving .test-room-fab__panel {
+    animation: none;
+  }
+
+  .test-room-fab.is-active:not(.is-leaving) .test-room-fab__panel {
+    opacity: 1;
+    transform: none;
+  }
+
+  .test-room-fab:not(.is-active) .test-room-fab__panel {
+    opacity: 0;
+  }
+}

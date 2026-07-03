@@ -159,7 +159,8 @@ app.use(express.static(path.join(__dirname, 'public'), {
     if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
     } else if (/\.(?:js|css|png|jpg|jpeg|webp|gif|svg|woff2?)$/i.test(filePath)) {
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      const isDev = process.env.NODE_ENV !== 'production'
+      res.setHeader('Cache-Control', isDev ? 'no-cache, must-revalidate' : 'public, max-age=31536000, immutable')
     }
   }
 }))

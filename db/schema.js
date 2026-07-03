@@ -50,6 +50,7 @@ const TTL = {
   COURSE_SLUG: 60_000,   // 강의 상세 1분
   HERO: 5 * 60_000,      // 히어로 5분
   FOOTER: 5 * 60_000,    // 푸터 5분
+  TEST_ROOM: 5 * 60_000, // 테스트룸 플로팅 버튼 5분
   HOMEPAGE: 5 * 60_000,  // 홈페이지 레이아웃 5분
   DASHBOARD: 60_000,     // 관리자 대시보드 1분
   STATS: 60_000,         // 통계 1분
@@ -882,6 +883,43 @@ function normalizeFooterConfig(data = {}) {
     base.policy_links = data.policy_links.slice(0, 8).map(normalizeFooterLink).filter(l => l.label)
   }
   if (!base.columns.length) base.columns = DEFAULT_FOOTER_CONFIG.columns
+  return base
+}
+
+const DEFAULT_TEST_ROOM_CONFIG = {
+  enabled: true,
+  label: '테스트룸',
+  hint: '편집 테스트 · 대기자 커뮤니티',
+  instagram_url: '',
+  instagram_label: '인스타그램',
+  kakao_url: '',
+  kakao_label: '카카오 대기방',
+}
+
+function devTestRoomFallback(cfg) {
+  if (process.env.NODE_ENV === 'production') return cfg
+  const next = { ...cfg }
+  if (!next.instagram_url && !next.kakao_url) {
+    next.enabled = true
+    next.instagram_url = 'https://www.instagram.com/'
+    next.kakao_url = 'https://open.kakao.com/'
+  }
+  return next
+}
+
+function normalizeTestRoomConfig(data = {}) {
+  const base = { ...DEFAULT_TEST_ROOM_CONFIG }
+  if (data.enabled != null) base.enabled = !!data.enabled
+  if (data.label != null) base.label = String(data.label).trim().slice(0, 20) || base.label
+  if (data.hint != null) base.hint = String(data.hint).trim().slice(0, 80)
+  if (data.instagram_url != null) base.instagram_url = String(data.instagram_url).trim().slice(0, 500)
+  if (data.instagram_label != null) {
+    base.instagram_label = String(data.instagram_label).trim().slice(0, 24) || base.instagram_label
+  }
+  if (data.kakao_url != null) base.kakao_url = String(data.kakao_url).trim().slice(0, 500)
+  if (data.kakao_label != null) {
+    base.kakao_label = String(data.kakao_label).trim().slice(0, 24) || base.kakao_label
+  }
   return base
 }
 
@@ -3637,6 +3675,23 @@ const db = {
     await fs.collection('site_settings').doc('footer').set({ ...next, updated_at: now() })
     cacheInvalidate('site:footer')
     return db.getFooterConfig()
+  },
+
+  async getTestRoomConfig() {
+    const cached = cacheGet('site:test_room')
+    if (cached) return cached
+    const doc = await fs.collection('site_settings').doc('test_room').get()
+    const data = doc.exists ? doc.data() : {}
+    const result = devTestRoomFallback({ ...normalizeTestRoomConfig(data), updated_at: data.updated_at || null })
+    cacheSet('site:test_room', result, TTL.TEST_ROOM)
+    return result
+  },
+
+  async updateTestRoomConfig(data) {
+    const next = normalizeTestRoomConfig(data)
+    await fs.collection('site_settings').doc('test_room').set({ ...next, updated_at: now() })
+    cacheInvalidate('site:test_room')
+    return db.getTestRoomConfig()
   },
 
   async getHeroConfig() {

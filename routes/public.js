@@ -62,6 +62,23 @@ router.get('/footer', async (req, res) => {
   }
 })
 
+router.get('/test-room', async (req, res) => {
+  try {
+    const cfg = await db.getTestRoomConfig()
+    res.json({
+      enabled: !!cfg.enabled,
+      label: cfg.label,
+      hint: cfg.hint,
+      instagram_url: cfg.instagram_url || '',
+      instagram_label: cfg.instagram_label,
+      kakao_url: cfg.kakao_url || '',
+      kakao_label: cfg.kakao_label,
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.get('/hero', async (req, res) => {
   try {
     res.json(await db.getHeroConfig())

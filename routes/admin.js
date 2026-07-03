@@ -565,6 +565,41 @@ router.patch('/footer', async (req, res) => {
   res.json({ success: true, ...footer })
 })
 
+function isValidExternalUrl(value) {
+  if (!value) return true
+  if (typeof value !== 'string') return false
+  try {
+    const u = new URL(value.trim())
+    return u.protocol === 'http:' || u.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+router.get('/test-room', async (req, res) => {
+  res.json(await db.getTestRoomConfig())
+})
+
+router.patch('/test-room', async (req, res) => {
+  const { enabled, label, hint, instagram_url, instagram_label, kakao_url, kakao_label } = req.body
+  if (instagram_url && !isValidExternalUrl(instagram_url)) {
+    return res.status(400).json({ error: '인스타그램 URL 형식이 올바르지 않습니다.' })
+  }
+  if (kakao_url && !isValidExternalUrl(kakao_url)) {
+    return res.status(400).json({ error: '카카오 오픈채팅 URL 형식이 올바르지 않습니다.' })
+  }
+  const settings = await db.updateTestRoomConfig({
+    enabled,
+    label,
+    hint,
+    instagram_url: instagram_url || '',
+    instagram_label,
+    kakao_url: kakao_url || '',
+    kakao_label,
+  })
+  res.json({ success: true, ...settings })
+})
+
 router.get('/hero', async (req, res) => {
   res.json(await db.getHeroConfig())
 })
