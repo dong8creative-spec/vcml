@@ -20,7 +20,7 @@
     })
   </script>
   <title>강의 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=14" /><link rel="stylesheet" href="/css/common.css?v=3" /><link rel="stylesheet" href="/css/course.css?v=25" />
+  <link rel="stylesheet" href="/css/style.css?v=14" /><link rel="stylesheet" href="/css/common.css?v=3" /><link rel="stylesheet" href="/css/course.css?v=26" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -1031,6 +1031,7 @@
       renderStoreCourseInfo()
       const overlay = document.getElementById('store-checkout-overlay')
       overlay?.classList.remove('hidden')
+      document.body.classList.add('modal-open')
       if (!isCourseCouponAllowed(courseData)) {
         document.getElementById('store-checkout-step-choice')?.classList.add('hidden')
         proceedStoreCheckout(false)
@@ -1050,6 +1051,7 @@
 
     function closeStoreCheckout() {
       document.getElementById('store-checkout-overlay')?.classList.add('hidden')
+      document.body.classList.remove('modal-open')
       resetStoreCheckout()
     }
 
