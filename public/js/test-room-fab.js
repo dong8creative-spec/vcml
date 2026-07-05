@@ -1,7 +1,7 @@
 /** 테스트룸 — 우측 고정 커뮤니티 모듈 (심볼 3개) */
 ;(function () {
   const ROOT_ID = 'test-room-fab'
-  const FAB_VERSION = 16
+  const FAB_VERSION = 17
   const ENTER_MS = 540
   const LEAVE_MS = 300
   const REVIEWS_SECTION = '.review-ticker-section, [data-home-section="reviews"]'
@@ -13,6 +13,12 @@
     room: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="1.75"/><path d="M3 9h18M8 5V3.5M16 5V3.5M9.5 13.5l2-2.5 2 2.5 2.5-3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     instagram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="4.1" stroke="currentColor" stroke-width="1.75"/><circle cx="17.35" cy="6.65" r="1.15" fill="currentColor"/></svg>`,
     kakao: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4C7.03 4 3 7.24 3 11.2c0 2.44 1.34 4.6 3.42 5.96L5 20l3.86-2.12c.94.17 1.92.26 3.14.26 4.97 0 9-3.24 9-7.2S16.97 4 12 4z" fill="currentColor"/></svg>`,
+  }
+
+  const TIPS = {
+    room: '편집자 테스트 신청',
+    instagram: '도각쌤의 인스타그램',
+    kakao: '수강생 실시간 커뮤니티',
   }
 
   let scrollRevealCleanup = null
@@ -213,11 +219,12 @@
     return '/editor-workbooks.html'
   }
 
-  function buildButton(type, href, ariaLabel, symbol) {
+  function buildButton(type, href, ariaLabel, symbol, tip) {
     const external = /^https?:\/\//i.test(href)
     const targetAttr = external ? ' target="_blank" rel="noopener noreferrer"' : ''
     return `<a href="${esc(href)}" class="test-room-fab__btn test-room-fab__btn--${type}"${targetAttr} aria-label="${esc(ariaLabel)}">
       <span class="test-room-fab__symbol">${symbol}</span>
+      <span class="test-room-fab__tip" role="tooltip">${esc(tip)}</span>
     </a>`
   }
 
@@ -230,13 +237,15 @@
     const buttons = []
     const roomHref = resolveRoomUrl(cfg)
     const roomLabel = cfg.room_label || cfg.label || '테스트룸'
-    buttons.push(buildButton('room', roomHref, roomLabel, SYMBOLS.room))
+    buttons.push(buildButton('room', roomHref, `${roomLabel}. ${TIPS.room}`, SYMBOLS.room, TIPS.room))
 
     if (isValidUrl(cfg.instagram_url)) {
-      buttons.push(buildButton('instagram', cfg.instagram_url, cfg.instagram_label || '인스타그램', SYMBOLS.instagram))
+      const instLabel = cfg.instagram_label || '인스타그램'
+      buttons.push(buildButton('instagram', cfg.instagram_url, `${instLabel}. ${TIPS.instagram}`, SYMBOLS.instagram, TIPS.instagram))
     }
     if (isValidUrl(cfg.kakao_url)) {
-      buttons.push(buildButton('kakao', cfg.kakao_url, cfg.kakao_label || '카카오 대기방', SYMBOLS.kakao))
+      const kakaoLabel = cfg.kakao_label || '카카오 대기방'
+      buttons.push(buildButton('kakao', cfg.kakao_url, `${kakaoLabel}. ${TIPS.kakao}`, SYMBOLS.kakao, TIPS.kakao))
     }
 
     if (buttons.length < 2) {

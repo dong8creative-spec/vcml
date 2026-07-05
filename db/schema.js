@@ -890,9 +890,9 @@ const DEFAULT_TEST_ROOM_CONFIG = {
   enabled: true,
   label: '테스트룸',
   hint: '편집 테스트 · 대기자 커뮤니티',
-  instagram_url: '',
+  instagram_url: 'https://www.instagram.com/official_vcml/',
   instagram_label: '인스타그램',
-  kakao_url: '',
+  kakao_url: 'https://open.kakao.com/o/gjEgOrBi',
   kakao_label: '카카오 대기방',
 }
 
@@ -901,8 +901,8 @@ function devTestRoomFallback(cfg) {
   const next = { ...cfg }
   if (!next.instagram_url && !next.kakao_url) {
     next.enabled = true
-    next.instagram_url = 'https://www.instagram.com/'
-    next.kakao_url = 'https://open.kakao.com/'
+    next.instagram_url = DEFAULT_TEST_ROOM_CONFIG.instagram_url
+    next.kakao_url = DEFAULT_TEST_ROOM_CONFIG.kakao_url
   }
   return next
 }

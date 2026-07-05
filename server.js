@@ -115,7 +115,15 @@ function esc(s) {
 }
 
 // ── 홈페이지 SSR — 강의 목록을 HTML에 직접 삽입 ──
-const indexHtmlTemplate = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
+const INDEX_HTML_PATH = path.join(__dirname, 'public', 'index.html')
+let indexHtmlTemplate = fs.readFileSync(INDEX_HTML_PATH, 'utf8')
+
+function getIndexHtml() {
+  if (process.env.NODE_ENV !== 'production') {
+    return fs.readFileSync(INDEX_HTML_PATH, 'utf8')
+  }
+  return indexHtmlTemplate
+}
 
 app.get('/', async (req, res) => {
   try {
@@ -140,7 +148,7 @@ app.get('/', async (req, res) => {
       ? `<div id="course-grid-332-ssr" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;">${ssrCards}</div>`
       : ''
 
-    const html = indexHtmlTemplate
+    const html = getIndexHtml()
       .replace(
         '<div class="course-grid-332" id="course-grid-332">\n      <div class="spinner"></div>\n    </div>',
         `<div class="course-grid-332" id="course-grid-332">${ssrGrid}</div>`

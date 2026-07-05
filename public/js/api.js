@@ -331,7 +331,7 @@ window.addEventListener('resize', () => scheduleFitOneLineTexts())
     if (document.querySelector('link[href*="test-room-fab.css"]')) return
     const link = document.createElement('link')
     link.rel = 'stylesheet'
-    link.href = '/css/test-room-fab.css?v=16'
+    link.href = '/css/test-room-fab.css?v=17'
     document.head.appendChild(link)
   }
 
@@ -343,7 +343,7 @@ window.addEventListener('resize', () => scheduleFitOneLineTexts())
     if (document.getElementById('test-room-fab-loader')) return
     const s = document.createElement('script')
     s.id = 'test-room-fab-loader'
-    s.src = '/js/test-room-fab.js?v=16'
+    s.src = '/js/test-room-fab.js?v=17'
     s.onload = () => window.syncTestRoomFab?.().catch(() => {})
     document.body.appendChild(s)
   }

@@ -1,5 +1,5 @@
 /* ── COLOR TOKENS (black & white) ── */
-@import url('/css/test-room-fab.css?v=16');
+@import url('/css/test-room-fab.css?v=17');
 
 :root {
   --primary:        #111111;
@@ -305,7 +305,7 @@ img { display: block; max-width: 100%; }
 .start-guide-sub { font-size: 21.6px; color: var(--text-muted); margin-top: 8px; }
 .start-guide-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 .sg-card {
@@ -796,9 +796,24 @@ img { display: block; max-width: 100%; }
 /* 후기 ticker */
 .review-ticker-section { padding: 56px 0 40px; background: var(--bg-soft); }
 .review-ticker-track { overflow: hidden; margin-top: 32px; }
-.review-ticker-inner { display: flex; gap: 20px; width: max-content; animation: review-ticker 28s linear infinite; }
-.review-ticker-inner:hover { animation-play-state: paused; }
-@keyframes review-ticker { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+.review-ticker-inner { overflow: hidden; }
+.review-ticker-marquee {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: review-ticker-marquee var(--rt-marquee-duration, 40s) linear infinite;
+}
+.review-ticker-marquee:hover { animation-play-state: paused; }
+.review-ticker-set {
+  display: flex;
+  gap: 20px;
+  flex-shrink: 0;
+  padding-right: 20px;
+}
+@keyframes review-ticker-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(calc(-1 * var(--rt-marquee-distance, 0px)), 0, 0); }
+}
 .rticker-card { background: #fff; border-radius: 14px; padding: 20px 22px; border: 1px solid var(--border); width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
 .rticker-stars { color: var(--warning); font-size: 11px; letter-spacing: 1px; }
 .rticker-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; flex: 1; }

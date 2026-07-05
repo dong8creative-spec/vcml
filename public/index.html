@@ -159,17 +159,10 @@ if (new URLSearchParams(location.search).get('preview') === '1') {
         <div class="sg-card-icon"><i class="ti ti-device-mobile"></i></div>
         <div class="sg-card-label">숏폼·릴스를 빠르게 만들고 싶어요</div>
         <div class="sg-card-desc">캡컷 PRO로 바로 실전 편집. 쇼츠·릴스·틱톡을 도각쌤 방식으로 빠르게.</div>
-        <div class="sg-card-cta">캡컷 강의 보기 <i class="ti ti-arrow-right"></i></div>
-      </a>
-      <a href="#all" class="sg-card" onclick="event.preventDefault();if(window.applyFilter)applyFilter({cat:null,filter:null},true);document.getElementById('all')?.scrollIntoView({behavior:'smooth'})">
-        <div class="sg-card-num">03</div>
-        <div class="sg-card-icon"><i class="ti ti-coin"></i></div>
-        <div class="sg-card-label">영상편집으로 부업하고 싶어요</div>
-        <div class="sg-card-desc">납품 가능한 결과물을 만드는 실전 과정. 독학으로 시작해 수익화까지.</div>
-        <div class="sg-card-cta">전체 강의 보기 <i class="ti ti-arrow-right"></i></div>
+        <div class="sg-card-cta">편집 초신속 강의로 <i class="ti ti-arrow-right"></i></div>
       </a>
       <a href="#all" class="sg-card" onclick="event.preventDefault();if(window.applyFilter)applyFilter({cat:null,q:'프리미어',filter:null},true);document.getElementById('all')?.scrollIntoView({behavior:'smooth'})">
-        <div class="sg-card-num">04</div>
+        <div class="sg-card-num">03</div>
         <div class="sg-card-icon"><i class="ti ti-brand-adobe"></i></div>
         <div class="sg-card-label">프리미어프로를 제대로 배우고 싶어요</div>
         <div class="sg-card-desc">현장에서 쓰는 워크플로 그대로. 기능 암기 말고 실제로 쓰는 방식으로.</div>
@@ -542,6 +535,33 @@ function reviewSubtitle(visibleTypes, isLoggedIn) {
   return '수강생 후기 — 의뢰인·에디터즈 후기는 해당 회원 유형 로그인 시 표시됩니다'
 }
 
+function buildReviewMarqueeCards(reviews, trackWidth) {
+  let items = [...reviews]
+  if (!items.length) return ''
+
+  const probe = document.createElement('div')
+  probe.className = 'review-ticker-set'
+  probe.style.cssText = 'position:fixed;left:-9999px;top:0;visibility:hidden;pointer-events:none'
+  document.body.appendChild(probe)
+
+  const measure = list => {
+    probe.innerHTML = list.map(renderReviewCard).join('')
+    return probe.getBoundingClientRect().width
+  }
+
+  const minWidth = Math.max(trackWidth || 0, 320)
+  let width = measure(items)
+  let guard = 0
+  while (width < minWidth && guard < 12) {
+    items = items.concat(reviews)
+    width = measure(items)
+    guard++
+  }
+
+  probe.remove()
+  return items.map(renderReviewCard).join('')
+}
+
 async function loadLiveReviews() {
   const grid = document.getElementById('review-grid')
   const sub = document.getElementById('review-sub')
@@ -556,12 +576,38 @@ async function loadLiveReviews() {
       grid.innerHTML = '<p class="empty">표시할 후기가 없습니다.</p>'
       return
     }
-    // 무한 루프를 위해 카드 2벌 렌더
-    const cards = mixed.map(renderReviewCard).join('')
-    grid.innerHTML = cards + cards
+    const track = grid.closest('.review-ticker-track')
+    const cards = buildReviewMarqueeCards(mixed, track?.clientWidth || window.innerWidth)
+    grid.innerHTML = `<div class="review-ticker-marquee" aria-hidden="false">
+      <div class="review-ticker-set">${cards}</div>
+      <div class="review-ticker-set" aria-hidden="true">${cards}</div>
+    </div>`
+    initReviewTickerMarquee(grid)
   } catch (e) {
     console.error(e)
     grid.innerHTML = '<p class="empty">후기를 불러오지 못했습니다.</p>'
+  }
+}
+
+function initReviewTickerMarquee(grid) {
+  const marquee = grid.querySelector('.review-ticker-marquee')
+  const firstSet = grid.querySelector('.review-ticker-set')
+  if (!marquee || !firstSet) return
+
+  const apply = () => {
+    const distance = firstSet.getBoundingClientRect().width
+    if (!distance) return
+    const speed = 46
+    const duration = Math.max(distance / speed, 16)
+    marquee.style.setProperty('--rt-marquee-distance', `${distance}px`)
+    marquee.style.setProperty('--rt-marquee-duration', `${duration}s`)
+  }
+
+  apply()
+  if (typeof ResizeObserver !== 'undefined') {
+    if (marquee._rtResizeObs) marquee._rtResizeObs.disconnect()
+    marquee._rtResizeObs = new ResizeObserver(apply)
+    marquee._rtResizeObs.observe(firstSet)
   }
 }
 
