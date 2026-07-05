@@ -63,7 +63,7 @@
     }
   }
   </script>
-  <link rel="stylesheet" href="/css/style.css?v=17" />
+  <link rel="stylesheet" href="/css/style.css?v=18" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
@@ -540,8 +540,7 @@ function buildReviewMarqueeCards(reviews, trackWidth) {
   if (!items.length) return ''
 
   const probe = document.createElement('div')
-  probe.className = 'review-ticker-set'
-  probe.style.cssText = 'position:fixed;left:-9999px;top:0;visibility:hidden;pointer-events:none'
+  probe.style.cssText = 'position:fixed;left:-9999px;top:0;visibility:hidden;pointer-events:none;display:flex;gap:20px;width:max-content'
   document.body.appendChild(probe)
 
   const measure = list => {
@@ -572,16 +571,15 @@ async function loadLiveReviews() {
       : await API.get('/reviews/live')
     if (sub) sub.textContent = reviewSubtitle(data.visible_types || [], API.isLoggedIn())
     const mixed = interleaveReviews(data.reviews || [])
+    grid.classList.remove('is-static')
     if (!mixed.length) {
+      grid.classList.add('is-static')
       grid.innerHTML = '<p class="empty">표시할 후기가 없습니다.</p>'
       return
     }
     const track = grid.closest('.review-ticker-track')
     const cards = buildReviewMarqueeCards(mixed, track?.clientWidth || window.innerWidth)
-    grid.innerHTML = `<div class="review-ticker-marquee" aria-hidden="false">
-      <div class="review-ticker-set">${cards}</div>
-      <div class="review-ticker-set" aria-hidden="true">${cards}</div>
-    </div>`
+    grid.innerHTML = cards + cards
     initReviewTickerMarquee(grid)
   } catch (e) {
     console.error(e)
@@ -590,24 +588,23 @@ async function loadLiveReviews() {
 }
 
 function initReviewTickerMarquee(grid) {
-  const marquee = grid.querySelector('.review-ticker-marquee')
-  const firstSet = grid.querySelector('.review-ticker-set')
-  if (!marquee || !firstSet) return
+  if (!grid) return
 
   const apply = () => {
-    const distance = firstSet.getBoundingClientRect().width
+    const total = grid.scrollWidth
+    const distance = total / 2
     if (!distance) return
     const speed = 46
     const duration = Math.max(distance / speed, 16)
-    marquee.style.setProperty('--rt-marquee-distance', `${distance}px`)
-    marquee.style.setProperty('--rt-marquee-duration', `${duration}s`)
+    grid.style.setProperty('--rt-marquee-distance', `${distance}px`)
+    grid.style.setProperty('--rt-marquee-duration', `${duration}s`)
   }
 
   apply()
   if (typeof ResizeObserver !== 'undefined') {
-    if (marquee._rtResizeObs) marquee._rtResizeObs.disconnect()
-    marquee._rtResizeObs = new ResizeObserver(apply)
-    marquee._rtResizeObs.observe(firstSet)
+    if (grid._rtResizeObs) grid._rtResizeObs.disconnect()
+    grid._rtResizeObs = new ResizeObserver(apply)
+    grid._rtResizeObs.observe(grid)
   }
 }
 
