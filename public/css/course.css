@@ -845,6 +845,71 @@
 }
 .modal-coupon-discount { margin-left: auto; font-weight: 700; color: #15803d; }
 
+.store-checkout-modal { max-width: 420px; }
+.store-checkout-lead {
+  margin: 0 22px 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.store-checkout-question {
+  margin: 0 22px 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.store-checkout-hint {
+  margin: 0 22px 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.store-checkout-actions,
+.store-checkout-modal .store-checkout-result {
+  padding: 0 22px 22px;
+}
+.store-checkout-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.store-checkout-result {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.btn-store-choice {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--text-primary);
+}
+.btn-store-choice--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.btn-store-choice--ghost {
+  background: #fff;
+}
+#store-checkout-step-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#store-checkout-step-result.hidden {
+  display: none;
+}
+
 /* ── 기대평 순서 안내 ── */
 .anticipation-flow-hint {
   font-size: 12px; color: var(--text-hint);

@@ -351,6 +351,24 @@ router.get('/:slug/live-replay', async (req, res) => {
   }
 })
 
+router.get('/:slug/store-checkout/resolve', authMiddleware, async (req, res) => {
+  try {
+    const course = await db.getCourseBySlug(req.params.slug)
+    if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    if (!db.usesSmartstoreCheckout(course)) {
+      return res.status(400).json({ error: '스마트스토어 결제 강의가 아닙니다.' })
+    }
+    const useCoupon = req.query.use_coupon === '1' || req.query.use_coupon === 'true'
+    const result = await db.resolveStoreCheckoutRedirect(req.user.id, course, useCoupon)
+    if (result.error === 'store_not_configured') {
+      return res.status(400).json({ error: '스마트스토어 결제 링크가 설정되지 않았습니다.' })
+    }
+    res.json(result)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.get('/:slug', async (req, res) => {
   try {
     const course = await db.getCourseBySlug(req.params.slug)
@@ -377,6 +395,8 @@ router.get('/:slug', async (req, res) => {
 
     const payload = {
       ...(await db.enrichCourseEnrollment(stripCourseMediaFields(db.stripLiveResourceUrls(course)))),
+      checkout_provider: course.checkout_provider === 'smartstore' ? 'smartstore' : 'site',
+      uses_smartstore_checkout: db.usesSmartstoreCheckout(course),
       chapters,
       enrolled,
       my_anticipation,

@@ -124,6 +124,30 @@
     </div>
   </div>
 
+  <!-- 스마트스토어 결제 안내 -->
+  <div id="store-checkout-overlay" class="modal-overlay hidden" onclick="closeStoreCheckout()">
+    <div class="modal store-checkout-modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">네이버 스마트스토어에서 구매</div>
+        <button class="modal-close" onclick="closeStoreCheckout()"><i class="ti ti-x"></i></button>
+      </div>
+      <p class="store-checkout-lead">스마트스토어에서 결제를 진행합니다. 기대평 작성 시 10% 할인 쿠폰은 지금처럼 자동 발급되며, 보유 쿠폰에 맞는 상품 링크로 안내합니다.</p>
+      <div id="store-checkout-step-choice">
+        <p class="store-checkout-question">할인 쿠폰을 사용하시겠습니까?</p>
+        <p class="store-checkout-hint">「사용하기」를 선택하면 보유 쿠폰(10% / 20%)을 자동으로 확인해 해당 상품 링크로 안내합니다.</p>
+        <div class="store-checkout-actions">
+          <button type="button" class="btn-store-choice btn-store-choice--ghost" onclick="proceedStoreCheckout(false)">쿠폰 사용 안 함 (정가)</button>
+          <button type="button" class="btn-store-choice btn-store-choice--primary" onclick="proceedStoreCheckout(true)">쿠폰 사용하기</button>
+        </div>
+      </div>
+      <div id="store-checkout-step-result" class="hidden">
+        <div class="store-checkout-result" id="store-checkout-result"></div>
+        <button type="button" class="btn-store-choice btn-store-choice--primary" id="store-checkout-go-btn" onclick="goStoreCheckoutLink()">스마트스토어 열기</button>
+        <button type="button" class="btn-store-choice btn-store-choice--ghost" onclick="resetStoreCheckout()">다시 선택</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/api.js?v=3"></script>
   <script src="/js/live-reminder.js?v=20"></script>
   <script src="/js/auth-redirect.js"></script>
@@ -405,6 +429,10 @@
       </div>`
     }
 
+    function usesSmartstoreCheckout(c) {
+      return !!c?.uses_smartstore_checkout
+    }
+
     function isCourseCouponAllowed(c) {
       return c && c.coupon_allowed !== false && c.coupon_allowed !== 0
     }
@@ -416,6 +444,9 @@
 
     function renderCouponCheckoutNote(c) {
       if (c.course_type === 'live' || isFreeVod(c)) return ''
+      if (usesSmartstoreCheckout(c)) {
+        return `<p class="buy-coupon-note">네이버 스마트스토어 결제 · 쿠폰 보유 시 자동 안내</p>`
+      }
       if (!isCourseCouponAllowed(c)) {
         return `<p class="buy-coupon-note buy-coupon-note--disabled">이 강의는 쿠폰 적용이 불가합니다.</p>`
       }
@@ -530,6 +561,7 @@
     function enrollButtonLabel(c) {
       if (c.course_type === 'live') return '무료 수강 신청'
       if (isFreeVod(c)) return '무료 수강 시작'
+      if (usesSmartstoreCheckout(c)) return '스마트스토어에서 구매'
       return '결제하고 수강 시작'
     }
 
@@ -571,6 +603,10 @@
       }
       if (isFreeVod(c)) {
         return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-player-play"></i> ${enrollButtonLabel(c)}`, `onclick="submitCourseEnroll()"`)}
+          ${renderAnticipationBtn(c)}`)
+      }
+      if (usesSmartstoreCheckout(c)) {
+        return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-bag"></i> ${enrollButtonLabel(c)}`, `onclick="openStoreCheckout()"`)}
           ${renderAnticipationBtn(c)}`)
       }
       return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-cart"></i> ${enrollButtonLabel(c)}`, `onclick="openModal()"`)}
@@ -910,6 +946,67 @@
     }
 
     let selectedCouponCode = null
+    let storeCheckoutLink = null
+
+    function resetStoreCheckout() {
+      storeCheckoutLink = null
+      document.getElementById('store-checkout-step-choice')?.classList.remove('hidden')
+      document.getElementById('store-checkout-step-result')?.classList.add('hidden')
+      document.getElementById('store-checkout-result').innerHTML = ''
+    }
+
+    function openStoreCheckout() {
+      if (!API.isLoggedIn()) {
+        location.href = loginUrl('/course.html?slug=' + slug)
+        return
+      }
+      if (CourseEnrollmentUI.isClosedForApply(courseData)) {
+        toast('모집 정원이 마감되었습니다.', 'error')
+        return
+      }
+      resetStoreCheckout()
+      const overlay = document.getElementById('store-checkout-overlay')
+      overlay?.classList.remove('hidden')
+      if (!isCourseCouponAllowed(courseData)) {
+        document.getElementById('store-checkout-step-choice')?.classList.add('hidden')
+        proceedStoreCheckout(false)
+        return
+      }
+      document.getElementById('store-checkout-step-choice')?.classList.remove('hidden')
+      document.getElementById('store-checkout-step-result')?.classList.add('hidden')
+    }
+
+    function closeStoreCheckout() {
+      document.getElementById('store-checkout-overlay')?.classList.add('hidden')
+      resetStoreCheckout()
+    }
+
+    function goStoreCheckoutLink() {
+      if (!storeCheckoutLink) return
+      window.open(storeCheckoutLink, '_blank', 'noopener')
+      closeStoreCheckout()
+    }
+
+    async function proceedStoreCheckout(useCoupon) {
+      try {
+        const res = await API.get('/courses/' + slug + '/store-checkout/resolve?use_coupon=' + (useCoupon ? '1' : '0'))
+        storeCheckoutLink = res.redirect_url
+        const resultEl = document.getElementById('store-checkout-result')
+        const lines = []
+        if (useCoupon && res.discount_percent > 0) {
+          lines.push(`<strong>${esc(res.label || (res.discount_percent + '% 할인'))}</strong> 상품으로 안내합니다.`)
+        } else if (useCoupon && res.fallback) {
+          lines.push(esc(res.message || '정가 상품으로 안내합니다.'))
+        } else {
+          lines.push('정가 상품으로 안내합니다.')
+        }
+        resultEl.innerHTML = lines.join('')
+        document.getElementById('store-checkout-step-choice')?.classList.add('hidden')
+        document.getElementById('store-checkout-step-result')?.classList.remove('hidden')
+      } catch (err) {
+        toast(err.message || '결제 링크를 불러오지 못했습니다.', 'error')
+      }
+    }
 
     async function openModal() {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug + (checkoutNoCoupon ? '&coupon=0' : '')); return }

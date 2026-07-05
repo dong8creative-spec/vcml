@@ -351,11 +351,33 @@
               </select>
             </div>
             <div class="form-group">
+              <label>결제 방식</label>
+              <select id="cm-checkout-provider">
+                <option value="site">사이트 내 결제</option>
+                <option value="smartstore">네이버 스마트스토어</option>
+              </select>
+            </div>
+            <div id="cm-smartstore-fields" style="display:none">
+              <p class="sec-sub" style="margin:0 0 12px;line-height:1.55">수강생이 쿠폰 사용 여부를 선택하면, 보유 쿠폰(10% / 20%)을 자동 인식해 해당 링크로 안내합니다.</p>
+              <div class="form-group">
+                <label>정가 링크 <span>쿠폰 없음 · 쿠폰 미사용</span></label>
+                <input type="url" id="cm-store-url-none" placeholder="https://smartstore.naver.com/..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>10% 할인 링크 <span>기대평 또는 후기 쿠폰 1장</span></label>
+                <input type="url" id="cm-store-url-10" placeholder="https://smartstore.naver.com/..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>20% 할인 링크 <span>기대평+후기 쿠폰 중첩</span></label>
+                <input type="url" id="cm-store-url-20" placeholder="https://smartstore.naver.com/..." maxlength="500" />
+              </div>
+            </div>
+            <div class="form-group">
               <label class="layout-toggle" style="display:flex;align-items:center;gap:8px;cursor:pointer">
                 <input type="checkbox" id="cm-coupon-allowed" checked />
                 <span>쿠폰 사용 가능 (기대평·후기 등)</span>
               </label>
-              <p class="sec-sub" style="margin-top:8px;line-height:1.5">끄면 어떤 링크로 들어와도 정가만 결제됩니다.</p>
+              <p class="sec-sub" id="cm-coupon-help" style="margin-top:8px;line-height:1.5">사이트 결제: 끄면 정가만 결제됩니다. 스마트스토어: 끄면 쿠폰 질문 없이 정가 링크만 안내합니다.</p>
               <div id="cm-purchase-links" class="sec-sub" style="margin-top:10px;line-height:1.6"></div>
             </div>
             <div class="form-group">
@@ -2505,12 +2527,27 @@
       }
     })
 
+    function syncCmCheckoutFields() {
+      const provider = document.getElementById('cm-checkout-provider')?.value || 'site'
+      const smart = document.getElementById('cm-smartstore-fields')
+      if (smart) smart.style.display = provider === 'smartstore' ? '' : 'none'
+      const c = _courses.find(x => String(x.id) === String(_courseEditId))
+      if (c) renderCmPurchaseLinks(c)
+    }
+
     function renderCmPurchaseLinks(c) {
       const el = document.getElementById('cm-purchase-links')
       if (!el) return
       const slug = c?.slug
       if (!slug) {
         el.innerHTML = ''
+        return
+      }
+      const provider = document.getElementById('cm-checkout-provider')?.value
+        || (c.checkout_provider === 'smartstore' ? 'smartstore' : 'site')
+      if (provider === 'smartstore') {
+        el.innerHTML = `<strong>안내</strong><br>강의 상세에서 「스마트스토어에서 구매」 클릭 → 쿠폰 사용 여부 선택 → 보유 쿠폰에 맞는 링크로 자동 이동<br><br>`
+          + `<strong>강의 페이지</strong><br><code style="font-size:12px;word-break:break-all">${location.origin}/course.html?slug=${encodeURIComponent(slug)}</code>`
         return
       }
       const base = `${location.origin}/course.html?slug=${encodeURIComponent(slug)}`
@@ -2539,7 +2576,12 @@
       document.getElementById('cm-badge').value = c.badge || ''
       document.getElementById('cm-published').value = c.is_published ? '1' : '0'
       document.getElementById('cm-coupon-allowed').checked = c.coupon_allowed !== false && c.coupon_allowed !== 0
-      renderCmPurchaseLinks(c)
+      document.getElementById('cm-checkout-provider').value = c.checkout_provider === 'smartstore' ? 'smartstore' : 'site'
+      const urls = c.store_checkout_urls || {}
+      document.getElementById('cm-store-url-none').value = urls.none || ''
+      document.getElementById('cm-store-url-10').value = urls.discount_10 || ''
+      document.getElementById('cm-store-url-20').value = urls.discount_20 || ''
+      syncCmCheckoutFields()
       document.getElementById('cm-thumb-icon').value = c.thumbnail_icon || 'ti-video'
       document.getElementById('cm-thumb-style').value = c.thumb_style === 'dark' ? 'dark' : 'light'
       _cmThumbPending = undefined
@@ -2573,6 +2615,12 @@
         badge: badge || null,
         is_published: parseInt(document.getElementById('cm-published').value, 10),
         coupon_allowed: document.getElementById('cm-coupon-allowed').checked ? 1 : 0,
+        checkout_provider: document.getElementById('cm-checkout-provider').value,
+        store_checkout_urls: {
+          none: document.getElementById('cm-store-url-none').value.trim(),
+          discount_10: document.getElementById('cm-store-url-10').value.trim(),
+          discount_20: document.getElementById('cm-store-url-20').value.trim(),
+        },
         thumbnail_icon: document.getElementById('cm-thumb-icon').value.trim() || 'ti-video',
         thumb_style: document.getElementById('cm-thumb-style').value === 'dark' ? 'dark' : 'light',
       }
@@ -2602,8 +2650,11 @@
       renderCmPurchaseLinks({
         ...c,
         coupon_allowed: document.getElementById('cm-coupon-allowed').checked ? 1 : 0,
+        checkout_provider: document.getElementById('cm-checkout-provider')?.value || c.checkout_provider,
       })
     })
+
+    document.getElementById('cm-checkout-provider')?.addEventListener('change', syncCmCheckoutFields)
 
     async function togglePublish(id, current) {
       await API.patch(`/admin/courses/${id}`, { is_published: current ? 0 : 1 });

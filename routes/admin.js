@@ -284,6 +284,7 @@ router.patch('/courses/:id', async (req, res) => {
     'live_curriculum_text', 'live_curriculum_image', 'detail_intro_text', 'detail_intro_image', 'detail_intro_images', 'live_chat_url',
     'live_replay_url', 'live_material_url',
     'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'hero_gallery', 'sort_order', 'is_offline', 'enrollment_limit', 'coupon_allowed',
+    'checkout_provider', 'store_checkout_urls',
     'learning_outcomes', 'target_audience', 'instructor_name', 'instructor_role', 'instructor_bio', 'instructor_avatar',
   ]
   const update = {}
@@ -383,6 +384,29 @@ router.patch('/courses/:id', async (req, res) => {
   }
   if (update.coupon_allowed !== undefined) {
     update.coupon_allowed = update.coupon_allowed === true || update.coupon_allowed === 1 || update.coupon_allowed === '1' ? 1 : 0
+  }
+  if (update.checkout_provider !== undefined) {
+    update.checkout_provider = update.checkout_provider === 'smartstore' ? 'smartstore' : 'site'
+  }
+  if (update.store_checkout_urls !== undefined) {
+    const urls = db.normalizeStoreCheckoutUrls(update.store_checkout_urls)
+    for (const key of ['none', 'discount_10', 'discount_20']) {
+      const url = urls[key]
+      if (url && !/^https?:\/\/.+/i.test(url)) {
+        const label = key === 'none' ? '정가' : key === 'discount_10' ? '10% 할인' : '20% 할인'
+        return res.status(400).json({ error: `${label} 스마트스토어 링크는 http:// 또는 https:// 로 시작해야 합니다.` })
+      }
+    }
+    update.store_checkout_urls = urls
+    if (update.checkout_provider === 'smartstore' && !urls.none) {
+      return res.status(400).json({ error: '스마트스토어 결제 시 정가(쿠폰 없음) 링크는 필수입니다.' })
+    }
+  }
+  if (update.checkout_provider === 'smartstore') {
+    const urls = update.store_checkout_urls || db.normalizeStoreCheckoutUrls((await db.getCourseById(req.params.id))?.store_checkout_urls)
+    if (!urls?.none) {
+      return res.status(400).json({ error: '스마트스토어 결제 시 정가(쿠폰 없음) 링크는 필수입니다.' })
+    }
   }
   update.updated_at = new Date().toISOString()
   await db.updateCourse(req.params.id, update)

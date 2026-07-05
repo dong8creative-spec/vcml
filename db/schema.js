@@ -1264,6 +1264,24 @@ function canApplyCourseCoupon(course, { skipCoupon = false } = {}) {
   return true
 }
 
+function normalizeStoreCheckoutUrls(urls = {}) {
+  const clean = (value) => {
+    const s = String(value || '').trim().slice(0, 500)
+    return s || null
+  }
+  return {
+    none: clean(urls.none),
+    discount_10: clean(urls.discount_10),
+    discount_20: clean(urls.discount_20),
+  }
+}
+
+function usesSmartstoreCheckout(course) {
+  if (!course || course.checkout_provider !== 'smartstore') return false
+  const urls = course.store_checkout_urls || {}
+  return !!urls.none
+}
+
 function pickCourseCardFields(course = {}) {
   const pub = db.getCourseEnrollmentPublic(course)
   return {
@@ -1300,6 +1318,8 @@ const db = {
   normalizeReviewRating,
   isCourseCouponAllowed,
   canApplyCourseCoupon,
+  usesSmartstoreCheckout,
+  normalizeStoreCheckoutUrls,
 
   // users
   async batchGetUsers(ids) {
@@ -2504,6 +2524,66 @@ const db = {
     }
     return { totalDiscount, applied }
   },
+
+  async resolveCourseCheckoutTier(userId, course) {
+    if (!userId || !isCourseCouponAllowed(course)) {
+      return { tier: 'none', discount_percent: 0, label: '정가' }
+    }
+    const salePrice = Number(course.sale_price || 0)
+    const priorOrders = await db.getOrdersByUser(userId)
+    const isFirstPurchase = priorOrders.length === 0
+    const stack = await db.resolveStackableCourseDiscount(userId, salePrice, isFirstPurchase)
+    const count = stack.applied.length
+    if (count >= 2) {
+      return { tier: '20', discount_percent: 20, label: '20% 할인 (기대평·후기 쿠폰)' }
+    }
+    if (count === 1) {
+      const reason = stack.applied[0]?.coupon?.reason
+      const detail = reason === COURSE_REVIEW_FIVE_STAR_REASON ? '수강 후기 쿠폰' : '기대평 쿠폰'
+      return { tier: '10', discount_percent: 10, label: `10% 할인 (${detail})` }
+    }
+    return { tier: 'none', discount_percent: 0, label: '사용 가능한 쿠폰 없음' }
+  },
+
+  async resolveStoreCheckoutRedirect(userId, course, useCoupon) {
+    const urls = course.store_checkout_urls || {}
+    if (!urls.none) return { error: 'store_not_configured' }
+
+    if (!useCoupon || !isCourseCouponAllowed(course)) {
+      return {
+        redirect_url: urls.none,
+        tier: 'none',
+        discount_percent: 0,
+        label: '정가',
+      }
+    }
+
+    const tierInfo = await db.resolveCourseCheckoutTier(userId, course)
+    if (tierInfo.tier === '20' && urls.discount_20) {
+      return { redirect_url: urls.discount_20, ...tierInfo }
+    }
+    if (tierInfo.tier === '10' && urls.discount_10) {
+      return { redirect_url: urls.discount_10, ...tierInfo }
+    }
+    if (tierInfo.tier === 'none') {
+      return {
+        redirect_url: urls.none,
+        tier: 'none',
+        discount_percent: 0,
+        label: tierInfo.label,
+        fallback: true,
+        message: '보유하신 할인 쿠폰이 없어 정가 링크로 안내합니다.',
+      }
+    }
+
+    return {
+      redirect_url: urls.none,
+      ...tierInfo,
+      fallback: true,
+      message: `${tierInfo.label} 전용 링크가 없어 정가 링크로 안내합니다.`,
+    }
+  },
+
   inferCouponUsedContext(coupon) {
     if (!coupon) return null
     if (coupon.used_context) return coupon.used_context
