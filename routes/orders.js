@@ -11,6 +11,13 @@ router.post('/', authMiddleware, async (req, res) => {
   if (await db.isCourseEnrollmentFullAsync(course)) {
     return res.status(409).json({ error: '모집 정원이 마감되었습니다.', code: 'enrollment_full' })
   }
+  const checkout = db.getCheckoutWindowPublic(course)
+  if (Number(course.sale_price) > 0 && course.course_type !== 'live' && !checkout.checkout_open) {
+    return res.status(400).json({
+      error: checkout.checkout_message || '현재 결제할 수 없습니다.',
+      code: checkout.checkout_status,
+    })
+  }
 
   const isFirstPurchase = !(await db.hasPaidCourseOrder(req.user.id))
   const salePrice = Number(course.sale_price || 0)
@@ -94,6 +101,14 @@ router.get('/preview', authMiddleware, async (req, res) => {
   if (!course_id) return res.status(400).json({ error: 'course_id가 필요합니다.' })
   const course = await db.getCourseById(course_id)
   if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+
+  const checkout = db.getCheckoutWindowPublic(course)
+  if (Number(course.sale_price) > 0 && course.course_type !== 'live' && !checkout.checkout_open) {
+    return res.status(400).json({
+      error: checkout.checkout_message || '현재 결제할 수 없습니다.',
+      code: checkout.checkout_status,
+    })
+  }
 
   const isFirstPurchase = !(await db.hasPaidCourseOrder(req.user.id))
   const salePrice = Number(course.sale_price || 0)

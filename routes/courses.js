@@ -73,6 +73,12 @@ function enrollError(res, result) {
   if (result.error === 'live_ended') {
     return res.status(400).json({ error: '종료된 강의입니다.' })
   }
+  if (result.error === 'checkout_closed') {
+    return res.status(400).json({ error: result.message || '결제 기간이 종료되었습니다.', code: 'checkout_closed' })
+  }
+  if (result.error === 'checkout_upcoming') {
+    return res.status(400).json({ error: result.message || '아직 결제할 수 없습니다.', code: 'checkout_upcoming' })
+  }
   return null
 }
 
@@ -351,12 +357,33 @@ router.get('/:slug/live-replay', async (req, res) => {
   }
 })
 
+router.get('/:slug/checkout-tier', authMiddleware, async (req, res) => {
+  try {
+    const course = await db.getCourseBySlug(req.params.slug)
+    if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    const tierInfo = await db.resolveCourseCheckoutTier(req.user.id, course)
+    res.json({
+      ...tierInfo,
+      coupon_allowed: db.isCourseCouponAllowed(course),
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.get('/:slug/store-checkout/resolve', authMiddleware, async (req, res) => {
   try {
     const course = await db.getCourseBySlug(req.params.slug)
     if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
     if (!db.usesSmartstoreCheckout(course)) {
       return res.status(400).json({ error: '스마트스토어 결제 강의가 아닙니다.' })
+    }
+    const checkout = db.getCheckoutWindowPublic(course)
+    if (!checkout.checkout_open) {
+      return res.status(400).json({
+        error: checkout.checkout_message || '현재 결제할 수 없습니다.',
+        code: checkout.checkout_status,
+      })
     }
     const useCoupon = req.query.use_coupon === '1' || req.query.use_coupon === 'true'
     const result = await db.resolveStoreCheckoutRedirect(req.user.id, course, useCoupon)

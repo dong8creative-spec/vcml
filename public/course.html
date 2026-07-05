@@ -20,7 +20,7 @@
     })
   </script>
   <title>강의 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=14" /><link rel="stylesheet" href="/css/common.css?v=3" /><link rel="stylesheet" href="/css/course.css?v=26" />
+  <link rel="stylesheet" href="/css/style.css?v=14" /><link rel="stylesheet" href="/css/common.css?v=3" /><link rel="stylesheet" href="/css/course.css?v=28" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -200,7 +200,7 @@
       if (!slug) { location.href = '/'; return }
       try {
         if (window.LiveSession?.whenReady) await LiveSession.whenReady
-        const course = await API.get('/courses/' + slug)
+        const course = await API.get('/courses/' + encodeURIComponent(slug))
         courseData = course
         anticipationReviews = []
         courseReviews = []
@@ -477,6 +477,21 @@
       return ''
     }
 
+    function renderCheckoutScheduleNote(c) {
+      if (c.course_type === 'live' || isFreeVod(c) || !c.checkout_has_window) return ''
+      const msg = c.checkout_message
+      if (!msg) return ''
+      const mod = c.checkout_upcoming ? ' buy-checkout-schedule--upcoming'
+        : c.checkout_closed ? ' buy-checkout-schedule--closed' : ''
+      return `<p class="buy-checkout-schedule${mod}"><i class="ti ti-calendar-time"></i> ${esc(msg)}</p>`
+    }
+
+    function assertCheckoutOpen(c) {
+      if (isFreeVod(c) || c.enrolled || c.checkout_open !== false) return true
+      toast(c.checkout_message || '현재 결제할 수 없습니다.', 'error')
+      return false
+    }
+
     function renderBuyCard(c) {
       const thumbClass = c.thumb_style === 'dark' ? 'thumb-dark' : 'thumb-light'
       const freeVod = isFreeVod(c)
@@ -509,6 +524,7 @@
               ${!freeVod && c.price !== c.sale_price ? `<span class="buy-original">₩${Number(c.price).toLocaleString()}</span><span class="buy-disc">${Math.round((1-c.sale_price/c.price)*100)}%</span>` : ''}
             </div>
             <div class="buy-price${freeVod ? ' buy-price--free' : ''}">${salePriceLabel}</div>
+            ${renderCheckoutScheduleNote(c)}
             ${renderCouponCheckoutNote(c)}
           </div>
           ${renderEnrollActions(c)}
@@ -982,13 +998,13 @@
         <div class="store-checkout-course__price">${formatWon(courseData.sale_price)}</div>`
     }
 
-    function renderStoreCouponStatus(tier) {
+    function renderStoreCouponStatus(tier, errMsg) {
       const statusEl = document.getElementById('store-coupon-status')
       const descEl = document.getElementById('store-option-coupon-desc')
       const couponBtn = document.getElementById('store-option-coupon')
       if (!statusEl) return
       if (!tier) {
-        statusEl.innerHTML = `<div class="store-coupon-status__row store-coupon-status__row--warn"><i class="ti ti-alert-circle"></i> 쿠폰 정보를 불러오지 못했습니다. 선택 시 다시 확인합니다.</div>`
+        statusEl.innerHTML = `<div class="store-coupon-status__row store-coupon-status__row--warn"><i class="ti ti-alert-circle"></i> ${esc(errMsg || '쿠폰 정보를 불러오지 못했습니다. 선택 시 다시 확인합니다.')}</div>`
         return
       }
       if (tier.discount_percent > 0) {
@@ -1023,6 +1039,7 @@
         location.href = loginUrl('/course.html?slug=' + slug)
         return
       }
+      if (!assertCheckoutOpen(courseData)) return
       if (CourseEnrollmentUI.isClosedForApply(courseData)) {
         toast('모집 정원이 마감되었습니다.', 'error')
         return
@@ -1040,13 +1057,15 @@
       document.getElementById('store-checkout-step-choice')?.classList.remove('hidden')
       document.getElementById('store-checkout-step-result')?.classList.add('hidden')
       // 보유 쿠폰 등급을 미리 확인해 상태 표시 (링크 이동 없음)
+      let tierErr = null
       try {
-        const res = await API.get('/courses/' + slug + '/store-checkout/resolve?use_coupon=1')
+        const res = await API.get('/courses/' + encodeURIComponent(slug) + '/checkout-tier')
         storeTierCache = { discount_percent: res.discount_percent || 0, label: res.label || '' }
-      } catch {
+      } catch (err) {
         storeTierCache = null
+        tierErr = err?.message || null
       }
-      renderStoreCouponStatus(storeTierCache)
+      renderStoreCouponStatus(storeTierCache, tierErr)
     }
 
     function closeStoreCheckout() {
@@ -1063,7 +1082,7 @@
 
     async function proceedStoreCheckout(useCoupon) {
       try {
-        const res = await API.get('/courses/' + slug + '/store-checkout/resolve?use_coupon=' + (useCoupon ? '1' : '0'))
+        const res = await API.get('/courses/' + encodeURIComponent(slug) + '/store-checkout/resolve?use_coupon=' + (useCoupon ? '1' : '0'))
         storeCheckoutLink = res.redirect_url
         const resultEl = document.getElementById('store-checkout-result')
         const sale = Number(courseData?.sale_price || 0)
@@ -1098,6 +1117,7 @@
 
     async function openModal() {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug + (checkoutNoCoupon ? '&coupon=0' : '')); return }
+      if (!assertCheckoutOpen(courseData)) return
       if (CourseEnrollmentUI.isClosedForApply(courseData)) {
         toast('모집 정원이 마감되었습니다.', 'error')
         return

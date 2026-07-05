@@ -284,7 +284,7 @@ router.patch('/courses/:id', async (req, res) => {
     'live_curriculum_text', 'live_curriculum_image', 'detail_intro_text', 'detail_intro_image', 'detail_intro_images', 'live_chat_url',
     'live_replay_url', 'live_material_url',
     'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'hero_gallery', 'sort_order', 'is_offline', 'enrollment_limit', 'coupon_allowed',
-    'checkout_provider', 'store_checkout_urls',
+    'checkout_provider', 'store_checkout_urls', 'checkout_starts_at', 'checkout_ends_at',
     'learning_outcomes', 'target_audience', 'instructor_name', 'instructor_role', 'instructor_bio', 'instructor_avatar',
   ]
   const update = {}
@@ -408,6 +408,23 @@ router.patch('/courses/:id', async (req, res) => {
       return res.status(400).json({ error: '스마트스토어 결제 시 정가(쿠폰 없음) 링크는 필수입니다.' })
     }
   }
+  if (update.checkout_starts_at !== undefined || update.checkout_ends_at !== undefined) {
+    const normalized = db.normalizeCheckoutWindowInput(
+      update.checkout_starts_at === '' ? null : update.checkout_starts_at,
+      update.checkout_ends_at === '' ? null : update.checkout_ends_at,
+    )
+    if (normalized.error === 'invalid_starts') {
+      return res.status(400).json({ error: '결제 시작일 형식이 올바르지 않습니다.' })
+    }
+    if (normalized.error === 'invalid_ends') {
+      return res.status(400).json({ error: '결제 마감일 형식이 올바르지 않습니다.' })
+    }
+    if (normalized.error === 'invalid_range') {
+      return res.status(400).json({ error: '결제 마감일은 시작일보다 뒤여야 합니다.' })
+    }
+    update.checkout_starts_at = normalized.checkout_starts_at
+    update.checkout_ends_at = normalized.checkout_ends_at
+  }
   update.updated_at = new Date().toISOString()
   await db.updateCourse(req.params.id, update)
   const course = await db.enrichCourseEnrollment(await db.getCourseById(req.params.id), { liveCount: true })
@@ -418,6 +435,7 @@ router.post('/courses', async (req, res) => {
   const {
     title, description, category, price, sale_price, thumbnail_icon, thumb_style,
     badge, sort_order, is_published, checkout_provider, store_checkout_urls, coupon_allowed,
+    checkout_starts_at, checkout_ends_at,
   } = req.body
   if (!title || !String(title).trim()) return res.status(400).json({ error: '제목을 입력하세요.' })
   if (!category || !String(category).trim()) return res.status(400).json({ error: '카테고리를 입력하세요.' })
@@ -448,7 +466,18 @@ router.post('/courses', async (req, res) => {
       checkout_provider,
       store_checkout_urls,
       coupon_allowed,
+      checkout_starts_at,
+      checkout_ends_at,
     })
+    if (course?.error === 'invalid_starts') {
+      return res.status(400).json({ error: '결제 시작일 형식이 올바르지 않습니다.' })
+    }
+    if (course?.error === 'invalid_ends') {
+      return res.status(400).json({ error: '결제 마감일 형식이 올바르지 않습니다.' })
+    }
+    if (course?.error === 'invalid_range') {
+      return res.status(400).json({ error: '결제 마감일은 시작일보다 뒤여야 합니다.' })
+    }
     res.json({ success: true, course })
   } catch (e) {
     res.status(500).json({ error: e.message })

@@ -57,6 +57,19 @@
     return m.full && m.hasLimit && !isLiveEnded(c)
   }
 
+  function isCheckoutBlocked(c) {
+    if (!c || c.course_type === 'live') return false
+    if (Number(c.sale_price) === 0) return false
+    return !!(c.checkout_closed || c.checkout_upcoming)
+  }
+
+  function closedPanelLabel(c) {
+    if (c?.checkout_upcoming) return c.checkout_panel_label || '결제 전'
+    if (c?.checkout_closed) return c.checkout_panel_label || '결제마감'
+    if (isCapacityClosed(c)) return '모집마감'
+    return ''
+  }
+
   function enrollBtnLabel(c, liveStatusMap) {
     const isLive = c.course_type === 'live'
     if (isLive && isLiveEnded(c)) return '종료된 강의'
@@ -70,11 +83,11 @@
   }
 
   function isClosedForCard(c) {
-    return isCapacityClosed(c)
+    return isCapacityClosed(c) || isCheckoutBlocked(c)
   }
 
   function isClosedForApply(c) {
-    return !c?.enrolled && (isLiveEnded(c) || isCapacityClosed(c))
+    return !c?.enrolled && (isLiveEnded(c) || isCapacityClosed(c) || isCheckoutBlocked(c))
   }
 
   /** 강의 상세 buy-card — 풀폭 신청 버튼 */
@@ -96,7 +109,8 @@
   }
 
   function catalogCardPanelClose(c) {
-    return isClosedForCard(c) ? '</div><span class="enrollment-closed-panel__label">모집마감</span>' : ''
+    const label = closedPanelLabel(c)
+    return label ? `</div><span class="enrollment-closed-panel__label">${label}</span>` : ''
   }
 
   /** 강의 상세 — buy-card 안 버튼 (패널 오버레이는 buy-card에 적용) */
@@ -108,15 +122,16 @@
   }
 
   function buyCardPanelClass(c) {
-    return isCapacityClosed(c) ? ' enrollment-closed-panel' : ''
+    return isClosedForCard(c) ? ' enrollment-closed-panel' : ''
   }
 
   function buyCardPanelOpen(c) {
-    return isCapacityClosed(c) ? '<div class="enrollment-closed-panel__content">' : ''
+    return isClosedForCard(c) ? '<div class="enrollment-closed-panel__content">' : ''
   }
 
   function buyCardPanelClose(c) {
-    return isCapacityClosed(c) ? '</div><span class="enrollment-closed-panel__label">모집마감</span>' : ''
+    const label = closedPanelLabel(c)
+    return label ? `</div><span class="enrollment-closed-panel__label">${label}</span>` : ''
   }
 
   global.CourseEnrollmentUI = {

@@ -292,6 +292,22 @@
   color: var(--text-muted);
 }
 .buy-coupon-note--disabled { color: #b45309; }
+.buy-checkout-schedule {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.buy-checkout-schedule i { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
+.buy-checkout-schedule--upcoming { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.buy-checkout-schedule--closed { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
 .buy-price--free { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; color: var(--price-free); }
 .buy-live-head {
   display: flex;
@@ -779,6 +795,7 @@
 
 /* Modal */
 body.modal-open { overflow: hidden; }
+.modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.52);
@@ -790,7 +807,7 @@ body.modal-open { overflow: hidden; }
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.modal-overlay.hidden { display: none; }
+.modal-overlay.hidden { display: none !important; }
 .modal {
   background: #fff;
   border-radius: 16px;

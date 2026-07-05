@@ -331,6 +331,20 @@
                 <input type="number" id="cm-sort-order" min="1" />
               </div>
             </div>
+            <div id="cm-checkout-window" class="form-group" style="display:none">
+              <label>결제 기간 <span style="font-size:13.2px;color:#aaa">비우면 제한 없음</span></label>
+              <div class="two-col">
+                <div class="form-group" style="border-bottom:none;padding-bottom:0">
+                  <label style="font-size:13px;color:#888">시작일</label>
+                  <input type="datetime-local" id="cm-checkout-starts" />
+                </div>
+                <div class="form-group" style="border-bottom:none;padding-bottom:0">
+                  <label style="font-size:13px;color:#888">마감일</label>
+                  <input type="datetime-local" id="cm-checkout-ends" />
+                </div>
+              </div>
+              <p class="sec-sub" style="margin-top:8px;line-height:1.5">설정한 기간에만 사이트·스마트스토어 결제가 가능합니다.</p>
+            </div>
             <div class="two-col">
               <div class="form-group">
                 <label>뱃지</label>
@@ -2615,6 +2629,18 @@
         + `<br><br><strong>정가 전용</strong><br><code style="font-size:12px;word-break:break-all">${full}</code>`
     }
 
+    function isoToDatetimeLocal(iso) {
+      if (!iso) return ''
+      try {
+        const d = new Date(iso)
+        if (Number.isNaN(d.getTime())) return ''
+        const pad = n => String(n).padStart(2, '0')
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+      } catch {
+        return ''
+      }
+    }
+
     function openCourseModal(id) {
       const c = _courses.find(x => String(x.id) === String(id))
       if (!c) return
@@ -2644,6 +2670,10 @@
       _cmHeroGallery = Array.isArray(c.hero_gallery) ? [...c.hero_gallery] : []
       renderCmHeroGalleryList()
       const isLive = c.course_type === 'live'
+      const checkoutWindow = document.getElementById('cm-checkout-window')
+      if (checkoutWindow) checkoutWindow.style.display = isLive ? 'none' : ''
+      document.getElementById('cm-checkout-starts').value = isLive ? '' : isoToDatetimeLocal(c.checkout_starts_at)
+      document.getElementById('cm-checkout-ends').value = isLive ? '' : isoToDatetimeLocal(c.checkout_ends_at)
       const liveLinks = document.getElementById('cm-live-links')
       if (liveLinks) liveLinks.style.display = isLive ? '' : 'none'
       if (isLive) {
@@ -2669,6 +2699,7 @@
         document.getElementById('cm-store-url-none')?.focus()
         return
       }
+      const course = _courses.find(x => String(x.id) === String(_courseEditId))
       const payload = {
         title: document.getElementById('cm-title').value.trim(),
         category: document.getElementById('cm-category').value.trim(),
@@ -2689,7 +2720,12 @@
       if (_cmThumbPending !== undefined) payload.thumbnail_url = _cmThumbPending
       else if (thumbUrl) payload.thumbnail_url = thumbUrl
       payload.hero_gallery = _cmHeroGallery.map(s => String(s || '').trim()).filter(Boolean).slice(0, 9)
-      const course = _courses.find(x => String(x.id) === String(_courseEditId))
+      if (course?.course_type !== 'live') {
+        const startsVal = document.getElementById('cm-checkout-starts')?.value
+        const endsVal = document.getElementById('cm-checkout-ends')?.value
+        payload.checkout_starts_at = startsVal ? new Date(startsVal).toISOString() : null
+        payload.checkout_ends_at = endsVal ? new Date(endsVal).toISOString() : null
+      }
       if (course?.course_type === 'live') {
         payload.meet_code = document.getElementById('cm-live-meet-code').value.trim() || null
         payload.live_material_url = document.getElementById('cm-live-material-url').value.trim() || null

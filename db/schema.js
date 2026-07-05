@@ -1291,6 +1291,105 @@ function buildCourseSlug(title) {
   return `${cleaned || 'course'}-${Date.now()}`
 }
 
+function parseCheckoutAt(value) {
+  if (!value) return null
+  const d = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function formatCheckoutLabel(date) {
+  if (!date) return null
+  return date.toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
+function getCheckoutWindowPublic(course, at = new Date()) {
+  const isLive = course?.course_type === 'live'
+  const isFree = !isLive && Number(course?.sale_price) === 0
+  const starts = parseCheckoutAt(course?.checkout_starts_at)
+  const ends = parseCheckoutAt(course?.checkout_ends_at)
+  const now = at.getTime()
+  const base = {
+    checkout_starts_at: starts ? starts.toISOString() : null,
+    checkout_ends_at: ends ? ends.toISOString() : null,
+    checkout_starts_label: formatCheckoutLabel(starts),
+    checkout_ends_label: formatCheckoutLabel(ends),
+    checkout_has_window: !!(starts || ends),
+  }
+
+  if (isLive || isFree || (!starts && !ends)) {
+    return {
+      ...base,
+      checkout_open: true,
+      checkout_closed: false,
+      checkout_upcoming: false,
+      checkout_status: 'unlimited',
+      checkout_message: null,
+      checkout_panel_label: null,
+    }
+  }
+
+  if (starts && now < starts.getTime()) {
+    const label = formatCheckoutLabel(starts)
+    return {
+      ...base,
+      checkout_open: false,
+      checkout_closed: false,
+      checkout_upcoming: true,
+      checkout_status: 'upcoming',
+      checkout_message: label ? `${label}부터 결제할 수 있습니다.` : '결제 시작 전입니다.',
+      checkout_panel_label: '결제 전',
+    }
+  }
+
+  if (ends && now > ends.getTime()) {
+    const label = formatCheckoutLabel(ends)
+    return {
+      ...base,
+      checkout_open: false,
+      checkout_closed: true,
+      checkout_upcoming: false,
+      checkout_status: 'closed',
+      checkout_message: label ? `${label}에 결제가 마감되었습니다.` : '결제 기간이 종료되었습니다.',
+      checkout_panel_label: '결제마감',
+    }
+  }
+
+  const endsLabel = formatCheckoutLabel(ends)
+  return {
+    ...base,
+    checkout_open: true,
+    checkout_closed: false,
+    checkout_upcoming: false,
+    checkout_status: 'open',
+    checkout_message: endsLabel ? `${endsLabel}까지 결제 가능` : null,
+    checkout_panel_label: null,
+  }
+}
+
+function isCheckoutBlockedForPurchase(course, at = new Date()) {
+  return !getCheckoutWindowPublic(course, at).checkout_open
+}
+
+function normalizeCheckoutWindowInput(startsAt, endsAt) {
+  const starts = startsAt ? parseCheckoutAt(startsAt) : null
+  const ends = endsAt ? parseCheckoutAt(endsAt) : null
+  if (startsAt && !starts) return { error: 'invalid_starts' }
+  if (endsAt && !ends) return { error: 'invalid_ends' }
+  if (starts && ends && starts.getTime() >= ends.getTime()) return { error: 'invalid_range' }
+  return {
+    checkout_starts_at: starts ? starts.toISOString() : null,
+    checkout_ends_at: ends ? ends.toISOString() : null,
+  }
+}
+
 function pickCourseCardFields(course = {}) {
   const pub = db.getCourseEnrollmentPublic(course)
   return {
@@ -1329,6 +1428,9 @@ const db = {
   canApplyCourseCoupon,
   usesSmartstoreCheckout,
   normalizeStoreCheckoutUrls,
+  getCheckoutWindowPublic,
+  isCheckoutBlockedForPurchase,
+  normalizeCheckoutWindowInput,
 
   // users
   async batchGetUsers(ids) {
@@ -1527,6 +1629,7 @@ const db = {
       enrollment_full: s.full,
       enrollment_has_limit: s.hasLimit,
       enrollment_remaining: s.remaining,
+      ...getCheckoutWindowPublic(course),
     }
   },
   async countEnrollmentsByCourse(courseId) {
@@ -1624,10 +1727,14 @@ const db = {
     checkout_provider,
     store_checkout_urls,
     coupon_allowed,
+    checkout_starts_at,
+    checkout_ends_at,
   }) {
     const slug = buildCourseSlug(title)
     const sale = Number(sale_price != null ? sale_price : price) || 0
     const listPrice = Number(price != null ? price : sale) || sale
+    const checkoutWindow = normalizeCheckoutWindowInput(checkout_starts_at, checkout_ends_at)
+    if (checkoutWindow.error) return { error: checkoutWindow.error }
     const data = {
       slug,
       title,
@@ -1647,6 +1754,8 @@ const db = {
       coupon_allowed: coupon_allowed === false || coupon_allowed === 0 ? 0 : 1,
       checkout_provider: checkout_provider === 'smartstore' ? 'smartstore' : 'site',
       store_checkout_urls: normalizeStoreCheckoutUrls(store_checkout_urls || {}),
+      checkout_starts_at: checkoutWindow.checkout_starts_at,
+      checkout_ends_at: checkoutWindow.checkout_ends_at,
       created_at: now(),
     }
     const ref = await fs.collection('courses').add(data)
