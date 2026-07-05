@@ -215,6 +215,7 @@
               <button type="button" class="filter-tab" data-course-filter="archived">구버전·비공개</button>
             </div>
             <button type="button" class="btn-sm" id="btn-sync-catalog"><i class="ti ti-refresh"></i> 카탈로그 동기화</button>
+            <button class="btn-primary-sm" onclick="openRecordedCreateModal()"><i class="ti ti-video"></i> 일반 강의 등록</button>
             <button class="btn-primary-sm" onclick="openLiveCreateModal()"><i class="ti ti-broadcast"></i> 라이브 강의 등록</button>
           </div>
         </div>
@@ -360,8 +361,8 @@
             <div id="cm-smartstore-fields" style="display:none">
               <p class="sec-sub" style="margin:0 0 12px;line-height:1.55">수강생이 쿠폰 사용 여부를 선택하면, 보유 쿠폰(10% / 20%)을 자동 인식해 해당 링크로 안내합니다.</p>
               <div class="form-group">
-                <label>정가 링크 <span>쿠폰 없음 · 쿠폰 미사용</span></label>
-                <input type="url" id="cm-store-url-none" placeholder="https://smartstore.naver.com/..." maxlength="500" />
+                <label>정가 링크 <span>쿠폰 없음 · 쿠폰 미사용 · 필수</span></label>
+                <input type="url" id="cm-store-url-none" placeholder="https://smartstore.naver.com/..." maxlength="500" required />
               </div>
               <div class="form-group">
                 <label>10% 할인 링크 <span>기대평 또는 후기 쿠폰 1장</span></label>
@@ -1833,6 +1834,59 @@
     </div>
   </div>
 
+  <!-- 일반(VOD) 강의 등록 모달 -->
+  <div id="recorded-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:28px;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-video"></i> 일반 강의 등록</div>
+        <button onclick="closeRecordedCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
+      </div>
+      <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#555555;margin-bottom:20px;line-height:1.6">
+        녹화(VOD) 강의를 새로 만듭니다. 등록 후 「편집」에서 썸네일·스마트스토어 링크·챕터 등을 설정할 수 있습니다.
+      </div>
+      <div class="form-group">
+        <label>강의 제목 <span style="color:#111111">*</span></label>
+        <input type="text" id="rc-title" placeholder="예: 편집 초신속 마스터반" />
+      </div>
+      <div class="form-group">
+        <label>카테고리 <span style="color:#111111">*</span></label>
+        <input type="text" id="rc-category" placeholder="캡컷 PRO" value="캡컷 PRO" />
+      </div>
+      <div class="form-group">
+        <label>강의 설명</label>
+        <textarea id="rc-desc" rows="3" placeholder="강의 내용을 간략히 설명해주세요" style="width:100%;padding:10px 14px;border:0.5px solid #ddd;border-radius:8px;font-size: 16.8px;resize:vertical;font-family:inherit"></textarea>
+      </div>
+      <div class="two-col">
+        <div class="form-group">
+          <label>정가 (원)</label>
+          <input type="number" id="rc-price" min="0" step="1000" placeholder="89000" />
+        </div>
+        <div class="form-group">
+          <label>판매가 (원)</label>
+          <input type="number" id="rc-sale-price" min="0" step="1000" placeholder="69000" />
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="form-group">
+          <label>노출 순서</label>
+          <input type="number" id="rc-sort-order" min="1" placeholder="999" />
+        </div>
+        <div class="form-group">
+          <label>공개 여부</label>
+          <select id="rc-published">
+            <option value="0">비공개 (준비 중)</option>
+            <option value="1">공개</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>썸네일 아이콘</label>
+        <input type="text" id="rc-icon" placeholder="ti-video" value="ti-video" />
+      </div>
+      <button class="btn-save" style="width:100%;margin-top:8px" onclick="createRecordedCourse()">일반 강의 등록</button>
+    </div>
+  </div>
+
   <!-- 라이브 강의 등록 모달 -->
   <div id="live-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:16px;padding:28px;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto">
@@ -2604,6 +2658,17 @@
     document.getElementById('cm-save-btn').addEventListener('click', async () => {
       if (!_courseEditId) return
       const badge = document.getElementById('cm-badge').value
+      const checkoutProvider = document.getElementById('cm-checkout-provider').value
+      const storeUrls = {
+        none: document.getElementById('cm-store-url-none').value.trim(),
+        discount_10: document.getElementById('cm-store-url-10').value.trim(),
+        discount_20: document.getElementById('cm-store-url-20').value.trim(),
+      }
+      if (checkoutProvider === 'smartstore' && !storeUrls.none) {
+        alert('스마트스토어 결제를 선택했다면 정가(쿠폰 없음) 링크를 입력해주세요.')
+        document.getElementById('cm-store-url-none')?.focus()
+        return
+      }
       const payload = {
         title: document.getElementById('cm-title').value.trim(),
         category: document.getElementById('cm-category').value.trim(),
@@ -2615,12 +2680,8 @@
         badge: badge || null,
         is_published: parseInt(document.getElementById('cm-published').value, 10),
         coupon_allowed: document.getElementById('cm-coupon-allowed').checked ? 1 : 0,
-        checkout_provider: document.getElementById('cm-checkout-provider').value,
-        store_checkout_urls: {
-          none: document.getElementById('cm-store-url-none').value.trim(),
-          discount_10: document.getElementById('cm-store-url-10').value.trim(),
-          discount_20: document.getElementById('cm-store-url-20').value.trim(),
-        },
+        checkout_provider: checkoutProvider,
+        store_checkout_urls: storeUrls,
         thumbnail_icon: document.getElementById('cm-thumb-icon').value.trim() || 'ti-video',
         thumb_style: document.getElementById('cm-thumb-style').value === 'dark' ? 'dark' : 'light',
       }
@@ -2635,12 +2696,22 @@
         payload.live_replay_url = document.getElementById('cm-live-replay-url').value.trim() || null
         payload.live_chat_url = document.getElementById('cm-live-chat-url').value.trim() || null
       }
-      await API.patch('/admin/courses/' + _courseEditId, payload)
-      document.getElementById('course-modal').style.display = 'none'
-      loadCourses()
-      if (document.getElementById('sec-homepage')?.classList.contains('active')) {
-        loadHpCourses()
-        reloadHomePreview()
+      const btn = document.getElementById('cm-save-btn')
+      btn.disabled = true
+      btn.textContent = '저장 중...'
+      try {
+        await API.patch('/admin/courses/' + _courseEditId, payload)
+        document.getElementById('course-modal').style.display = 'none'
+        loadCourses()
+        if (document.getElementById('sec-homepage')?.classList.contains('active')) {
+          loadHpCourses()
+          reloadHomePreview()
+        }
+      } catch (err) {
+        alert(err.message || '강의 저장에 실패했습니다.')
+      } finally {
+        btn.disabled = false
+        btn.textContent = '저장'
       }
     })
 
@@ -5288,6 +5359,51 @@
         showSection(el.dataset.section);
       });
     });
+
+    function openRecordedCreateModal() {
+      document.getElementById('recorded-create-overlay').style.display = 'flex'
+    }
+    function closeRecordedCreateModal() {
+      document.getElementById('recorded-create-overlay').style.display = 'none'
+    }
+
+    async function createRecordedCourse() {
+      const title = document.getElementById('rc-title').value.trim()
+      const category = document.getElementById('rc-category').value.trim()
+      const description = document.getElementById('rc-desc').value.trim()
+      const price = parseInt(document.getElementById('rc-price').value, 10) || 0
+      const sale_price = parseInt(document.getElementById('rc-sale-price').value, 10) || 0
+      const sort_order = parseInt(document.getElementById('rc-sort-order').value, 10) || undefined
+      const is_published = parseInt(document.getElementById('rc-published').value, 10)
+      const thumbnail_icon = document.getElementById('rc-icon').value.trim() || 'ti-video'
+      if (!title) { alert('강의 제목을 입력해주세요.'); return }
+      if (!category) { alert('카테고리를 입력해주세요.'); return }
+      try {
+        const res = await API.post('/admin/courses', {
+          title,
+          category,
+          description,
+          price,
+          sale_price: sale_price || price,
+          sort_order,
+          is_published,
+          thumbnail_icon,
+        })
+        alert('일반 강의가 등록되었습니다.')
+        closeRecordedCreateModal()
+        await loadCourses()
+        if (res.course?.id) openCourseModal(res.course.id)
+        ;['rc-title', 'rc-desc', 'rc-price', 'rc-sale-price', 'rc-sort-order'].forEach(id => {
+          const el = document.getElementById(id)
+          if (el) el.value = ''
+        })
+        document.getElementById('rc-category').value = '캡컷 PRO'
+        document.getElementById('rc-published').value = '0'
+        document.getElementById('rc-icon').value = 'ti-video'
+      } catch (e) {
+        alert(e.message || '등록 중 오류가 발생했습니다.')
+      }
+    }
 
     function openLiveCreateModal() {
       document.getElementById('live-create-overlay').style.display = 'flex'

@@ -1282,6 +1282,15 @@ function usesSmartstoreCheckout(course) {
   return !!urls.none
 }
 
+function buildCourseSlug(title) {
+  const cleaned = String(title || '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9가-힣_-]/g, '')
+    .slice(0, 40)
+  return `${cleaned || 'course'}-${Date.now()}`
+}
+
 function pickCourseCardFields(course = {}) {
   const pub = db.getCourseEnrollmentPublic(course)
   return {
@@ -1598,6 +1607,58 @@ const db = {
     const slug = 'live-' + Date.now()
     const data = { slug, title, description: description || '', category, thumbnail_icon: thumbnail_icon || 'ti-broadcast', thumb_style: 'dark', price: 0, sale_price: 0, badge: 'LIVE', rating: 0, review_count: 0, student_count: 0, is_published: 1, course_type: 'live', live_schedule: live_schedule || null, live_starts_at: live_starts_at || null, meet_code: meet_code || null, live_status: 'upcoming', created_at: now() }
     const ref = await fs.collection('courses').add(data)
+    return { id: ref.id, ...data }
+  },
+
+  async createRecordedCourse({
+    title,
+    description,
+    category,
+    price,
+    sale_price,
+    thumbnail_icon,
+    thumb_style,
+    badge,
+    sort_order,
+    is_published,
+    checkout_provider,
+    store_checkout_urls,
+    coupon_allowed,
+  }) {
+    const slug = buildCourseSlug(title)
+    const sale = Number(sale_price != null ? sale_price : price) || 0
+    const listPrice = Number(price != null ? price : sale) || sale
+    const data = {
+      slug,
+      title,
+      description: description || '',
+      category: category || '영상 편집',
+      thumbnail_icon: thumbnail_icon || 'ti-video',
+      thumb_style: thumb_style === 'dark' ? 'dark' : 'light',
+      price: listPrice,
+      sale_price: sale,
+      badge: badge || null,
+      sort_order: sort_order != null ? Number(sort_order) : 999,
+      rating: 0,
+      review_count: 0,
+      student_count: 0,
+      is_published: is_published ? 1 : 0,
+      course_type: 'recorded',
+      coupon_allowed: coupon_allowed === false || coupon_allowed === 0 ? 0 : 1,
+      checkout_provider: checkout_provider === 'smartstore' ? 'smartstore' : 'site',
+      store_checkout_urls: normalizeStoreCheckoutUrls(store_checkout_urls || {}),
+      created_at: now(),
+    }
+    const ref = await fs.collection('courses').add(data)
+    await fs.collection('chapters').add({
+      course_id: ref.id,
+      order_num: 1,
+      title: '강의 소개',
+      duration: '10분',
+      is_free: sale === 0 ? 1 : 0,
+      video_url: null,
+    })
+    cacheInvalidate('courses:pub', 'courses:all', 'homepage:data*')
     return { id: ref.id, ...data }
   },
 

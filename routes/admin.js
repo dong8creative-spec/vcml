@@ -414,6 +414,47 @@ router.patch('/courses/:id', async (req, res) => {
   res.json({ success: true, course })
 })
 
+router.post('/courses', async (req, res) => {
+  const {
+    title, description, category, price, sale_price, thumbnail_icon, thumb_style,
+    badge, sort_order, is_published, checkout_provider, store_checkout_urls, coupon_allowed,
+  } = req.body
+  if (!title || !String(title).trim()) return res.status(400).json({ error: '제목을 입력하세요.' })
+  if (!category || !String(category).trim()) return res.status(400).json({ error: '카테고리를 입력하세요.' })
+  if (checkout_provider === 'smartstore') {
+    const urls = db.normalizeStoreCheckoutUrls(store_checkout_urls || {})
+    if (!urls.none) {
+      return res.status(400).json({ error: '스마트스토어 결제 시 정가(쿠폰 없음) 링크는 필수입니다.' })
+    }
+    for (const [key, url] of Object.entries(urls)) {
+      if (url && !/^https?:\/\/.+/i.test(url)) {
+        const label = key === 'none' ? '정가' : key === 'discount_10' ? '10% 할인' : '20% 할인'
+        return res.status(400).json({ error: `${label} 스마트스토어 링크는 http:// 또는 https:// 로 시작해야 합니다.` })
+      }
+    }
+  }
+  try {
+    const course = await db.createRecordedCourse({
+      title: String(title).trim(),
+      description,
+      category: String(category).trim(),
+      price,
+      sale_price,
+      thumbnail_icon,
+      thumb_style,
+      badge,
+      sort_order,
+      is_published: is_published === true || is_published === 1 || is_published === '1',
+      checkout_provider,
+      store_checkout_urls,
+      coupon_allowed,
+    })
+    res.json({ success: true, course })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.post('/live-courses', async (req, res) => {
   const { title, description, category, thumbnail_icon, live_schedule, live_starts_at, meet_code } = req.body
   if (!title || !category) return res.status(400).json({ error: '제목과 카테고리는 필수입니다.' })
