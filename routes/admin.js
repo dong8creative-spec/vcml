@@ -283,7 +283,7 @@ router.patch('/courses/:id', async (req, res) => {
     'course_type', 'live_schedule', 'live_starts_at', 'meet_code', 'live_status',
     'live_curriculum_text', 'live_curriculum_image', 'detail_intro_text', 'detail_intro_image', 'detail_intro_images', 'live_chat_url',
     'live_replay_url', 'live_material_url',
-    'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'hero_gallery', 'sort_order', 'is_offline', 'enrollment_limit',
+    'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'hero_gallery', 'sort_order', 'is_offline', 'enrollment_limit', 'coupon_allowed',
     'learning_outcomes', 'target_audience', 'instructor_name', 'instructor_role', 'instructor_bio', 'instructor_avatar',
   ]
   const update = {}
@@ -380,6 +380,9 @@ router.patch('/courses/:id', async (req, res) => {
   if (Object.keys(update).length === 0) return res.status(400).json({ error: '변경할 항목이 없습니다.' })
   if (update.enrollment_limit !== undefined) {
     update.enrollment_limit = Math.max(0, parseInt(update.enrollment_limit, 10) || 0)
+  }
+  if (update.coupon_allowed !== undefined) {
+    update.coupon_allowed = update.coupon_allowed === true || update.coupon_allowed === 1 || update.coupon_allowed === '1' ? 1 : 0
   }
   update.updated_at = new Date().toISOString()
   await db.updateCourse(req.params.id, update)

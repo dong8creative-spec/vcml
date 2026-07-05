@@ -15,34 +15,39 @@ router.post('/', authMiddleware, async (req, res) => {
   const priorOrders = await db.getOrdersByUser(req.user.id)
   const isFirstPurchase = priorOrders.length === 0
   const salePrice = Number(course.sale_price || 0)
+  const applyCoupon = db.canApplyCourseCoupon(course, {
+    skipCoupon: req.body.skip_coupon === true || req.body.skip_coupon === 1 || req.body.skip_coupon === '1',
+  })
 
   let discount = 0
   let appliedCoupons = []
 
-  const stack = await db.resolveStackableCourseDiscount(req.user.id, salePrice, isFirstPurchase)
-  if (stack.totalDiscount > 0) {
-    discount = stack.totalDiscount
-    appliedCoupons = stack.applied
-  } else if (coupon_code) {
-    let coupon = await db.getCouponByCode(coupon_code)
-    if (!coupon) return res.status(400).json({ error: '유효하지 않은 쿠폰입니다.' })
-    if (coupon.user_id !== req.user.id) return res.status(403).json({ error: '본인 쿠폰만 사용 가능합니다.' })
-    if (coupon.status !== 'available') return res.status(400).json({ error: '이미 사용했거나 만료된 쿠폰입니다.' })
-    if (coupon.status === 'expired' || db.isCouponExpired(coupon)) {
-      return res.status(400).json({ error: '만료된 쿠폰입니다.' })
-    }
-    if (coupon.reason === CLIENT_COURSE_REWARD_REASON) {
-      return res.status(400).json({ error: '의뢰 할인 쿠폰은 클라이언츠 견적 수락 시 사용할 수 있습니다.' })
-    }
-    if (coupon.first_course_only && !isFirstPurchase) {
-      return res.status(400).json({ error: '이 쿠폰은 최초 강의 결제에만 사용할 수 있습니다.' })
-    }
-    const singleDiscount = coupon.discount_percent
-      ? Math.floor(salePrice * Number(coupon.discount_percent) / 100)
-      : Number(coupon.amount || 0)
-    if (singleDiscount > 0) {
-      discount = singleDiscount
-      appliedCoupons = [{ coupon, discount: singleDiscount }]
+  if (applyCoupon) {
+    const stack = await db.resolveStackableCourseDiscount(req.user.id, salePrice, isFirstPurchase)
+    if (stack.totalDiscount > 0) {
+      discount = stack.totalDiscount
+      appliedCoupons = stack.applied
+    } else if (coupon_code) {
+      let coupon = await db.getCouponByCode(coupon_code)
+      if (!coupon) return res.status(400).json({ error: '유효하지 않은 쿠폰입니다.' })
+      if (coupon.user_id !== req.user.id) return res.status(403).json({ error: '본인 쿠폰만 사용 가능합니다.' })
+      if (coupon.status !== 'available') return res.status(400).json({ error: '이미 사용했거나 만료된 쿠폰입니다.' })
+      if (coupon.status === 'expired' || db.isCouponExpired(coupon)) {
+        return res.status(400).json({ error: '만료된 쿠폰입니다.' })
+      }
+      if (coupon.reason === CLIENT_COURSE_REWARD_REASON) {
+        return res.status(400).json({ error: '의뢰 할인 쿠폰은 클라이언츠 견적 수락 시 사용할 수 있습니다.' })
+      }
+      if (coupon.first_course_only && !isFirstPurchase) {
+        return res.status(400).json({ error: '이 쿠폰은 최초 강의 결제에만 사용할 수 있습니다.' })
+      }
+      const singleDiscount = coupon.discount_percent
+        ? Math.floor(salePrice * Number(coupon.discount_percent) / 100)
+        : Number(coupon.amount || 0)
+      if (singleDiscount > 0) {
+        discount = singleDiscount
+        appliedCoupons = [{ coupon, discount: singleDiscount }]
+      }
     }
   }
 
@@ -94,27 +99,32 @@ router.get('/preview', authMiddleware, async (req, res) => {
   const priorOrders = await db.getOrdersByUser(req.user.id)
   const isFirstPurchase = priorOrders.length === 0
   const salePrice = Number(course.sale_price || 0)
+  const applyCoupon = db.canApplyCourseCoupon(course, { skipCoupon: req.query.coupon === '0' })
 
   let discount = 0
   let coupon_code = null
+  let is_stackable = false
 
-  const stack = await db.resolveStackableCourseDiscount(req.user.id, salePrice, isFirstPurchase)
-  if (stack.totalDiscount > 0) {
-    discount = stack.totalDiscount
-  } else {
-    const coupons = await db.getCouponsByUser(req.user.id)
-    for (const raw of coupons) {
-      const c = db.enrichCoupon(raw)
-      if (c.status !== 'available') continue
-      if (db.isCouponExpired(c)) continue
-      if (c.reason === CLIENT_COURSE_REWARD_REASON) continue
-      if (c.first_course_only && !isFirstPurchase) continue
-      const d = c.discount_percent
-        ? Math.floor(salePrice * Number(c.discount_percent) / 100)
-        : Number(c.amount || 0)
-      if (d > discount) {
-        discount = d
-        coupon_code = c.code
+  if (applyCoupon) {
+    const stack = await db.resolveStackableCourseDiscount(req.user.id, salePrice, isFirstPurchase)
+    if (stack.totalDiscount > 0) {
+      discount = stack.totalDiscount
+      is_stackable = true
+    } else {
+      const coupons = await db.getCouponsByUser(req.user.id)
+      for (const raw of coupons) {
+        const c = db.enrichCoupon(raw)
+        if (c.status !== 'available') continue
+        if (db.isCouponExpired(c)) continue
+        if (c.reason === CLIENT_COURSE_REWARD_REASON) continue
+        if (c.first_course_only && !isFirstPurchase) continue
+        const d = c.discount_percent
+          ? Math.floor(salePrice * Number(c.discount_percent) / 100)
+          : Number(c.amount || 0)
+        if (d > discount) {
+          discount = d
+          coupon_code = c.code
+        }
       }
     }
   }
@@ -124,7 +134,9 @@ router.get('/preview', authMiddleware, async (req, res) => {
     discount,
     final_amount: Math.max(0, salePrice - discount),
     coupon_code,
-    is_stackable: stack.totalDiscount > 0,
+    is_stackable,
+    coupon_allowed: db.isCourseCouponAllowed(course),
+    coupon_skipped: !applyCoupon,
   })
 })
 

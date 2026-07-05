@@ -285,6 +285,13 @@
 .buy-original { font-size: 10.2px; color: var(--text-hint); text-decoration: line-through; }
 .buy-disc { font-size: 9.6px; background: var(--bg-muted); color: var(--text-secondary); padding: 2px 5px; border-radius: 4px; }
 .buy-price { font-size: 30px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
+.buy-coupon-note {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.buy-coupon-note--disabled { color: #b45309; }
 .buy-price--free { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; color: var(--price-free); }
 .buy-live-head {
   display: flex;
@@ -824,6 +831,18 @@
   font-size: 14px; color: #166534;
 }
 .modal-coupon-applied i { font-size: 16px; }
+.modal-coupon-skipped {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-top: 8px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
 .modal-coupon-discount { margin-left: auto; font-weight: 700; color: #15803d; }
 
 /* ── 기대평 순서 안내 ── */

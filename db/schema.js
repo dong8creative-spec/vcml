@@ -1253,6 +1253,17 @@ function stripLiveResourceUrls(course) {
   return rest
 }
 
+function isCourseCouponAllowed(course) {
+  if (!course) return false
+  return course.coupon_allowed !== false && course.coupon_allowed !== 0
+}
+
+function canApplyCourseCoupon(course, { skipCoupon = false } = {}) {
+  if (!isCourseCouponAllowed(course)) return false
+  if (skipCoupon) return false
+  return true
+}
+
 function pickCourseCardFields(course = {}) {
   const pub = db.getCourseEnrollmentPublic(course)
   return {
@@ -1287,6 +1298,8 @@ const db = {
   maskPublicName,
   isPublicReview,
   normalizeReviewRating,
+  isCourseCouponAllowed,
+  canApplyCourseCoupon,
 
   // users
   async batchGetUsers(ids) {
