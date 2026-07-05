@@ -2067,6 +2067,11 @@ const db = {
     const snap = await fs.collection('orders').where('user_id', '==', userId).get()
     return snapToArr(snap)
   },
+  /** 유료 강의 결제 이력 여부 — 무료 수강·라이브 신청(amount 0, discount 0)은 제외 */
+  async hasPaidCourseOrder(userId) {
+    const orders = await db.getOrdersByUser(userId)
+    return orders.some(o => o.status === 'paid' && (Number(o.amount) > 0 || Number(o.discount) > 0))
+  },
   async getAllOrders() {
     const snap = await fs.collection('orders').orderBy('paid_at', 'desc').get()
     return snapToArr(snap)
@@ -2591,8 +2596,7 @@ const db = {
       return { tier: 'none', discount_percent: 0, label: '정가' }
     }
     const salePrice = Number(course.sale_price || 0)
-    const priorOrders = await db.getOrdersByUser(userId)
-    const isFirstPurchase = priorOrders.length === 0
+    const isFirstPurchase = !(await db.hasPaidCourseOrder(userId))
     const stack = await db.resolveStackableCourseDiscount(userId, salePrice, isFirstPurchase)
     const count = stack.applied.length
     if (count >= 2) {

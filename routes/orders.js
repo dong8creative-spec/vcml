@@ -12,8 +12,7 @@ router.post('/', authMiddleware, async (req, res) => {
     return res.status(409).json({ error: '모집 정원이 마감되었습니다.', code: 'enrollment_full' })
   }
 
-  const priorOrders = await db.getOrdersByUser(req.user.id)
-  const isFirstPurchase = priorOrders.length === 0
+  const isFirstPurchase = !(await db.hasPaidCourseOrder(req.user.id))
   const salePrice = Number(course.sale_price || 0)
   const applyCoupon = db.canApplyCourseCoupon(course, {
     skipCoupon: req.body.skip_coupon === true || req.body.skip_coupon === 1 || req.body.skip_coupon === '1',
@@ -96,8 +95,7 @@ router.get('/preview', authMiddleware, async (req, res) => {
   const course = await db.getCourseById(course_id)
   if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
 
-  const priorOrders = await db.getOrdersByUser(req.user.id)
-  const isFirstPurchase = priorOrders.length === 0
+  const isFirstPurchase = !(await db.hasPaidCourseOrder(req.user.id))
   const salePrice = Number(course.sale_price || 0)
   const applyCoupon = db.canApplyCourseCoupon(course, { skipCoupon: req.query.coupon === '0' })
 

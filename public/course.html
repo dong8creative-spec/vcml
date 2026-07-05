@@ -128,22 +128,43 @@
   <div id="store-checkout-overlay" class="modal-overlay hidden" onclick="closeStoreCheckout()">
     <div class="modal store-checkout-modal" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <div class="modal-title">네이버 스마트스토어에서 구매</div>
+        <div class="modal-title">수강 신청</div>
         <button class="modal-close" onclick="closeStoreCheckout()"><i class="ti ti-x"></i></button>
       </div>
-      <p class="store-checkout-lead">스마트스토어에서 결제를 진행합니다. 기대평 작성 시 10% 할인 쿠폰은 지금처럼 자동 발급되며, 보유 쿠폰에 맞는 상품 링크로 안내합니다.</p>
+      <div class="store-checkout-course" id="store-checkout-course"></div>
+
       <div id="store-checkout-step-choice">
-        <p class="store-checkout-question">할인 쿠폰을 사용하시겠습니까?</p>
-        <p class="store-checkout-hint">「사용하기」를 선택하면 보유 쿠폰(10% / 20%)을 자동으로 확인해 해당 상품 링크로 안내합니다.</p>
-        <div class="store-checkout-actions">
-          <button type="button" class="btn-store-choice btn-store-choice--ghost" onclick="proceedStoreCheckout(false)">쿠폰 사용 안 함 (정가)</button>
-          <button type="button" class="btn-store-choice btn-store-choice--primary" onclick="proceedStoreCheckout(true)">쿠폰 사용하기</button>
+        <div class="store-coupon-status" id="store-coupon-status">
+          <div class="store-coupon-status__spin"><span class="spinner spinner--sm"></span> 보유 쿠폰 확인 중...</div>
         </div>
+        <div class="store-checkout-options">
+          <button type="button" class="store-option" id="store-option-coupon" onclick="proceedStoreCheckout(true)">
+            <span class="store-option__icon"><i class="ti ti-ticket"></i></span>
+            <span class="store-option__body">
+              <span class="store-option__title">쿠폰 적용하고 구매</span>
+              <span class="store-option__desc" id="store-option-coupon-desc">보유 쿠폰을 자동으로 적용합니다</span>
+            </span>
+            <i class="ti ti-chevron-right store-option__arrow"></i>
+          </button>
+          <button type="button" class="store-option store-option--muted" onclick="proceedStoreCheckout(false)">
+            <span class="store-option__icon"><i class="ti ti-tag"></i></span>
+            <span class="store-option__body">
+              <span class="store-option__title">정가로 구매</span>
+              <span class="store-option__desc">쿠폰 없이 정가로 결제합니다</span>
+            </span>
+            <i class="ti ti-chevron-right store-option__arrow"></i>
+          </button>
+        </div>
+        <p class="store-checkout-foot"><i class="ti ti-info-circle"></i> 결제는 네이버 스마트스토어에서 안전하게 진행됩니다</p>
       </div>
+
       <div id="store-checkout-step-result" class="hidden">
         <div class="store-checkout-result" id="store-checkout-result"></div>
-        <button type="button" class="btn-store-choice btn-store-choice--primary" id="store-checkout-go-btn" onclick="goStoreCheckoutLink()">스마트스토어 열기</button>
-        <button type="button" class="btn-store-choice btn-store-choice--ghost" onclick="resetStoreCheckout()">다시 선택</button>
+        <button type="button" class="btn-store-go" id="store-checkout-go-btn" onclick="goStoreCheckoutLink()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M16.27 4H20v16h-4.9l-6.37-9.17V20H4V4h4.9l6.37 9.17V4h1z" fill="currentColor"/></svg>
+          스마트스토어에서 결제하기
+        </button>
+        <button type="button" class="btn-store-back" onclick="resetStoreCheckout()"><i class="ti ti-arrow-left"></i> 다시 선택</button>
       </div>
     </div>
   </div>
@@ -947,15 +968,57 @@
 
     let selectedCouponCode = null
     let storeCheckoutLink = null
+    let storeTierCache = null
+
+    function formatWon(n) {
+      return '₩' + Number(n || 0).toLocaleString()
+    }
+
+    function renderStoreCourseInfo() {
+      const el = document.getElementById('store-checkout-course')
+      if (!el || !courseData) return
+      el.innerHTML = `
+        <div class="store-checkout-course__title">${esc(courseData.title)}</div>
+        <div class="store-checkout-course__price">${formatWon(courseData.sale_price)}</div>`
+    }
+
+    function renderStoreCouponStatus(tier) {
+      const statusEl = document.getElementById('store-coupon-status')
+      const descEl = document.getElementById('store-option-coupon-desc')
+      const couponBtn = document.getElementById('store-option-coupon')
+      if (!statusEl) return
+      if (!tier) {
+        statusEl.innerHTML = `<div class="store-coupon-status__row store-coupon-status__row--warn"><i class="ti ti-alert-circle"></i> 쿠폰 정보를 불러오지 못했습니다. 선택 시 다시 확인합니다.</div>`
+        return
+      }
+      if (tier.discount_percent > 0) {
+        statusEl.innerHTML = `<div class="store-coupon-status__row store-coupon-status__row--ok">
+          <i class="ti ti-discount-check-filled"></i>
+          <span><strong>${tier.discount_percent}% 할인 쿠폰</strong>을 보유 중입니다</span>
+          <span class="store-coupon-status__badge">-${tier.discount_percent}%</span>
+        </div>`
+        if (descEl) {
+          const sale = Number(courseData?.sale_price || 0)
+          const after = Math.floor(sale * (100 - tier.discount_percent) / 100)
+          descEl.innerHTML = `${formatWon(sale)} → <strong>${formatWon(after)}</strong> 상품으로 이동`
+        }
+        couponBtn?.classList.remove('store-option--disabled')
+      } else {
+        statusEl.innerHTML = `<div class="store-coupon-status__row store-coupon-status__row--none"><i class="ti ti-ticket-off"></i> 사용 가능한 할인 쿠폰이 없습니다</div>`
+        if (descEl) descEl.textContent = '보유 쿠폰이 없어 정가 상품으로 안내됩니다'
+        couponBtn?.classList.add('store-option--disabled')
+      }
+    }
 
     function resetStoreCheckout() {
       storeCheckoutLink = null
       document.getElementById('store-checkout-step-choice')?.classList.remove('hidden')
       document.getElementById('store-checkout-step-result')?.classList.add('hidden')
       document.getElementById('store-checkout-result').innerHTML = ''
+      if (storeTierCache) renderStoreCouponStatus(storeTierCache)
     }
 
-    function openStoreCheckout() {
+    async function openStoreCheckout() {
       if (!API.isLoggedIn()) {
         location.href = loginUrl('/course.html?slug=' + slug)
         return
@@ -965,6 +1028,7 @@
         return
       }
       resetStoreCheckout()
+      renderStoreCourseInfo()
       const overlay = document.getElementById('store-checkout-overlay')
       overlay?.classList.remove('hidden')
       if (!isCourseCouponAllowed(courseData)) {
@@ -974,6 +1038,14 @@
       }
       document.getElementById('store-checkout-step-choice')?.classList.remove('hidden')
       document.getElementById('store-checkout-step-result')?.classList.add('hidden')
+      // 보유 쿠폰 등급을 미리 확인해 상태 표시 (링크 이동 없음)
+      try {
+        const res = await API.get('/courses/' + slug + '/store-checkout/resolve?use_coupon=1')
+        storeTierCache = { discount_percent: res.discount_percent || 0, label: res.label || '' }
+      } catch {
+        storeTierCache = null
+      }
+      renderStoreCouponStatus(storeTierCache)
     }
 
     function closeStoreCheckout() {
@@ -992,15 +1064,29 @@
         const res = await API.get('/courses/' + slug + '/store-checkout/resolve?use_coupon=' + (useCoupon ? '1' : '0'))
         storeCheckoutLink = res.redirect_url
         const resultEl = document.getElementById('store-checkout-result')
-        const lines = []
-        if (useCoupon && res.discount_percent > 0) {
-          lines.push(`<strong>${esc(res.label || (res.discount_percent + '% 할인'))}</strong> 상품으로 안내합니다.`)
+        const sale = Number(courseData?.sale_price || 0)
+        const pct = useCoupon ? (res.discount_percent || 0) : 0
+        const after = Math.floor(sale * (100 - pct) / 100)
+        let head = ''
+        let note = ''
+        if (useCoupon && pct > 0) {
+          head = `<span class="store-result__badge store-result__badge--ok"><i class="ti ti-discount-check-filled"></i> ${pct}% 쿠폰 적용</span>`
+          note = esc(res.label || '')
         } else if (useCoupon && res.fallback) {
-          lines.push(esc(res.message || '정가 상품으로 안내합니다.'))
+          head = `<span class="store-result__badge"><i class="ti ti-ticket-off"></i> 정가 결제</span>`
+          note = esc(res.message || '보유 쿠폰이 없어 정가 상품으로 안내합니다.')
         } else {
-          lines.push('정가 상품으로 안내합니다.')
+          head = `<span class="store-result__badge"><i class="ti ti-tag"></i> 정가 결제</span>`
+          note = '쿠폰 없이 정가 상품으로 이동합니다.'
         }
-        resultEl.innerHTML = lines.join('')
+        resultEl.innerHTML = `
+          ${head}
+          <div class="store-result__price">
+            ${pct > 0 ? `<span class="store-result__before">${formatWon(sale)}</span>` : ''}
+            <span class="store-result__after">${formatWon(after)}</span>
+            ${pct > 0 ? `<span class="store-result__pct">-${pct}%</span>` : ''}
+          </div>
+          ${note ? `<p class="store-result__note">${note}</p>` : ''}`
         document.getElementById('store-checkout-step-choice')?.classList.add('hidden')
         document.getElementById('store-checkout-step-result')?.classList.remove('hidden')
       } catch (err) {
