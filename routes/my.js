@@ -219,9 +219,8 @@ router.get('/courses/:courseId/live-material', authMiddleware, async (req, res) 
   if (!myReview?.rating) {
     return res.status(403).json({ error: '후기 작성 후 이용할 수 있습니다.' })
   }
-  const reviewSubmittedAt = myReview.created_at || myReview.updated_at || null
-  if (!db.isLiveMaterialOpenByReview(reviewSubmittedAt)) {
-    return res.status(403).json({ error: '강의자료 다운로드 기간이 종료되었습니다.' })
+  if (!db.isLiveMaterialOpenByLectureEnd(course)) {
+    return res.status(403).json({ error: '강의자료 다운로드 기간이 종료되었습니다. (강의 종료 후 1주일)' })
   }
   const url = String(course.live_material_url || '').trim()
   if (!url || !/^https?:\/\/.+/i.test(url)) {

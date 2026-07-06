@@ -1210,12 +1210,23 @@ function isLiveLectureDay(course, at = new Date()) {
   return kstDateKey(at) === kstDateKey(start)
 }
 
-function isLiveMaterialOpenByReview(reviewSubmittedAt, at = new Date()) {
-  if (!reviewSubmittedAt) return true
-  const submittedMs = new Date(reviewSubmittedAt).getTime()
-  if (isNaN(submittedMs)) return true
+function getLiveLectureEndAt(course) {
+  const start = parseLiveStart(course)
+  if (!start) return null
+  return new Date(start.getTime() + LIVE_END_AFTER_MS)
+}
+
+/** 강의 종료 시각부터 7일간 자료 다운로드 허용 */
+function isLiveMaterialOpenByLectureEnd(course, at = new Date()) {
+  const endAt = getLiveLectureEndAt(course)
+  if (!endAt) return false
   const now = at.getTime()
-  return now >= submittedMs && now <= submittedMs + LIVE_MATERIAL_AFTER_REVIEW_MS
+  const endMs = endAt.getTime()
+  return now >= endMs && now <= endMs + LIVE_MATERIAL_AFTER_REVIEW_MS
+}
+
+function isLiveMaterialOpenByReview(course, at = new Date()) {
+  return isLiveMaterialOpenByLectureEnd(course, at)
 }
 
 function getLiveResourceAccess(course, { enrolled = false, hasReview = false, reviewSubmittedAt = null, at = new Date() } = {}) {
@@ -1223,7 +1234,7 @@ function getLiveResourceAccess(course, { enrolled = false, hasReview = false, re
   const materialUrl = String(course?.live_material_url || '').trim()
   const lectureDay = isLiveLectureDay(course, at)
   const materialShow = enrolled && !!materialUrl && hasReview
-  const materialOpen = hasReview && isLiveMaterialOpenByReview(reviewSubmittedAt, at)
+  const materialOpen = hasReview && isLiveMaterialOpenByLectureEnd(course, at)
   const start = parseLiveStart(course)
   const lectureEnded = isLiveCourseEnded(course, at)
   const replayOpensAt = getReplayOpensAt(course)
@@ -4090,6 +4101,7 @@ const db = {
   isFreeLiveCourse,
   courseSupportsLiveReplay,
   isLiveLectureDay,
+  isLiveMaterialOpenByLectureEnd,
   isLiveMaterialOpenByReview,
   isLiveCourseEnded,
   canWriteAnticipationReview,
@@ -4117,6 +4129,7 @@ module.exports.parseLiveStart = parseLiveStart
 module.exports.isFreeLiveCourse = isFreeLiveCourse
 module.exports.courseSupportsLiveReplay = courseSupportsLiveReplay
 module.exports.isLiveLectureDay = isLiveLectureDay
+module.exports.isLiveMaterialOpenByLectureEnd = isLiveMaterialOpenByLectureEnd
 module.exports.isLiveMaterialOpenByReview = isLiveMaterialOpenByReview
 module.exports.isLiveCourseEnded = isLiveCourseEnded
 module.exports.isLiveReviewOpen = isLiveReviewOpen

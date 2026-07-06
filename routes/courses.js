@@ -416,6 +416,7 @@ router.get('/:slug', async (req, res) => {
     ])
 
     const enrolled = enrolledResult
+    const authExpired = !!(req.headers.authorization?.startsWith('Bearer ') && !u)
     const my_anticipation = myAnticipation ? {
       id: myAnticipation.id,
       content: myAnticipation.content,
@@ -429,6 +430,7 @@ router.get('/:slug', async (req, res) => {
       uses_smartstore_checkout: db.usesSmartstoreCheckout(course),
       chapters,
       enrolled,
+      auth_expired: authExpired,
       my_anticipation,
       my_review: myCourseReview ? {
         rating: myCourseReview.rating,

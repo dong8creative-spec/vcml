@@ -45,8 +45,13 @@
     return `<div class="enroll-cat-row"><span class="${catClass}">${c.category || ''}</span>${countHtml}${gauge}</div>`
   }
 
+  function isLiveLikeCourse(c) {
+    return c?.course_type === 'live'
+      || (Number(c?.sale_price) === 0 && (c?.live_starts_at || c?.live_schedule))
+  }
+
   function isLiveEnded(c) {
-    if (!c || c.course_type !== 'live') return false
+    if (!c || !isLiveLikeCourse(c)) return false
     return c.live_status === 'ended'
       || c.live_ended === true
       || c.live_resources?.live_ended === true
@@ -87,7 +92,7 @@
   }
 
   function isClosedForApply(c) {
-    const replaySignup = c?.course_type === 'live'
+    const replaySignup = isLiveLikeCourse(c)
       && isLiveEnded(c)
       && c?.live_resources?.replay_configured
       && !c?.enrolled
@@ -145,6 +150,7 @@
     gaugeFillStyle,
     gaugeCapacityStyle,
     catRowHtml,
+    isLiveLikeCourse,
     isLiveEnded,
     cardEnrollBtnHtml,
     wrapBlockButton,
