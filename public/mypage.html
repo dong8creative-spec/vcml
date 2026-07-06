@@ -142,7 +142,7 @@
 </div>
 
 <script src="/js/api.js?v=3"></script>
-<script src="/js/live-reminder.js?v=23"></script>
+<script src="/js/live-reminder.js?v=24"></script>
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=10"></script>
 <script>
@@ -478,8 +478,13 @@ const initTab = new URLSearchParams(location.search).get('tab') || visibleTabs[0
 showSection(typeof initTab === 'string' ? initTab : initTab.id)
 
 // ── 내 강의 ──
+function isLiveLikeCourse(c) {
+  return c?.course_type === 'live'
+    || (Number(c?.sale_price) === 0 && (c?.live_starts_at || c?.live_schedule))
+}
+
 function renderCourseThumbBadge(c) {
-  if (c.course_type === 'live') {
+  if (isLiveLikeCourse(c)) {
     return `<span class="mc-live-badge mc-thumb-badge">${googleMeetIconHtml(28)}<span class="badge-meet-label">Meet</span></span>`
   }
   if (c.course_type === 'offline' || c.is_offline) {
@@ -523,7 +528,7 @@ function renderLiveMeetBtn(c, start) {
 }
 
 function renderLiveMaterialButton(c) {
-  if (c.course_type !== 'live' || !c.my_review?.rating) return ''
+  if (!isLiveLikeCourse(c) || !c.my_review?.rating) return ''
   if (!c.live_resources?.material_available) return ''
   return `<button type="button" class="btn-enroll btn-enroll--material" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(c.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</button>`
 }
@@ -608,7 +613,8 @@ async function cancelEnrollment(courseId) {
 function renderCourseReviewBlock(c) {
   const rating = c.my_review?.rating || 0
   const content = escapeHtml(c.my_review?.content || '')
-  const reviewOpen = c.live_resources?.review_open !== false  // undefined(VOD 등)는 열린 것으로 간주
+  const reviewOpen = c.live_resources?.review_open !== false
+    || (isLiveLikeCourse(c) && c.live_resources?.replay_available)
   const makeStars = (r, disabled) => [1,2,3,4,5].map(n =>
     disabled
       ? `<span class="lc-star ${n <= r ? 'on' : ''}">★</span>`
@@ -616,7 +622,7 @@ function renderCourseReviewBlock(c) {
   ).join('')
 
   if (c.my_review) {
-    if (c.course_type === 'live' && c.live_resources?.material_available) {
+    if (isLiveLikeCourse(c) && c.live_resources?.material_available) {
       return `<div class="my-lc-review my-lc-review--material-only" id="review-course-${escapeHtml(c.id)}" hidden></div>`
     }
 
@@ -716,7 +722,7 @@ async function loadCourses({ refresh = false } = {}) {
       return
     }
     el.innerHTML = `<div class="my-course-grid">${courses.map(c => {
-      if (c.course_type === 'live') return renderLiveCourseCard(c)
+      if (isLiveLikeCourse(c)) return renderLiveCourseCard(c)
       const pct = c.total_chapters > 0 ? Math.round((c.completed_chapters / c.total_chapters) * 100) : 0
       return `<div class="my-course-card my-course-card--wrap">
         <a href="/player.html?slug=${c.slug}&chapter=${c.last_chapter_id || 'first'}" class="mc-link">

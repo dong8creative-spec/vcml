@@ -105,7 +105,7 @@ router.get('/live-sessions', authMiddleware, async (req, res) => {
   const sessions = []
   for (const e of enrollments) {
     const c = await db.getCourseById(e.course_id)
-    if (!c || c.course_type !== 'live') continue
+    if (!c || !db.courseSupportsLiveReplay(c)) continue
     if (db.isLiveCourseEnded(c)) continue
     sessions.push({
       id: c.id,
@@ -168,7 +168,7 @@ router.get('/courses', authMiddleware, async (req, res) => {
         created_at: myReview.created_at || null,
       } : null,
     }
-    if (c.course_type === 'live') {
+    if (db.courseSupportsLiveReplay(c)) {
       row.live_ended = db.isLiveCourseEnded(c)
       row.live_resources = db.getLiveResourceAccess(c, {
         enrolled: true,
@@ -183,10 +183,13 @@ router.get('/courses', authMiddleware, async (req, res) => {
 
 router.get('/courses/:courseId/live-replay', authMiddleware, async (req, res) => {
   const course = await db.getCourseById(req.params.courseId)
-  if (!course || course.course_type !== 'live') {
+  if (!course || !db.courseSupportsLiveReplay(course)) {
     return res.status(404).json({ error: '라이브 강의를 찾을 수 없습니다.' })
   }
-  const access = db.getLiveResourceAccess(course, { enrolled: false })
+  if (!await db.isEnrolled(req.user.id, course.id)) {
+    return res.status(403).json({ error: '수강 신청 후 다시보기를 이용할 수 있습니다.' })
+  }
+  const access = db.getLiveResourceAccess(course, { enrolled: true })
   if (!access.replay_available) {
     if (access.replay_pending) {
       const when = access.replay_opens_label || '다음 날 오후 1시'
@@ -206,7 +209,7 @@ router.get('/courses/:courseId/live-replay', authMiddleware, async (req, res) =>
 
 router.get('/courses/:courseId/live-material', authMiddleware, async (req, res) => {
   const course = await db.getCourseById(req.params.courseId)
-  if (!course || course.course_type !== 'live') {
+  if (!course || !db.courseSupportsLiveReplay(course)) {
     return res.status(404).json({ error: '라이브 강의를 찾을 수 없습니다.' })
   }
   if (!await db.isEnrolled(req.user.id, course.id)) {
@@ -283,7 +286,11 @@ router.post('/reviews', authMiddleware, async (req, res) => {
   if (!course_id || !rating) return res.status(400).json({ error: '필수 항목 누락' })
   if (!await db.isEnrolled(req.user.id, course_id)) return res.status(403).json({ error: '수강생만 후기를 작성할 수 있습니다.' })
   const course = await db.getCourseById(course_id)
-  if (course && !db.isLiveReviewOpen(course)) {
+  const replayReviewAllowed = course
+    && db.courseSupportsLiveReplay(course)
+    && db.isLiveCourseEnded(course)
+    && db.getLiveResourceAccess(course, { enrolled: true }).replay_available
+  if (course && !replayReviewAllowed && !db.isLiveReviewOpen(course)) {
     return res.status(403).json({ error: '후기 작성 기간이 종료되었습니다. (강의 종료 후 7일 이내에만 작성 가능)' })
   }
   const result = await db.upsertReview(req.user.id, course_id, rating, content)

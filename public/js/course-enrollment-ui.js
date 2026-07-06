@@ -87,6 +87,11 @@
   }
 
   function isClosedForApply(c) {
+    const replaySignup = c?.course_type === 'live'
+      && isLiveEnded(c)
+      && c?.live_resources?.replay_configured
+      && !c?.enrolled
+    if (replaySignup) return false
     return !c?.enrolled && (isLiveEnded(c) || isCapacityClosed(c) || isCheckoutBlocked(c))
   }
 

@@ -255,7 +255,7 @@ if (!window.LiveSession) (function () {
     const path = slug
       ? '/courses/' + encodeURIComponent(slug) + '/live-replay'
       : '/my/courses/' + encodeURIComponent(courseId) + '/live-replay'
-    openExternalResource(path, '다시보기를 열 수 없습니다.', { requireLogin: false })
+    openExternalResource(path, '다시보기를 열 수 없습니다.', { requireLogin: true })
   }
 
   function openMaterial(courseId) {

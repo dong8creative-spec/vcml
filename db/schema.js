@@ -1066,6 +1066,16 @@ function parseLiveStart(course) {
   return null
 }
 
+/** 무료 + 라이브 일정이 있는 강의 (다시보기·기대평 규칙 적용) */
+function isFreeLiveCourse(course) {
+  if (!course || Number(course.sale_price) !== 0) return false
+  return !!parseLiveStart(course)
+}
+
+function courseSupportsLiveReplay(course) {
+  return course?.course_type === 'live' || isFreeLiveCourse(course)
+}
+
 function kstDateKey(date) {
   return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' })
 }
@@ -1117,7 +1127,7 @@ function isMeetJoinAvailable(course, start, at = new Date()) {
 }
 
 function canWriteAnticipationReview(course, at = new Date()) {
-  if (!course || course.course_type !== 'live') return true
+  if (!courseSupportsLiveReplay(course)) return true
   if (course.live_status === 'ended') return false
   return !isLiveCourseEnded(course, at)
 }
@@ -1146,7 +1156,7 @@ function getLiveEnrollmentCancelLockMessage(course, at = new Date()) {
 }
 
 function getAnticipationModifyMeta(course, at = new Date()) {
-  if (course?.course_type !== 'live') {
+  if (!courseSupportsLiveReplay(course)) {
     return { can_modify: true, locked: false, deadline: null, deadline_label: null, message: null }
   }
   const start = parseLiveStart(course)
@@ -1407,7 +1417,7 @@ function pickCourseCardFields(course = {}) {
     live_schedule: course.live_schedule || null,
     live_starts_at: course.live_starts_at || null,
     live_status: course.live_status || null,
-    live_ended: course.course_type === 'live' && isLiveCourseEnded(course),
+    live_ended: courseSupportsLiveReplay(course) && isLiveCourseEnded(course),
     price: Number(course.price || 0),
     sale_price: Number(course.sale_price || 0),
     rating: course.rating || 0,
@@ -2258,7 +2268,9 @@ const db = {
     await db.syncCourseReviewStats(courseId)
 
     let coupon = null
-    if (numRating === 5) {
+    const course = await db.getCourseById(courseId)
+    const qualifiesForReviewCoupon = numRating === 5
+    if (qualifiesForReviewCoupon) {
       const userCoupons = await db.getCouponsByUser(userId)
       const existingAvailable = userCoupons.find(
         c => c.reason === COURSE_REVIEW_FIVE_STAR_REASON
@@ -2274,7 +2286,6 @@ const db = {
       } else if (!alreadyIssued) {
         const issuedAt = now()
         const reviewCfg = (await db.getCouponIssuanceConfig()).course_review_five_star || DEFAULT_COUPON_ISSUANCE_CONFIG.course_review_five_star
-        const course = await db.getCourseById(courseId)
         coupon = await db.createCoupon(userId, 0, COURSE_REVIEW_FIVE_STAR_REASON, {
           discount_percent: COURSE_REVIEW_FIVE_STAR_DISCOUNT_PERCENT,
           coupon_type: 'percent',
@@ -2445,10 +2456,13 @@ const db = {
     if (!course) return { error: 'course_not_found' }
     if (await db.isEnrolled(userId, courseId)) return { error: 'already_enrolled' }
 
-    const isLive = course.course_type === 'live'
+    const isLive = course.course_type === 'live' || isFreeLiveCourse(course)
     const isFreeVod = !isLive && Number(course.sale_price) === 0
     if (!isLive && !isFreeVod) return { error: 'payment_required' }
-    if (isLive && isLiveCourseEnded(course)) return { error: 'live_ended' }
+    if (isLive && isLiveCourseEnded(course)) {
+      const replayConfigured = getLiveResourceAccess(course).replay_configured
+      if (!replayConfigured) return { error: 'live_ended' }
+    }
 
     const enrollResult = await db.enrollAtomically(userId, courseId, course)
     if (enrollResult.error) return enrollResult
@@ -4073,6 +4087,8 @@ const db = {
   },
 
   parseLiveStart,
+  isFreeLiveCourse,
+  courseSupportsLiveReplay,
   isLiveLectureDay,
   isLiveMaterialOpenByReview,
   isLiveCourseEnded,
@@ -4098,6 +4114,8 @@ seedInstructorsIntroDefaults().catch(console.error)
 
 module.exports = db
 module.exports.parseLiveStart = parseLiveStart
+module.exports.isFreeLiveCourse = isFreeLiveCourse
+module.exports.courseSupportsLiveReplay = courseSupportsLiveReplay
 module.exports.isLiveLectureDay = isLiveLectureDay
 module.exports.isLiveMaterialOpenByReview = isLiveMaterialOpenByReview
 module.exports.isLiveCourseEnded = isLiveCourseEnded

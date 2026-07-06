@@ -330,13 +330,16 @@ router.post('/:slug/apply-with-anticipation', authMiddleware, async (req, res) =
   }
 })
 
-router.get('/:slug/live-replay', async (req, res) => {
+router.get('/:slug/live-replay', authMiddleware, async (req, res) => {
   try {
     const course = await db.getCourseBySlug(req.params.slug)
-    if (!course || !course.is_published || course.course_type !== 'live') {
+    if (!course || !course.is_published || !db.courseSupportsLiveReplay(course)) {
       return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
     }
-    const access = db.getLiveResourceAccess(course, { enrolled: false })
+    if (!await db.isEnrolled(req.user.id, course.id)) {
+      return res.status(403).json({ error: '수강 신청 후 다시보기를 이용할 수 있습니다.' })
+    }
+    const access = db.getLiveResourceAccess(course, { enrolled: true })
     if (!access.replay_available) {
       if (access.replay_pending) {
         const when = access.replay_opens_label || '다음 날 오후 1시'
@@ -433,10 +436,10 @@ router.get('/:slug', async (req, res) => {
         created_at: myCourseReview.created_at || null,
       } : null,
       anticipation_modify,
-      live_ended: course.course_type === 'live' ? db.isLiveCourseEnded(course) : false,
+      live_ended: db.courseSupportsLiveReplay(course) ? db.isLiveCourseEnded(course) : false,
     }
     if (!enrolled) delete payload.live_chat_url
-    if (course.course_type === 'live' && (enrolled || db.isLiveCourseEnded(course))) {
+    if (db.courseSupportsLiveReplay(course) && (enrolled || db.isLiveCourseEnded(course))) {
       payload.live_resources = db.getLiveResourceAccess(course, {
         enrolled: !!enrolled,
         hasReview: !!(myCourseReview && myCourseReview.rating),

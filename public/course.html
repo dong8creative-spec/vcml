@@ -58,7 +58,7 @@
         <button class="modal-close" onclick="closeReviewBeforeReplay()"><i class="ti ti-x"></i></button>
       </div>
       <div class="rbr-body">
-        <p class="rbr-desc">강의 어떠셨나요? 후기를 남기시면 <strong>10% 할인 쿠폰</strong>을 드립니다.</p>
+        <p class="rbr-desc">강의 어떠셨나요? <strong>별점 5점 후기</strong>를 남기시면 10% 할인 쿠폰을 드립니다.</p>
         <div class="rbr-stars" id="rbr-stars">
           <button type="button" class="rbr-star" data-val="1" onclick="setReviewStar(1)"><i class="ti ti-star"></i></button>
           <button type="button" class="rbr-star" data-val="2" onclick="setReviewStar(2)"><i class="ti ti-star"></i></button>
@@ -170,12 +170,12 @@
   </div>
 
   <script src="/js/api.js?v=3"></script>
-  <script src="/js/live-reminder.js?v=20"></script>
+  <script src="/js/live-reminder.js?v=21"></script>
   <script src="/js/auth-redirect.js"></script>
   <script src="/js/site-layout.js"></script>
   <script src="/js/site-header.js?v=10"></script>
   <script src="/js/home-nav.js"></script>
-  <script src="/js/course-enrollment-ui.js"></script>
+  <script src="/js/course-enrollment-ui.js?v=2"></script>
   <script>
     const slug = new URLSearchParams(location.search).get('slug')
     const checkoutNoCoupon = new URLSearchParams(location.search).get('coupon') === '0'
@@ -592,7 +592,7 @@
             </div>
             <div id="tab-anticipation" class="tab-panel">
               <div class="course-section">
-                <h2>수강 기대평 <span class="section-subtitle">작성 시 10% 할인쿠폰 즉시 발급</span></h2>
+                <h2>수강 기대평${canWriteAnticipation(c) ? ' <span class="section-subtitle">작성 시 10% 할인쿠폰 즉시 발급</span>' : ''}</h2>
                 ${renderAnticipationWriteBtn(c)}
                 <div id="anticipation-feed-wrap">${renderAnticipationFeed(c)}</div>
               </div>
@@ -653,7 +653,13 @@
         return wrapBuyActions(`<a href="/player.html?slug=${c.slug}&chapter=first" class="btn-enroll enrolled"><i class="ti ti-player-play"></i> 이어서 수강하기</a>${renderAnticipationBtn(c)}`)
       }
       if (c.course_type === 'live') {
-        if (isCourseEnded(c)) return renderEndedLiveActions(c)
+        if (isCourseEnded(c)) {
+          if (!c.enrolled) {
+            return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-player-play"></i> 다시보기 신청`, `onclick="submitCourseEnroll()"`)}
+              ${renderAnticipationBtn(c)}`)
+          }
+          return renderEndedLiveActions(c)
+        }
         return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-user-plus"></i> ${enrollButtonLabel(c)}`, `onclick="submitCourseEnroll()"`)}
           ${renderAnticipationBtn(c)}`)
       }
@@ -978,17 +984,18 @@
 
     async function submitCourseEnroll() {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
-      if (courseData?.course_type === 'live' && isCourseEnded(courseData)) {
+      if (courseData?.course_type === 'live' && isCourseEnded(courseData) && !courseData?.live_resources?.replay_configured) {
         toast('종료된 강의입니다.', 'error')
         return
       }
       if (CourseEnrollmentUI.isClosedForApply(courseData)) {
-        toast('모집 정원이 마감되었습니다.', 'error')
+        const msg = isCourseEnded(courseData) ? '종료된 강의입니다.' : '모집 정원이 마감되었습니다.'
+        toast(msg, 'error')
         return
       }
       try {
         await API.post('/courses/' + slug + '/enroll', {})
-        toast(courseData.course_type === 'live' ? '라이브 수강 신청이 완료되었습니다.' : '수강 신청이 완료되었습니다.', 'success')
+        toast(courseData.course_type === 'live' ? (isCourseEnded(courseData) && !courseData.enrolled ? '다시보기 신청이 완료되었습니다.' : '라이브 수강 신청이 완료되었습니다.') : '수강 신청이 완료되었습니다.', 'success')
         setTimeout(() => {
           if (courseData.course_type !== 'live') {
             location.href = '/player.html?slug=' + slug + '&chapter=first'
@@ -1212,12 +1219,19 @@
       const _origOpenReplay = LiveSession.openReplay.bind(LiveSession)
       LiveSession.openReplay = (courseId, slugArg) => {
         _replaySlug = slugArg || slug
-        // 비로그인이거나 이미 후기 작성 → 바로 재생
-        if (!API.isLoggedIn() || courseData?.my_review) {
+        if (!API.isLoggedIn()) {
+          location.href = loginUrl('/course.html?slug=' + encodeURIComponent(_replaySlug || slug))
+          return
+        }
+        if (!courseData?.enrolled) {
+          toast('다시보기는 수강 신청 후 이용할 수 있습니다.', 'error')
+          return
+        }
+        if (courseData?.my_review?.rating) {
           _origOpenReplay(courseId, slugArg)
           return
         }
-        // 후기 미작성 → 후기 모달
+        // 후기 미작성 → 후기 모달 (10% 쿠폰)
         _replayStarVal = 0
         document.getElementById('rbr-content').value = ''
         updateRbrStars(0)
