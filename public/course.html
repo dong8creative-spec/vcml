@@ -477,6 +477,26 @@
       return ''
     }
 
+    const REFUND_GUARANTEE_LOCK_MS = 60 * 60 * 1000
+
+    function getCourseLectureStart(c) {
+      const raw = c?.live_starts_at || c?.checkout_ends_at
+      if (!raw) return null
+      const d = new Date(raw)
+      return isNaN(d.getTime()) ? null : d
+    }
+
+    function isRefundGuaranteeActive(c, at = new Date()) {
+      const start = getCourseLectureStart(c)
+      if (!start) return true
+      return at.getTime() < start.getTime() - REFUND_GUARANTEE_LOCK_MS
+    }
+
+    function renderBuyGuarantee(c) {
+      if (c.course_type === 'live' || isFreeVod(c) || !isRefundGuaranteeActive(c)) return ''
+      return `<div class="buy-guarantee"><i class="ti ti-shield-check"></i> 강의 시작 1시간 전까지 전액 환불 보장</div>`
+    }
+
     function renderCheckoutScheduleNote(c) {
       if (c.course_type === 'live' || isFreeVod(c) || !c.checkout_has_window) return ''
       const msg = c.checkout_message
@@ -500,8 +520,7 @@
         ${CourseEnrollmentUI.buyCardPanelOpen(c)}
         ${renderBuyThumb(c, thumbClass)}
         <div class="buy-body">
-          ${c.course_type !== 'live' && !freeVod ? `
-          <div class="buy-guarantee"><i class="ti ti-shield-check"></i> 7일 이내 전액 환불 보장</div>` : ''}
+          ${renderBuyGuarantee(c)}
           ${c.course_type === 'live' ? `
           <div class="buy-intro">
             <div class="buy-live-head">
@@ -532,7 +551,7 @@
             <li><span class="feat-icon feat-icon--lifetime"><i class="ti ti-infinity"></i></span> 평생 소장</li>
             <li><span class="feat-icon feat-icon--mobile"><i class="ti ti-device-mobile"></i></span> 모바일 수강 가능</li>
             <li><span class="feat-icon feat-icon--cert"><i class="ti ti-certificate"></i></span> 수료증 발급</li>
-            <li><span class="feat-icon feat-icon--refund"><i class="ti ti-rotate-clockwise"></i></span> 7일 이내 환불 보장</li>
+            ${isRefundGuaranteeActive(c) ? `<li><span class="feat-icon feat-icon--refund"><i class="ti ti-rotate-clockwise"></i></span> 강의 시작 1시간 전까지 환불 보장</li>` : ''}
           </ul>`}
         </div>
         ${CourseEnrollmentUI.buyCardPanelClose(c)}
