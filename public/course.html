@@ -465,6 +465,10 @@
       return !!c?.uses_smartstore_checkout
     }
 
+    function isPaidCourse(c) {
+      return Number(c?.sale_price) > 0
+    }
+
     function isCourseCouponAllowed(c) {
       return c && c.coupon_allowed !== false && c.coupon_allowed !== 0
     }
@@ -559,7 +563,7 @@
           </div>
           ${renderEnrollActions(c)}
           <ul class="buy-features">
-            <li><span class="feat-icon feat-icon--lifetime"><i class="ti ti-infinity"></i></span> 평생 소장</li>
+            <li><span class="feat-icon feat-icon--lifetime"><i class="ti ${isPaidCourse(c) ? 'ti-calendar-time' : 'ti-infinity'}"></i></span> ${isPaidCourse(c) ? '결제일로부터 3개월 수강' : '평생 소장'}</li>
             <li><span class="feat-icon feat-icon--mobile"><i class="ti ti-device-mobile"></i></span> 모바일 수강 가능</li>
             <li><span class="feat-icon feat-icon--cert"><i class="ti ti-certificate"></i></span> 수료증 발급</li>
             ${isRefundGuaranteeActive(c) ? `<li><span class="feat-icon feat-icon--refund"><i class="ti ti-rotate-clockwise"></i></span> 강의 시작 1시간 전까지 환불 보장</li>` : ''}
@@ -657,6 +661,10 @@
     }
 
     function renderEnrollActions(c) {
+      if (c.enrolled && c.access?.access_expired) {
+        const until = c.access.access_ends_at ? formatDate(c.access.access_ends_at) : ''
+        return wrapBuyActions(`<div class="btn-enroll btn-enroll--expired" aria-disabled="true"><i class="ti ti-clock-off"></i> 수강 기간 만료${until ? ` (${until}까지)` : ''}</div>${renderAnticipationBtn(c)}`)
+      }
       if (c.enrolled) {
         if (isLiveLikeCourse(c)) {
           return wrapBuyActions(`${renderLiveEnrolledAction(c)}${renderAnticipationBtn(c)}`)

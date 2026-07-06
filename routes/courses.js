@@ -339,7 +339,14 @@ router.get('/:slug/live-replay', authMiddleware, async (req, res) => {
     if (!await db.isEnrolled(req.user.id, course.id)) {
       return res.status(403).json({ error: '수강 신청 후 다시보기를 이용할 수 있습니다.' })
     }
-    const access = db.getLiveResourceAccess(course, { enrolled: true })
+    const accessMeta = await db.getCourseAccessMeta(req.user.id, course)
+    if (accessMeta.access_expired) {
+      return res.status(403).json({ error: '수강 기간(3개월)이 만료되어 다시보기를 이용할 수 없습니다.' })
+    }
+    const access = db.getLiveResourceAccess(course, {
+      enrolled: true,
+      accessStartAt: accessMeta.access_start_at,
+    })
     if (!access.replay_available) {
       if (access.replay_pending) {
         const when = access.replay_opens_label || '다음 날 오후 1시'
@@ -408,15 +415,27 @@ router.get('/:slug', async (req, res) => {
     const u = await optionalUser(req)
 
     // course.id가 확정된 후 나머지 쿼리를 모두 병렬로 실행
-    const [chapters, enrolledResult, myAnticipation, myCourseReview] = await Promise.all([
+    const [chapters, enrolledResult, myAnticipation, myCourseReview, enrollmentRecord, orderRecord] = await Promise.all([
       db.getChaptersByCourse(course.id),
       u ? db.isEnrolled(u.id, course.id) : Promise.resolve(false),
       u ? db.getAnticipationReviewByUserAndCourse(u.id, course.id) : Promise.resolve(null),
       u ? db.getReviewByUserAndCourse(u.id, course.id) : Promise.resolve(null),
+      u ? db.getEnrollmentRecord(u.id, course.id) : Promise.resolve(null),
+      u ? db.getActiveOrderForCourse(u.id, course.id) : Promise.resolve(null),
     ])
 
     const enrolled = enrolledResult
     const authExpired = !!(req.headers.authorization?.startsWith('Bearer ') && !u)
+    const accessStartAt = db.resolveEnrollmentAccessStart({
+      enrolledAt: enrollmentRecord?.enrolled_at,
+      paidAt: orderRecord?.paid_at,
+    })
+    const access = enrolled && u
+      ? db.getPaidCourseAccessMeta(course, {
+        enrolledAt: enrollmentRecord?.enrolled_at,
+        paidAt: orderRecord?.paid_at,
+      })
+      : null
     const my_anticipation = myAnticipation ? {
       id: myAnticipation.id,
       content: myAnticipation.content,
@@ -431,6 +450,7 @@ router.get('/:slug', async (req, res) => {
       chapters,
       enrolled,
       auth_expired: authExpired,
+      access,
       my_anticipation,
       my_review: myCourseReview ? {
         rating: myCourseReview.rating,
@@ -446,6 +466,8 @@ router.get('/:slug', async (req, res) => {
         enrolled: !!enrolled,
         hasReview: !!(myCourseReview && myCourseReview.rating),
         reviewSubmittedAt: myCourseReview?.created_at || myCourseReview?.updated_at || null,
+        accessStartAt,
+        paidAt: orderRecord?.paid_at,
       })
     }
     res.json(payload)
@@ -460,6 +482,9 @@ router.get('/:slug/chapters/:chapterId', authMiddleware, async (req, res) => {
   const chapter = await db.getChapterById(req.params.chapterId)
   if (!chapter || chapter.course_id !== course.id) return res.status(404).json({ error: '챕터 없음' })
   if (!chapter.is_free && !await db.isEnrolled(req.user.id, course.id)) return res.status(403).json({ error: '수강 신청이 필요합니다.' })
+  if (!chapter.is_free && !await db.canAccessPaidCourse(req.user.id, course)) {
+    return res.status(403).json({ error: '수강 기간(3개월)이 만료되었습니다.' })
+  }
   const progress = await db.getProgress(req.user.id, chapter.id)
   const allChs = await db.getChaptersByCourse(course.id)
   const idx = allChs.findIndex(c => c.id === chapter.id)

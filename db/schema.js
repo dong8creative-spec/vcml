@@ -1086,6 +1086,7 @@ const REPLAY_OPEN_HOUR_KST = 13
 const ANTICIPATION_MODIFY_LOCK_MS = 60 * 60 * 1000
 const LIVE_REVIEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000  // 강의 종료 후 7일
 const LIVE_MATERIAL_AFTER_REVIEW_MS = 7 * 24 * 60 * 60 * 1000
+const PAID_COURSE_ACCESS_MONTHS = 3
 
 function kstCalendarParts(date) {
   const t = date.getTime() + 9 * 3600000
@@ -1229,7 +1230,61 @@ function isLiveMaterialOpenByReview(course, at = new Date()) {
   return isLiveMaterialOpenByLectureEnd(course, at)
 }
 
-function getLiveResourceAccess(course, { enrolled = false, hasReview = false, reviewSubmittedAt = null, at = new Date() } = {}) {
+function isPaidCourse(course) {
+  return Number(course?.sale_price) > 0
+}
+
+function resolveEnrollmentAccessStart({ enrolledAt = null, paidAt = null } = {}) {
+  return paidAt || enrolledAt || null
+}
+
+function getPaidCourseAccessMeta(course, { enrolledAt = null, paidAt = null, at = new Date() } = {}) {
+  if (!isPaidCourse(course)) {
+    return {
+      access_open: true,
+      access_expired: false,
+      access_ends_at: null,
+      access_start_at: null,
+      access_days_left: null,
+      access_months: null,
+    }
+  }
+  const accessStartAt = resolveEnrollmentAccessStart({ enrolledAt, paidAt })
+  if (!accessStartAt) {
+    return {
+      access_open: true,
+      access_expired: false,
+      access_ends_at: null,
+      access_start_at: null,
+      access_days_left: null,
+      access_months: PAID_COURSE_ACCESS_MONTHS,
+    }
+  }
+  const endsAtIso = addMonthsFrom(accessStartAt, PAID_COURSE_ACCESS_MONTHS)
+  if (!endsAtIso) {
+    return {
+      access_open: true,
+      access_expired: false,
+      access_ends_at: null,
+      access_start_at: accessStartAt,
+      access_days_left: null,
+      access_months: PAID_COURSE_ACCESS_MONTHS,
+    }
+  }
+  const endsMs = new Date(endsAtIso).getTime()
+  const now = at.getTime()
+  const access_open = now <= endsMs
+  return {
+    access_open,
+    access_expired: !access_open,
+    access_ends_at: endsAtIso,
+    access_start_at: accessStartAt,
+    access_days_left: access_open ? Math.max(0, Math.ceil((endsMs - now) / (24 * 60 * 60 * 1000))) : 0,
+    access_months: PAID_COURSE_ACCESS_MONTHS,
+  }
+}
+
+function getLiveResourceAccess(course, { enrolled = false, hasReview = false, reviewSubmittedAt = null, accessStartAt = null, paidAt = null, at = new Date() } = {}) {
   const replayUrl = String(course?.live_replay_url || '').trim()
   const materialUrl = String(course?.live_material_url || '').trim()
   const lectureDay = isLiveLectureDay(course, at)
@@ -1242,9 +1297,13 @@ function getLiveResourceAccess(course, { enrolled = false, hasReview = false, re
   const meetConfigured = !!String(course?.meet_code || '').trim()
   const meetJoinAvailable = meetConfigured && isMeetJoinAvailable(course, start, at)
   const replayPending = !!replayUrl && lectureEnded && !replayReady
+  const paidAccess = getPaidCourseAccessMeta(course, { enrolledAt: accessStartAt, paidAt, at })
+  const replayAvailableBase = !!replayUrl && lectureEnded && replayReady
+  const replay_available = replayAvailableBase && paidAccess.access_open
   return {
     replay_configured: !!replayUrl,
-    replay_available: !!replayUrl && lectureEnded && replayReady,
+    replay_available,
+    replay_expired: replayAvailableBase && paidAccess.access_expired,
     replay_pending: replayPending,
     replay_opens_at: replayPending && replayOpensAt ? replayOpensAt.toISOString() : null,
     replay_opens_label: replayPending && replayOpensAt ? formatReplayOpensLabel(replayOpensAt) : null,
@@ -1257,6 +1316,10 @@ function getLiveResourceAccess(course, { enrolled = false, hasReview = false, re
     meet_configured: meetConfigured,
     meet_join_available: enrolled && meetJoinAvailable,
     review_open: isLiveReviewOpen(course, at),
+    access_ends_at: paidAccess.access_ends_at,
+    access_expired: paidAccess.access_expired,
+    access_days_left: paidAccess.access_days_left,
+    access_months: paidAccess.access_months,
     review_closes_at: (() => {
       if (!start) return null
       const closeAt = new Date(start.getTime() + LIVE_END_AFTER_MS + LIVE_REVIEW_WINDOW_MS)
@@ -1984,6 +2047,28 @@ const db = {
   async isEnrolled(userId, courseId) {
     const snap = await fs.collection('enrollments').where('user_id', '==', userId).where('course_id', '==', courseId).limit(1).get()
     return !snap.empty
+  },
+  async getEnrollmentRecord(userId, courseId) {
+    const snap = await fs.collection('enrollments').where('user_id', '==', userId).where('course_id', '==', courseId).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+  },
+  async getCourseAccessMeta(userId, course, at = new Date()) {
+    const enrollment = await db.getEnrollmentRecord(userId, course.id)
+    if (!enrollment) return { enrolled: false, ...getPaidCourseAccessMeta(course, { at }) }
+    const order = await db.getActiveOrderForCourse(userId, course.id)
+    return {
+      enrolled: true,
+      ...getPaidCourseAccessMeta(course, {
+        enrolledAt: enrollment.enrolled_at,
+        paidAt: order?.paid_at,
+        at,
+      }),
+    }
+  },
+  async canAccessPaidCourse(userId, course, at = new Date()) {
+    if (!await db.isEnrolled(userId, course.id)) return false
+    const meta = await db.getCourseAccessMeta(userId, course, at)
+    return meta.access_open !== false
   },
   async enroll(userId, courseId) {
     const already = await db.isEnrolled(userId, courseId)
@@ -4099,10 +4184,13 @@ const db = {
 
   parseLiveStart,
   isFreeLiveCourse,
+  isPaidCourse,
   courseSupportsLiveReplay,
   isLiveLectureDay,
   isLiveMaterialOpenByLectureEnd,
   isLiveMaterialOpenByReview,
+  getPaidCourseAccessMeta,
+  resolveEnrollmentAccessStart,
   isLiveCourseEnded,
   canWriteAnticipationReview,
   canModifyAnticipationReview,
@@ -4127,10 +4215,13 @@ seedInstructorsIntroDefaults().catch(console.error)
 module.exports = db
 module.exports.parseLiveStart = parseLiveStart
 module.exports.isFreeLiveCourse = isFreeLiveCourse
+module.exports.isPaidCourse = isPaidCourse
 module.exports.courseSupportsLiveReplay = courseSupportsLiveReplay
 module.exports.isLiveLectureDay = isLiveLectureDay
 module.exports.isLiveMaterialOpenByLectureEnd = isLiveMaterialOpenByLectureEnd
 module.exports.isLiveMaterialOpenByReview = isLiveMaterialOpenByReview
+module.exports.getPaidCourseAccessMeta = getPaidCourseAccessMeta
+module.exports.resolveEnrollmentAccessStart = resolveEnrollmentAccessStart
 module.exports.isLiveCourseEnded = isLiveCourseEnded
 module.exports.isLiveReviewOpen = isLiveReviewOpen
 module.exports.canWriteAnticipationReview = canWriteAnticipationReview

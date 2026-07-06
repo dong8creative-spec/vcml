@@ -151,9 +151,17 @@ router.get('/courses', authMiddleware, async (req, res) => {
     const cancelPlan = db.computeEnrollmentCancelPlan(c, order, progress, chapters)
     const myReview = await db.getReviewByUserAndCourse(req.user.id, c.id)
     const base = db.stripLiveResourceUrls(c)
+    const accessStartAt = db.resolveEnrollmentAccessStart({
+      enrolledAt: e.enrolled_at,
+      paidAt: order?.paid_at,
+    })
     const row = {
       ...base,
       enrolled_at: e.enrolled_at,
+      access: db.getPaidCourseAccessMeta(c, {
+        enrolledAt: e.enrolled_at,
+        paidAt: order?.paid_at,
+      }),
       total_chapters: chapters.length,
       completed_chapters: completed,
       last_chapter_id: e.last_chapter_id || null,
@@ -174,6 +182,8 @@ router.get('/courses', authMiddleware, async (req, res) => {
         enrolled: true,
         hasReview: !!(myReview && myReview.rating),
         reviewSubmittedAt: myReview?.created_at || myReview?.updated_at || null,
+        accessStartAt,
+        paidAt: order?.paid_at,
       })
     }
     return row
@@ -189,7 +199,14 @@ router.get('/courses/:courseId/live-replay', authMiddleware, async (req, res) =>
   if (!await db.isEnrolled(req.user.id, course.id)) {
     return res.status(403).json({ error: '수강 신청 후 다시보기를 이용할 수 있습니다.' })
   }
-  const access = db.getLiveResourceAccess(course, { enrolled: true })
+  const accessMeta = await db.getCourseAccessMeta(req.user.id, course)
+  if (accessMeta.access_expired) {
+    return res.status(403).json({ error: '수강 기간(3개월)이 만료되어 다시보기를 이용할 수 없습니다.' })
+  }
+  const access = db.getLiveResourceAccess(course, {
+    enrolled: true,
+    accessStartAt: accessMeta.access_start_at,
+  })
   if (!access.replay_available) {
     if (access.replay_pending) {
       const when = access.replay_opens_label || '다음 날 오후 1시'
@@ -276,6 +293,10 @@ router.post('/progress', authMiddleware, async (req, res) => {
   const chapter = await db.getChapterById(chapter_id)
   if (!chapter) return res.status(404).json({ error: '챕터 없음' })
   if (!await db.isEnrolled(req.user.id, chapter.course_id)) return res.status(403).json({ error: '수강 신청 필요' })
+  const course = await db.getCourseById(chapter.course_id)
+  if (course && !await db.canAccessPaidCourse(req.user.id, course)) {
+    return res.status(403).json({ error: '수강 기간(3개월)이 만료되었습니다.' })
+  }
   await db.upsertProgress(req.user.id, chapter_id, completed, watched_sec || 0)
   res.json({ success: true })
 })

@@ -185,6 +185,13 @@ function escapeHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
 
+function formatAccessUntil(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+}
+
 function avatarHtml(profile) {
   const name = profile?.name || user?.name || '?'
   if (profile?.profile_image) {
@@ -539,7 +546,9 @@ function renderLiveCourseCard(c) {
   const meetPayload = buildMeetPayload(c)
   const isEnded = c.live_resources?.live_ended || c.live_ended || c.live_status === 'ended'
 
-  const replayBtn = LS && isEnded ? (LS.endedReplayButtonHtml?.(c) || '') : ''
+  const replayBtn = LS && isEnded && !c.access?.access_expired && !c.live_resources?.replay_expired
+    ? (LS.endedReplayButtonHtml?.(c) || '')
+    : ''
   const materialBtn = renderLiveMaterialButton(c)
   const meetWrap = !isEnded
     ? `<div data-live-meet-wrap data-live-meet-enrolled="1" data-live-meet-compact="1" data-live-course="${meetPayload}">${renderLiveMeetBtn(c, start)}</div>`
@@ -724,8 +733,12 @@ async function loadCourses({ refresh = false } = {}) {
     el.innerHTML = `<div class="my-course-grid">${courses.map(c => {
       if (isLiveLikeCourse(c)) return renderLiveCourseCard(c)
       const pct = c.total_chapters > 0 ? Math.round((c.completed_chapters / c.total_chapters) * 100) : 0
-      return `<div class="my-course-card my-course-card--wrap">
-        <a href="/player.html?slug=${c.slug}&chapter=${c.last_chapter_id || 'first'}" class="mc-link">
+      const accessExpired = c.access?.access_expired
+      const playerHref = accessExpired
+        ? `/course.html?slug=${escapeHtml(c.slug)}`
+        : `/player.html?slug=${escapeHtml(c.slug)}&chapter=${escapeHtml(c.last_chapter_id || 'first')}`
+      return `<div class="my-course-card my-course-card--wrap${accessExpired ? ' my-course-card--expired' : ''}">
+        <a href="${playerHref}" class="mc-link">
         <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
           ${renderCourseThumbBadge(c)}
           ${renderCourseThumbInner(c)}
@@ -738,7 +751,7 @@ async function loadCourses({ refresh = false } = {}) {
             <div class="mc-bar-wrap"><div class="mc-bar" style="width:${pct}%"></div></div>
             <span class="mc-pct">${pct}%</span>
           </div>
-          <div class="mc-meta">${c.completed_chapters}/${c.total_chapters}강 완료</div>
+          <div class="mc-meta">${c.completed_chapters}/${c.total_chapters}강 완료${accessExpired ? ' · <span class="mc-access-expired">수강 기간 만료</span>' : (c.access?.access_ends_at ? ` · ${formatAccessUntil(c.access.access_ends_at)}까지` : '')}</div>
         </div>
         </a>
         ${renderCourseReviewBlock(c)}
