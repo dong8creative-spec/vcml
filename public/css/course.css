@@ -599,22 +599,19 @@
   max-width: 1000px;
 }
 .course-detail-intro__figure {
-  margin: 0 0 20px;
-}
-.course-detail-intro__figure:last-of-type {
-  margin-bottom: 20px;
+  margin: 0;
 }
 .course-detail-intro__figure + .course-detail-intro__figure {
-  margin-top: 4px;
+  margin-top: 0;
 }
 .course-detail-intro__image {
   display: block;
   width: 100%;
   max-width: 1000px;
   height: auto;
-  border-radius: 12px;
-  border: 0.5px solid var(--border);
-  background: var(--bg-soft);
+  border-radius: 0;
+  border: none;
+  background: transparent;
 }
 .course-detail-intro__text {
   font-size: 16px;

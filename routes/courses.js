@@ -1,5 +1,6 @@
 const router = require('express').Router()
 const db = require('../db/schema')
+const { mergeDetailIntroImages } = require('../utils/course-detail-assets')
 const jwt = require('jsonwebtoken')
 const { authMiddleware } = require('../middleware/auth')
 const {
@@ -171,7 +172,7 @@ router.get('/:slug/media', publicCache, async (req, res) => {
       thumbnail_image: course.thumbnail_image || null,
       hero_gallery: Array.isArray(course.hero_gallery) ? course.hero_gallery : [],
       detail_intro_text: course.detail_intro_text || null,
-      detail_intro_images: Array.isArray(course.detail_intro_images) ? course.detail_intro_images : null,
+      detail_intro_images: mergeDetailIntroImages(course, course.slug),
       detail_intro_image: course.detail_intro_image || null,
       live_curriculum_image: course.live_curriculum_image || null,
       live_curriculum_text: course.live_curriculum_text || null,

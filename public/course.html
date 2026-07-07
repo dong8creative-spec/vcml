@@ -20,7 +20,7 @@
     })
   </script>
   <title>강의 상세 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=14" /><link rel="stylesheet" href="/css/common.css?v=3" /><link rel="stylesheet" href="/css/course.css?v=28" />
+  <link rel="stylesheet" href="/css/style.css?v=14" /><link rel="stylesheet" href="/css/common.css?v=3" /><link rel="stylesheet" href="/css/course.css?v=29" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -224,7 +224,7 @@
 
     async function loadCourseMedia() {
       try {
-        const media = await API.get('/courses/' + slug + '/media')
+        const media = await API.get('/courses/' + encodeURIComponent(slug) + '/media')
         courseData = { ...courseData, ...media }
         render(courseData)
       } catch {}
