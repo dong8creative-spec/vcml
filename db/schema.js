@@ -1904,11 +1904,29 @@ const db = {
 
     const salePrice = Number(course.sale_price || 0)
     const isFree = salePrice <= 0 || course.course_type === 'live'
-    const amount = opts.amount != null ? Math.max(0, Number(opts.amount) || 0) : salePrice
-    const discount = Math.max(0, Number(opts.discount) || 0)
     const method = opts.method
       || (isFree ? '관리자' : '스마트스토어')
     const paidAt = opts.paid_at || now()
+
+    // 유료 강의: 보유 10% 스택 쿠폰 최대 2장 적용·소모
+    let appliedCoupons = []
+    let discount = Math.max(0, Number(opts.discount) || 0)
+    let amount = opts.amount != null ? Math.max(0, Number(opts.amount) || 0) : salePrice
+    if (!isFree && opts.amount == null) {
+      const isFirstPurchase = !(await db.hasPaidCourseOrder(userId))
+      const stack = await db.resolveStackableCourseDiscount(userId, salePrice, isFirstPurchase)
+      appliedCoupons = stack.applied || []
+      discount = stack.totalDiscount || 0
+      amount = Math.max(0, salePrice - discount)
+    } else if (!isFree && opts.consume_coupons !== false) {
+      // 금액 지정 시에도 쿠폰은 최대 2장 소모 (스마트스토어 할인 반영)
+      const isFirstPurchase = !(await db.hasPaidCourseOrder(userId))
+      const stack = await db.resolveStackableCourseDiscount(userId, salePrice, isFirstPurchase)
+      appliedCoupons = stack.applied || []
+      if (opts.discount == null && stack.totalDiscount > 0) {
+        discount = stack.totalDiscount
+      }
+    }
 
     let order = null
     try {
@@ -1932,9 +1950,22 @@ const db = {
           paid_at: paidAt,
           note: opts.note || null,
           admin_enrolled: true,
+          coupons_applied: appliedCoupons.length,
         }
         const ref = await fs.collection('orders').add(data)
         order = { id: ref.id, ...data }
+
+        for (const { coupon, discount: couponDiscount } of appliedCoupons) {
+          await db.useCoupon(coupon.id, {
+            order_id: order.id,
+            course_id: courseId,
+            used_context: 'course_order',
+            used_target_type: 'course',
+            used_target_id: courseId,
+            used_target_title: course.title,
+            used_discount: couponDiscount,
+          })
+        }
       }
       await db.syncCourseStudentCount(courseId)
       cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data*')
@@ -1945,12 +1976,13 @@ const db = {
         course_id: courseId,
         order_id: order.id,
         amount: order.amount,
+        discount: order.discount || discount,
         method: order.method,
+        coupons_applied: appliedCoupons.length,
       }
     } catch (e) {
       console.error('adminEnrollUserToCourse:', e)
       if (order?.id) await db.cancelOrder(order.id).catch(() => {})
-      // enrollment는 이미 있었을 수 있어 무조건 unenroll하지 않음 — 신규만 롤백은 복잡하므로 sync만
       await db.syncCourseStudentCount(courseId).catch(() => {})
       return { ok: false, code: 'enroll_failed', error: e.message || '수강 등록에 실패했습니다.' }
     }
@@ -2066,10 +2098,9 @@ const db = {
 
     let resolved = 0
     for (const pending of pendingMap.values()) {
+      // 금액은 가입 시점 보유 쿠폰(최대 10%×2)으로 다시 계산
       const result = await db.adminEnrollUserToCourse(userId, pending.course_id, {
-        amount: pending.amount,
         method: pending.method,
-        discount: pending.discount,
         note: pending.note,
       })
       if (result.ok) {
@@ -2077,6 +2108,8 @@ const db = {
           status: 'fulfilled',
           matched_user_id: userId,
           fulfilled_at: now(),
+          fulfilled_order_id: result.order_id || null,
+          fulfilled_coupons_applied: result.coupons_applied || 0,
         })
         resolved++
       }
