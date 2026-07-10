@@ -108,7 +108,7 @@ class App(tk.Tk):
         ).pack(pady=(40, 8))
         ttk.Label(
             gate_inner,
-            text="캡컷 초신속 클래스 수강생 전용입니다.\n"
+            text="캡컷 초신속 스탠다드 수강생 전용입니다.\n"
                  "구글 로그인 후 기기 연동이 완료되어야 사용할 수 있습니다.",
             foreground=theme.TEXT_MUTED,
             justify="center",
@@ -248,7 +248,7 @@ class App(tk.Tk):
     def selected_project(self) -> capcut.Project | None:
         sel = self.proj_tree.selection()
         if not sel:
-            toast(self, "사용할 캡컷 프로젝트를 먼저 선택해 주세요.", "warning")
+            toast(self, "먼저 프로젝트를 선택하세요.", "warning")
             return None
         return self.projects[int(sel[0])]
 
@@ -277,7 +277,7 @@ class App(tk.Tk):
     def _require_auth(self, action: str = "이 기능") -> bool:
         if self._authenticated and self._auth and self._auth.get("token"):
             return True
-        toast(self, f"{action}을(를) 사용하려면 캡컷 초신속 클래스 수강 후 구글 로그인이 필요합니다.", "warning")
+        toast(self, f"{action}을(를) 쓰려면 캡컷 초신속 스탠다드 수강 후 구글 로그인이 필요합니다.", "warning")
         self._apply_auth_lock()
         self.after(200, self._prompt_login_on_start)
         return False
@@ -330,7 +330,7 @@ class App(tk.Tk):
             self.login_btn.pack_forget()
             self.logout_btn.pack(side="right")
         else:
-            self.auth_var.set("로그인 필요 — 캡컷 초신속 클래스 수강생 전용")
+            self.auth_var.set("로그인 필요 — 캡컷 초신속 스탠다드 수강생 전용")
             self.logout_btn.pack_forget()
             self.login_btn.pack(side="right")
 
@@ -346,7 +346,7 @@ class App(tk.Tk):
                 self._balance,
             )
             self.after(0, lambda: self._set_authenticated(True, self._auth, self._balance))
-            self.after(0, lambda: toast(self, "로그인이 확인되었습니다. 환영합니다!", "success"))
+            self.after(0, lambda: toast(self, "로그인 확인 완료", "success"))
         except Exception as e:
             license_api.clear_auth()
             self.after(0, lambda: self._set_authenticated(False))
@@ -381,12 +381,12 @@ class App(tk.Tk):
         try:
             auth = license_api.start_device_login(on_status=self.set_status)
             self.after(0, lambda: self._set_authenticated(True, auth, auth.get("balance")))
-            self.after(0, lambda: toast(self, "로그인되었습니다. 이제 자막을 생성할 수 있습니다!", "success"))
+            self.after(0, lambda: toast(self, "로그인되었습니다.", "success"))
             self.set_status("로그인 완료. 프로젝트를 선택하고 자막을 생성하세요.")
         except Exception as e:
             license_api.clear_auth()
             self.after(0, lambda: self._set_authenticated(False))
-            self.after(0, lambda: toast(self, str(e) or "로그인 중 오류가 발생했습니다. 다시 시도해 주세요.", "error"))
+            self.after(0, lambda: toast(self, str(e) or "로그인에 실패했습니다.", "error"))
             self.set_status("로그인 실패")
         finally:
             self.after(0, lambda: self._set_busy(False))
@@ -394,7 +394,7 @@ class App(tk.Tk):
     def on_logout(self) -> None:
         license_api.clear_auth()
         self._set_authenticated(False)
-        toast(self, "로그아웃되었습니다. 다시 보겠습니다!", "info")
+        toast(self, "로그아웃되었습니다.", "info")
         self.after(200, self._prompt_login_on_start)
 
     def _prompt_login_on_start(self) -> None:
@@ -403,7 +403,7 @@ class App(tk.Tk):
         ok = confirm(
             self,
             "구글 로그인",
-            "도각 자막패치는 캡컷 초신속 클래스 수강생 전용입니다.\n"
+            "도각 자막패치는 캡컷 초신속 스탠다드 수강생 전용입니다.\n"
             "브라우저에서 구글 로그인 후 이 기기를 연동해야 사용할 수 있습니다.\n\n"
             "지금 로그인할까요? (취소하면 프로그램이 종료됩니다.)",
             ok_text="로그인",
@@ -438,7 +438,7 @@ class App(tk.Tk):
             if res.missing_files:
                 n = len(res.missing_files)
                 self.after(0, lambda n=n: toast(
-                    self, f"영상 파일 {n}개를 찾을 수 없어 해당 구간은 제외했습니다.", "warning"))
+                    self, f"원본 {n}개를 찾지 못해 해당 구간은 제외됩니다.", "warning"))
             if not res.used_files:
                 self.set_status("인식할 오디오가 없습니다.")
                 return
@@ -493,7 +493,7 @@ class App(tk.Tk):
                     self.after(0, self._refresh_auth_ui)
                 except Exception:
                     traceback.print_exc()
-            self.after(0, lambda: toast(self, "자막 생성 중 오류가 발생했습니다. 다시 시도해 주세요.", "error"))
+            self.after(0, lambda: toast(self, "자막 생성에 실패했습니다.", "error"))
             self.set_status("자막 생성 실패")
         finally:
             self.after(0, lambda: self._set_busy(False))
@@ -534,7 +534,7 @@ class App(tk.Tk):
                 self.lines[i].start_us = _parse_sec(sv.get())
                 self.lines[i].end_us = _parse_sec(ev.get())
             except ValueError:
-                toast(self, "시간 형식을 확인해 주세요. (예: 1:23.45)", "warning")
+                toast(self, "시간 형식이 올바르지 않습니다.", "warning")
 
         start_entry.bind("<Return>", commit_time)
         start_entry.bind("<FocusOut>", commit_time)
@@ -659,7 +659,7 @@ class App(tk.Tk):
         if not self._require_auth("미리듣기"):
             return
         if self._audio is None:
-            toast(self, "[① 자막 생성]을 먼저 실행해 주세요.", "info")
+            toast(self, "먼저 [① 자막 생성]을 실행하세요.", "info")
             return
         self._stop_playback()
         line = self.lines[idx]
@@ -671,7 +671,7 @@ class App(tk.Tk):
         if not self._require_auth("재생"):
             return
         if self._audio is None:
-            toast(self, "[① 자막 생성]을 먼저 실행해 주세요.", "info")
+            toast(self, "먼저 [① 자막 생성]을 실행하세요.", "info")
             return
         self._start_playback(self.lines[idx].start_us)
 
@@ -682,7 +682,7 @@ class App(tk.Tk):
             self._stop_playback()
             return
         if self._audio is None:
-            toast(self, "[① 자막 생성]을 먼저 실행해 주세요.", "info")
+            toast(self, "먼저 [① 자막 생성]을 실행하세요.", "info")
             return
         self._start_playback(0)
 
@@ -753,16 +753,15 @@ class App(tk.Tk):
             return
         self._sync_all_text()
         if not self.lines:
-            toast(self, "자막을 먼저 생성하거나 SRT 파일을 불러와 주세요.", "warning")
+            toast(self, "먼저 자막을 생성하거나 SRT를 불러오세요.", "warning")
             return
         if capcut.is_capcut_running():
-            msg = ("⚠️ 캡컷이 실행 중입니다.\n"
-                   "이 프로젝트가 열려 있다면 먼저 닫아주세요.\n"
-                   "열린 상태로 삽입하면 자막이 손실될 수 있습니다.\n\n"
-                   "계속하시겠습니까?")
+            msg = ("캡컷에서 이 프로젝트가 열려 있다면 먼저 닫아주세요.\n"
+                   "열린 상태로 삽입하면 자막이 사라질 수 있습니다.\n\n"
+                   "계속 삽입할까요?")
             kind = "warning"
         else:
-            msg = "선택한 프로젝트에 자막 트랙을 추가합니다."
+            msg = "선택한 프로젝트에 'AI 자막' 트랙을 추가합니다."
             kind = "info"
         if not confirm(self, "자막 삽입", msg, ok_text="삽입", kind=kind):
             return
@@ -774,11 +773,11 @@ class App(tk.Tk):
                 transform_y=float(self.posy_var.get()),
             )
             backup = inject.inject_subtitles(project.dir, self.lines, style)
-            toast(self, f"{len(self.lines)}개 자막이 캡컷에 추가되었습니다. 이제 캡컷에서 확인하세요!", "success")
+            toast(self, f"{len(self.lines)}개 자막이 삽입되었습니다.", "success")
             self.set_status("삽입 완료")
         except Exception as e:
             traceback.print_exc()
-            self.after(0, lambda: toast(self, "삽입 중 오류가 발생했습니다. 원본은 안전하게 복구되었습니다.", "error"))
+            self.after(0, lambda: toast(self, "삽입에 실패했습니다. 원본은 복구되었습니다.", "error"))
 
     # ------------------------------------------------------------- SRT
     def on_export_srt(self) -> None:
@@ -786,7 +785,7 @@ class App(tk.Tk):
             return
         self._sync_all_text()
         if not self.lines:
-            toast(self, "내보낼 자막이 없습니다. 먼저 자막을 생성해 주세요.", "warning")
+            toast(self, "내보낼 자막이 없습니다.", "warning")
             return
         path = filedialog.asksaveasfilename(
             defaultextension=".srt", filetypes=[("SRT 자막", "*.srt")])
@@ -804,7 +803,7 @@ class App(tk.Tk):
                 self._render_document()
                 self.set_status(f"SRT {len(self.lines)}개 라인 불러옴")
             except Exception:
-                toast(self, "SRT 파일 읽기에 실패했습니다. 파일 형식을 확인해 주세요.", "error")
+                toast(self, "SRT 파일을 읽지 못했습니다.", "error")
 
 
 def main() -> None:

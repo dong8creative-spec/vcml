@@ -22,7 +22,7 @@
   <title>마이페이지 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=14" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
-  <link rel="stylesheet" href="/css/mypage.css?v=9" />
+  <link rel="stylesheet" href="/css/mypage.css?v=10" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 
@@ -490,6 +490,42 @@ function isLiveLikeCourse(c) {
     || (Number(c?.sale_price) === 0 && (c?.live_starts_at || c?.live_schedule))
 }
 
+function getCourseLectureStart(c) {
+  const raw = c?.live_starts_at || c?.checkout_ends_at
+  if (!raw) return null
+  const d = new Date(raw)
+  return isNaN(d.getTime()) ? null : d
+}
+
+function isCourseLectureStarted(c, at = new Date()) {
+  const start = getCourseLectureStart(c)
+  if (!start) return true
+  return at.getTime() >= start.getTime()
+}
+
+function formatLectureStartLabel(date) {
+  if (!date) return ''
+  return date.toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
+function renderSubtitleToolDownload(c) {
+  if (c.slug !== 'capcut-pro-basic') return ''
+  if (!isCourseLectureStarted(c)) {
+    const start = getCourseLectureStart(c)
+    const label = start ? `${formatLectureStartLabel(start)}부터` : '강의 시작 후'
+    return `<div class="my-vod-actions"><span class="pc-btn secondary my-vod-btn--disabled" aria-disabled="true"><i class="ti ti-clock"></i> ${escapeHtml(label)} 다운로드 가능</span></div>`
+  }
+  return `<div class="my-vod-actions"><a href="/subtitle-tool.html" class="pc-btn secondary" style="display:inline-flex;width:auto"><i class="ti ti-download"></i> 도각 자막패치 다운로드</a></div>`
+}
+
 function renderCourseThumbBadge(c) {
   if (isLiveLikeCourse(c)) {
     return `<span class="mc-live-badge mc-thumb-badge">${googleMeetIconHtml(28)}<span class="badge-meet-label">Meet</span></span>`
@@ -716,6 +752,37 @@ async function submitCourseReview(courseId) {
   }
 }
 
+function renderVodCourseCard(c) {
+  const pct = c.total_chapters > 0 ? Math.round((c.completed_chapters / c.total_chapters) * 100) : 0
+  const accessExpired = c.access?.access_expired
+  const playerHref = accessExpired
+    ? `/course.html?slug=${escapeHtml(c.slug)}`
+    : `/player.html?slug=${escapeHtml(c.slug)}&chapter=${escapeHtml(c.last_chapter_id || 'first')}`
+  return `<div class="my-vod-card${accessExpired ? ' my-vod-card--expired' : ''}">
+    <a href="${playerHref}" class="my-vod-main">
+      <div class="lc-thumb-wrap">
+        <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
+          ${renderCourseThumbBadge(c)}
+          ${renderCourseThumbInner(c)}
+          ${pct === 100 ? '<div class="mc-done"><i class="ti ti-check"></i> 완료</div>' : ''}
+        </div>
+      </div>
+      <div class="my-vod-info">
+        <span class="mc-cat">${escapeHtml(c.category)}</span>
+        <div class="my-vod-title">${escapeHtml(c.title)}</div>
+        <div class="mc-progress-row">
+          <div class="mc-bar-wrap"><div class="mc-bar" style="width:${pct}%"></div></div>
+          <span class="mc-pct">${pct}%</span>
+        </div>
+        <div class="mc-meta">${c.completed_chapters}/${c.total_chapters}강 완료${accessExpired ? ' · <span class="mc-access-expired">수강 기간 만료</span>' : (c.access?.access_ends_at ? ` · ${formatAccessUntil(c.access.access_ends_at)}까지` : '')}</div>
+      </div>
+    </a>
+    ${renderSubtitleToolDownload(c)}
+    ${renderCourseReviewBlock(c)}
+    ${renderCancelAction(c)}
+  </div>`
+}
+
 async function loadCourses({ refresh = false } = {}) {
   const el = document.getElementById('my-courses')
   if (!refresh && el.dataset.loaded) return
@@ -732,32 +799,7 @@ async function loadCourses({ refresh = false } = {}) {
     }
     el.innerHTML = `<div class="my-course-grid">${courses.map(c => {
       if (isLiveLikeCourse(c)) return renderLiveCourseCard(c)
-      const pct = c.total_chapters > 0 ? Math.round((c.completed_chapters / c.total_chapters) * 100) : 0
-      const accessExpired = c.access?.access_expired
-      const playerHref = accessExpired
-        ? `/course.html?slug=${escapeHtml(c.slug)}`
-        : `/player.html?slug=${escapeHtml(c.slug)}&chapter=${escapeHtml(c.last_chapter_id || 'first')}`
-      return `<div class="my-course-card my-course-card--wrap${accessExpired ? ' my-course-card--expired' : ''}">
-        <a href="${playerHref}" class="mc-link">
-        <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
-          ${renderCourseThumbBadge(c)}
-          ${renderCourseThumbInner(c)}
-          ${pct === 100 ? '<div class="mc-done"><i class="ti ti-check"></i> 완료</div>' : ''}
-        </div>
-        <div class="mc-body">
-          <div class="mc-cat">${escapeHtml(c.category)}</div>
-          <div class="mc-title">${escapeHtml(c.title)}</div>
-          <div class="mc-progress-row">
-            <div class="mc-bar-wrap"><div class="mc-bar" style="width:${pct}%"></div></div>
-            <span class="mc-pct">${pct}%</span>
-          </div>
-          <div class="mc-meta">${c.completed_chapters}/${c.total_chapters}강 완료${accessExpired ? ' · <span class="mc-access-expired">수강 기간 만료</span>' : (c.access?.access_ends_at ? ` · ${formatAccessUntil(c.access.access_ends_at)}까지` : '')}</div>
-        </div>
-        </a>
-        ${c.slug === 'capcut-pro-basic' ? '<div style="padding:0 14px 12px"><a href="/subtitle-tool.html" class="pc-btn secondary" style="display:inline-flex;width:auto"><i class="ti ti-download"></i> 도각 자막패치 다운로드</a></div>' : ''}
-        ${renderCourseReviewBlock(c)}
-        ${renderCancelAction(c)}
-      </div>`
+      return renderVodCourseCard(c)
     }).join('')}</div>`
     if (window.LiveSession) LiveSession.startCountdownTicker()
     openRequestedReview()

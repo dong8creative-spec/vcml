@@ -372,6 +372,11 @@
   border: 1.5px solid var(--border);
 }
 .btn-enroll--secondary:hover { background: var(--bg-muted); }
+.btn-enroll--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .btn-enroll--review {
   background: #111;
   color: #fff;

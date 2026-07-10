@@ -81,7 +81,7 @@
   <div class="st-card">
     <h2>이용 안내</h2>
     <ul class="st-list">
-      <li><strong>캡컷 초신속 스탠다드 수강생만</strong> 구글 로그인·기기 연동 후 이용할 수 있습니다. 미수강 계정은 로그인·연동이 거부됩니다.</li>
+      <li><strong>캡컷 초신속 스탠다드 수강생만</strong> 구글 로그인·기기 연동 후 이용할 수 있습니다. <strong>강의 시작일 이후</strong>에만 다운로드·이용이 가능합니다.</li>
       <li>최초 이용 허가 시 <strong>100코인</strong>이 지급됩니다.</li>
       <li>해당 강의 수강 후기를 남기면 <strong>100코인</strong>이 추가 지급됩니다 (1회).</li>
       <li>자막 생성 시 타임라인 길이 기준 <strong>1분당 1코인</strong>이 차감됩니다 (최소 1코인).</li>
@@ -156,6 +156,16 @@ function renderDenied(data) {
       <h2>구글 계정 연동 필요</h2>
       <p class="st-meta" style="margin-bottom:14px">${data.error || '구글 로그인이 필요합니다.'}</p>
       <div class="st-actions">${googleLoginBtn('구글 계정으로 다시 로그인')}</div>
+    `
+    return
+  }
+  if (data.code === 'course_not_started') {
+    bodyEl.innerHTML = `
+      <h2>강의 시작 전</h2>
+      <p class="st-meta" style="margin-bottom:14px">${data.error || '강의가 시작된 뒤에 다운로드·이용할 수 있습니다.'}</p>
+      <div class="st-actions">
+        <a class="st-btn" href="${COURSE_HREF}">강의 안내 보기</a>
+      </div>
     `
     return
   }

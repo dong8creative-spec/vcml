@@ -501,6 +501,25 @@
       return isNaN(d.getTime()) ? null : d
     }
 
+    function isCourseLectureStarted(c, at = new Date()) {
+      const start = getCourseLectureStart(c)
+      if (!start) return true
+      return at.getTime() >= start.getTime()
+    }
+
+    function formatLectureStartLabel(date) {
+      if (!date) return ''
+      return date.toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    }
+
     function isRefundGuaranteeActive(c, at = new Date()) {
       const start = getCourseLectureStart(c)
       if (!start) return true
@@ -647,6 +666,11 @@
 
     function renderSubtitleToolBtn(c) {
       if (!c?.enrolled || c.slug !== 'capcut-pro-basic') return ''
+      if (!isCourseLectureStarted(c)) {
+        const start = getCourseLectureStart(c)
+        const label = start ? `${formatLectureStartLabel(start)}부터` : '강의 시작 후'
+        return `<div class="btn-enroll btn-enroll--secondary btn-enroll--disabled" aria-disabled="true"><i class="ti ti-clock"></i> ${esc(label)} 다운로드 가능</div>`
+      }
       return `<a href="/subtitle-tool.html" class="btn-enroll btn-enroll--secondary"><i class="ti ti-download"></i> 도각 자막패치 다운로드</a>`
     }
 

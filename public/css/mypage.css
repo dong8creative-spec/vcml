@@ -47,7 +47,7 @@
 
 .my-main { flex: 1; }
 .my-page-title { font-size: 34.8px; font-weight: 600; color: var(--text-primary); margin-bottom: 24px; }
-.my-course-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.my-course-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
 .my-course-card { background: #fff; border: 0.5px solid var(--border); border-radius: 14px; overflow: hidden; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; display: block; }
 .my-course-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
 .mc-thumb { font-size: 56.4px; }
@@ -247,7 +247,7 @@ body { background:#f5f6fa; }
     .section-title { font-size: 24px; font-weight:900; margin-bottom:20px; }
 
     /* 강의 카드 */
-    .my-course-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+    .my-course-grid { display:grid; grid-template-columns:1fr; gap:16px; }
     .my-course-card { background:#fff; border:1px solid #eee; border-radius:12px; overflow:hidden; text-decoration:none; transition:.2s; }
     .my-course-card:hover { box-shadow:0 6px 20px rgba(0,0,0,.08); transform:translateY(-2px); }
     .mc-thumb { font-size: 43.2px; }
@@ -571,6 +571,58 @@ body { background:#f5f6fa; }
       grid-column: 1 / -1;
       box-shadow: 0 1px 4px rgba(0,0,0,.05);
     }
+
+    /* ── 유료 VOD 강의 카드 (가로형) ── */
+    .my-vod-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      overflow: hidden;
+      grid-column: 1 / -1;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+    .my-vod-main {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.12s;
+    }
+    .my-vod-main:hover { background: #f9fafb; }
+    .my-vod-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .my-vod-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111;
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .my-vod-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 16px 14px;
+    }
+    .my-vod-btn--disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .my-vod-card .lc-thumb-wrap .mc-thumb-badge {
+      transform: scale(0.35);
+      transform-origin: top left;
+    }
     .my-lc-main {
       display: flex;
       align-items: center;
@@ -774,11 +826,12 @@ body { background:#f5f6fa; }
       /* 메인 */
       .section-title { font-size: 20px; margin-bottom: 14px; }
 
-      /* 강의 카드 그리드 — 2열 */
-      .my-course-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      /* 강의 카드 그리드 — 1열 가로형 */
+      .my-course-grid { grid-template-columns: 1fr; gap: 12px; }
 
-      /* 라이브 강의 카드 — 세로 스택 */
-      .my-lc-main { flex-direction: column; align-items: stretch; gap: 10px; }
+      /* 라이브·VOD 강의 카드 — 모바일에서 썸네일 위 */
+      .my-lc-main,
+      .my-vod-main { flex-direction: column; align-items: stretch; gap: 10px; }
       .lc-thumb-wrap { width: 100%; height: 160px; }
     }
 

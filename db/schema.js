@@ -1500,6 +1500,19 @@ function isCheckoutBlockedForPurchase(course, at = new Date()) {
   return !getCheckoutWindowPublic(course, at).checkout_open
 }
 
+function getCourseLectureStartAt(course) {
+  const raw = course?.live_starts_at || course?.checkout_ends_at
+  if (!raw) return null
+  const d = new Date(raw)
+  return isNaN(d.getTime()) ? null : d
+}
+
+function isCourseLectureStarted(course, at = new Date()) {
+  const start = getCourseLectureStartAt(course)
+  if (!start) return true
+  return at.getTime() >= start.getTime()
+}
+
 function normalizeCheckoutWindowInput(startsAt, endsAt) {
   const starts = startsAt ? parseCheckoutAt(startsAt) : null
   const ends = endsAt ? parseCheckoutAt(endsAt) : null
@@ -4687,6 +4700,24 @@ const db = {
         course_id: course.id,
       }
     }
+    if (!isCourseLectureStarted(course)) {
+      const startsAt = getCourseLectureStartAt(course)
+      const label = formatCheckoutLabel(startsAt)
+      return {
+        ok: false,
+        code: 'course_not_started',
+        error: label
+          ? `${label}부터 도각 자막패치를 이용할 수 있습니다.`
+          : '강의 시작 전에는 도각 자막패치를 이용할 수 없습니다.',
+        has_google: true,
+        enrolled: true,
+        course_slug: course.slug,
+        course_title: course.title,
+        course_id: course.id,
+        lecture_starts_at: startsAt ? startsAt.toISOString() : null,
+        lecture_starts_label: label,
+      }
+    }
     const wallet = await db.ensureSubtitleWallet(userId)
     return {
       ok: true,
@@ -4914,6 +4945,8 @@ const db = {
   isLiveMaterialOpenByLectureEnd,
   isLiveMaterialOpenByReview,
   getPaidCourseAccessMeta,
+  getCourseLectureStartAt,
+  isCourseLectureStarted,
   resolveEnrollmentAccessStart,
   isLiveCourseEnded,
   canWriteAnticipationReview,
@@ -4951,6 +4984,8 @@ module.exports.isLiveLectureDay = isLiveLectureDay
 module.exports.isLiveMaterialOpenByLectureEnd = isLiveMaterialOpenByLectureEnd
 module.exports.isLiveMaterialOpenByReview = isLiveMaterialOpenByReview
 module.exports.getPaidCourseAccessMeta = getPaidCourseAccessMeta
+module.exports.getCourseLectureStartAt = getCourseLectureStartAt
+module.exports.isCourseLectureStarted = isCourseLectureStarted
 module.exports.resolveEnrollmentAccessStart = resolveEnrollmentAccessStart
 module.exports.isLiveCourseEnded = isLiveCourseEnded
 module.exports.isLiveReviewOpen = isLiveReviewOpen
