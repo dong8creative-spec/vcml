@@ -72,6 +72,48 @@
         { "fieldPath": "user_id", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "pending_enrollments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_id", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pending_enrollments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_id", "order": "ASCENDING" },
+        { "fieldPath": "email_norm", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pending_enrollments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_id", "order": "ASCENDING" },
+        { "fieldPath": "phone_norm", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pending_enrollments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "email_norm", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pending_enrollments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "phone_norm", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

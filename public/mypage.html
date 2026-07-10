@@ -754,6 +754,7 @@ async function loadCourses({ refresh = false } = {}) {
           <div class="mc-meta">${c.completed_chapters}/${c.total_chapters}강 완료${accessExpired ? ' · <span class="mc-access-expired">수강 기간 만료</span>' : (c.access?.access_ends_at ? ` · ${formatAccessUntil(c.access.access_ends_at)}까지` : '')}</div>
         </div>
         </a>
+        ${c.slug === 'capcut-pro-basic' ? '<div style="padding:0 14px 12px"><a href="/subtitle-tool.html" class="pc-btn secondary" style="display:inline-flex;width:auto"><i class="ti ti-download"></i> 도각 자막패치 다운로드</a></div>' : ''}
         ${renderCourseReviewBlock(c)}
         ${renderCancelAction(c)}
       </div>`

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>도각 자막패치 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css?v=14" />
+  <link rel="stylesheet" href="/css/common.css?v=3" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+  <style>
+    .st-wrap { max-width: 640px; margin: 36px auto 80px; padding: 0 24px; }
+    .st-hero { margin-bottom: 28px; }
+    .st-hero h1 { font-size: 28px; font-weight: 900; color: #111; margin: 0 0 10px; letter-spacing: -0.02em; }
+    .st-hero p { font-size: 15px; color: #666; line-height: 1.7; margin: 0; }
+    .st-card {
+      background: #fff; border: 1px solid #eee; border-radius: 16px;
+      padding: 24px; margin-bottom: 16px;
+      box-shadow: 0 6px 24px rgba(17,17,17,.04);
+    }
+    .st-card h2 { font-size: 16px; font-weight: 800; margin: 0 0 12px; color: #111; }
+    .st-balance {
+      display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;
+    }
+    .st-balance .num { font-size: 36px; font-weight: 900; color: #111; }
+    .st-balance .unit { font-size: 14px; color: #888; font-weight: 600; }
+    .st-meta { font-size: 13px; color: #888; line-height: 1.6; }
+    .st-meta strong { color: #444; }
+    .st-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .st-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 18px; border-radius: 12px; border: none; cursor: pointer;
+      font-size: 15px; font-weight: 700; text-decoration: none; color: #fff; background: #111;
+    }
+    .st-btn:hover { background: #333; color: #fff; }
+    .st-btn.secondary { background: #f3f3f3; color: #111; }
+    .st-btn.secondary:hover { background: #e8e8e8; }
+    .st-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .st-btn.google { background: #fff; color: #111; border: 1px solid #ddd; }
+    .st-btn.google:hover { background: #fafafa; }
+    .st-banner {
+      border-radius: 12px; padding: 14px 16px; font-size: 14px; line-height: 1.65; margin-bottom: 16px;
+    }
+    .st-banner.info { background: #f5f7ff; color: #334; border: 1px solid #e0e6ff; }
+    .st-banner.warn { background: #fff8e8; color: #664d00; border: 1px solid #ffe58f; }
+    .st-banner.ok { background: #f0fff4; color: #1a5c2e; border: 1px solid #b7ebc6; }
+    .st-banner.err { background: #fff0f0; color: #8b1a1a; border: 1px solid #ffc9c9; }
+    .st-list { margin: 0; padding-left: 18px; color: #555; font-size: 14px; line-height: 1.8; }
+    .st-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 22px; font-weight: 800; letter-spacing: .12em; color: #111;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div data-site-header></div>
+
+<div class="st-wrap">
+  <div class="st-hero">
+    <h1>도각 자막패치</h1>
+    <p>캡컷 초신속 스탠다드 수강생 전용 PC 프로그램입니다. 구글 로그인 후 다운로드하고, 앱에서 기기 연동 후 분당 코인으로 자막을 생성할 수 있습니다.</p>
+  </div>
+
+  <div id="st-msg"></div>
+
+  <div class="st-card hidden" id="card-device">
+    <h2>앱 기기 연동</h2>
+    <p class="st-meta" style="margin-bottom:10px">아래 코드로 데스크톱 앱을 이 계정에 연결합니다.</p>
+    <div class="st-code" id="device-code-label">————</div>
+    <div class="st-actions">
+      <button type="button" class="st-btn" id="btn-approve" disabled>이 기기로 연동</button>
+    </div>
+  </div>
+
+  <div class="st-card" id="card-main">
+    <div class="spinner" id="st-loading"></div>
+    <div id="st-body" class="hidden"></div>
+  </div>
+
+  <div class="st-card">
+    <h2>이용 안내</h2>
+    <ul class="st-list">
+      <li>최초 이용 허가 시 <strong>100코인</strong>이 지급됩니다.</li>
+      <li>해당 강의 수강 후기를 남기면 <strong>100코인</strong>이 추가 지급됩니다 (1회).</li>
+      <li>자막 생성 시 타임라인 길이 기준 <strong>1분당 1코인</strong>이 차감됩니다 (최소 1코인).</li>
+      <li>Windows용 zip을 받아 압축 해제한 뒤 실행 파일을 실행하세요.</li>
+    </ul>
+  </div>
+</div>
+
+<script src="/js/api.js?v=3"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=10"></script>
+<script>
+const COURSE_HREF = '/course.html?slug=capcut-pro-basic'
+const params = new URLSearchParams(location.search)
+const deviceCode = (params.get('code') || '').trim().toLowerCase()
+const nextPath = deviceCode
+  ? `/subtitle-tool.html?code=${encodeURIComponent(deviceCode)}`
+  : '/subtitle-tool.html'
+
+const msgEl = document.getElementById('st-msg')
+const bodyEl = document.getElementById('st-body')
+const loadingEl = document.getElementById('st-loading')
+const deviceCard = document.getElementById('card-device')
+const approveBtn = document.getElementById('btn-approve')
+
+function showMsg(html, kind = 'info') {
+  msgEl.innerHTML = html ? `<div class="st-banner ${kind}">${html}</div>` : ''
+}
+
+function googleLoginBtn(label) {
+  return `<a class="st-btn google" href="${buildGoogleAuthUrl(nextPath, 'student', 'login')}">${GOOGLE_ICON_SVG} ${label}</a>`
+}
+
+async function downloadZip() {
+  const btn = document.getElementById('btn-download')
+  if (btn) btn.disabled = true
+  try {
+    const data = await API.get('/subtitle/download')
+    if (!data.url) throw new Error('다운로드 주소를 받지 못했습니다.')
+    location.href = data.url
+  } catch (e) {
+    showMsg(e.message || '다운로드에 실패했습니다.', 'err')
+  } finally {
+    if (btn) btn.disabled = false
+  }
+}
+
+async function approveDevice() {
+  if (!deviceCode) return
+  approveBtn.disabled = true
+  try {
+    await API.post('/subtitle/device/approve', { code: deviceCode })
+    showMsg('기기 연동이 완료되었습니다. 앱으로 돌아가 주세요.', 'ok')
+    approveBtn.textContent = '연동 완료'
+  } catch (e) {
+    showMsg(e.message || '기기 연동에 실패했습니다.', 'err')
+    approveBtn.disabled = false
+  }
+}
+
+function renderLoggedOut() {
+  bodyEl.innerHTML = `
+    <h2>구글 로그인 필요</h2>
+    <p class="st-meta" style="margin-bottom:14px">도각 자막패치는 구글 계정으로 로그인한 수강생만 이용할 수 있습니다.</p>
+    <div class="st-actions">${googleLoginBtn('구글로 로그인')}</div>
+  `
+}
+
+function renderDenied(data) {
+  if (data.code === 'google_required') {
+    bodyEl.innerHTML = `
+      <h2>구글 계정 연동 필요</h2>
+      <p class="st-meta" style="margin-bottom:14px">${data.error || '구글 로그인이 필요합니다.'}</p>
+      <div class="st-actions">${googleLoginBtn('구글 계정으로 다시 로그인')}</div>
+    `
+    return
+  }
+  bodyEl.innerHTML = `
+    <h2>수강 권한이 없습니다</h2>
+    <p class="st-meta" style="margin-bottom:14px">${data.error || '캡컷 초신속 스탠다드 수강 후 이용할 수 있습니다.'}</p>
+    <div class="st-actions">
+      <a class="st-btn" href="${COURSE_HREF}">강의 보러 가기</a>
+    </div>
+  `
+}
+
+function renderEntitled(data) {
+  const reviewLine = data.review_bonus_granted
+    ? '후기 보너스 100코인 지급 완료'
+    : '수강 후기 작성 시 100코인 추가 지급'
+  bodyEl.innerHTML = `
+    <h2>이용 가능</h2>
+    <div class="st-balance"><span class="num">${data.balance ?? 0}</span><span class="unit">코인</span></div>
+    <div class="st-meta">
+      <div><strong>${data.course_title || '캡컷 초신속 스탠다드'}</strong> 수강 중</div>
+      <div>최초 지급 ${data.initial_granted ? '완료' : '대기'} · ${reviewLine}</div>
+    </div>
+    <div class="st-actions">
+      <button type="button" class="st-btn" id="btn-download" onclick="downloadZip()"><i class="ti ti-download"></i> 프로그램 다운로드</button>
+      <a class="st-btn secondary" href="/mypage.html">마이페이지에서 후기 작성</a>
+    </div>
+  `
+  if (data.just_granted_initial) {
+    showMsg('최초 이용 코인 100개가 지급되었습니다.', 'ok')
+  }
+}
+
+async function load() {
+  if (deviceCode) {
+    deviceCard.classList.remove('hidden')
+    document.getElementById('device-code-label').textContent = deviceCode.toUpperCase()
+  }
+
+  if (!API.isLoggedIn()) {
+    loadingEl.classList.add('hidden')
+    bodyEl.classList.remove('hidden')
+    renderLoggedOut()
+    if (deviceCode) {
+      showMsg('기기 연동을 위해 먼저 구글 로그인해 주세요.', 'warn')
+    }
+    return
+  }
+
+  try {
+    const data = await API.get('/subtitle/entitlement')
+    loadingEl.classList.add('hidden')
+    bodyEl.classList.remove('hidden')
+    renderEntitled(data)
+    if (deviceCode) {
+      approveBtn.disabled = false
+      approveBtn.onclick = approveDevice
+    }
+  } catch (e) {
+    loadingEl.classList.add('hidden')
+    bodyEl.classList.remove('hidden')
+    renderDenied({ code: e.code, error: e.message })
+    if (deviceCode) {
+      showMsg('이용 권한이 확인된 뒤에만 기기를 연동할 수 있습니다.', 'warn')
+    }
+  }
+}
+
+load()
+</script>
+</body>
+</html>

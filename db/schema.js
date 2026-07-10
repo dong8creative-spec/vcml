@@ -1,5 +1,6 @@
 const admin = require('firebase-admin')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
 
 // ── Firebase Admin 초기화 ──
 if (!admin.apps.length) {
@@ -72,6 +73,10 @@ const COURSE_REVIEW_FIVE_STAR_REASON = 'course_review_five_star'
 const COURSE_REVIEW_FIVE_STAR_DISCOUNT_PERCENT = 10
 const STACKABLE_COURSE_COUPON_REASONS = [ANTICIPATION_COUPON_REASON, COURSE_REVIEW_FIVE_STAR_REASON]
 const TIMED_PERCENT_COUPON_REASONS = new Set(STACKABLE_COURSE_COUPON_REASONS)
+const SUBTITLE_COURSE_SLUG = 'capcut-pro-basic'
+const SUBTITLE_INITIAL_COINS = 100
+const SUBTITLE_REVIEW_BONUS_COINS = 100
+const SUBTITLE_DEVICE_CODE_TTL_MS = 10 * 60 * 1000
 
 function addOneMonthFrom(iso) {
   return addMonthsFrom(iso, 1)
@@ -670,6 +675,29 @@ function nextId() {
 
 function now() {
   return new Date().toISOString()
+}
+
+function normalizeEmail(email) {
+  if (email == null || email === '') return null
+  const v = String(email).trim().toLowerCase()
+  return v || null
+}
+
+function normalizePhone(phone) {
+  if (phone == null || phone === '') return null
+  let digits = String(phone).replace(/\D/g, '')
+  if (!digits) return null
+  if (digits.startsWith('82') && digits.length >= 10) {
+    digits = '0' + digits.slice(2)
+  }
+  if (digits.length < 9) return null
+  return digits
+}
+
+function normalizePersonName(name) {
+  if (name == null || name === '') return null
+  const v = String(name).trim().replace(/\s+/g, ' ')
+  return v || null
 }
 
 async function deleteFirestoreDocs(docsOrRefs) {
@@ -1528,8 +1556,77 @@ const db = {
     return Object.fromEntries(docs.map(d => [d.id, d.exists ? d.data() : null]))
   },
   async findUserByEmail(email) {
-    const snap = await fs.collection('users').where('email', '==', email).limit(1).get()
-    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+    const norm = normalizeEmail(email)
+    if (!norm) return null
+    const snap = await fs.collection('users').where('email', '==', norm).limit(1).get()
+    if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() }
+    // 과거 대소문자 혼재 대비: 원문도 한 번 조회
+    if (String(email).trim() !== norm) {
+      const raw = await fs.collection('users').where('email', '==', String(email).trim()).limit(1).get()
+      if (!raw.empty) return { id: raw.docs[0].id, ...raw.docs[0].data() }
+    }
+    return null
+  },
+  async findUserByNormalizedPhone(phone) {
+    const norm = normalizePhone(phone)
+    if (!norm) return null
+    const snap = await fs.collection('users').where('phone', '==', norm).limit(1).get()
+    if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() }
+    // 정규화 전 저장본 대비: 학생 목록에서 정규화 비교
+    const students = await fs.collection('users').where('role', '==', 'student').get()
+    for (const doc of students.docs) {
+      const data = doc.data()
+      if (normalizePhone(data.phone) === norm) {
+        return { id: doc.id, ...data }
+      }
+    }
+    return null
+  },
+  async findUserByContact({ email, phone }) {
+    const emailNorm = normalizeEmail(email)
+    if (emailNorm) {
+      const byEmail = await db.findUserByEmail(emailNorm)
+      if (byEmail) return { user: byEmail, matched_by: 'email' }
+    }
+    const phoneNorm = normalizePhone(phone)
+    if (phoneNorm) {
+      const byPhone = await db.findUserByNormalizedPhone(phoneNorm)
+      if (byPhone) return { user: byPhone, matched_by: 'phone' }
+    }
+    return null
+  },
+  async findUsersForAdminSearch(q, limit = 20) {
+    const query = String(q || '').trim().toLowerCase()
+    if (!query || query.length < 1) return []
+    const phoneQ = normalizePhone(q)
+    const snap = await fs.collection('users').where('role', '==', 'student').get()
+    const scored = []
+    for (const doc of snap.docs) {
+      const u = { id: doc.id, ...doc.data() }
+      const email = String(u.email || '').toLowerCase()
+      const name = String(u.name || '').toLowerCase()
+      const phone = normalizePhone(u.phone) || String(u.phone || '')
+      let score = 0
+      if (email && email === query) score = 100
+      else if (phoneQ && phone === phoneQ) score = 90
+      else if (email && email.startsWith(query)) score = 70
+      else if (name && name.includes(query)) score = 50
+      else if (email && email.includes(query)) score = 40
+      else if (phoneQ && phone.includes(phoneQ)) score = 30
+      else if (String(u.phone || '').includes(String(q).trim())) score = 20
+      if (score > 0) {
+        scored.push({
+          id: u.id,
+          name: u.name || '-',
+          email: u.email || '-',
+          phone: u.phone || null,
+          member_type: u.member_type || 'student',
+          score,
+        })
+      }
+    }
+    scored.sort((a, b) => b.score - a.score || String(a.name).localeCompare(String(b.name)))
+    return scored.slice(0, Math.max(1, Math.min(50, limit))).map(({ score, ...rest }) => rest)
   },
   async findUserById(id) {
     const doc = await fs.collection('users').doc(id).get()
@@ -1541,21 +1638,26 @@ const db = {
   },
   async createUser(email, password, name, memberType = 'student', extra = {}) {
     const data = {
-      email, password, name, role: 'student', member_type: memberType,
+      email: normalizeEmail(email) || email,
+      password, name, role: 'student', member_type: memberType,
       profile_complete: true, marketing_agreed: 0, marketing_agreed_at: null,
-      phone: extra.phone || null,
+      phone: normalizePhone(extra.phone) || extra.phone || null,
       gender: extra.gender || null,
       birth_year: extra.birth_year || null,
       age_range: extra.age_range || null,
       created_at: now(),
     }
     const ref = await fs.collection('users').add(data)
-    return { id: ref.id, ...data }
+    const user = { id: ref.id, ...data }
+    await db.resolvePendingEnrollmentsForUser(user.id).catch(err => {
+      console.error('resolvePendingEnrollmentsForUser(createUser):', err.message)
+    })
+    return user
   },
   async createKakaoUser(kakaoId, email, name, memberType = 'student', kakaoProfile = {}) {
     const data = {
       kakao_id: String(kakaoId),
-      email: email || null,
+      email: normalizeEmail(email) || email || null,
       password: null,
       name: name || '카카오 사용자',
       role: 'student',
@@ -1573,7 +1675,11 @@ const db = {
       created_at: now(),
     }
     const ref = await fs.collection('users').add(data)
-    return { id: ref.id, ...data }
+    const user = { id: ref.id, ...data }
+    await db.resolvePendingEnrollmentsForUser(user.id).catch(err => {
+      console.error('resolvePendingEnrollmentsForUser(createKakaoUser):', err.message)
+    })
+    return user
   },
   async updateKakaoProfile(userId, kakaoProfile = {}) {
     const update = {}
@@ -1604,7 +1710,7 @@ const db = {
   async createGoogleUser(googleId, email, name, profileImage, memberType = 'student') {
     const data = {
       google_id: String(googleId),
-      email: email || null,
+      email: normalizeEmail(email) || email || null,
       password: null,
       name: name || 'Google 사용자',
       role: 'student',
@@ -1618,19 +1724,26 @@ const db = {
       created_at: now(),
     }
     const ref = await fs.collection('users').add(data)
-    return { id: ref.id, ...data }
+    const user = { id: ref.id, ...data }
+    await db.resolvePendingEnrollmentsForUser(user.id).catch(err => {
+      console.error('resolvePendingEnrollmentsForUser(createGoogleUser):', err.message)
+    })
+    return user
   },
   async linkGoogleId(userId, googleId) {
     await fs.collection('users').doc(userId).update({ google_id: String(googleId), auth_provider: 'google' })
+    await db.resolvePendingEnrollmentsForUser(userId).catch(err => {
+      console.error('resolvePendingEnrollmentsForUser(linkGoogleId):', err.message)
+    })
   },
   async unlinkGoogleId(userId) {
     await fs.collection('users').doc(userId).update({ google_id: admin.firestore.FieldValue.delete() })
   },
   async completeProfile(userId, { name, email, phone, address, marketing_agreed, member_type, ip }) {
     const update = { profile_complete: true }
-    if (name) update.name = name
-    if (email) update.email = email
-    if (phone) update.phone = phone
+    if (name) update.name = normalizePersonName(name) || name
+    if (email) update.email = normalizeEmail(email) || email
+    if (phone) update.phone = normalizePhone(phone) || phone
     if (address) update.address = String(address).trim().slice(0, 200)
     const existing = await db.findUserById(userId)
     if (member_type && !existing?.member_type) update.member_type = member_type
@@ -1640,7 +1753,11 @@ const db = {
       await fs.collection('consent_logs').add({ user_id: userId, type: 'marketing_sms', agreed: 1, agreed_at: new Date().toISOString(), ip: ip || null })
     }
     await fs.collection('users').doc(userId).update(update)
-    return db.findUserById(userId)
+    const user = await db.findUserById(userId)
+    await db.resolvePendingEnrollmentsForUser(userId).catch(err => {
+      console.error('resolvePendingEnrollmentsForUser(completeProfile):', err.message)
+    })
+    return user
   },
   async revokeMarketing(userId, ip) {
     await fs.collection('users').doc(userId).update({ marketing_agreed: 0 })
@@ -1652,10 +1769,16 @@ const db = {
     if (bio !== undefined) update.bio = String(bio).trim().slice(0, 500)
     if (profile_image !== undefined) update.profile_image = profile_image || null
     if (social_links !== undefined) update.social_links = social_links
-    if (phone !== undefined) update.phone = phone ? String(phone).trim() : null
+    if (phone !== undefined) update.phone = phone ? (normalizePhone(phone) || String(phone).trim()) : null
     if (address !== undefined) update.address = address ? String(address).trim().slice(0, 200) : null
     await fs.collection('users').doc(userId).update(update)
-    return db.findUserById(userId)
+    const user = await db.findUserById(userId)
+    if (phone !== undefined) {
+      await db.resolvePendingEnrollmentsForUser(userId).catch(err => {
+        console.error('resolvePendingEnrollmentsForUser(updateUserProfile):', err.message)
+      })
+    }
+    return user
   },
 
   // courses
@@ -1758,6 +1881,270 @@ const db = {
     await db.updateCourse(courseId, { student_count: count })
     return count
   },
+
+  async adminEnrollUserToCourse(userId, courseId, opts = {}) {
+    const course = await db.getCourseById(courseId)
+    if (!course) return { ok: false, code: 'course_not_found', error: '강의를 찾을 수 없습니다.' }
+    const user = await db.findUserById(userId)
+    if (!user) return { ok: false, code: 'user_not_found', error: '회원을 찾을 수 없습니다.' }
+
+    if (await db.isEnrolled(userId, courseId)) {
+      const existingOrder = await db.getActiveOrderForCourse(userId, courseId)
+      if (existingOrder) {
+        return {
+          ok: true,
+          already: true,
+          user_id: userId,
+          course_id: courseId,
+          order_id: existingOrder.id,
+        }
+      }
+      // enrollment만 있고 paid order가 없으면 주문만 보강
+    }
+
+    const salePrice = Number(course.sale_price || 0)
+    const isFree = salePrice <= 0 || course.course_type === 'live'
+    const amount = opts.amount != null ? Math.max(0, Number(opts.amount) || 0) : salePrice
+    const discount = Math.max(0, Number(opts.discount) || 0)
+    const method = opts.method
+      || (isFree ? '관리자' : '스마트스토어')
+    const paidAt = opts.paid_at || now()
+
+    let order = null
+    try {
+      if (!(await db.isEnrolled(userId, courseId))) {
+        const enrollResult = await db.enrollAtomically(userId, courseId, course)
+        if (enrollResult?.error === 'enrollment_full') {
+          return { ok: false, code: 'enrollment_full', error: '모집 정원이 마감되었습니다.' }
+        }
+      }
+      const existingOrder = await db.getActiveOrderForCourse(userId, courseId)
+      if (existingOrder) {
+        order = existingOrder
+      } else {
+        const data = {
+          user_id: userId,
+          course_id: courseId,
+          amount,
+          discount,
+          method,
+          status: 'paid',
+          paid_at: paidAt,
+          note: opts.note || null,
+          admin_enrolled: true,
+        }
+        const ref = await fs.collection('orders').add(data)
+        order = { id: ref.id, ...data }
+      }
+      await db.syncCourseStudentCount(courseId)
+      cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data*')
+      return {
+        ok: true,
+        already: false,
+        user_id: userId,
+        course_id: courseId,
+        order_id: order.id,
+        amount: order.amount,
+        method: order.method,
+      }
+    } catch (e) {
+      console.error('adminEnrollUserToCourse:', e)
+      if (order?.id) await db.cancelOrder(order.id).catch(() => {})
+      // enrollment는 이미 있었을 수 있어 무조건 unenroll하지 않음 — 신규만 롤백은 복잡하므로 sync만
+      await db.syncCourseStudentCount(courseId).catch(() => {})
+      return { ok: false, code: 'enroll_failed', error: e.message || '수강 등록에 실패했습니다.' }
+    }
+  },
+
+  async createPendingEnrollment({
+    courseId, email, phone, name, amount, method, discount, note, createdBy, source,
+  }) {
+    const emailNorm = normalizeEmail(email)
+    const phoneNorm = normalizePhone(phone)
+    if (!emailNorm && !phoneNorm) {
+      return { ok: false, code: 'contact_required', error: '이메일 또는 휴대폰이 필요합니다.' }
+    }
+    const course = await db.getCourseById(courseId)
+    if (!course) return { ok: false, code: 'course_not_found', error: '강의를 찾을 수 없습니다.' }
+
+    // 동일 강의·동일 연락처 대기 중복 방지
+    let existingSnap = null
+    if (emailNorm) {
+      existingSnap = await fs.collection('pending_enrollments')
+        .where('course_id', '==', courseId)
+        .where('email_norm', '==', emailNorm)
+        .where('status', '==', 'pending')
+        .limit(1).get()
+    }
+    if ((!existingSnap || existingSnap.empty) && phoneNorm) {
+      existingSnap = await fs.collection('pending_enrollments')
+        .where('course_id', '==', courseId)
+        .where('phone_norm', '==', phoneNorm)
+        .where('status', '==', 'pending')
+        .limit(1).get()
+    }
+    if (existingSnap && !existingSnap.empty) {
+      return {
+        ok: true,
+        already: true,
+        pending: { id: existingSnap.docs[0].id, ...existingSnap.docs[0].data() },
+      }
+    }
+
+    const salePrice = Number(course.sale_price || 0)
+    const isFree = salePrice <= 0 || course.course_type === 'live'
+    const data = {
+      course_id: courseId,
+      email: emailNorm,
+      email_norm: emailNorm,
+      phone: phoneNorm,
+      phone_norm: phoneNorm,
+      name: normalizePersonName(name),
+      amount: amount != null ? Math.max(0, Number(amount) || 0) : salePrice,
+      method: method || (isFree ? '관리자' : '스마트스토어'),
+      discount: Math.max(0, Number(discount) || 0),
+      note: note || null,
+      status: 'pending',
+      matched_user_id: null,
+      fulfilled_at: null,
+      created_at: now(),
+      created_by: createdBy || null,
+      source: source || 'manual',
+    }
+    const ref = await fs.collection('pending_enrollments').add(data)
+    return { ok: true, already: false, pending: { id: ref.id, ...data } }
+  },
+
+  async listPendingEnrollments(courseId) {
+    const snap = await fs.collection('pending_enrollments')
+      .where('course_id', '==', courseId)
+      .where('status', '==', 'pending')
+      .get()
+    const rows = snapToArr(snap)
+    rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+    return rows
+  },
+
+  async getPendingEnrollment(pendingId) {
+    const doc = await fs.collection('pending_enrollments').doc(pendingId).get()
+    return docToObj(doc)
+  },
+
+  async cancelPendingEnrollment(pendingId) {
+    const ref = fs.collection('pending_enrollments').doc(pendingId)
+    const snap = await ref.get()
+    if (!snap.exists) return { ok: false, code: 'not_found', error: '대기 등록을 찾을 수 없습니다.' }
+    if (snap.data().status !== 'pending') {
+      return { ok: false, code: 'not_pending', error: '이미 처리된 대기 등록입니다.' }
+    }
+    await ref.update({ status: 'cancelled', cancelled_at: now() })
+    return { ok: true }
+  },
+
+  async resolvePendingEnrollmentsForUser(userId) {
+    const user = await db.findUserById(userId)
+    if (!user) return { resolved: 0 }
+    const emailNorm = normalizeEmail(user.email)
+    const phoneNorm = normalizePhone(user.phone)
+    if (!emailNorm && !phoneNorm) return { resolved: 0 }
+
+    const pendingMap = new Map()
+    if (emailNorm) {
+      const snap = await fs.collection('pending_enrollments')
+        .where('email_norm', '==', emailNorm)
+        .where('status', '==', 'pending')
+        .get()
+      snap.docs.forEach(d => pendingMap.set(d.id, { id: d.id, ...d.data() }))
+    }
+    if (phoneNorm) {
+      const snap = await fs.collection('pending_enrollments')
+        .where('phone_norm', '==', phoneNorm)
+        .where('status', '==', 'pending')
+        .get()
+      snap.docs.forEach(d => pendingMap.set(d.id, { id: d.id, ...d.data() }))
+    }
+
+    let resolved = 0
+    for (const pending of pendingMap.values()) {
+      const result = await db.adminEnrollUserToCourse(userId, pending.course_id, {
+        amount: pending.amount,
+        method: pending.method,
+        discount: pending.discount,
+        note: pending.note,
+      })
+      if (result.ok) {
+        await fs.collection('pending_enrollments').doc(pending.id).update({
+          status: 'fulfilled',
+          matched_user_id: userId,
+          fulfilled_at: now(),
+        })
+        resolved++
+      }
+    }
+    return { resolved }
+  },
+
+  /**
+   * 관리자 단건 등록: 회원 매칭되면 즉시 수강, 없으면 대기.
+   */
+  async adminRegisterEnrollment(courseId, payload = {}, adminId = null) {
+    const course = await db.getCourseById(courseId)
+    if (!course) return { ok: false, code: 'course_not_found', error: '강의를 찾을 수 없습니다.' }
+
+    let userId = payload.user_id || null
+    let matchedBy = userId ? 'user_id' : null
+    if (!userId) {
+      const found = await db.findUserByContact({ email: payload.email, phone: payload.phone })
+      if (found) {
+        userId = found.user.id
+        matchedBy = found.matched_by
+      }
+    }
+
+    const salePrice = Number(course.sale_price || 0)
+    const isFree = salePrice <= 0 || course.course_type === 'live'
+    const opts = {
+      amount: payload.amount != null ? payload.amount : salePrice,
+      method: payload.method || (isFree ? '관리자' : '스마트스토어'),
+      discount: payload.discount || 0,
+      note: payload.note || null,
+      paid_at: payload.paid_at || null,
+    }
+
+    if (userId) {
+      const result = await db.adminEnrollUserToCourse(userId, courseId, opts)
+      if (!result.ok) return result
+      return {
+        ...result,
+        status: 'enrolled',
+        matched_by: matchedBy,
+        user: await db.findUserById(userId).then(u => u ? {
+          id: u.id, name: u.name, email: u.email, phone: u.phone,
+        } : null),
+      }
+    }
+
+    const pending = await db.createPendingEnrollment({
+      courseId,
+      email: payload.email,
+      phone: payload.phone,
+      name: payload.name,
+      amount: opts.amount,
+      method: opts.method,
+      discount: opts.discount,
+      note: opts.note,
+      createdBy: adminId,
+      source: payload.source || 'manual',
+    })
+    if (!pending.ok) return pending
+    return {
+      ok: true,
+      status: 'pending',
+      already: !!pending.already,
+      pending: pending.pending,
+    }
+  },
+
   async isCourseEnrollmentFullAsync(course) {
     const count = await db.countEnrollmentsByCourse(course.id)
     return db.isCourseEnrollmentFull(course, count)
@@ -2396,7 +2783,11 @@ const db = {
         })
       }
     }
-    return { rating: numRating, coupon }
+    let subtitle_bonus = null
+    if (course?.slug === SUBTITLE_COURSE_SLUG) {
+      subtitle_bonus = await db.grantSubtitleReviewBonus(userId, courseId)
+    }
+    return { rating: numRating, coupon, subtitle_bonus }
   },
   async deleteReview(id) {
     const existing = await fs.collection('reviews').doc(id).get()
@@ -4182,6 +4573,296 @@ const db = {
     cacheInvalidate('instructors:public', 'instructors:all')
   },
 
+  // ── 캡컷 자막 도구 (코인 / 기기 연동) ──
+  async getSubtitleWallet(userId) {
+    const snap = await fs.collection('subtitle_wallets').doc(userId).get()
+    return snap.exists ? { id: snap.id, ...snap.data() } : null
+  },
+
+  async ensureSubtitleWallet(userId) {
+    const ref = fs.collection('subtitle_wallets').doc(userId)
+    let result = null
+    let justGranted = false
+    await fs.runTransaction(async t => {
+      const snap = await t.get(ref)
+      const ts = now()
+      if (!snap.exists) {
+        const data = {
+          balance: SUBTITLE_INITIAL_COINS,
+          initial_granted_at: ts,
+          review_bonus_granted_at: null,
+          updated_at: ts,
+        }
+        t.set(ref, data)
+        result = { id: userId, ...data }
+        justGranted = true
+        return
+      }
+      result = { id: userId, ...snap.data() }
+    })
+    if (justGranted) {
+      await fs.collection('subtitle_coin_ledger').add({
+        user_id: userId,
+        delta: SUBTITLE_INITIAL_COINS,
+        balance_after: SUBTITLE_INITIAL_COINS,
+        reason: 'initial',
+        ref: null,
+        created_at: now(),
+      })
+    }
+    return { ...result, just_granted_initial: justGranted }
+  },
+
+  async ensureSubtitleEntitlement(userId) {
+    const user = await db.findUserById(userId)
+    if (!user) {
+      return { ok: false, code: 'not_found', error: '사용자를 찾을 수 없습니다.' }
+    }
+    if (!user.google_id) {
+      return {
+        ok: false,
+        code: 'google_required',
+        error: '캡컷 자막 도구는 구글 로그인 계정만 이용할 수 있습니다.',
+        has_google: false,
+        enrolled: false,
+      }
+    }
+    const course = await db.getCourseBySlug(SUBTITLE_COURSE_SLUG)
+    if (!course) {
+      return { ok: false, code: 'course_missing', error: '대상 강의를 찾을 수 없습니다.', has_google: true }
+    }
+    const enrolled = await db.isEnrolled(userId, course.id)
+    if (!enrolled) {
+      return {
+        ok: false,
+        code: 'not_enrolled',
+        error: '캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다.',
+        has_google: true,
+        enrolled: false,
+        course_slug: course.slug,
+        course_title: course.title,
+        course_id: course.id,
+      }
+    }
+    const wallet = await db.ensureSubtitleWallet(userId)
+    return {
+      ok: true,
+      has_google: true,
+      enrolled: true,
+      course_slug: course.slug,
+      course_title: course.title,
+      course_id: course.id,
+      balance: wallet.balance || 0,
+      initial_granted: !!wallet.initial_granted_at,
+      review_bonus_granted: !!wallet.review_bonus_granted_at,
+      just_granted_initial: !!wallet.just_granted_initial,
+      download_available: true,
+    }
+  },
+
+  async grantSubtitleReviewBonus(userId, courseId) {
+    const course = courseId ? await db.getCourseById(courseId) : await db.getCourseBySlug(SUBTITLE_COURSE_SLUG)
+    if (!course || course.slug !== SUBTITLE_COURSE_SLUG) {
+      return { granted: false, reason: 'wrong_course' }
+    }
+    const user = await db.findUserById(userId)
+    if (!user?.google_id) return { granted: false, reason: 'google_required' }
+    const enrolled = await db.isEnrolled(userId, course.id)
+    if (!enrolled) return { granted: false, reason: 'not_enrolled' }
+
+    await db.ensureSubtitleWallet(userId)
+    const ref = fs.collection('subtitle_wallets').doc(userId)
+    let out = { granted: false, reason: 'already' }
+    await fs.runTransaction(async t => {
+      const snap = await t.get(ref)
+      if (!snap.exists) return
+      const data = snap.data()
+      if (data.review_bonus_granted_at) {
+        out = { granted: false, reason: 'already', balance: data.balance || 0 }
+        return
+      }
+      const ts = now()
+      const newBal = (data.balance || 0) + SUBTITLE_REVIEW_BONUS_COINS
+      t.update(ref, {
+        balance: newBal,
+        review_bonus_granted_at: ts,
+        updated_at: ts,
+      })
+      const ledgerRef = fs.collection('subtitle_coin_ledger').doc()
+      t.set(ledgerRef, {
+        user_id: userId,
+        delta: SUBTITLE_REVIEW_BONUS_COINS,
+        balance_after: newBal,
+        reason: 'review_bonus',
+        ref: course.id,
+        created_at: ts,
+      })
+      out = { granted: true, balance: newBal, amount: SUBTITLE_REVIEW_BONUS_COINS }
+    })
+    return out
+  },
+
+  async consumeSubtitleCoins(userId, minutes, jobId) {
+    const mins = Math.max(1, Math.ceil(Number(minutes) || 0))
+    const jobKey = String(jobId || '').trim()
+    if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
+
+    const entitlement = await db.ensureSubtitleEntitlement(userId)
+    if (!entitlement.ok) {
+      return { ok: false, code: entitlement.code, error: entitlement.error, balance: entitlement.balance || 0 }
+    }
+
+    const consumeRef = fs.collection('subtitle_coin_ledger').doc(`consume:${jobKey}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
+    let out = null
+    await fs.runTransaction(async t => {
+      const existing = await t.get(consumeRef)
+      const walletSnap = await t.get(walletRef)
+      if (!walletSnap.exists) {
+        out = { ok: false, code: 'no_wallet', error: '코인 지갑이 없습니다.', balance: 0 }
+        return
+      }
+      const balance = walletSnap.data().balance || 0
+      if (existing.exists) {
+        out = { ok: true, balance, minutes: existing.data().minutes || mins, already: true }
+        return
+      }
+      if (balance < mins) {
+        out = { ok: false, code: 'insufficient', error: '코인이 부족합니다.', balance, needed: mins }
+        return
+      }
+      const ts = now()
+      const newBal = balance - mins
+      t.update(walletRef, { balance: newBal, updated_at: ts })
+      t.set(consumeRef, {
+        user_id: userId,
+        delta: -mins,
+        balance_after: newBal,
+        reason: 'consume',
+        ref: jobKey,
+        minutes: mins,
+        created_at: ts,
+      })
+      out = { ok: true, balance: newBal, minutes: mins, already: false }
+    })
+    return out
+  },
+
+  async refundSubtitleCoins(userId, jobId) {
+    const jobKey = String(jobId || '').trim()
+    if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
+
+    const consumeRef = fs.collection('subtitle_coin_ledger').doc(`consume:${jobKey}`)
+    const refundRef = fs.collection('subtitle_coin_ledger').doc(`refund:${jobKey}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
+    let out = null
+    await fs.runTransaction(async t => {
+      const consumeSnap = await t.get(consumeRef)
+      const refundSnap = await t.get(refundRef)
+      const walletSnap = await t.get(walletRef)
+      if (!consumeSnap.exists) {
+        out = { ok: false, code: 'no_consume', error: '차감 내역이 없습니다.' }
+        return
+      }
+      if (consumeSnap.data().user_id !== userId) {
+        out = { ok: false, code: 'forbidden', error: '권한이 없습니다.' }
+        return
+      }
+      const mins = Math.max(1, parseInt(consumeSnap.data().minutes, 10) || Math.abs(consumeSnap.data().delta || 0) || 1)
+      if (!walletSnap.exists) {
+        out = { ok: false, code: 'no_wallet', error: '코인 지갑이 없습니다.' }
+        return
+      }
+      const balance = walletSnap.data().balance || 0
+      if (refundSnap.exists) {
+        out = { ok: true, balance, minutes: mins, already: true }
+        return
+      }
+      const ts = now()
+      const newBal = balance + mins
+      t.update(walletRef, { balance: newBal, updated_at: ts })
+      t.set(refundRef, {
+        user_id: userId,
+        delta: mins,
+        balance_after: newBal,
+        reason: 'refund',
+        ref: jobKey,
+        minutes: mins,
+        created_at: ts,
+      })
+      out = { ok: true, balance: newBal, minutes: mins, already: false }
+    })
+    return out
+  },
+
+  async createSubtitleDeviceCode() {
+    const code = crypto.randomBytes(4).toString('hex')
+    const expiresAt = new Date(Date.now() + SUBTITLE_DEVICE_CODE_TTL_MS).toISOString()
+    const data = {
+      code,
+      status: 'pending',
+      user_id: null,
+      token: null,
+      user_name: null,
+      expires_at: expiresAt,
+      created_at: now(),
+    }
+    await fs.collection('subtitle_device_codes').doc(code).set(data)
+    return { code, expires_at: expiresAt }
+  },
+
+  async getSubtitleDeviceCode(code) {
+    const key = String(code || '').trim().toLowerCase()
+    if (!key) return null
+    const snap = await fs.collection('subtitle_device_codes').doc(key).get()
+    return snap.exists ? { id: snap.id, ...snap.data() } : null
+  },
+
+  async approveSubtitleDeviceCode(code, userId, token, userName) {
+    const key = String(code || '').trim().toLowerCase()
+    if (!key) return { ok: false, code: 'invalid_code', error: '연동 코드가 올바르지 않습니다.' }
+    const ref = fs.collection('subtitle_device_codes').doc(key)
+    const snap = await ref.get()
+    if (!snap.exists) return { ok: false, code: 'invalid_code', error: '연동 코드를 찾을 수 없습니다.' }
+    const data = snap.data()
+    if (data.status === 'approved' && data.user_id === userId) {
+      return { ok: true, already: true }
+    }
+    if (data.status === 'approved') {
+      return { ok: false, code: 'already_used', error: '이미 사용된 연동 코드입니다.' }
+    }
+    if (new Date(data.expires_at).getTime() < Date.now()) {
+      await ref.update({ status: 'expired' })
+      return { ok: false, code: 'expired', error: '연동 코드가 만료되었습니다. 앱에서 다시 시도하세요.' }
+    }
+    await ref.update({
+      status: 'approved',
+      user_id: userId,
+      token,
+      user_name: userName || null,
+      approved_at: now(),
+    })
+    return { ok: true, already: false }
+  },
+
+  async pollSubtitleDeviceCode(code) {
+    const row = await db.getSubtitleDeviceCode(code)
+    if (!row) return { status: 'invalid' }
+    if (row.status === 'pending' && new Date(row.expires_at).getTime() < Date.now()) {
+      await fs.collection('subtitle_device_codes').doc(row.code).update({ status: 'expired' })
+      return { status: 'expired' }
+    }
+    if (row.status === 'approved') {
+      return {
+        status: 'approved',
+        token: row.token,
+        user_name: row.user_name,
+        user_id: row.user_id,
+      }
+    }
+    return { status: row.status || 'pending' }
+  },
+
   parseLiveStart,
   isFreeLiveCourse,
   isPaidCourse,
@@ -4202,6 +4883,12 @@ const db = {
   maskPublicName,
   isPublicReview,
   normalizeReviewRating,
+  SUBTITLE_COURSE_SLUG,
+  SUBTITLE_INITIAL_COINS,
+  SUBTITLE_REVIEW_BONUS_COINS,
+  normalizeEmail,
+  normalizePhone,
+  normalizePersonName,
   _cacheGet: cacheGet,
   _cacheSet: cacheSet,
   _cacheInvalidate: cacheInvalidate,

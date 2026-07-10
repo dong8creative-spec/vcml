@@ -184,6 +184,7 @@ app.use('/api/messages', require('./routes/messages'))
 app.use('/api/reviews',  require('./routes/reviews'))
 app.use('/api/institution', require('./routes/institution'))
 app.use('/api/anticipation', require('./routes/anticipation'))
+app.use('/api/subtitle', require('./routes/subtitle'))
 app.use('/api',          require('./routes/public'))
 
 // SPA fallback — 없는 경로는 index.html로

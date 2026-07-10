@@ -52,6 +52,7 @@ const API = {
       err.status = res.status
       if (data.timed_out) err.timed_out = true
       if (data.code) err.code = data.code
+      Object.assign(err, data)
       throw err
     }
     return data

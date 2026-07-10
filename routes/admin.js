@@ -203,16 +203,253 @@ router.get('/courses', async (req, res) => {
   res.json(enriched)
 })
 
+router.get('/users/search', async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim()
+    if (!q) return res.json([])
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20))
+    const users = await db.findUsersForAdminSearch(q, limit)
+    res.json(users)
+  } catch (e) {
+    console.error('admin users search:', e)
+    res.status(500).json({ error: '회원 검색에 실패했습니다.' })
+  }
+})
+
 router.get('/courses/:id/enrollments', async (req, res) => {
-  const course = await db.getCourseById(req.params.id)
-  if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
-  const enrollments = await db.getActiveEnrolleesByCourse(course.id)
-  await db.syncCourseStudentCount(course.id)
-  res.json({
-    course: { id: course.id, title: course.title },
-    count: enrollments.length,
-    enrollments,
-  })
+  try {
+    const course = await db.getCourseById(req.params.id)
+    if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    const [enrollments, pending] = await Promise.all([
+      db.getActiveEnrolleesByCourse(course.id),
+      db.listPendingEnrollments(course.id),
+    ])
+    await db.syncCourseStudentCount(course.id)
+    res.json({
+      course: { id: course.id, title: course.title, sale_price: course.sale_price, course_type: course.course_type },
+      count: enrollments.length,
+      enrollments,
+      pending,
+      pending_count: pending.length,
+    })
+  } catch (e) {
+    console.error('admin course enrollments:', e)
+    res.status(500).json({ error: '수강생 목록을 불러오지 못했습니다.' })
+  }
+})
+
+router.post('/courses/:id/enrollments', async (req, res) => {
+  try {
+    const course = await db.getCourseById(req.params.id)
+    if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    const body = req.body || {}
+    if (!body.user_id && !body.email && !body.phone) {
+      return res.status(400).json({ error: '회원 선택 또는 이메일/휴대폰이 필요합니다.' })
+    }
+    const result = await db.adminRegisterEnrollment(course.id, {
+      user_id: body.user_id,
+      email: body.email,
+      phone: body.phone,
+      name: body.name,
+      amount: body.amount,
+      method: body.method,
+      discount: body.discount,
+      note: body.note,
+      paid_at: body.paid_at,
+      source: 'manual',
+    }, req.user.id)
+    if (!result.ok) {
+      const status = result.code === 'enrollment_full' ? 409
+        : result.code === 'contact_required' || result.code === 'course_not_found' ? 400
+        : 400
+      return res.status(status).json(result)
+    }
+    res.json(result)
+  } catch (e) {
+    console.error('admin enroll:', e)
+    res.status(500).json({ error: '수강 등록에 실패했습니다.' })
+  }
+})
+
+function mapCsvHeader(header) {
+  const h = String(header || '').trim().toLowerCase().replace(/\s+/g, '')
+  if (['email', '이메일', '구매자이메일', '주문자이메일', '메일', 'e-mail'].includes(h) || h.includes('email') || h.includes('이메일') || h.includes('메일')) {
+    if (h.includes('전화') || h.includes('phone')) return 'phone'
+    return 'email'
+  }
+  if (['phone', '휴대폰', '연락처', '전화번호', '핸드폰', '휴대폰번호', '휴대전화'].includes(h)
+    || h.includes('phone') || h.includes('휴대폰') || h.includes('연락처') || h.includes('전화')) {
+    return 'phone'
+  }
+  if (['name', '이름', '구매자명', '주문자명', '구매자'].includes(h) || h.includes('이름') || h === 'name' || h.includes('구매자')) {
+    if (h.includes('email') || h.includes('메일') || h.includes('전화') || h.includes('phone')) return null
+    return 'name'
+  }
+  if (['amount', '금액', '결제금액', '판매가'].includes(h) || h.includes('금액')) return 'amount'
+  if (['note', '메모', '비고', '주문번호', '상품주문번호'].includes(h) || h.includes('주문번호') || h.includes('메모')) return 'note'
+  return null
+}
+
+function parseCsvText(text) {
+  const raw = String(text || '').replace(/^\uFEFF/, '')
+  const lines = raw.split(/\r?\n/).filter(line => line.trim())
+  if (!lines.length) return { error: 'CSV 내용이 비어 있습니다.' }
+
+  function splitLine(line) {
+    const cells = []
+    let cur = ''
+    let inQuotes = false
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i]
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; continue }
+        inQuotes = !inQuotes
+        continue
+      }
+      if ((ch === ',' || ch === '\t') && !inQuotes) {
+        cells.push(cur.trim())
+        cur = ''
+        continue
+      }
+      cur += ch
+    }
+    cells.push(cur.trim())
+    return cells
+  }
+
+  const headerCells = splitLine(lines[0])
+  const map = headerCells.map(mapCsvHeader)
+  const hasMapped = map.some(Boolean)
+  const rows = []
+
+  if (hasMapped) {
+    for (let i = 1; i < lines.length; i++) {
+      const cells = splitLine(lines[i])
+      if (!cells.some(c => c)) continue
+      const row = { line: i + 1 }
+      map.forEach((key, idx) => {
+        if (key) row[key] = cells[idx] || ''
+      })
+      rows.push(row)
+    }
+  } else {
+    // 헤더 없이 email,phone,name 순으로 가정
+    for (let i = 0; i < lines.length; i++) {
+      const cells = splitLine(lines[i])
+      if (!cells.some(c => c)) continue
+      // 첫 줄이 헤더처럼 보이면 스킵
+      if (i === 0 && /email|이메일|이름|name/i.test(cells.join(','))) continue
+      rows.push({
+        line: i + 1,
+        email: cells[0] || '',
+        phone: cells[1] || '',
+        name: cells[2] || '',
+        amount: cells[3] || '',
+        note: cells[4] || '',
+      })
+    }
+  }
+  return { rows }
+}
+
+router.post('/courses/:id/enrollments/import', async (req, res) => {
+  try {
+    const course = await db.getCourseById(req.params.id)
+    if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+
+    let rows = Array.isArray(req.body?.rows) ? req.body.rows : null
+    if (!rows) {
+      const csvText = req.body?.csv || req.body?.text || ''
+      const parsed = parseCsvText(csvText)
+      if (parsed.error) return res.status(400).json({ error: parsed.error })
+      rows = parsed.rows
+    }
+    if (!rows.length) return res.status(400).json({ error: '등록할 행이 없습니다.' })
+
+    const results = { enrolled: 0, pending: 0, already: 0, failed: 0, details: [] }
+    for (const row of rows) {
+      const email = row.email || row.이메일 || ''
+      const phone = row.phone || row.휴대폰 || row.연락처 || ''
+      const name = row.name || row.이름 || ''
+      const amount = row.amount !== '' && row.amount != null ? Number(String(row.amount).replace(/[^\d.]/g, '')) : undefined
+      const note = row.note || row.메모 || ''
+      const line = row.line || null
+
+      if (!email && !phone) {
+        results.failed++
+        results.details.push({ line, email, phone, name, status: 'failed', error: '이메일·휴대폰이 모두 없습니다.' })
+        continue
+      }
+
+      const result = await db.adminRegisterEnrollment(course.id, {
+        email,
+        phone,
+        name,
+        amount: Number.isFinite(amount) ? amount : undefined,
+        note: note || undefined,
+        method: req.body?.method,
+        source: 'csv',
+      }, req.user.id)
+
+      if (!result.ok) {
+        results.failed++
+        results.details.push({
+          line, email, phone, name,
+          status: 'failed',
+          error: result.error || '등록 실패',
+          code: result.code,
+        })
+        continue
+      }
+      if (result.status === 'pending') {
+        if (result.already) results.already++
+        else results.pending++
+        results.details.push({
+          line, email, phone, name,
+          status: 'pending',
+          already: !!result.already,
+          pending_id: result.pending?.id,
+        })
+      } else {
+        if (result.already) results.already++
+        else results.enrolled++
+        results.details.push({
+          line, email, phone, name,
+          status: 'enrolled',
+          already: !!result.already,
+          user_id: result.user_id,
+          matched_by: result.matched_by,
+        })
+      }
+    }
+
+    res.json({
+      ok: true,
+      course_id: course.id,
+      ...results,
+    })
+  } catch (e) {
+    console.error('admin enroll import:', e)
+    res.status(500).json({ error: 'CSV 가져오기에 실패했습니다.' })
+  }
+})
+
+router.delete('/courses/:id/pending-enrollments/:pendingId', async (req, res) => {
+  try {
+    const course = await db.getCourseById(req.params.id)
+    if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    const pending = await db.getPendingEnrollment(req.params.pendingId)
+    if (!pending) return res.status(404).json({ error: '대기 등록을 찾을 수 없습니다.' })
+    if (pending.course_id !== course.id) {
+      return res.status(400).json({ error: '해당 강의의 대기 등록이 아닙니다.' })
+    }
+    const result = await db.cancelPendingEnrollment(req.params.pendingId)
+    if (!result.ok) return res.status(400).json(result)
+    res.json({ success: true })
+  } catch (e) {
+    console.error('admin cancel pending:', e)
+    res.status(500).json({ error: '대기 등록 취소에 실패했습니다.' })
+  }
 })
 
 router.get('/courses/:id/chapters', async (req, res) => {

@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "migrate:course-images": "node scripts/migrate-course-images-to-storage.js"
+    "migrate:course-images": "node scripts/migrate-course-images-to-storage.js",
+    "upload:subtitle-tool": "node scripts/upload-subtitle-tool.js"
   },
   "engines": {
     "node": ">=18.0.0"

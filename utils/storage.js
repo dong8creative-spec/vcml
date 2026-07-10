@@ -79,9 +79,25 @@ async function uploadCourseImage(buffer, { kind, courseId, contentType }) {
   return uploadImageBuffer(buffer, { folder, contentType })
 }
 
+async function getSignedDownloadUrl(filePath, expiresMs = 15 * 60 * 1000) {
+  if (!filePath) throw new Error('파일 경로가 필요합니다.')
+  const bucket = await resolveBucket()
+  const file = bucket.file(filePath)
+  const [exists] = await file.exists()
+  if (!exists) {
+    throw new Error(`파일을 찾을 수 없습니다: ${filePath}`)
+  }
+  const [url] = await file.getSignedUrl({
+    action: 'read',
+    expires: Date.now() + expiresMs,
+  })
+  return url
+}
+
 module.exports = {
   BUCKET_CANDIDATES,
   resolveBucket,
   uploadCourseImage,
   uploadImageBuffer,
+  getSignedDownloadUrl,
 }
