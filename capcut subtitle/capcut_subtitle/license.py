@@ -124,7 +124,7 @@ def start_device_login(on_status=None) -> dict:
             code = polled.get("code")
             if code == "not_enrolled":
                 msg = polled.get("error") or (
-                    "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다."
+                    "캡컷 초신속 클래스 강의를 수강 중인 분만 이용할 수 있습니다."
                 )
             elif code == "google_required":
                 msg = polled.get("error") or "구글 로그인 계정만 이용할 수 있습니다."
