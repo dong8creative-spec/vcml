@@ -186,6 +186,11 @@ router.get('/courses', authMiddleware, async (req, res) => {
         paidAt: order?.paid_at,
       })
     }
+    try {
+      row.program = await db.getProgramForCourse(c)
+    } catch {
+      row.program = null
+    }
     return row
   }))
   res.json(courses.filter(Boolean).reverse())
@@ -201,7 +206,7 @@ router.get('/courses/:courseId/live-replay', authMiddleware, async (req, res) =>
   }
   const accessMeta = await db.getCourseAccessMeta(req.user.id, course)
   if (accessMeta.access_expired) {
-    return res.status(403).json({ error: '수강 기간(3개월)이 만료되어 다시보기를 이용할 수 없습니다.' })
+    return res.status(403).json({ error: '수강 권한이 만료되어 다시보기를 이용할 수 없습니다.' })
   }
   const access = db.getLiveResourceAccess(course, {
     enrolled: true,

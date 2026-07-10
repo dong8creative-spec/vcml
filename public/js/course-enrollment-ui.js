@@ -46,8 +46,11 @@
   }
 
   function isLiveLikeCourse(c) {
-    return c?.course_type === 'live'
-      || (Number(c?.sale_price) === 0 && (c?.live_starts_at || c?.live_schedule))
+    if (!c) return false
+    if (c.delivery_mode === 'live_first') return true
+    if (c.course_type === 'live') return true
+    if (c.live_starts_at || c.live_schedule) return true
+    return false
   }
 
   function isLiveEnded(c) {

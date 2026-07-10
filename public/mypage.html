@@ -486,8 +486,11 @@ showSection(typeof initTab === 'string' ? initTab : initTab.id)
 
 // ── 내 강의 ──
 function isLiveLikeCourse(c) {
-  return c?.course_type === 'live'
-    || (Number(c?.sale_price) === 0 && (c?.live_starts_at || c?.live_schedule))
+  if (!c) return false
+  if (c.delivery_mode === 'live_first') return true
+  if (c.course_type === 'live') return true
+  if (c.live_starts_at || c.live_schedule) return true
+  return false
 }
 
 function getCourseLectureStart(c) {
@@ -497,10 +500,18 @@ function getCourseLectureStart(c) {
   return isNaN(d.getTime()) ? null : d
 }
 
+const PROGRAM_EARLY_ACCESS_MS = 2 * 60 * 60 * 1000
+
 function isCourseLectureStarted(c, at = new Date()) {
   const start = getCourseLectureStart(c)
   if (!start) return true
-  return at.getTime() >= start.getTime()
+  return at.getTime() >= start.getTime() - PROGRAM_EARLY_ACCESS_MS
+}
+
+function getProgramOpenAt(c) {
+  const start = getCourseLectureStart(c)
+  if (!start) return null
+  return new Date(start.getTime() - PROGRAM_EARLY_ACCESS_MS)
 }
 
 function formatLectureStartLabel(date) {
@@ -517,13 +528,16 @@ function formatLectureStartLabel(date) {
 }
 
 function renderSubtitleToolDownload(c) {
-  if (c.slug !== 'capcut-pro-basic') return ''
+  const hasProgram = c.program || c.program_id || c.slug === 'capcut-pro-basic'
+  if (!hasProgram) return ''
+  const programName = c.program?.name || '도각 자막패치'
+  const pagePath = c.program?.page_path || '/subtitle-tool.html'
   if (!isCourseLectureStarted(c)) {
-    const start = getCourseLectureStart(c)
-    const label = start ? `${formatLectureStartLabel(start)}부터` : '강의 시작 후'
+    const openAt = getProgramOpenAt(c)
+    const label = openAt ? `${formatLectureStartLabel(openAt)}부터` : '강의 시작 2시간 전부터'
     return `<div class="my-vod-actions"><span class="pc-btn secondary my-vod-btn--disabled" aria-disabled="true"><i class="ti ti-clock"></i> ${escapeHtml(label)} 다운로드 가능</span></div>`
   }
-  return `<div class="my-vod-actions"><a href="/subtitle-tool.html" class="pc-btn secondary" style="display:inline-flex;width:auto"><i class="ti ti-download"></i> 도각 자막패치 다운로드</a></div>`
+  return `<div class="my-vod-actions"><a href="${escapeHtml(pagePath)}" class="pc-btn secondary" style="display:inline-flex;width:auto"><i class="ti ti-download"></i> ${escapeHtml(programName)} 다운로드</a></div>`
 }
 
 function renderCourseThumbBadge(c) {

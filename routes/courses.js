@@ -462,7 +462,7 @@ router.get('/:slug', async (req, res) => {
       live_ended: db.courseSupportsLiveReplay(course) ? db.isLiveCourseEnded(course) : false,
     }
     if (!enrolled) delete payload.live_chat_url
-    if (db.courseSupportsLiveReplay(course) && (enrolled || db.isLiveCourseEnded(course))) {
+    if (db.courseSupportsLiveReplay(course)) {
       payload.live_resources = db.getLiveResourceAccess(course, {
         enrolled: !!enrolled,
         hasReview: !!(myCourseReview && myCourseReview.rating),
@@ -470,6 +470,11 @@ router.get('/:slug', async (req, res) => {
         accessStartAt,
         paidAt: orderRecord?.paid_at,
       })
+    }
+    try {
+      payload.program = await db.getProgramForCourse(course)
+    } catch {
+      payload.program = null
     }
     res.json(payload)
   } catch (e) {

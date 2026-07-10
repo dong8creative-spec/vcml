@@ -16,6 +16,7 @@ const COURSES = [
     student_count: 0,
     is_published: 1,
     course_type: 'recorded',
+    delivery_mode: 'live_first',
   },
   {
     slug: 'capcut-pro-basic',
@@ -33,6 +34,7 @@ const COURSES = [
     student_count: 0,
     is_published: 1,
     course_type: 'recorded',
+    delivery_mode: 'live_first',
   },
 ]
 

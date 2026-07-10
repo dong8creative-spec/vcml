@@ -115,7 +115,7 @@
         document.getElementById('player-course-title').textContent = courseData.title
 
         const chapters = courseData.chapters || []
-        if (courseData.course_type === 'live' && !chapters.length) {
+        if ((courseData.course_type === 'live' || courseData.delivery_mode === 'live_first' || courseData.live_starts_at) && !chapters.length) {
           showLiveOnlyNotice()
           return
         }

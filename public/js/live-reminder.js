@@ -1,12 +1,12 @@
 /**
- * 라이브 강의 — 카운트다운 · Google Meet · 1시간 전 알림 · 30분 전 입장
+ * 라이브 강의 — 카운트다운 · Google Meet · 1시간 전 알림 · 2시간 전 입장
  */
 if (!window.LiveSession) (function () {
   const REMIND_BEFORE_MS = 60 * 60 * 1000
-  const MEET_OPEN_BEFORE_MS = 30 * 60 * 1000
+  const MEET_OPEN_BEFORE_MS = 2 * 60 * 60 * 1000
   const LIVE_WINDOW_AFTER_MS = 3 * 60 * 60 * 1000
   const POLL_MS = 30 * 1000
-  const MEET_WAIT_LABEL = '30분 전부터 입장 가능'
+  const MEET_WAIT_LABEL = '2시간 전부터 입장 가능'
 
   const GOOGLE_ICON_SVG = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" class="meet-google-icon"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>'
 
@@ -72,20 +72,37 @@ if (!window.LiveSession) (function () {
     return isMeetJoinAvailableClient(course, start, at)
   }
 
+  function parseLiveEnd(course, start) {
+    if (course?.live_ends_at) {
+      const d = new Date(course.live_ends_at)
+      if (!isNaN(d.getTime())) return d
+    }
+    if (course?.live_resources?.live_ends_at) {
+      const d = new Date(course.live_resources.live_ends_at)
+      if (!isNaN(d.getTime())) return d
+    }
+    if (!start) return null
+    return new Date(start.getTime() + LIVE_WINDOW_AFTER_MS)
+  }
+
   function isMeetJoinAvailableClient(course, start, at = new Date()) {
     if (course?.live_status === 'ended' || course?.live_ended || course?.live_resources?.live_ended) return false
     if (!String(course?.meet_code || '').trim()) return false
     if (!start) return false
     const now = at.getTime()
     const t = start.getTime()
-    return now >= t - MEET_OPEN_BEFORE_MS && now <= t + LIVE_WINDOW_AFTER_MS
+    const endAt = parseLiveEnd(course, start)
+    const endMs = endAt ? endAt.getTime() : t + LIVE_WINDOW_AFTER_MS
+    return now >= t - MEET_OPEN_BEFORE_MS && now <= endMs
   }
 
   function isWithinReminderWindow(course, start) {
     if (!start || course.live_status === 'ended' || course.live_ended || course.live_resources?.live_ended) return false
     const now = Date.now()
     const t = start.getTime()
-    return now >= t - REMIND_BEFORE_MS && now <= t + LIVE_WINDOW_AFTER_MS
+    const endAt = parseLiveEnd(course, start)
+    const endMs = endAt ? endAt.getTime() : t + LIVE_WINDOW_AFTER_MS
+    return now >= t - REMIND_BEFORE_MS && now <= endMs
   }
 
   let whenReadyResolve
@@ -97,6 +114,7 @@ if (!window.LiveSession) (function () {
       live_status: course?.live_status,
       live_ended: course?.live_ended,
       live_starts_at: course?.live_starts_at,
+      live_ends_at: course?.live_ends_at || course?.live_resources?.live_ends_at,
       live_schedule: course?.live_schedule,
       live_resources: course?.live_resources,
     }))

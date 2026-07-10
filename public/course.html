@@ -197,8 +197,11 @@
     }
 
     function isLiveLikeCourse(c) {
-      return c?.course_type === 'live'
-        || (Number(c?.sale_price) === 0 && (c?.live_starts_at || c?.live_schedule))
+      if (!c) return false
+      if (c.delivery_mode === 'live_first') return true
+      if (c.course_type === 'live') return true
+      if (c.live_starts_at || c.live_schedule) return true
+      return false
     }
 
     async function load() {
@@ -501,10 +504,18 @@
       return isNaN(d.getTime()) ? null : d
     }
 
+    const PROGRAM_EARLY_ACCESS_MS = 2 * 60 * 60 * 1000
+
     function isCourseLectureStarted(c, at = new Date()) {
       const start = getCourseLectureStart(c)
       if (!start) return true
-      return at.getTime() >= start.getTime()
+      return at.getTime() >= start.getTime() - PROGRAM_EARLY_ACCESS_MS
+    }
+
+    function getProgramOpenAt(c) {
+      const start = getCourseLectureStart(c)
+      if (!start) return null
+      return new Date(start.getTime() - PROGRAM_EARLY_ACCESS_MS)
     }
 
     function formatLectureStartLabel(date) {
@@ -585,7 +596,7 @@
             <li><span class="feat-icon feat-icon--lifetime"><i class="ti ${isPaidCourse(c) ? 'ti-calendar-time' : 'ti-infinity'}"></i></span> ${isPaidCourse(c) ? '결제일로부터 3개월 수강' : '평생 소장'}</li>
             <li><span class="feat-icon feat-icon--mobile"><i class="ti ti-device-mobile"></i></span> 모바일 수강 가능</li>
             <li><span class="feat-icon feat-icon--cert"><i class="ti ti-certificate"></i></span> 수료증 발급</li>
-            ${c.slug === 'capcut-pro-basic' ? `<li><span class="feat-icon feat-icon--material"><i class="ti ti-subtitles"></i></span> 수강생 전용 도각 자막패치 제공</li>` : ''}
+            ${c.program?.feature_label || c.slug === 'capcut-pro-basic' ? `<li><span class="feat-icon feat-icon--material"><i class="ti ti-subtitles"></i></span> ${esc(c.program?.feature_label || '수강생 전용 도각 자막패치 제공')}</li>` : ''}
             ${isRefundGuaranteeActive(c) ? `<li><span class="feat-icon feat-icon--refund"><i class="ti ti-rotate-clockwise"></i></span> 강의 시작 1시간 전까지 환불 보장</li>` : ''}
           </ul>`}
         </div>
@@ -665,13 +676,17 @@
     }
 
     function renderSubtitleToolBtn(c) {
-      if (!c?.enrolled || c.slug !== 'capcut-pro-basic') return ''
+      if (!c?.enrolled) return ''
+      const hasProgram = c.program || c.program_id || c.slug === 'capcut-pro-basic'
+      if (!hasProgram) return ''
+      const programName = c.program?.name || '도각 자막패치'
+      const pagePath = c.program?.page_path || '/subtitle-tool.html'
       if (!isCourseLectureStarted(c)) {
-        const start = getCourseLectureStart(c)
-        const label = start ? `${formatLectureStartLabel(start)}부터` : '강의 시작 후'
+        const openAt = getProgramOpenAt(c)
+        const label = openAt ? `${formatLectureStartLabel(openAt)}부터` : '강의 시작 2시간 전부터'
         return `<div class="btn-enroll btn-enroll--secondary btn-enroll--disabled" aria-disabled="true"><i class="ti ti-clock"></i> ${esc(label)} 다운로드 가능</div>`
       }
-      return `<a href="/subtitle-tool.html" class="btn-enroll btn-enroll--secondary"><i class="ti ti-download"></i> 도각 자막패치 다운로드</a>`
+      return `<a href="${esc(pagePath)}" class="btn-enroll btn-enroll--secondary"><i class="ti ti-download"></i> ${esc(programName)} 다운로드</a>`
     }
 
     function isCourseEnded(c) {

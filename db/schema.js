@@ -1110,8 +1110,16 @@ function isFreeLiveCourse(course) {
   return !!parseLiveStart(course)
 }
 
+/** 라이브 시작 → 익일 13시 다시보기 전환 강의 */
+function isLiveFirstCourse(course) {
+  if (!course) return false
+  if (course.delivery_mode === 'live_first') return true
+  if (course.course_type === 'live') return true
+  return isFreeLiveCourse(course)
+}
+
 function courseSupportsLiveReplay(course) {
-  return course?.course_type === 'live' || isFreeLiveCourse(course)
+  return isLiveFirstCourse(course)
 }
 
 function kstDateKey(date) {
@@ -1119,7 +1127,8 @@ function kstDateKey(date) {
 }
 
 const LIVE_END_AFTER_MS = 3 * 60 * 60 * 1000
-const MEET_OPEN_BEFORE_MS = 30 * 60 * 1000
+const MEET_OPEN_BEFORE_MS = 2 * 60 * 60 * 1000
+const PROGRAM_EARLY_ACCESS_MS = 2 * 60 * 60 * 1000
 const REPLAY_OPEN_HOUR_KST = 13
 const ANTICIPATION_MODIFY_LOCK_MS = 60 * 60 * 1000
 const LIVE_REVIEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000  // 강의 종료 후 7일
@@ -1132,26 +1141,36 @@ function kstCalendarParts(date) {
   return { y: d.getUTCFullYear(), m: d.getUTCMonth(), day: d.getUTCDate() }
 }
 
-/** 강의일(KST) 다음 날 오후 1시 */
-function getReplayOpensAt(course) {
+function parseLiveEndsAt(course) {
+  if (course?.live_ends_at) {
+    const d = new Date(course.live_ends_at)
+    if (!isNaN(d.getTime())) return d
+  }
   const start = parseLiveStart(course)
   if (!start) return null
-  const { y, m, day } = kstCalendarParts(start)
+  return new Date(start.getTime() + LIVE_END_AFTER_MS)
+}
+
+/** 강의 종료일(KST) 다음 날 오후 1시 */
+function getReplayOpensAt(course) {
+  const endAt = parseLiveEndsAt(course) || parseLiveStart(course)
+  if (!endAt) return null
+  const { y, m, day } = kstCalendarParts(endAt)
   return new Date(Date.UTC(y, m, day + 1, REPLAY_OPEN_HOUR_KST - 9, 0, 0))
 }
 
 function isLiveCourseEnded(course, at = new Date()) {
   if (course?.live_status === 'ended') return true
-  const start = parseLiveStart(course)
-  if (!start) return false
-  return at.getTime() > start.getTime() + LIVE_END_AFTER_MS
+  const endAt = parseLiveEndsAt(course)
+  if (!endAt) return false
+  return at.getTime() > endAt.getTime()
 }
 
 function isLiveReviewOpen(course, at = new Date()) {
-  if (course?.course_type !== 'live') return true  // VOD는 제한 없음
-  const start = parseLiveStart(course)
-  if (!start) return true
-  const liveEndsAt = start.getTime() + LIVE_END_AFTER_MS
+  if (!courseSupportsLiveReplay(course)) return true
+  const endAt = parseLiveEndsAt(course)
+  if (!endAt) return true
+  const liveEndsAt = endAt.getTime()
   if (at.getTime() < liveEndsAt) return false  // 강의 종료 전에는 후기 불가
   return at.getTime() <= liveEndsAt + LIVE_REVIEW_WINDOW_MS
 }
@@ -1162,7 +1181,9 @@ function isMeetJoinAvailable(course, start, at = new Date()) {
   if (!start) return false
   const now = at.getTime()
   const t = start.getTime()
-  return now >= t - MEET_OPEN_BEFORE_MS && now <= t + LIVE_END_AFTER_MS
+  const endAt = parseLiveEndsAt(course)
+  const endMs = endAt ? endAt.getTime() : t + LIVE_END_AFTER_MS
+  return now >= t - MEET_OPEN_BEFORE_MS && now <= endMs
 }
 
 function canWriteAnticipationReview(course, at = new Date()) {
@@ -1199,11 +1220,11 @@ function getAnticipationModifyMeta(course, at = new Date()) {
     return { can_modify: true, locked: false, deadline: null, deadline_label: null, message: null }
   }
   const start = parseLiveStart(course)
+  const endAt = parseLiveEndsAt(course)
   const canWrite = canWriteAnticipationReview(course, at)
-  let deadline = null
+  let deadline = endAt
   let deadlineLabel = null
-  if (start) {
-    deadline = new Date(start.getTime() + LIVE_END_AFTER_MS)
+  if (deadline) {
     deadlineLabel = deadline.toLocaleString('ko-KR', {
       timeZone: 'Asia/Seoul',
       month: 'long',
@@ -1250,9 +1271,7 @@ function isLiveLectureDay(course, at = new Date()) {
 }
 
 function getLiveLectureEndAt(course) {
-  const start = parseLiveStart(course)
-  if (!start) return null
-  return new Date(start.getTime() + LIVE_END_AFTER_MS)
+  return parseLiveEndsAt(course)
 }
 
 /** 강의 종료 시각부터 7일간 자료 다운로드 허용 */
@@ -1277,12 +1296,13 @@ function resolveEnrollmentAccessStart({ enrolledAt = null, paidAt = null } = {})
 }
 
 function getPaidCourseAccessMeta(course, { enrolledAt = null, paidAt = null, at = new Date() } = {}) {
-  if (!isPaidCourse(course)) {
+  // live_first / 다시보기 강의는 수강 기간 만료 없음 (환불·수강 해제로만 회수)
+  if (!isPaidCourse(course) || courseSupportsLiveReplay(course)) {
     return {
       access_open: true,
       access_expired: false,
       access_ends_at: null,
-      access_start_at: null,
+      access_start_at: resolveEnrollmentAccessStart({ enrolledAt, paidAt }),
       access_days_left: null,
       access_months: null,
     }
@@ -1359,13 +1379,16 @@ function getLiveResourceAccess(course, { enrolled = false, hasReview = false, re
     access_days_left: paidAccess.access_days_left,
     access_months: paidAccess.access_months,
     review_closes_at: (() => {
-      if (!start) return null
-      const closeAt = new Date(start.getTime() + LIVE_END_AFTER_MS + LIVE_REVIEW_WINDOW_MS)
+      const endAt = parseLiveEndsAt(course)
+      if (!endAt) return null
+      const closeAt = new Date(endAt.getTime() + LIVE_REVIEW_WINDOW_MS)
       return closeAt.toISOString()
     })(),
     live_lecture_date: start
       ? start.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric' })
       : null,
+    live_ends_at: parseLiveEndsAt(course)?.toISOString() || null,
+    meet_opens_at: start ? new Date(start.getTime() - MEET_OPEN_BEFORE_MS).toISOString() : null,
   }
 }
 
@@ -1507,10 +1530,34 @@ function getCourseLectureStartAt(course) {
   return isNaN(d.getTime()) ? null : d
 }
 
-function isCourseLectureStarted(course, at = new Date()) {
+function getProgramEarlyAccessMs(program) {
+  const hours = Number(program?.early_access_hours)
+  if (Number.isFinite(hours) && hours >= 0) return hours * 60 * 60 * 1000
+  return PROGRAM_EARLY_ACCESS_MS
+}
+
+/** 프로그램 이용 가능 여부 — 기본 강의 시작 2시간 전 */
+function isProgramAccessOpen(course, program = null, at = new Date()) {
   const start = getCourseLectureStartAt(course)
   if (!start) return true
-  return at.getTime() >= start.getTime()
+  const offsetMs = getProgramEarlyAccessMs(program)
+  return at.getTime() >= start.getTime() - offsetMs
+}
+
+function isCourseLectureStarted(course, at = new Date()) {
+  return isProgramAccessOpen(course, null, at)
+}
+
+function normalizeLiveWindowInput(startsAt, endsAt) {
+  const starts = startsAt ? parseCheckoutAt(startsAt) : null
+  const ends = endsAt ? parseCheckoutAt(endsAt) : null
+  if (startsAt && !starts) return { error: 'invalid_live_starts' }
+  if (endsAt && !ends) return { error: 'invalid_live_ends' }
+  if (starts && ends && starts.getTime() >= ends.getTime()) return { error: 'invalid_live_range' }
+  return {
+    live_starts_at: starts ? starts.toISOString() : null,
+    live_ends_at: ends ? ends.toISOString() : null,
+  }
 }
 
 function normalizeCheckoutWindowInput(startsAt, endsAt) {
@@ -1538,11 +1585,15 @@ function pickCourseCardFields(course = {}) {
     thumb_style: course.thumb_style || null,
     badge: course.badge || null,
     course_type: course.course_type || 'recorded',
+    delivery_mode: course.delivery_mode || (courseSupportsLiveReplay(course) ? 'live_first' : 'vod_only'),
     is_offline: course.is_offline || 0,
     live_schedule: course.live_schedule || null,
     live_starts_at: course.live_starts_at || null,
+    live_ends_at: course.live_ends_at || null,
     live_status: course.live_status || null,
     live_ended: courseSupportsLiveReplay(course) && isLiveCourseEnded(course),
+    meet_code: course.meet_code || null,
+    program_id: course.program_id || null,
     price: Number(course.price || 0),
     sale_price: Number(course.sale_price || 0),
     rating: course.rating || 0,
@@ -2233,10 +2284,39 @@ const db = {
       if (k.startsWith('course:slug:')) _cache.delete(k)
     }
   },
-  async createLiveCourse({ title, description, category, thumbnail_icon, live_schedule, live_starts_at, meet_code }) {
+  async createLiveCourse({ title, description, category, thumbnail_icon, live_schedule, live_starts_at, live_ends_at, meet_code }) {
     const slug = 'live-' + Date.now()
-    const data = { slug, title, description: description || '', category, thumbnail_icon: thumbnail_icon || 'ti-broadcast', thumb_style: 'dark', price: 0, sale_price: 0, badge: 'LIVE', rating: 0, review_count: 0, student_count: 0, is_published: 1, course_type: 'live', live_schedule: live_schedule || null, live_starts_at: live_starts_at || null, meet_code: meet_code || null, live_status: 'upcoming', created_at: now() }
+    const liveWindow = normalizeLiveWindowInput(live_starts_at, live_ends_at)
+    if (liveWindow.error) return { error: liveWindow.error }
+    let endsAt = liveWindow.live_ends_at
+    if (liveWindow.live_starts_at && !endsAt) {
+      endsAt = new Date(new Date(liveWindow.live_starts_at).getTime() + LIVE_END_AFTER_MS).toISOString()
+    }
+    const data = {
+      slug,
+      title,
+      description: description || '',
+      category,
+      thumbnail_icon: thumbnail_icon || 'ti-broadcast',
+      thumb_style: 'dark',
+      price: 0,
+      sale_price: 0,
+      badge: 'LIVE',
+      rating: 0,
+      review_count: 0,
+      student_count: 0,
+      is_published: 1,
+      course_type: 'live',
+      delivery_mode: 'live_first',
+      live_schedule: live_schedule || null,
+      live_starts_at: liveWindow.live_starts_at,
+      live_ends_at: endsAt,
+      meet_code: meet_code || null,
+      live_status: 'upcoming',
+      created_at: now(),
+    }
     const ref = await fs.collection('courses').add(data)
+    cacheInvalidate('courses:pub', 'courses:all', 'homepage:data*')
     return { id: ref.id, ...data }
   },
 
@@ -2256,12 +2336,24 @@ const db = {
     coupon_allowed,
     checkout_starts_at,
     checkout_ends_at,
+    live_starts_at,
+    live_ends_at,
+    live_schedule,
+    meet_code,
+    live_replay_url,
+    program_id,
   }) {
     const slug = buildCourseSlug(title)
     const sale = Number(sale_price != null ? sale_price : price) || 0
     const listPrice = Number(price != null ? price : sale) || sale
     const checkoutWindow = normalizeCheckoutWindowInput(checkout_starts_at, checkout_ends_at)
     if (checkoutWindow.error) return { error: checkoutWindow.error }
+    const liveWindow = normalizeLiveWindowInput(live_starts_at, live_ends_at)
+    if (liveWindow.error) return { error: liveWindow.error }
+    let endsAt = liveWindow.live_ends_at
+    if (liveWindow.live_starts_at && !endsAt) {
+      endsAt = new Date(new Date(liveWindow.live_starts_at).getTime() + LIVE_END_AFTER_MS).toISOString()
+    }
     const data = {
       slug,
       title,
@@ -2278,11 +2370,19 @@ const db = {
       student_count: 0,
       is_published: is_published ? 1 : 0,
       course_type: 'recorded',
+      delivery_mode: 'live_first',
       coupon_allowed: coupon_allowed === false || coupon_allowed === 0 ? 0 : 1,
       checkout_provider: checkout_provider === 'smartstore' ? 'smartstore' : 'site',
       store_checkout_urls: normalizeStoreCheckoutUrls(store_checkout_urls || {}),
       checkout_starts_at: checkoutWindow.checkout_starts_at,
       checkout_ends_at: checkoutWindow.checkout_ends_at,
+      live_starts_at: liveWindow.live_starts_at,
+      live_ends_at: endsAt,
+      live_schedule: live_schedule || null,
+      meet_code: meet_code || null,
+      live_replay_url: live_replay_url || null,
+      live_status: 'upcoming',
+      program_id: program_id || null,
       created_at: now(),
     }
     const ref = await fs.collection('courses').add(data)
@@ -2304,6 +2404,7 @@ const db = {
     const syncFields = [
       'title', 'description', 'category', 'thumbnail_icon', 'thumb_style',
       'price', 'sale_price', 'badge', 'sort_order', 'is_published', 'course_type', 'is_offline',
+      'delivery_mode',
     ]
     const snap = await fs.collection('courses').get()
     let updated = 0
@@ -2640,11 +2741,11 @@ const db = {
     return progress.filter(p => Number(p.watched_sec) > 0 || p.completed).length
   },
   computeEnrollmentCancelPlan(course, order, progress, chapters) {
-    const isLive = course.course_type === 'live'
     const paidAmount = Number(order?.amount || 0)
     const isFree = paidAmount === 0
+    const isFreeLive = isFree && courseSupportsLiveReplay(course)
 
-    if (isLive) {
+    if (isFreeLive) {
       if (isLiveCourseEnded(course)) {
         return { allowed: false, error: '종료된 라이브 강의는 취소할 수 없습니다.' }
       }
@@ -2659,6 +2760,17 @@ const db = {
 
     if (isFree) {
       return { allowed: true, type: 'cancel', refund_amount: 0, label: '수강 취소' }
+    }
+
+    // 유료 live_first: 강의 시작 1시간 전까지만 전액 환불, 종료 후 불가
+    if (courseSupportsLiveReplay(course)) {
+      if (isLiveCourseEnded(course)) {
+        return { allowed: false, error: '종료된 강의는 환불할 수 없습니다.' }
+      }
+      if (!canModifyAnticipationReview(course)) {
+        return { allowed: false, error: getLiveEnrollmentCancelLockMessage(course) || '강의 시작 1시간 전부터는 환불할 수 없습니다.' }
+      }
+      return { allowed: true, type: 'refund', refund_amount: paidAmount, label: '전액 환불', full: true }
     }
 
     const total = chapters.length || 1
@@ -2999,10 +3111,10 @@ const db = {
     if (!course) return { error: 'course_not_found' }
     if (await db.isEnrolled(userId, courseId)) return { error: 'already_enrolled' }
 
-    const isLive = course.course_type === 'live' || isFreeLiveCourse(course)
-    const isFreeVod = !isLive && Number(course.sale_price) === 0
+    const isLive = courseSupportsLiveReplay(course) && Number(course.sale_price) === 0
+    const isFreeVod = !courseSupportsLiveReplay(course) && Number(course.sale_price) === 0
     if (!isLive && !isFreeVod) return { error: 'payment_required' }
-    if (isLive && isLiveCourseEnded(course)) {
+    if (courseSupportsLiveReplay(course) && isLiveCourseEnded(course)) {
       const replayConfigured = getLiveResourceAccess(course).replay_configured
       if (!replayConfigured) return { error: 'live_ended' }
     }
@@ -4700,22 +4812,30 @@ const db = {
         course_id: course.id,
       }
     }
-    if (!isCourseLectureStarted(course)) {
+    const program = await db.getProgramForCourse(course)
+    if (!isProgramAccessOpen(course, program)) {
       const startsAt = getCourseLectureStartAt(course)
-      const label = formatCheckoutLabel(startsAt)
+      const openAt = startsAt
+        ? new Date(startsAt.getTime() - getProgramEarlyAccessMs(program))
+        : null
+      const label = formatCheckoutLabel(openAt)
       return {
         ok: false,
         code: 'course_not_started',
         error: label
-          ? `${label}부터 도각 자막패치를 이용할 수 있습니다.`
-          : '강의 시작 전에는 도각 자막패치를 이용할 수 없습니다.',
+          ? `${label}부터 ${program?.name || '도각 자막패치'}를 이용할 수 있습니다. (강의 시작 2시간 전)`
+          : `강의 시작 2시간 전부터 ${program?.name || '도각 자막패치'}를 이용할 수 있습니다.`,
         has_google: true,
         enrolled: true,
         course_slug: course.slug,
         course_title: course.title,
         course_id: course.id,
         lecture_starts_at: startsAt ? startsAt.toISOString() : null,
-        lecture_starts_label: label,
+        lecture_starts_label: formatCheckoutLabel(startsAt),
+        program_opens_at: openAt ? openAt.toISOString() : null,
+        program_opens_label: label,
+        program_id: program?.id || null,
+        program_name: program?.name || null,
       }
     }
     const wallet = await db.ensureSubtitleWallet(userId)
@@ -4937,8 +5057,141 @@ const db = {
     return { status: row.status || 'pending' }
   },
 
+  // ── course_programs ──
+  async listCoursePrograms() {
+    const snap = await fs.collection('course_programs').get()
+    return snapToArr(snap).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'))
+  },
+
+  async getCourseProgram(id) {
+    if (!id) return null
+    const doc = await fs.collection('course_programs').doc(String(id)).get()
+    return doc.exists ? { id: doc.id, ...doc.data() } : null
+  },
+
+  async getCourseProgramBySlug(slug) {
+    const key = String(slug || '').trim()
+    if (!key) return null
+    const snap = await fs.collection('course_programs').where('slug', '==', key).limit(1).get()
+    if (snap.empty) return null
+    return { id: snap.docs[0].id, ...snap.docs[0].data() }
+  },
+
+  normalizeCourseProgramInput(data = {}, { partial = false } = {}) {
+    const payload = {}
+    if (!partial || data.name !== undefined) payload.name = String(data.name || '').trim().slice(0, 80)
+    if (!partial || data.slug !== undefined) {
+      payload.slug = String(data.slug || data.name || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9가-힣_-]/g, '')
+        .slice(0, 60)
+    }
+    if (!partial || data.type !== undefined) {
+      payload.type = ['desktop_coin', 'desktop_simple', 'external_link'].includes(data.type)
+        ? data.type
+        : 'desktop_coin'
+    }
+    if (!partial || data.storage_path !== undefined) {
+      payload.storage_path = String(data.storage_path || '').trim().slice(0, 300) || null
+    }
+    if (!partial || data.page_path !== undefined) {
+      payload.page_path = String(data.page_path || '').trim().slice(0, 200) || '/subtitle-tool.html'
+    }
+    if (!partial || data.feature_label !== undefined) {
+      payload.feature_label = String(data.feature_label || '').trim().slice(0, 120) || null
+    }
+    if (!partial || data.requires_google !== undefined) {
+      payload.requires_google = data.requires_google === false || data.requires_google === 0 ? 0 : 1
+    }
+    if (!partial || data.early_access_hours !== undefined) {
+      const h = Number(data.early_access_hours)
+      payload.early_access_hours = Number.isFinite(h) && h >= 0 ? h : 2
+    }
+    if (!partial || data.initial_coins !== undefined) {
+      payload.initial_coins = Math.max(0, parseInt(data.initial_coins, 10) || 0)
+    }
+    if (!partial || data.review_bonus_coins !== undefined) {
+      payload.review_bonus_coins = Math.max(0, parseInt(data.review_bonus_coins, 10) || 0)
+    }
+    if (!partial || data.coin_per_minute !== undefined) {
+      payload.coin_per_minute = Math.max(0, parseInt(data.coin_per_minute, 10) || 1)
+    }
+    if (!partial || data.is_published !== undefined) {
+      payload.is_published = data.is_published === false || data.is_published === 0 ? 0 : 1
+    }
+    return payload
+  },
+
+  async createCourseProgram(data) {
+    const payload = db.normalizeCourseProgramInput(data)
+    if (!payload.name) return { error: 'name_required' }
+    if (!payload.slug) return { error: 'slug_required' }
+    const existing = await db.getCourseProgramBySlug(payload.slug)
+    if (existing) return { error: 'slug_exists' }
+    const row = { ...payload, created_at: now(), updated_at: now() }
+    const ref = await fs.collection('course_programs').add(row)
+    return { id: ref.id, ...row }
+  },
+
+  async updateCourseProgram(id, data) {
+    const current = await db.getCourseProgram(id)
+    if (!current) return { error: 'not_found' }
+    const payload = db.normalizeCourseProgramInput(data, { partial: true })
+    if (payload.slug && payload.slug !== current.slug) {
+      const existing = await db.getCourseProgramBySlug(payload.slug)
+      if (existing && existing.id !== id) return { error: 'slug_exists' }
+    }
+    const patch = { ...payload, updated_at: now() }
+    await fs.collection('course_programs').doc(id).update(patch)
+    return { id, ...current, ...patch }
+  },
+
+  async deleteCourseProgram(id) {
+    const current = await db.getCourseProgram(id)
+    if (!current) return { error: 'not_found' }
+    const courses = await fs.collection('courses').where('program_id', '==', id).limit(1).get()
+    if (!courses.empty) return { error: 'in_use' }
+    await fs.collection('course_programs').doc(id).delete()
+    return { success: true }
+  },
+
+  async ensureDefaultSubtitleProgram() {
+    const existing = await db.getCourseProgramBySlug('dogak-subtitle')
+    if (existing) return existing
+    return db.createCourseProgram({
+      name: '도각 자막패치',
+      slug: 'dogak-subtitle',
+      type: 'desktop_coin',
+      storage_path: 'subtitle-tool/CapCutSubtitle.zip',
+      page_path: '/subtitle-tool.html',
+      feature_label: '수강생 전용 도각 자막패치 제공',
+      requires_google: 1,
+      early_access_hours: 2,
+      initial_coins: SUBTITLE_INITIAL_COINS,
+      review_bonus_coins: SUBTITLE_REVIEW_BONUS_COINS,
+      coin_per_minute: 1,
+      is_published: 1,
+    })
+  },
+
+  async getProgramForCourse(course) {
+    if (!course) return null
+    if (course.program_id) {
+      const byId = await db.getCourseProgram(course.program_id)
+      if (byId) return byId
+    }
+    if (course.slug === SUBTITLE_COURSE_SLUG) {
+      return db.ensureDefaultSubtitleProgram()
+    }
+    return null
+  },
+
   parseLiveStart,
+  parseLiveEndsAt,
   isFreeLiveCourse,
+  isLiveFirstCourse,
   isPaidCourse,
   courseSupportsLiveReplay,
   isLiveLectureDay,
@@ -4947,6 +5200,8 @@ const db = {
   getPaidCourseAccessMeta,
   getCourseLectureStartAt,
   isCourseLectureStarted,
+  isProgramAccessOpen,
+  normalizeLiveWindowInput,
   resolveEnrollmentAccessStart,
   isLiveCourseEnded,
   canWriteAnticipationReview,
@@ -4962,6 +5217,8 @@ const db = {
   SUBTITLE_COURSE_SLUG,
   SUBTITLE_INITIAL_COINS,
   SUBTITLE_REVIEW_BONUS_COINS,
+  MEET_OPEN_BEFORE_MS,
+  PROGRAM_EARLY_ACCESS_MS,
   normalizeEmail,
   normalizePhone,
   normalizePersonName,
@@ -4977,7 +5234,9 @@ seedInstructorsIntroDefaults().catch(console.error)
 
 module.exports = db
 module.exports.parseLiveStart = parseLiveStart
+module.exports.parseLiveEndsAt = parseLiveEndsAt
 module.exports.isFreeLiveCourse = isFreeLiveCourse
+module.exports.isLiveFirstCourse = isLiveFirstCourse
 module.exports.isPaidCourse = isPaidCourse
 module.exports.courseSupportsLiveReplay = courseSupportsLiveReplay
 module.exports.isLiveLectureDay = isLiveLectureDay
@@ -4986,11 +5245,16 @@ module.exports.isLiveMaterialOpenByReview = isLiveMaterialOpenByReview
 module.exports.getPaidCourseAccessMeta = getPaidCourseAccessMeta
 module.exports.getCourseLectureStartAt = getCourseLectureStartAt
 module.exports.isCourseLectureStarted = isCourseLectureStarted
+module.exports.isProgramAccessOpen = isProgramAccessOpen
+module.exports.normalizeLiveWindowInput = normalizeLiveWindowInput
 module.exports.resolveEnrollmentAccessStart = resolveEnrollmentAccessStart
 module.exports.isLiveCourseEnded = isLiveCourseEnded
 module.exports.isLiveReviewOpen = isLiveReviewOpen
 module.exports.canWriteAnticipationReview = canWriteAnticipationReview
 module.exports.canModifyAnticipationReview = canModifyAnticipationReview
+module.exports.MEET_OPEN_BEFORE_MS = MEET_OPEN_BEFORE_MS
+module.exports.PROGRAM_EARLY_ACCESS_MS = PROGRAM_EARLY_ACCESS_MS
+module.exports.LIVE_END_AFTER_MS = LIVE_END_AFTER_MS
 module.exports.getAnticipationModifyMeta = getAnticipationModifyMeta
 module.exports.getReplayOpensAt = getReplayOpensAt
 module.exports.getLiveResourceAccess = getLiveResourceAccess

@@ -26,6 +26,9 @@
       <a href="#curriculum" class="nav-item" data-section="curriculum">
         <i class="ti ti-list"></i> 커리큘럼 편집
       </a>
+      <a href="#programs" class="nav-item" data-section="programs">
+        <i class="ti ti-package"></i> 수강생 프로그램
+      </a>
 
       <div class="nav-group-label">회원 관리</div>
       <a href="#students" class="nav-item" data-section="students">
@@ -239,18 +242,22 @@
             <div class="form-group">
               <label>강의 유형</label>
               <select id="live-type" onchange="onLiveTypeChange()">
-                <option value="recorded">녹화 강의 (VOD)</option>
-                <option value="live">라이브 강의</option>
+                <option value="recorded">유료/녹화 강의 (라이브 시작 → 다시보기)</option>
+                <option value="live">무료 라이브 강의</option>
               </select>
             </div>
-            <div id="live-fields" style="display:none">
+            <div id="live-fields">
               <div class="form-group">
-                <label>라이브 일정</label>
+                <label>강의 시작 일시</label>
                 <input type="datetime-local" id="live-schedule" />
               </div>
               <div class="form-group">
-                <label>Google Meet 코드 <span style="font-size: 13.2px;color:#aaa">(예: abc-defg-hij)</span></label>
-                <input type="text" id="live-meet-code" placeholder="meet.google.com/ 뒤 코드 입력" />
+                <label>강의 종료 일시 <span style="font-size: 13.2px;color:#aaa">미입력 시 시작 3시간 후</span></label>
+                <input type="datetime-local" id="live-ends-at" />
+              </div>
+              <div class="form-group">
+                <label>Google Meet 주소/코드 <span style="font-size: 13.2px;color:#aaa">시작 2시간 전부터 입장 가능</span></label>
+                <input type="text" id="live-meet-code" placeholder="meet.google.com/ 뒤 코드 또는 전체 URL" />
               </div>
               <div class="form-group">
                 <label>수강생 단톡방 링크 <span style="font-size: 13.2px;color:#aaa">(신청자만 입장 버튼 노출)</span></label>
@@ -261,7 +268,13 @@
                 <input type="url" id="live-replay-url" placeholder="https://..." maxlength="500" />
               </div>
               <div class="form-group">
-                <label>강의 자료 다운로드 링크 <span style="font-size: 13.2px;color:#aaa">강의 당일(1일)만 다운로드 가능</span></label>
+                <label>제공 프로그램 <span style="font-size: 13.2px;color:#aaa">도각 자막패치 등</span></label>
+                <select id="live-program-id">
+                  <option value="">없음</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>강의 자료 다운로드 링크 <span style="font-size: 13.2px;color:#aaa">후기 작성 후 · 종료일부터 7일</span></label>
                 <input type="url" id="live-material-url" placeholder="https://..." maxlength="500" />
               </div>
               <div class="form-group">
@@ -428,7 +441,7 @@
               <div class="modal-live-links__title">라이브 링크 · 자료</div>
               <p class="modal-live-links__desc">Meet, 자료, 다시보기, 단톡방 링크를 등록합니다. 긴 URL도 편하게 입력할 수 있습니다.</p>
               <div class="form-group">
-                <label>Google Meet 코드 <span>예: abc-defg-hij · 시작 30분 전부터 입장 버튼 노출</span></label>
+                <label>Google Meet 코드 <span>예: abc-defg-hij · 시작 2시간 전부터 입장 버튼 노출</span></label>
                 <input type="text" id="cm-live-meet-code" placeholder="meet.google.com/ 뒤 코드" maxlength="120" />
               </div>
               <div class="form-group">
@@ -539,6 +552,56 @@
           </div>
           <div class="modal-footer">
             <button class="btn-sm" onclick="document.getElementById('course-enrollments-modal').style.display='none'">닫기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: PROGRAMS ===== -->
+    <section class="section" id="sec-programs">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">수강생 프로그램</div>
+            <p class="sec-sub">강의에 연결할 데스크톱 프로그램(도각 자막패치 등)을 관리합니다. 기본 오픈 시점은 강의 시작 2시간 전입니다.</p>
+          </div>
+          <button type="button" class="btn-primary-sm" onclick="openProgramModal()"><i class="ti ti-plus"></i> 프로그램 추가</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>이름</th><th>식별자</th><th>오픈</th><th>다운로드 경로</th><th>공개</th><th></th></tr>
+            </thead>
+            <tbody id="programs-tbody">
+              <tr class="empty-state-row"><td colspan="6">불러오는 중…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-overlay" id="program-modal" style="display:none">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title" id="program-modal-title">프로그램</div>
+            <button class="modal-close" onclick="document.getElementById('program-modal').style.display='none'">✕</button>
+          </div>
+          <div class="modal-body modal-body--form">
+            <input type="hidden" id="pg-id" />
+            <div class="form-group"><label>이름</label><input type="text" id="pg-name" placeholder="도각 자막패치" /></div>
+            <div class="form-group"><label>식별자(slug)</label><input type="text" id="pg-slug" placeholder="dogak-subtitle" /></div>
+            <div class="form-group"><label>페이지 경로</label><input type="text" id="pg-page" placeholder="/subtitle-tool.html" /></div>
+            <div class="form-group"><label>Storage 경로</label><input type="text" id="pg-storage" placeholder="subtitle-tool/CapCutSubtitle.zip" /></div>
+            <div class="form-group"><label>혜택 문구</label><input type="text" id="pg-feature" placeholder="수강생 전용 도각 자막패치 제공" /></div>
+            <div class="two-col">
+              <div class="form-group"><label>시작 N시간 전 오픈</label><input type="number" id="pg-early" min="0" step="0.5" value="2" /></div>
+              <div class="form-group"><label>공개</label>
+                <select id="pg-published"><option value="1">공개</option><option value="0">비공개</option></select>
+              </div>
+            </div>
+            <div class="two-col">
+              <div class="form-group"><label>최초 코인</label><input type="number" id="pg-initial" min="0" value="100" /></div>
+              <div class="form-group"><label>후기 보너스 코인</label><input type="number" id="pg-review" min="0" value="100" /></div>
+            </div>
+            <button class="btn-save" onclick="saveProgram()">저장</button>
           </div>
         </div>
       </div>
@@ -3104,23 +3167,56 @@
       document.getElementById('live-curriculum-image-url').value = (c.live_curriculum_image || '').startsWith('http') ? (c.live_curriculum_image || '') : ''
       _liveCurriculumImageData = (c.live_curriculum_image && !String(c.live_curriculum_image).startsWith('http')) ? c.live_curriculum_image : null
       renderLiveCurriculumPreview(c.live_curriculum_image || '')
+      document.getElementById('live-schedule').value = ''
+      document.getElementById('live-ends-at').value = ''
       if (c.live_starts_at) {
-        try { document.getElementById('live-schedule').value = new Date(c.live_starts_at).toISOString().slice(0, 16) } catch {}
+        try { document.getElementById('live-schedule').value = toDatetimeLocalValue(c.live_starts_at) } catch {}
       } else if (c.live_schedule && window.LiveSession?.parseKoreanLocaleDate) {
         const parsed = LiveSession.parseKoreanLocaleDate(c.live_schedule)
         if (parsed) {
-          try { document.getElementById('live-schedule').value = parsed.toISOString().slice(0, 16) } catch {}
+          try { document.getElementById('live-schedule').value = toDatetimeLocalValue(parsed) } catch {}
         }
       } else if (c.live_schedule) {
         try {
           const parsed = new Date(c.live_schedule)
           if (!isNaN(parsed.getTime())) {
-            document.getElementById('live-schedule').value = parsed.toISOString().slice(0, 16)
+            document.getElementById('live-schedule').value = toDatetimeLocalValue(parsed)
           }
         } catch {}
       }
+      if (c.live_ends_at) {
+        try { document.getElementById('live-ends-at').value = toDatetimeLocalValue(c.live_ends_at) } catch {}
+      }
+      fillProgramSelect(c.program_id || '')
       onLiveTypeChange()
       document.getElementById('live-panel').scrollIntoView({ behavior: 'smooth' })
+    }
+
+    function toDatetimeLocalValue(value) {
+      const d = value instanceof Date ? value : new Date(value)
+      if (isNaN(d.getTime())) return ''
+      const pad = n => String(n).padStart(2, '0')
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    }
+
+    let _programsCache = null
+    async function fillProgramSelect(selectedId) {
+      const sel = document.getElementById('live-program-id')
+      if (!sel) return
+      try {
+        if (!_programsCache) {
+          _programsCache = await API.get('/admin/programs')
+          if (!Array.isArray(_programsCache) || !_programsCache.length) {
+            const ensured = await API.post('/admin/programs/ensure-subtitle', {})
+            _programsCache = ensured?.program ? [ensured.program] : []
+          }
+        }
+      } catch {
+        _programsCache = []
+      }
+      sel.innerHTML = '<option value="">없음</option>' + (_programsCache || []).map(p =>
+        `<option value="${p.id}" ${String(p.id) === String(selectedId) ? 'selected' : ''}>${esc(p.name || p.slug)}</option>`
+      ).join('')
     }
 
     let _liveCurriculumImageData = null
@@ -3151,14 +3247,18 @@
     })
 
     function onLiveTypeChange() {
-      const isLive = document.getElementById('live-type').value === 'live'
-      document.getElementById('live-fields').style.display = isLive ? '' : 'none'
+      document.getElementById('live-fields').style.display = ''
     }
 
     async function saveLiveSettings() {
       if (!_selectedCourseId) return
       const course_type = document.getElementById('live-type').value
       const scheduleVal = document.getElementById('live-schedule').value
+      const endsVal = document.getElementById('live-ends-at').value
+      if (scheduleVal && endsVal && new Date(endsVal) <= new Date(scheduleVal)) {
+        alert('강의 종료 일시는 시작 일시보다 뒤여야 합니다.')
+        return
+      }
       const meet_code = document.getElementById('live-meet-code').value.trim()
       const live_chat_url = document.getElementById('live-chat-url').value.trim()
       const live_replay_url = document.getElementById('live-replay-url').value.trim()
@@ -3167,11 +3267,14 @@
       const live_curriculum_text = document.getElementById('live-curriculum-text').value.trim()
       const imageUrl = document.getElementById('live-curriculum-image-url').value.trim()
       const live_curriculum_image = _liveCurriculumImageData || imageUrl || null
+      const program_id = document.getElementById('live-program-id')?.value || ''
       await API.patch(`/admin/courses/${_selectedCourseId}`, {
         course_type,
+        delivery_mode: 'live_first',
         enrollment_limit: Math.max(0, parseInt(document.getElementById('live-enrollment-limit').value, 10) || 0),
         live_schedule: scheduleVal ? new Date(scheduleVal).toLocaleString('ko-KR') : null,
         live_starts_at: scheduleVal ? new Date(scheduleVal).toISOString() : null,
+        live_ends_at: endsVal ? new Date(endsVal).toISOString() : null,
         meet_code: meet_code || null,
         live_chat_url: live_chat_url || null,
         live_replay_url: live_replay_url || null,
@@ -3179,9 +3282,82 @@
         live_status,
         live_curriculum_text: live_curriculum_text || null,
         live_curriculum_image,
+        program_id: program_id || null,
       })
       alert('설정이 저장되었습니다.')
       loadCourses()
+    }
+
+    async function loadProgramsAdmin() {
+      const tbody = document.getElementById('programs-tbody')
+      if (!tbody) return
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr>'
+      try {
+        let list = await API.get('/admin/programs')
+        if (!Array.isArray(list) || !list.length) {
+          await API.post('/admin/programs/ensure-subtitle', {})
+          list = await API.get('/admin/programs')
+        }
+        _programsCache = list
+        if (!list.length) {
+          tbody.innerHTML = '<tr class="empty-state-row"><td colspan="6">등록된 프로그램이 없습니다.</td></tr>'
+          return
+        }
+        tbody.innerHTML = list.map(p => `
+          <tr>
+            <td>${esc(p.name)}</td>
+            <td class="td-sub">${esc(p.slug)}</td>
+            <td>시작 ${Number(p.early_access_hours ?? 2)}시간 전</td>
+            <td class="td-sub">${esc(p.storage_path || '-')}</td>
+            <td>${p.is_published ? '공개' : '비공개'}</td>
+            <td><button type="button" class="btn-sm" onclick="openProgramModal('${esc(p.id)}')">수정</button></td>
+          </tr>`).join('')
+      } catch (e) {
+        tbody.innerHTML = `<tr class="empty-state-row"><td colspan="6">${esc(e.message || '불러오기 실패')}</td></tr>`
+      }
+    }
+
+    function openProgramModal(id) {
+      const p = (id && _programsCache) ? _programsCache.find(x => String(x.id) === String(id)) : null
+      document.getElementById('program-modal').style.display = 'flex'
+      document.getElementById('program-modal-title').textContent = p ? '프로그램 수정' : '프로그램 추가'
+      document.getElementById('pg-id').value = p?.id || ''
+      document.getElementById('pg-name').value = p?.name || ''
+      document.getElementById('pg-slug').value = p?.slug || ''
+      document.getElementById('pg-page').value = p?.page_path || '/subtitle-tool.html'
+      document.getElementById('pg-storage').value = p?.storage_path || 'subtitle-tool/CapCutSubtitle.zip'
+      document.getElementById('pg-feature').value = p?.feature_label || ''
+      document.getElementById('pg-early').value = p?.early_access_hours ?? 2
+      document.getElementById('pg-published').value = p?.is_published === 0 ? '0' : '1'
+      document.getElementById('pg-initial').value = p?.initial_coins ?? 100
+      document.getElementById('pg-review').value = p?.review_bonus_coins ?? 100
+    }
+
+    async function saveProgram() {
+      const id = document.getElementById('pg-id').value
+      const body = {
+        name: document.getElementById('pg-name').value.trim(),
+        slug: document.getElementById('pg-slug').value.trim(),
+        page_path: document.getElementById('pg-page').value.trim(),
+        storage_path: document.getElementById('pg-storage').value.trim(),
+        feature_label: document.getElementById('pg-feature').value.trim(),
+        early_access_hours: Number(document.getElementById('pg-early').value) || 2,
+        is_published: document.getElementById('pg-published').value === '1' ? 1 : 0,
+        initial_coins: parseInt(document.getElementById('pg-initial').value, 10) || 0,
+        review_bonus_coins: parseInt(document.getElementById('pg-review').value, 10) || 0,
+        type: 'desktop_coin',
+        requires_google: 1,
+      }
+      if (!body.name) { alert('이름을 입력하세요.'); return }
+      try {
+        if (id) await API.patch('/admin/programs/' + id, body)
+        else await API.post('/admin/programs', body)
+        _programsCache = null
+        document.getElementById('program-modal').style.display = 'none'
+        loadProgramsAdmin()
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      }
     }
 
     // ── 순차 네비게이션 ──
@@ -3637,6 +3813,7 @@
     const titles = {
       dashboard: '대시보드 개요',
       courses: '강의 목록',
+      programs: '수강생 프로그램',
       curriculum: '커리큘럼 편집',
       students: '수강생 목록',
       orders: '결제 내역',
@@ -5633,6 +5810,7 @@
     const sectionLoaders = {
       dashboard: loadDashboard,
       courses: loadCourses,
+      programs: loadProgramsAdmin,
       curriculum: loadCurriculumAdmin,
       students: loadStudents,
       orders: loadOrders,

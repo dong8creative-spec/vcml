@@ -517,9 +517,9 @@ router.post('/courses/delete-legacy', async (req, res) => {
 router.patch('/courses/:id', async (req, res) => {
   const allowed = [
     'title', 'description', 'category', 'price', 'sale_price', 'is_published',
-    'course_type', 'live_schedule', 'live_starts_at', 'meet_code', 'live_status',
+    'course_type', 'delivery_mode', 'live_schedule', 'live_starts_at', 'live_ends_at', 'meet_code', 'live_status',
     'live_curriculum_text', 'live_curriculum_image', 'detail_intro_text', 'detail_intro_image', 'detail_intro_images', 'live_chat_url',
-    'live_replay_url', 'live_material_url',
+    'live_replay_url', 'live_material_url', 'program_id',
     'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'hero_gallery', 'sort_order', 'is_offline', 'enrollment_limit', 'coupon_allowed',
     'checkout_provider', 'store_checkout_urls', 'checkout_starts_at', 'checkout_ends_at',
     'learning_outcomes', 'target_audience', 'instructor_name', 'instructor_role', 'instructor_bio', 'instructor_avatar',
@@ -661,6 +661,27 @@ router.patch('/courses/:id', async (req, res) => {
     }
     update.checkout_starts_at = normalized.checkout_starts_at
     update.checkout_ends_at = normalized.checkout_ends_at
+  }
+  if (update.live_starts_at !== undefined || update.live_ends_at !== undefined) {
+    const liveWindow = db.normalizeLiveWindowInput(
+      update.live_starts_at === '' ? null : update.live_starts_at,
+      update.live_ends_at === '' ? null : update.live_ends_at,
+    )
+    if (liveWindow.error === 'invalid_live_starts') {
+      return res.status(400).json({ error: '강의 시작일 형식이 올바르지 않습니다.' })
+    }
+    if (liveWindow.error === 'invalid_live_ends') {
+      return res.status(400).json({ error: '강의 종료일 형식이 올바르지 않습니다.' })
+    }
+    if (liveWindow.error === 'invalid_live_range') {
+      return res.status(400).json({ error: '강의 종료일은 시작일보다 뒤여야 합니다.' })
+    }
+    if (update.live_starts_at !== undefined) update.live_starts_at = liveWindow.live_starts_at
+    if (update.live_ends_at !== undefined) update.live_ends_at = liveWindow.live_ends_at
+  }
+  if (update.program_id === '') update.program_id = null
+  if (update.delivery_mode && !['live_first', 'vod_only'].includes(update.delivery_mode)) {
+    return res.status(400).json({ error: 'delivery_mode가 올바르지 않습니다.' })
   }
   update.updated_at = new Date().toISOString()
   await db.updateCourse(req.params.id, update)
@@ -1128,6 +1149,63 @@ router.patch('/faqs/:id', async (req, res) => {
 router.delete('/faqs/:id', async (req, res) => {
   await db.deleteFaq(req.params.id)
   res.json({ success: true })
+})
+
+// ── 수강생 프로그램 (도각 자막패치 등) ──
+router.get('/programs', async (req, res) => {
+  try {
+    res.json(await db.listCoursePrograms())
+  } catch (e) {
+    console.error('admin programs list:', e)
+    res.status(500).json({ error: '프로그램 목록을 불러오지 못했습니다.' })
+  }
+})
+
+router.post('/programs', async (req, res) => {
+  try {
+    const result = await db.createCourseProgram(req.body || {})
+    if (result.error === 'name_required') return res.status(400).json({ error: '프로그램 이름을 입력하세요.' })
+    if (result.error === 'slug_required') return res.status(400).json({ error: '프로그램 식별자를 입력하세요.' })
+    if (result.error === 'slug_exists') return res.status(409).json({ error: '이미 존재하는 프로그램 식별자입니다.' })
+    res.json({ success: true, program: result })
+  } catch (e) {
+    console.error('admin programs create:', e)
+    res.status(500).json({ error: '프로그램을 만들지 못했습니다.' })
+  }
+})
+
+router.patch('/programs/:id', async (req, res) => {
+  try {
+    const result = await db.updateCourseProgram(req.params.id, req.body || {})
+    if (result.error === 'not_found') return res.status(404).json({ error: '프로그램을 찾을 수 없습니다.' })
+    if (result.error === 'slug_exists') return res.status(409).json({ error: '이미 존재하는 프로그램 식별자입니다.' })
+    res.json({ success: true, program: result })
+  } catch (e) {
+    console.error('admin programs update:', e)
+    res.status(500).json({ error: '프로그램을 수정하지 못했습니다.' })
+  }
+})
+
+router.delete('/programs/:id', async (req, res) => {
+  try {
+    const result = await db.deleteCourseProgram(req.params.id)
+    if (result.error === 'not_found') return res.status(404).json({ error: '프로그램을 찾을 수 없습니다.' })
+    if (result.error === 'in_use') return res.status(409).json({ error: '강의에 연결된 프로그램은 삭제할 수 없습니다.' })
+    res.json({ success: true })
+  } catch (e) {
+    console.error('admin programs delete:', e)
+    res.status(500).json({ error: '프로그램을 삭제하지 못했습니다.' })
+  }
+})
+
+router.post('/programs/ensure-subtitle', async (req, res) => {
+  try {
+    const program = await db.ensureDefaultSubtitleProgram()
+    res.json({ success: true, program })
+  } catch (e) {
+    console.error('admin ensure subtitle program:', e)
+    res.status(500).json({ error: '기본 프로그램을 준비하지 못했습니다.' })
+  }
 })
 
 module.exports = router
