@@ -700,6 +700,16 @@ function normalizePersonName(name) {
   return v || null
 }
 
+/** 수강 등록·회원 목록에 노출할 role (관리자 계정 포함) */
+const ENROLLABLE_USER_ROLES = ['student', 'admin']
+
+async function getEnrollableUsersSnap() {
+  if (ENROLLABLE_USER_ROLES.length === 1) {
+    return fs.collection('users').where('role', '==', ENROLLABLE_USER_ROLES[0]).get()
+  }
+  return fs.collection('users').where('role', 'in', ENROLLABLE_USER_ROLES).get()
+}
+
 async function deleteFirestoreDocs(docsOrRefs) {
   const refs = docsOrRefs.map(d => (d.ref ? d.ref : d))
   if (!refs.length) return 0
@@ -1572,8 +1582,8 @@ const db = {
     if (!norm) return null
     const snap = await fs.collection('users').where('phone', '==', norm).limit(1).get()
     if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() }
-    // 정규화 전 저장본 대비: 학생 목록에서 정규화 비교
-    const students = await fs.collection('users').where('role', '==', 'student').get()
+    // 정규화 전 저장본 대비: 학생·관리자 목록에서 정규화 비교
+    const students = await getEnrollableUsersSnap()
     for (const doc of students.docs) {
       const data = doc.data()
       if (normalizePhone(data.phone) === norm) {
@@ -1599,7 +1609,7 @@ const db = {
     const query = String(q || '').trim().toLowerCase()
     if (!query || query.length < 1) return []
     const phoneQ = normalizePhone(q)
-    const snap = await fs.collection('users').where('role', '==', 'student').get()
+    const snap = await getEnrollableUsersSnap()
     const scored = []
     for (const doc of snap.docs) {
       const u = { id: doc.id, ...doc.data() }
@@ -4205,7 +4215,7 @@ const db = {
   },
   async getAllStudents() {
     const [usersSnap, enrollSnap, ordersSnap] = await Promise.all([
-      fs.collection('users').where('role', '==', 'student').get(),
+      getEnrollableUsersSnap(),
       fs.collection('enrollments').get(),
       fs.collection('orders').where('status', '==', 'paid').get(),
     ])

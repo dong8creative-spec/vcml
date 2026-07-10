@@ -2693,7 +2693,8 @@
       const list = getEnrollableStudents()
       const options = ['<option value="">회원을 선택하세요</option>']
       list.forEach(s => {
-        const label = `${s.name || '-'} · ${s.email || '-'}${s.phone ? ' · ' + s.phone : ''}`
+        const roleTag = s.role === 'admin' ? ' · 관리자' : ''
+        const label = `${s.name || '-'} · ${s.email || '-'}${s.phone ? ' · ' + s.phone : ''}${roleTag}`
         options.push(`<option value="${esc(s.id)}">${esc(label)}</option>`)
       })
       if (!list.length) {
