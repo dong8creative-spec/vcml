@@ -13,11 +13,30 @@
 - 캡컷 프로젝트에 "AI 자막" 텍스트 트랙으로 즉시 삽입 (자동 백업 포함)
 - SRT 내보내기/불러오기 지원
 
+## 수강생용 사용법 파일 (배포 시 zip에 포함)
+
+수강생에게 보여줄 사용법은 **`사용법.txt`** 한 곳만 수정하면 됩니다.
+
+```
+capcut subtitle/사용법.txt   ← 이 파일을 편집
+```
+
+선택: `사용법.md` 가 있으면 zip에 함께 넣습니다.
+
+**사용법만 바꿔서 다시 배포할 때** (exe 재빌드 없이):
+
+```powershell
+# 프로젝트 루트(vcml)에서
+npm run redeploy:subtitle-tool
+```
+
+내부 동작: `dist/CapCutSubtitle`에 문서 복사 → zip 생성 → Firebase Storage 업로드
+
 ## 설치 방법 (배포판 사용자)
 
-1. [타닥클래스 자막 도구 페이지](https://vcml.kr/subtitle-tool.html)에서 구글 로그인 후 zip 다운로드
-2. 원하는 폴더에 압축 해제
-3. 폴더 안의 실행 파일을 실행 → **구글 로그인**으로 계정 연동
+1. [도각 자막패치 페이지](https://vcml.kr/subtitle-tool.html)에서 구글 로그인 후 zip 다운로드
+2. 원하는 폴더에 압축 해제 → **`사용법.txt`** 참고
+3. `CapCutSubtitle.exe` 실행 → **구글 로그인** → 브라우저에서 **이 기기로 연동**
 4. 처음 자막을 생성할 때 Whisper 모델을 자동 다운로드합니다 (인터넷 필요, 이후엔 오프라인 동작)
 
 > 캡컷 초신속 스탠다드(`capcut-pro-basic`) 수강생만 이용할 수 있습니다.
@@ -74,7 +93,8 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\pyinstaller --noconfirm --clean --windowed --name CapCutSubtitle `
   --collect-all ctranslate2 --collect-all faster_whisper --collect-all av `
   --collect-all onnxruntime --collect-all pycapcut run.py
-# 결과물: dist\CapCutSubtitle\ → 폴더째 zip으로 배포
+# 결과물: dist\CapCutSubtitle\
+# 사용법.txt 수정 후: npm run redeploy:subtitle-tool (프로젝트 루트)
 ```
 
 ## 구조

@@ -51,6 +51,8 @@ router.get('/me', authMiddleware, async (req, res) => {
       review_bonus_granted: result.review_bonus_granted,
       course_slug: result.course_slug,
       course_title: result.course_title,
+      enrolled: !!result.enrolled,
+      has_google: !!result.has_google,
     })
   } catch (e) {
     console.error('subtitle me:', e)

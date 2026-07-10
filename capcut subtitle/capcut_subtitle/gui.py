@@ -61,15 +61,17 @@ class App(tk.Tk):
         self._last_focus_idx: int | None = None
         self._auth = license_api.load_auth()
         self._balance: int | None = self._auth.get("balance") if self._auth else None
+        self._authenticated = False
 
         self._build_ui()
-        self.refresh_projects()
         self._refresh_auth_ui()
+        self._apply_auth_lock()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
-        if self._auth:
-            threading.Thread(target=self._refresh_balance_worker, daemon=True).start()
+        if self._auth and self._auth.get("token"):
+            self.set_status("로그인 확인 중…")
+            threading.Thread(target=self._startup_verify_worker, daemon=True).start()
         else:
-            self.after(500, self._prompt_login_on_start)
+            self.after(300, self._prompt_login_on_start)
 
     def _on_close(self) -> None:
         self.player.cleanup()
@@ -77,8 +79,9 @@ class App(tk.Tk):
 
     # ------------------------------------------------------------- UI 구성
     def _build_ui(self) -> None:
-        root = ttk.Frame(self, padding=8)
-        root.pack(fill="both", expand=True)
+        self._root = ttk.Frame(self, padding=8)
+        self._root.pack(fill="both", expand=True)
+        root = self._root
 
         # 계정 / 코인
         auth_frame = ttk.Frame(root)
@@ -94,8 +97,38 @@ class App(tk.Tk):
             auth_frame, "로그아웃", command=self.on_logout,
             fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK, min_width=90)
 
+        # 미로그인 게이트
+        self.gate_frame = ttk.Frame(root, padding=24)
+        gate_inner = ttk.Frame(self.gate_frame)
+        gate_inner.pack(expand=True)
+        ttk.Label(
+            gate_inner,
+            text="도각 자막패치",
+            font=("맑은 고딕", 18, "bold"),
+        ).pack(pady=(40, 8))
+        ttk.Label(
+            gate_inner,
+            text="캡컷 초신속 스탠다드 수강생 전용입니다.\n"
+                 "구글 로그인 후 기기 연동이 완료되어야 사용할 수 있습니다.",
+            foreground=theme.TEXT_MUTED,
+            justify="center",
+        ).pack(pady=(0, 20))
+        gate_btns = ttk.Frame(gate_inner)
+        gate_btns.pack()
+        theme.RoundedButton(
+            gate_btns, "구글 로그인", command=self.on_login,
+            min_width=140,
+        ).pack(side="left", padx=6)
+        theme.RoundedButton(
+            gate_btns, "종료", command=self._on_close,
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK, min_width=90,
+        ).pack(side="left", padx=6)
+
+        # 메인 작업 영역 (로그인 후에만 표시)
+        self.main_panel = ttk.Frame(root)
+
         # 프로젝트 선택
-        proj_frame = ttk.LabelFrame(root, text="1. 캡컷 프로젝트 선택", padding=6)
+        proj_frame = ttk.LabelFrame(self.main_panel, text="1. 캡컷 프로젝트 선택", padding=6)
         proj_frame.pack(fill="x")
         self.proj_tree = ttk.Treeview(
             proj_frame, columns=("name", "dur", "mtime"), show="headings", height=4)
@@ -105,12 +138,13 @@ class App(tk.Tk):
             self.proj_tree.column(col, width=w, anchor="w")
         self.proj_tree.pack(side="left", fill="x", expand=True)
         self.proj_tree.bind("<<TreeviewSelect>>", lambda e: setattr(self, "_audio", None))
-        theme.RoundedButton(proj_frame, "새로고침", command=self.refresh_projects,
-                           fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK
-                           ).pack(side="left", padx=6, anchor="n")
+        self.refresh_btn = theme.RoundedButton(
+            proj_frame, "새로고침", command=self.refresh_projects,
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK)
+        self.refresh_btn.pack(side="left", padx=6, anchor="n")
 
         # 옵션
-        opt = ttk.LabelFrame(root, text="2. 인식 옵션", padding=6)
+        opt = ttk.LabelFrame(self.main_panel, text="2. 인식 옵션", padding=6)
         opt.pack(fill="x", pady=(8, 0))
         self.lang_var = tk.StringVar(value="자동 감지")
         self.max_words_var = tk.IntVar(value=5)
@@ -135,7 +169,7 @@ class App(tk.Tk):
         ttk.Checkbutton(opt, text="굵게", variable=self.bold_var).pack(side="left", padx=(6, 0))
 
         # 실행 버튼
-        btns = ttk.Frame(root)
+        btns = ttk.Frame(self.main_panel)
         btns.pack(fill="x", pady=8)
         self.gen_btn = theme.RoundedButton(btns, "① 자막 생성 (음성 인식)",
                                           command=self.on_generate)
@@ -143,15 +177,17 @@ class App(tk.Tk):
         self.insert_btn = theme.RoundedButton(btns, "② 캡컷 프로젝트에 삽입",
                                              command=self.on_insert)
         self.insert_btn.pack(side="left", padx=6)
-        theme.RoundedButton(btns, "SRT 내보내기", command=self.on_export_srt,
-                           fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK
-                           ).pack(side="left", padx=(18, 0))
-        theme.RoundedButton(btns, "SRT 불러오기", command=self.on_import_srt,
-                           fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK
-                           ).pack(side="left", padx=6)
+        self.export_btn = theme.RoundedButton(
+            btns, "SRT 내보내기", command=self.on_export_srt,
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK)
+        self.export_btn.pack(side="left", padx=(18, 0))
+        self.import_btn = theme.RoundedButton(
+            btns, "SRT 불러오기", command=self.on_import_srt,
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK)
+        self.import_btn.pack(side="left", padx=6)
 
         # 자막 편집 (브루 스타일 문서)
-        doc_frame = ttk.LabelFrame(root, text="3. 자막 편집", padding=6)
+        doc_frame = ttk.LabelFrame(self.main_panel, text="3. 자막 편집", padding=6)
         doc_frame.pack(fill="both", expand=True)
 
         doc_toolbar = ttk.Frame(doc_frame)
@@ -159,9 +195,10 @@ class App(tk.Tk):
         self.play_btn = theme.RoundedButton(doc_toolbar, "▶ 전체 재생",
                                            command=self.on_toggle_play_all, min_width=110)
         self.play_btn.pack(side="left")
-        theme.RoundedButton(doc_toolbar, "+ 새 자막", command=self.on_add_row,
-                           fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK
-                           ).pack(side="left", padx=6)
+        self.add_row_btn = theme.RoundedButton(
+            doc_toolbar, "+ 새 자막", command=self.on_add_row,
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK)
+        self.add_row_btn.pack(side="left", padx=6)
         ttk.Label(doc_toolbar, foreground=theme.TEXT_MUTED,
                  text="Enter: 커서 위치에서 분할   ·   Backspace(문장 맨 앞): 윗줄과 합치기   ·   시간 클릭: 그 지점부터 재생"
                  ).pack(side="left", padx=12)
@@ -185,15 +222,17 @@ class App(tk.Tk):
                                  lambda e: self.doc_canvas.yview_scroll(int(-e.delta / 120), "units"))
 
         # 상태 표시
-        status = ttk.Frame(root)
-        status.pack(fill="x", pady=(8, 0))
-        self.progress = ttk.Progressbar(status, mode="determinate", maximum=1.0)
+        self._status_frame = ttk.Frame(root)
+        self._status_frame.pack(fill="x", pady=(8, 0), side="bottom")
+        self.progress = ttk.Progressbar(self._status_frame, mode="determinate", maximum=1.0)
         self.progress.pack(side="left", fill="x", expand=True)
-        self.status_var = tk.StringVar(value="프로젝트를 선택하고 [① 자막 생성]을 누르세요.")
-        ttk.Label(status, textvariable=self.status_var).pack(side="left", padx=8)
+        self.status_var = tk.StringVar(value="구글 로그인 후 이용할 수 있습니다.")
+        ttk.Label(self._status_frame, textvariable=self.status_var).pack(side="left", padx=8)
 
     # ------------------------------------------------------------ 프로젝트
     def refresh_projects(self) -> None:
+        if not self._require_auth("프로젝트 목록"):
+            return
         self.projects = capcut.list_projects()
         self.proj_tree.delete(*self.proj_tree.get_children())
         import datetime
@@ -223,15 +262,67 @@ class App(tk.Tk):
     def _set_busy(self, busy: bool) -> None:
         self._busy = busy
         state = "disabled" if busy else "normal"
-        for b in (self.gen_btn, self.insert_btn, self.login_btn):
-            b.configure(state=state)
+        for b in (self.gen_btn, self.insert_btn, self.login_btn,
+                  self.export_btn, self.import_btn, self.play_btn,
+                  self.add_row_btn, self.refresh_btn):
+            try:
+                b.configure(state=state)
+            except tk.TclError:
+                pass
         try:
             self.logout_btn.configure(state=state)
         except tk.TclError:
             pass
 
+    def _require_auth(self, action: str = "이 기능") -> bool:
+        if self._authenticated and self._auth and self._auth.get("token"):
+            return True
+        toast(self, f"{action}을(를) 쓰려면 먼저 구글 로그인해 주세요.", "warning")
+        self._apply_auth_lock()
+        self.after(200, self._prompt_login_on_start)
+        return False
+
+    def _apply_auth_lock(self) -> None:
+        """로그인 여부에 따라 메인 UI / 게이트 전환."""
+        if self._authenticated:
+            self.gate_frame.pack_forget()
+            self.main_panel.pack(fill="both", expand=True, before=self._status_frame)
+        else:
+            self.main_panel.pack_forget()
+            self.gate_frame.pack(fill="both", expand=True, before=self._status_frame)
+            self.projects = []
+            try:
+                self.proj_tree.delete(*self.proj_tree.get_children())
+            except tk.TclError:
+                pass
+            self.lines = []
+            self._audio = None
+            try:
+                self._render_document()
+            except Exception:
+                pass
+
+    def _set_authenticated(self, ok: bool, auth: dict | None = None, balance: int | None = None) -> None:
+        self._authenticated = ok
+        if ok and auth:
+            self._auth = auth
+            if balance is not None:
+                self._balance = balance
+            elif auth.get("balance") is not None:
+                self._balance = auth.get("balance")
+        elif not ok:
+            self._auth = None
+            self._balance = None
+        self._refresh_auth_ui()
+        self._apply_auth_lock()
+        if ok:
+            self.refresh_projects()
+            self.set_status("프로젝트를 선택하고 [① 자막 생성]을 누르세요.")
+        else:
+            self.set_status("구글 로그인 후 이용할 수 있습니다.")
+
     def _refresh_auth_ui(self) -> None:
-        if self._auth and self._auth.get("token"):
+        if self._authenticated and self._auth and self._auth.get("token"):
             name = self._auth.get("user_name") or "수강생"
             bal = self._balance
             bal_txt = f" · 코인 {bal}" if bal is not None else ""
@@ -243,11 +334,31 @@ class App(tk.Tk):
             self.logout_btn.pack_forget()
             self.login_btn.pack(side="right")
 
+    def _startup_verify_worker(self) -> None:
+        try:
+            if not self._auth or not self._auth.get("token"):
+                raise RuntimeError("no token")
+            me = license_api.verify_entitlement(self._auth["token"])
+            self._balance = me.get("balance")
+            self._auth = license_api.save_auth(
+                self._auth["token"],
+                self._auth.get("user_name"),
+                self._balance,
+            )
+            self.after(0, lambda: self._set_authenticated(True, self._auth, self._balance))
+            self.after(0, lambda: toast(self, "로그인 확인 완료", "success"))
+        except Exception as e:
+            license_api.clear_auth()
+            self.after(0, lambda: self._set_authenticated(False))
+            msg = str(e) if str(e) and str(e) != "no token" else "세션이 만료되었습니다. 다시 로그인해 주세요."
+            self.after(0, lambda m=msg: toast(self, m, "warning"))
+            self.after(400, self._prompt_login_on_start)
+
     def _refresh_balance_worker(self) -> None:
         try:
             if not self._auth or not self._auth.get("token"):
                 return
-            me = license_api.fetch_me(self._auth["token"])
+            me = license_api.verify_entitlement(self._auth["token"])
             self._balance = me.get("balance")
             self._auth = license_api.save_auth(
                 self._auth["token"],
@@ -256,7 +367,8 @@ class App(tk.Tk):
             )
             self.after(0, self._refresh_auth_ui)
         except Exception:
-            pass
+            license_api.clear_auth()
+            self.after(0, lambda: self._set_authenticated(False))
 
     def on_login(self) -> None:
         if self._busy:
@@ -268,19 +380,12 @@ class App(tk.Tk):
     def _login_worker(self) -> None:
         try:
             auth = license_api.start_device_login(on_status=self.set_status)
-            self._auth = auth
-            self._balance = auth.get("balance")
-            self.after(0, self._refresh_auth_ui)
+            self.after(0, lambda: self._set_authenticated(True, auth, auth.get("balance")))
             self.after(0, lambda: toast(self, "로그인되었습니다.", "success"))
             self.set_status("로그인 완료. 프로젝트를 선택하고 자막을 생성하세요.")
-            try:
-                me = license_api.fetch_me(auth["token"])
-                self._balance = me.get("balance")
-                self._auth = license_api.save_auth(auth["token"], auth.get("user_name"), self._balance)
-                self.after(0, self._refresh_auth_ui)
-            except Exception:
-                pass
         except Exception as e:
+            license_api.clear_auth()
+            self.after(0, lambda: self._set_authenticated(False))
             self.after(0, lambda: toast(self, str(e) or "로그인에 실패했습니다.", "error"))
             self.set_status("로그인 실패")
         finally:
@@ -288,32 +393,32 @@ class App(tk.Tk):
 
     def on_logout(self) -> None:
         license_api.clear_auth()
-        self._auth = None
-        self._balance = None
-        self._refresh_auth_ui()
+        self._set_authenticated(False)
         toast(self, "로그아웃되었습니다.", "info")
+        self.after(200, self._prompt_login_on_start)
 
     def _prompt_login_on_start(self) -> None:
-        if self._auth and self._auth.get("token"):
+        if self._authenticated and self._auth and self._auth.get("token"):
             return
         ok = confirm(
             self,
             "구글 로그인",
             "도각 자막패치는 캡컷 초신속 스탠다드 수강생 전용입니다.\n"
-            "브라우저에서 구글 로그인 후 이 기기를 연동할까요?",
+            "브라우저에서 구글 로그인 후 이 기기를 연동해야 사용할 수 있습니다.\n\n"
+            "지금 로그인할까요? (취소하면 프로그램이 종료됩니다.)",
             ok_text="로그인",
-            cancel_text="나중에",
+            cancel_text="종료",
         )
         if ok:
             self.on_login()
+        else:
+            self._on_close()
 
     # ------------------------------------------------------------- 생성
     def on_generate(self) -> None:
         if self._busy:
             return
-        if not self._auth or not self._auth.get("token"):
-            toast(self, "먼저 구글 로그인해 주세요.", "warning")
-            self.after(200, self._prompt_login_on_start)
+        if not self._require_auth("자막 생성"):
             return
         project = self.selected_project()
         if project is None:
@@ -487,6 +592,8 @@ class App(tk.Tk):
             widget.see("insert")
 
     def _on_enter_split(self, idx: int):
+        if not self._require_auth("자막 편집"):
+            return "break"
         self._sync_all_text()
         text_widget = self.blocks[idx]["text"]
         offset = len(text_widget.get("1.0", "insert"))
@@ -511,6 +618,8 @@ class App(tk.Tk):
         return "break"
 
     def _merge_with_previous(self, idx: int) -> None:
+        if not self._require_auth("자막 편집"):
+            return
         if not (0 < idx < len(self.lines)):
             return
         self._sync_all_text()
@@ -521,6 +630,8 @@ class App(tk.Tk):
         self._focus_block(idx - 1, char_offset=join_at)
 
     def _delete_block(self, idx: int) -> None:
+        if not self._require_auth("자막 편집"):
+            return
         if not (0 <= idx < len(self.lines)):
             return
         self._sync_all_text()
@@ -528,6 +639,8 @@ class App(tk.Tk):
         self._render_document()
 
     def on_add_row(self) -> None:
+        if not self._require_auth("자막 편집"):
+            return
         self._sync_all_text()
         if self.lines:
             idx = self._last_focus_idx if self._last_focus_idx is not None else len(self.lines) - 1
@@ -543,6 +656,8 @@ class App(tk.Tk):
 
     # ------------------------------------------------------------- 재생
     def _play_segment(self, idx: int) -> None:
+        if not self._require_auth("미리듣기"):
+            return
         if self._audio is None:
             toast(self, "먼저 [① 자막 생성]을 실행하세요.", "info")
             return
@@ -553,12 +668,16 @@ class App(tk.Tk):
         self.player.play(self._audio[a:b])
 
     def _play_from(self, idx: int) -> None:
+        if not self._require_auth("재생"):
+            return
         if self._audio is None:
             toast(self, "먼저 [① 자막 생성]을 실행하세요.", "info")
             return
         self._start_playback(self.lines[idx].start_us)
 
     def on_toggle_play_all(self) -> None:
+        if not self._require_auth("전체 재생"):
+            return
         if self._playing:
             self._stop_playback()
             return
@@ -627,6 +746,8 @@ class App(tk.Tk):
     def on_insert(self) -> None:
         if self._busy:
             return
+        if not self._require_auth("자막 삽입"):
+            return
         project = self.selected_project()
         if project is None:
             return
@@ -660,6 +781,8 @@ class App(tk.Tk):
 
     # ------------------------------------------------------------- SRT
     def on_export_srt(self) -> None:
+        if not self._require_auth("SRT 내보내기"):
+            return
         self._sync_all_text()
         if not self.lines:
             toast(self, "내보낼 자막이 없습니다.", "warning")
@@ -671,6 +794,8 @@ class App(tk.Tk):
             self.set_status(f"SRT 저장 완료: {path}")
 
     def on_import_srt(self) -> None:
+        if not self._require_auth("SRT 불러오기"):
+            return
         path = filedialog.askopenfilename(filetypes=[("SRT 자막", "*.srt")])
         if path:
             try:

@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 /**
  * CapCutSubtitle.zip → Firebase Storage 업로드
- * 사용: node scripts/upload-subtitle-tool.js [path/to/CapCutSubtitle.zip]
+ *
+ * 사용:
+ *   npm run upload:subtitle-tool
+ *   npm run redeploy:subtitle-tool   ← 사용법 수정 후 zip 재생성 + 업로드
+ *
+ * node scripts/upload-subtitle-tool.js [path/to/CapCutSubtitle.zip]
  */
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') })
 

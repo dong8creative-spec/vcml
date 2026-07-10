@@ -104,7 +104,7 @@ def new_job_id() -> str:
 
 
 def start_device_login(on_status=None) -> dict:
-    """브라우저 연동 후 JWT 저장. 성공 시 auth dict 반환."""
+    """브라우저 연동 후 수강 권한 확인·JWT 저장. 성공 시 auth dict 반환."""
     started = _request("POST", "/api/subtitle/device/start")
     code = started.get("code")
     verify_url = started.get("verify_url")
@@ -120,7 +120,14 @@ def start_device_login(on_status=None) -> dict:
         polled = _request("GET", "/api/subtitle/device/poll?" + urllib.parse.urlencode({"code": code}))
         status = polled.get("status")
         if status == "approved" and polled.get("token"):
-            return save_auth(polled["token"], polled.get("user_name"), polled.get("balance"))
+            token = polled["token"]
+            user_name = polled.get("user_name")
+            try:
+                me = verify_entitlement(token)
+            except RuntimeError:
+                clear_auth()
+                raise
+            return save_auth(token, user_name, me.get("balance"))
         if status in ("expired", "invalid"):
             raise RuntimeError("연동 코드가 만료되었습니다. 다시 로그인해 주세요.")
         if on_status:
@@ -130,6 +137,26 @@ def start_device_login(on_status=None) -> dict:
 
 def fetch_me(token: str) -> dict:
     return _request("GET", "/api/subtitle/me", token=token)
+
+
+def verify_entitlement(token: str) -> dict:
+    """수강·구글 권한 확인. 실패 시 RuntimeError (payload.code 포함)."""
+    try:
+        return fetch_me(token)
+    except RuntimeError as e:
+        payload = getattr(e, "payload", None) or {}
+        code = payload.get("code")
+        if code == "not_enrolled":
+            raise RuntimeError(
+                payload.get("error")
+                or "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다."
+            ) from e
+        if code == "google_required":
+            raise RuntimeError(
+                payload.get("error")
+                or "구글 로그인 계정만 이용할 수 있습니다."
+            ) from e
+        raise
 
 
 def consume(token: str, minutes: int, job_id: str) -> dict:
