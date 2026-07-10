@@ -119,6 +119,17 @@ def start_device_login(on_status=None) -> dict:
         time.sleep(POLL_INTERVAL_SEC)
         polled = _request("GET", "/api/subtitle/device/poll?" + urllib.parse.urlencode({"code": code}))
         status = polled.get("status")
+        if status == "denied":
+            msg = polled.get("error") or "이용 권한이 없습니다."
+            code = polled.get("code")
+            if code == "not_enrolled":
+                msg = polled.get("error") or (
+                    "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다."
+                )
+            elif code == "google_required":
+                msg = polled.get("error") or "구글 로그인 계정만 이용할 수 있습니다."
+            clear_auth()
+            raise RuntimeError(msg)
         if status == "approved" and polled.get("token"):
             token = polled["token"]
             user_name = polled.get("user_name")

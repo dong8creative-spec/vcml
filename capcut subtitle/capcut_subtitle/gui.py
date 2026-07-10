@@ -277,7 +277,7 @@ class App(tk.Tk):
     def _require_auth(self, action: str = "이 기능") -> bool:
         if self._authenticated and self._auth and self._auth.get("token"):
             return True
-        toast(self, f"{action}을(를) 쓰려면 먼저 구글 로그인해 주세요.", "warning")
+        toast(self, f"{action}을(를) 쓰려면 캡컷 초신속 스탠다드 수강 후 구글 로그인이 필요합니다.", "warning")
         self._apply_auth_lock()
         self.after(200, self._prompt_login_on_start)
         return False

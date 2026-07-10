@@ -133,8 +133,19 @@ router.get('/device/poll', async (req, res) => {
     if (!code) return res.status(400).json({ error: '연동 코드가 필요합니다.' })
     const polled = await db.pollSubtitleDeviceCode(code)
     if (polled.status === 'approved') {
-      let balance = null
-      if (polled.user_id) {
+      if (!polled.user_id || !polled.token) {
+        return res.json({ status: 'denied', code: 'invalid_session', error: '연동 정보가 올바르지 않습니다.' })
+      }
+      const entitlement = await db.ensureSubtitleEntitlement(polled.user_id)
+      if (!entitlement.ok) {
+        return res.json({
+          status: 'denied',
+          code: entitlement.code,
+          error: entitlement.error,
+        })
+      }
+      let balance = entitlement.balance ?? null
+      if (balance == null && polled.user_id) {
         const wallet = await db.getSubtitleWallet(polled.user_id)
         balance = wallet?.balance ?? null
       }

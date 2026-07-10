@@ -7,7 +7,7 @@
  *
  * 사용법 파일 위치 (이 파일들을 수정하면 zip에 반영됨):
  *   capcut subtitle/사용법.txt   ← 수강생용 (필수)
- *   capcut subtitle/사용법.md    ← 있으면 함께 포함
+ *   capcut subtitle/사용법.md    ← 수강생용 (필수, txt와 동기화)
  *
  * 사용: node scripts/package-subtitle-tool.js
  */
@@ -23,7 +23,7 @@ const ZIP_PATH = path.join(CAPCUT_DIR, 'dist', 'CapCutSubtitle.zip')
 /** zip에 넣을 문서 — src(소스) → dest(dist 안 파일명) */
 const RELEASE_DOCS = [
   { src: path.join(CAPCUT_DIR, '사용법.txt'), dest: '사용법.txt', required: true },
-  { src: path.join(CAPCUT_DIR, '사용법.md'), dest: '사용법.md', required: false },
+  { src: path.join(CAPCUT_DIR, '사용법.md'), dest: '사용법.md', required: true },
   { src: path.join(CAPCUT_DIR, '도각 자막패치 사용법 v1.0.0.pdf'), dest: '도각 자막패치 사용법 v1.0.0.pdf', required: false },
 ]
 
