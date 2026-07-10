@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "vcmlmembers",
+      "indexes": "firestore.indexes.json"
+    }
+  ]
+}

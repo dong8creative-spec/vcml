@@ -473,20 +473,24 @@
 
             <div id="enroll-add-panel" style="display:none;padding:0 16px 16px">
               <div style="border:1px solid #eee;border-radius:12px;padding:14px;background:#fafafa">
-                <div style="font-size:13px;font-weight:700;margin-bottom:10px">가입자 검색 또는 직접 입력</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-                  <input type="search" id="enroll-user-search" placeholder="이름·이메일·휴대폰 검색" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid #ddd;border-radius:8px" oninput="searchEnrollUsers()" />
-                </div>
-                <div id="enroll-user-results" style="max-height:140px;overflow:auto;margin-bottom:10px;font-size:13px"></div>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-                  <input type="email" id="enroll-manual-email" placeholder="이메일" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px" oninput="_enrollSelectedUserId=null" />
-                  <input type="tel" id="enroll-manual-phone" placeholder="휴대폰" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px" oninput="_enrollSelectedUserId=null" />
-                  <input type="text" id="enroll-manual-name" placeholder="이름" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px" />
-                </div>
-                <div style="display:flex;gap:8px;align-items:center">
+                <div style="font-size:13px;font-weight:700;margin-bottom:10px">가입 회원 선택</div>
+                <input type="search" id="enroll-user-filter" placeholder="이름·이메일·휴대폰으로 필터" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box" oninput="filterEnrollUserDropdown()" />
+                <select id="enroll-user-select" size="8" style="width:100%;margin:8px 0;padding:6px 8px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box" onchange="onEnrollUserSelectChange()">
+                  <option value="">회원을 선택하세요</option>
+                </select>
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
                   <button type="button" class="btn-sm btn-primary" id="enroll-add-btn" onclick="submitManualEnrollment()">등록</button>
                   <span id="enroll-add-status" style="font-size:12px;color:#666"></span>
                 </div>
+                <details style="font-size:13px">
+                  <summary style="cursor:pointer;font-weight:600;color:#555">미가입자 대기 등록 (직접 입력)</summary>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0">
+                    <input type="email" id="enroll-manual-email" placeholder="이메일" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px" oninput="clearEnrollUserSelect()" />
+                    <input type="tel" id="enroll-manual-phone" placeholder="휴대폰" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px" oninput="clearEnrollUserSelect()" />
+                    <input type="text" id="enroll-manual-name" placeholder="이름" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px" />
+                  </div>
+                  <p style="margin:0 0 8px;font-size:12px;color:#888">가입 전 구매자는 대기 등록됩니다. 가입 시 자동으로 수강 처리됩니다.</p>
+                </details>
               </div>
             </div>
 
@@ -2611,7 +2615,9 @@
     function toggleEnrollAddPanel() {
       const panel = document.getElementById('enroll-add-panel')
       if (!panel) return
-      panel.style.display = panel.style.display === 'none' ? '' : 'none'
+      const opening = panel.style.display === 'none'
+      panel.style.display = opening ? '' : 'none'
+      if (opening) loadEnrollUserDropdown()
     }
     window.toggleEnrollAddPanel = toggleEnrollAddPanel
 
@@ -2653,6 +2659,7 @@
       updateEnrollSummary()
       renderCourseEnrollmentsTable(_courseEnrollmentRows)
       renderPendingEnrollmentsTable(_coursePendingRows)
+      renderEnrollUserSelect()
       const course = _courses.find(x => String(x.id) === String(_courseEnrollmentCourseId))
       if (course) {
         course.student_count = data.count
@@ -2662,58 +2669,95 @@
       return data
     }
 
-    let _enrollSearchResults = []
-
-    function searchEnrollUsers() {
-      clearTimeout(_enrollSearchTimer)
-      _enrollSearchTimer = setTimeout(async () => {
-        const q = document.getElementById('enroll-user-search')?.value?.trim() || ''
-        const box = document.getElementById('enroll-user-results')
-        if (!box) return
-        if (!q) {
-          box.innerHTML = ''
-          _enrollSearchResults = []
-          return
-        }
-        try {
-          const users = await API.get('/admin/users/search?q=' + encodeURIComponent(q))
-          _enrollSearchResults = users
-          if (!users.length) {
-            box.innerHTML = '<div style="color:#888;padding:6px">검색 결과가 없습니다. 아래 직접 입력으로 대기 등록할 수 있습니다.</div>'
-            return
-          }
-          box.innerHTML = users.map((u, i) => `
-            <button type="button" class="btn-sm" style="display:block;width:100%;text-align:left;margin-bottom:4px"
-              onclick="selectEnrollUserByIndex(${i})">
-              ${esc(u.name)} · ${esc(u.email)}${u.phone ? ' · ' + esc(u.phone) : ''}
-            </button>
-          `).join('')
-        } catch (e) {
-          box.innerHTML = `<div style="color:#c00;padding:6px">${esc(e.message || '검색 실패')}</div>`
-        }
-      }, 250)
+    function getEnrollableStudents() {
+      const enrolledIds = new Set((_courseEnrollmentRows || []).map(r => r.user_id).filter(Boolean))
+      const q = (document.getElementById('enroll-user-filter')?.value || '').trim().toLowerCase()
+      return (_allStudents || [])
+        .filter(s => s?.id && !enrolledIds.has(s.id))
+        .filter(s => {
+          if (!q) return true
+          const phone = String(s.phone || '').replace(/\D/g, '')
+          const qPhone = q.replace(/\D/g, '')
+          return (s.name || '').toLowerCase().includes(q)
+            || (s.email || '').toLowerCase().includes(q)
+            || (s.phone || '').includes(q)
+            || (qPhone && phone.includes(qPhone))
+        })
+        .sort((a, b) => String(a.name || a.email || '').localeCompare(String(b.name || b.email || ''), 'ko'))
     }
-    window.searchEnrollUsers = searchEnrollUsers
 
-    function selectEnrollUserByIndex(i) {
-      const u = _enrollSearchResults[i]
-      if (!u) return
-      selectEnrollUser(u)
+    function renderEnrollUserSelect() {
+      const select = document.getElementById('enroll-user-select')
+      if (!select) return
+      const prev = select.value
+      const list = getEnrollableStudents()
+      const options = ['<option value="">회원을 선택하세요</option>']
+      list.forEach(s => {
+        const label = `${s.name || '-'} · ${s.email || '-'}${s.phone ? ' · ' + s.phone : ''}`
+        options.push(`<option value="${esc(s.id)}">${esc(label)}</option>`)
+      })
+      if (!list.length) {
+        options.push('<option value="" disabled>등록 가능한 가입 회원이 없습니다</option>')
+      }
+      select.innerHTML = options.join('')
+      if (prev && list.some(s => s.id === prev)) {
+        select.value = prev
+        _enrollSelectedUserId = prev
+      } else {
+        select.value = ''
+        _enrollSelectedUserId = null
+      }
     }
-    window.selectEnrollUserByIndex = selectEnrollUserByIndex
+    window.renderEnrollUserSelect = renderEnrollUserSelect
 
-    function selectEnrollUser(u) {
-      _enrollSelectedUserId = u.id
-      const emailEl = document.getElementById('enroll-manual-email')
-      const phoneEl = document.getElementById('enroll-manual-phone')
-      const nameEl = document.getElementById('enroll-manual-name')
-      if (emailEl) emailEl.value = u.email || ''
-      if (phoneEl) phoneEl.value = u.phone || ''
-      if (nameEl) nameEl.value = u.name || ''
+    async function loadEnrollUserDropdown() {
+      const select = document.getElementById('enroll-user-select')
+      if (!select) return
+      try {
+        if (!_allStudents.length) {
+          _allStudents = await API.get('/admin/students')
+        }
+        renderEnrollUserSelect()
+      } catch (e) {
+        select.innerHTML = `<option value="">${esc(e.message || '회원 목록을 불러오지 못했습니다')}</option>`
+      }
+    }
+    window.loadEnrollUserDropdown = loadEnrollUserDropdown
+
+    function filterEnrollUserDropdown() {
+      clearTimeout(_enrollFilterTimer)
+      _enrollFilterTimer = setTimeout(() => renderEnrollUserSelect(), 150)
+    }
+    window.filterEnrollUserDropdown = filterEnrollUserDropdown
+
+    function clearEnrollUserSelect() {
+      _enrollSelectedUserId = null
+      const select = document.getElementById('enroll-user-select')
+      if (select) select.value = ''
       const status = document.getElementById('enroll-add-status')
-      if (status) status.textContent = `선택됨: ${u.name || u.email}`
+      if (status) status.textContent = ''
     }
-    window.selectEnrollUser = selectEnrollUser
+    window.clearEnrollUserSelect = clearEnrollUserSelect
+
+    function onEnrollUserSelectChange() {
+      const select = document.getElementById('enroll-user-select')
+      _enrollSelectedUserId = select?.value || null
+      if (_enrollSelectedUserId) {
+        ;['enroll-manual-email', 'enroll-manual-phone', 'enroll-manual-name'].forEach(id => {
+          const el = document.getElementById(id)
+          if (el) el.value = ''
+        })
+      }
+      const status = document.getElementById('enroll-add-status')
+      if (!status) return
+      if (!_enrollSelectedUserId) {
+        status.textContent = ''
+        return
+      }
+      const s = (_allStudents || []).find(u => u.id === _enrollSelectedUserId)
+      status.textContent = s ? `선택됨: ${s.name || s.email}` : ''
+    }
+    window.onEnrollUserSelectChange = onEnrollUserSelectChange
 
     async function submitManualEnrollment() {
       if (!_courseEnrollmentCourseId) return
@@ -2726,7 +2770,7 @@
         name: document.getElementById('enroll-manual-name')?.value?.trim() || undefined,
       }
       if (!body.user_id && !body.email && !body.phone) {
-        if (status) status.textContent = '회원 선택 또는 이메일/휴대폰을 입력하세요.'
+        if (status) status.textContent = '드롭다운에서 회원을 선택하거나, 미가입자 정보를 직접 입력하세요.'
         return
       }
       try {
@@ -2744,6 +2788,11 @@
           switchEnrollTab('active')
         }
         _enrollSelectedUserId = null
+        clearEnrollUserSelect()
+        ;['enroll-manual-email', 'enroll-manual-phone', 'enroll-manual-name'].forEach(id => {
+          const el = document.getElementById(id)
+          if (el) el.value = ''
+        })
         await reloadCourseEnrollments()
       } catch (e) {
         if (status) status.textContent = e.message || '등록 실패'
@@ -2812,12 +2861,12 @@
       if (addPanel) addPanel.style.display = 'none'
       const importResult = document.getElementById('enroll-import-result')
       if (importResult) { importResult.style.display = 'none'; importResult.innerHTML = '' }
-      ;['enroll-user-search', 'enroll-manual-email', 'enroll-manual-phone', 'enroll-manual-name'].forEach(id => {
+      ;['enroll-user-filter', 'enroll-manual-email', 'enroll-manual-phone', 'enroll-manual-name'].forEach(id => {
         const el = document.getElementById(id)
         if (el) el.value = ''
       })
-      const results = document.getElementById('enroll-user-results')
-      if (results) results.innerHTML = ''
+      const select = document.getElementById('enroll-user-select')
+      if (select) select.innerHTML = '<option value="">회원을 선택하세요</option>'
       const addStatus = document.getElementById('enroll-add-status')
       if (addStatus) addStatus.textContent = ''
 
@@ -3172,7 +3221,7 @@
     let _coursePendingRows = []
     let _courseEnrollmentCourseId = null
     let _enrollSelectedUserId = null
-    let _enrollSearchTimer = null
+    let _enrollFilterTimer = null
     let _enrollTab = 'active'
 
     const STUDENT_SORT_GETTERS = {
