@@ -14,4 +14,9 @@ function isAllowedAdmin(user) {
   return allowlist.includes(email)
 }
 
-module.exports = { parseAdminEmails, isAllowedAdmin }
+/** 마스터·관리자 — 강의 시작 2시간 전 등 시간 게이트 우회 */
+function bypassesLectureTimeGate(user) {
+  return !!user && user.role === 'admin'
+}
+
+module.exports = { parseAdminEmails, isAllowedAdmin, bypassesLectureTimeGate }

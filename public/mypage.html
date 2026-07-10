@@ -532,7 +532,7 @@ function renderSubtitleToolDownload(c) {
   if (!hasProgram) return ''
   const programName = c.program?.name || '도각 자막패치'
   const pagePath = c.program?.page_path || '/subtitle-tool.html'
-  if (!isCourseLectureStarted(c)) {
+  if (!API.isAdmin() && !isCourseLectureStarted(c)) {
     const openAt = getProgramOpenAt(c)
     const label = openAt ? `${formatLectureStartLabel(openAt)}부터` : '강의 시작 2시간 전부터'
     return `<div class="my-vod-actions"><span class="pc-btn secondary my-vod-btn--disabled" aria-disabled="true"><i class="ti ti-clock"></i> ${escapeHtml(label)} 다운로드 가능</span></div>`

@@ -1,6 +1,7 @@
 const admin = require('firebase-admin')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { bypassesLectureTimeGate } = require('../utils/adminAccess')
 
 // ── Firebase Admin 초기화 ──
 if (!admin.apps.length) {
@@ -4813,7 +4814,7 @@ const db = {
       }
     }
     const program = await db.getProgramForCourse(course)
-    if (!isProgramAccessOpen(course, program)) {
+    if (!bypassesLectureTimeGate(user) && !isProgramAccessOpen(course, program)) {
       const startsAt = getCourseLectureStartAt(course)
       const openAt = startsAt
         ? new Date(startsAt.getTime() - getProgramEarlyAccessMs(program))
