@@ -69,7 +69,9 @@ class App(tk.Tk):
         self._session_epoch = 0
         self._last_balance_sync = 0.0
         self._review_bonus_granted: bool | None = None  # None=미확인
+        self._has_review: bool | None = None
         self._course_id: str | None = None
+        self._community_links: dict[str, str] = {}
         self._review_prompt_shown = False  # 후기 유도 팝업은 세션당 1회
 
         self._build_ui()
@@ -244,6 +246,24 @@ class App(tk.Tk):
         self.doc_canvas.bind_all("<MouseWheel>",
                                  lambda e: self.doc_canvas.yview_scroll(int(-e.delta / 120), "units"))
 
+        # 로그인 후 커뮤니티 바로가기
+        self.community_frame = ttk.Frame(root)
+        self.community_label = ttk.Label(
+            self.community_frame,
+            text="도각쌤 커뮤니티",
+            foreground=theme.TEXT_MUTED,
+        )
+        self.community_label.pack(side="left", padx=(0, 8))
+        self.instagram_btn = theme.RoundedButton(
+            self.community_frame, "인스타그램", command=lambda: self._open_community_link("instagram"),
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK, min_width=96)
+        self.chat_btn = theme.RoundedButton(
+            self.community_frame, "단톡방 입장", command=lambda: self._open_community_link("chat"),
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK, min_width=96)
+        self.website_btn = theme.RoundedButton(
+            self.community_frame, "웹사이트", command=lambda: self._open_community_link("website"),
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK, min_width=84)
+
         # 상태 표시
         self._status_frame = ttk.Frame(root)
         self._status_frame.pack(fill="x", pady=(8, 0), side="bottom")
@@ -288,7 +308,8 @@ class App(tk.Tk):
         for b in (self.gen_btn, self.insert_btn, self.login_btn,
                   self.export_btn, self.import_btn, self.play_btn,
                   self.add_row_btn, self.refresh_btn, self.logout_btn,
-                  self.myinfo_btn, self.coin_btn, self.review_btn):
+                  self.myinfo_btn, self.coin_btn, self.review_btn,
+                  self.instagram_btn, self.chat_btn, self.website_btn):
             try:
                 b.configure(state=state)
             except tk.TclError:
@@ -318,6 +339,7 @@ class App(tk.Tk):
             self.main_panel.pack(fill="both", expand=True, before=self._status_frame)
         else:
             self.main_panel.pack_forget()
+            self.community_frame.pack_forget()
             self.gate_frame.pack(fill="both", expand=True, before=self._status_frame)
             self.projects = []
             try:
@@ -347,8 +369,11 @@ class App(tk.Tk):
             self._balance = None
             self._auth_verifying = False
             self._review_bonus_granted = None
+            self._has_review = None
             self._course_id = None
+            self._community_links = {}
         self._refresh_auth_ui()
+        self._refresh_community_ui()
         self._apply_auth_lock()
         if ok:
             self.refresh_projects()
@@ -370,7 +395,7 @@ class App(tk.Tk):
             self.logout_btn.pack(side="right")
             self.myinfo_btn.pack(side="right", padx=(0, 6))
             self.coin_btn.pack(side="right", padx=(0, 6))
-            if self._review_bonus_granted is False:
+            if self._review_cta_available():
                 self.review_btn.pack(side="right", padx=(0, 6))
         elif self._auth_verifying:
             self.auth_var.set("로그인 확인 중…")
@@ -387,8 +412,15 @@ class App(tk.Tk):
             self._balance = me.get("balance")
         if me.get("review_bonus_granted") is not None:
             self._review_bonus_granted = bool(me.get("review_bonus_granted"))
+        if me.get("has_review") is not None:
+            self._has_review = bool(me.get("has_review"))
         if me.get("course_id"):
             self._course_id = me.get("course_id")
+        self._community_links = {
+            "instagram": me.get("community_instagram_url") or "",
+            "chat": me.get("community_chat_url") or "",
+            "website": me.get("community_website_url") or "",
+        }
         self._auth = license_api.save_auth(
             self._auth["token"],
             me.get("name") or self._auth.get("user_name"),
@@ -396,6 +428,42 @@ class App(tk.Tk):
             me.get("email"),
         )
         self._refresh_auth_ui()
+        self._refresh_community_ui()
+
+    def _refresh_community_ui(self) -> None:
+        for btn in (self.instagram_btn, self.chat_btn, self.website_btn):
+            btn.pack_forget()
+        if not self._is_logged_in():
+            self.community_frame.pack_forget()
+            return
+
+        items = (
+            ("instagram", self.instagram_btn),
+            ("chat", self.chat_btn),
+            ("website", self.website_btn),
+        )
+        visible = False
+        for key, btn in items:
+            if self._community_links.get(key):
+                btn.pack(side="left", padx=(0, 6))
+                visible = True
+        if visible:
+            self.community_frame.pack(fill="x", pady=(6, 0), side="bottom")
+        else:
+            self.community_frame.pack_forget()
+
+    def _open_community_link(self, key: str) -> None:
+        url = (self._community_links.get(key) or "").strip()
+        if not url:
+            toast(self, "아직 연결된 링크가 없습니다.", "warning")
+            return
+        webbrowser.open(url)
+
+    def _review_completed(self) -> bool:
+        return bool(self._review_bonus_granted or self._has_review)
+
+    def _review_cta_available(self) -> bool:
+        return self._review_bonus_granted is False and not self._has_review
 
     @staticmethod
     def _is_auth_denied(e: Exception) -> bool:
@@ -542,7 +610,7 @@ class App(tk.Tk):
 
     def _maybe_prompt_review(self) -> None:
         """자막 생성 성공 후, 후기 미작성자에게 세션당 1회만 후기 유도."""
-        if self._review_prompt_shown or self._review_bonus_granted is not False:
+        if self._review_prompt_shown or not self._review_cta_available():
             return
         if not self._is_logged_in():
             return

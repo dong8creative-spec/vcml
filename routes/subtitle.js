@@ -54,11 +54,15 @@ router.get('/me', subtitleAppAuth, async (req, res) => {
       balance: result.balance,
       initial_granted: result.initial_granted,
       review_bonus_granted: result.review_bonus_granted,
+      has_review: !!result.has_review,
       course_slug: result.course_slug,
       course_title: result.course_title,
       course_id: result.course_id || null,
       enrolled: !!result.enrolled,
       has_google: !!result.has_google,
+      community_instagram_url: result.community_instagram_url || null,
+      community_chat_url: result.community_chat_url || null,
+      community_website_url: result.community_website_url || SITE_ORIGIN,
     })
   } catch (e) {
     console.error('subtitle me:', e)

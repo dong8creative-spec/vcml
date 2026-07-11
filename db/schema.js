@@ -5000,6 +5000,12 @@ const db = {
       }
     }
     const wallet = await db.ensureSubtitleWallet(userId)
+    const review = await db.getReviewByUserAndCourse(userId, course.id)
+    const community = {
+      community_instagram_url: program?.community_instagram_url || null,
+      community_chat_url: program?.community_chat_url || course.live_chat_url || null,
+      community_website_url: program?.community_website_url || 'https://vcml.kr',
+    }
     return {
       ok: true,
       has_google: true,
@@ -5010,8 +5016,10 @@ const db = {
       balance: wallet.balance || 0,
       initial_granted: !!wallet.initial_granted_at,
       review_bonus_granted: !!wallet.review_bonus_granted_at,
+      has_review: !!review,
       just_granted_initial: !!wallet.just_granted_initial,
       download_available: true,
+      ...community,
     }
   },
 
@@ -5356,6 +5364,15 @@ const db = {
     if (!partial || data.review_bonus_coins !== undefined) {
       payload.review_bonus_coins = Math.max(0, parseInt(data.review_bonus_coins, 10) || 0)
     }
+    if (!partial || data.community_instagram_url !== undefined) {
+      payload.community_instagram_url = String(data.community_instagram_url || '').trim().slice(0, 500) || null
+    }
+    if (!partial || data.community_chat_url !== undefined) {
+      payload.community_chat_url = String(data.community_chat_url || '').trim().slice(0, 500) || null
+    }
+    if (!partial || data.community_website_url !== undefined) {
+      payload.community_website_url = String(data.community_website_url || '').trim().slice(0, 500) || 'https://vcml.kr'
+    }
     if (!partial || data.coin_per_minute !== undefined) {
       payload.coin_per_minute = Math.max(0, parseInt(data.coin_per_minute, 10) || 1)
     }
@@ -5411,6 +5428,7 @@ const db = {
       if (!existing.feature_label || String(existing.feature_label).includes('도각')) {
         patch.feature_label = '수강생 전용 타닥싱크(TadakSync) 제공'
       }
+      if (!existing.community_website_url) patch.community_website_url = 'https://vcml.kr'
       if (Object.keys(patch).length) {
         await db.updateCourseProgram(existing.id, patch)
         return { ...existing, ...patch }
@@ -5428,6 +5446,9 @@ const db = {
       early_access_hours: 2,
       initial_coins: SUBTITLE_INITIAL_COINS,
       review_bonus_coins: SUBTITLE_REVIEW_BONUS_COINS,
+      community_instagram_url: null,
+      community_chat_url: null,
+      community_website_url: 'https://vcml.kr',
       coin_per_minute: 1,
       is_published: 1,
     })

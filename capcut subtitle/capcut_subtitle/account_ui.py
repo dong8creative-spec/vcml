@@ -288,9 +288,10 @@ class CoinPurchaseDialog(tk.Toplevel):
             return
 
         if me:
-            if me.get("review_bonus_granted"):
+            review_done = bool(me.get("review_bonus_granted") or me.get("has_review"))
+            if review_done:
                 self._review_note.config(
-                    text="후기 보너스 +100코인 지급 완료",
+                    text="수강 후기를 남겨주셨어요",
                     fg=TEXT_MUTED,
                 )
             else:
@@ -433,15 +434,16 @@ class MemberInfoDialog(tk.Toplevel):
             self._vars["수강 상태"].set(
                 f"{me.get('course_title') or '수강 중'} · 기기 연동됨"
                 if me.get("enrolled") else "-")
+            review_done = bool(me.get("review_bonus_granted") or me.get("has_review"))
             self._vars["후기 보너스"].set(
                 "지급 완료 (+100코인)" if me.get("review_bonus_granted")
-                else "수강 후기 작성 시 +100코인")
+                else ("후기 작성 완료" if review_done else "수강 후기 작성 시 +100코인"))
             # 후기 미작성자에게는 바로가기 버튼 노출
             try:
                 if self._review_btn is not None:
                     self._review_btn.destroy()
                     self._review_btn = None
-                if not me.get("review_bonus_granted"):
+                if not review_done:
                     self._review_btn = RoundedButton(
                         self._btn_row, "후기 쓰고 +100코인",
                         command=self._app.on_open_review,

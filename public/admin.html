@@ -622,6 +622,9 @@
               <div class="form-group"><label>최초 코인</label><input type="number" id="pg-initial" min="0" value="100" /></div>
               <div class="form-group"><label>후기 보너스 코인</label><input type="number" id="pg-review" min="0" value="100" /></div>
             </div>
+            <div class="form-group"><label>도각쌤 인스타그램 URL</label><input type="url" id="pg-community-instagram" placeholder="https://instagram.com/..." maxlength="500" /></div>
+            <div class="form-group"><label>단톡방 입장 URL</label><input type="url" id="pg-community-chat" placeholder="https://open.kakao.com/o/..." maxlength="500" /></div>
+            <div class="form-group"><label>웹사이트 URL</label><input type="url" id="pg-community-website" placeholder="https://vcml.kr" maxlength="500" /></div>
             <button class="btn-save" onclick="saveProgram()">저장</button>
           </div>
         </div>
@@ -3398,6 +3401,9 @@
       document.getElementById('pg-published').value = p?.is_published === 0 ? '0' : '1'
       document.getElementById('pg-initial').value = p?.initial_coins ?? 100
       document.getElementById('pg-review').value = p?.review_bonus_coins ?? 100
+      document.getElementById('pg-community-instagram').value = p?.community_instagram_url || ''
+      document.getElementById('pg-community-chat').value = p?.community_chat_url || ''
+      document.getElementById('pg-community-website').value = p?.community_website_url || 'https://vcml.kr'
     }
 
     async function saveProgram() {
@@ -3412,6 +3418,9 @@
         is_published: document.getElementById('pg-published').value === '1' ? 1 : 0,
         initial_coins: parseInt(document.getElementById('pg-initial').value, 10) || 0,
         review_bonus_coins: parseInt(document.getElementById('pg-review').value, 10) || 0,
+        community_instagram_url: document.getElementById('pg-community-instagram').value.trim() || null,
+        community_chat_url: document.getElementById('pg-community-chat').value.trim() || null,
+        community_website_url: document.getElementById('pg-community-website').value.trim() || 'https://vcml.kr',
         type: 'desktop_coin',
         requires_google: 1,
       }
