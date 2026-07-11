@@ -146,6 +146,21 @@ async function downloadZip() {
   }
 }
 
+async function downloadModel() {
+  const btn = document.getElementById('btn-download-model')
+  if (btn) btn.disabled = true
+  try {
+    const data = await API.get('/subtitle/download-model')
+    if (!data.url) throw new Error('다운로드 주소를 받지 못했습니다.')
+    location.href = data.url
+    showMsg('음성인식 모델(약 3GB) 다운로드가 시작됩니다. 완료 후 프로그램 폴더 안 <b>models\\faster-whisper-large-v3</b> 폴더에 압축 해제하세요.', 'ok')
+  } catch (e) {
+    showMsg(e.message || '다운로드에 실패했습니다.', 'err')
+  } finally {
+    if (btn) btn.disabled = false
+  }
+}
+
 async function approveDevice() {
   if (!deviceCode) return
   approveBtn.disabled = true
@@ -210,6 +225,12 @@ function renderEntitled(data) {
       <button type="button" class="st-btn" id="btn-download" onclick="downloadZip()"><i class="ti ti-download"></i> 프로그램 다운로드</button>
       <a class="st-btn secondary" href="/mypage.html">마이페이지에서 후기 작성</a>
     </div>
+    <p class="st-meta" style="margin-top:10px;font-size:0.85em">
+      음성인식 모델(약 3GB)은 첫 자막 생성 시 자동으로 받아집니다.
+      자동 다운로드가 안 되는 환경(사내망·방화벽 등)에서만
+      <a href="#" id="btn-download-model" onclick="downloadModel();return false">모델 파일 별도 받기</a>
+      후 프로그램 폴더의 <b>models\\faster-whisper-large-v3</b> 폴더에 압축 해제하세요.
+    </p>
   `
   if (data.just_granted_initial) {
     showMsg('최초 이용 코인 100개가 지급되었습니다.', 'ok')

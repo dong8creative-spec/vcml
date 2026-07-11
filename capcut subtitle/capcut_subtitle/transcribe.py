@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import re
+import sys
+import threading
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Callable, Optional
 
 import numpy as np
 
 US = 1_000_000
+SR = 16000
 
 MODEL = "large-v3"  # 고정 모델
+MODEL_BYTES = 3_100_000_000  # large-v3 다운로드 용량(진행률 표시용 근사치)
 LANGUAGE_CHOICES = {
     "자동 감지": None,
     "한국어": "ko",
@@ -30,8 +35,31 @@ class SubtitleLine:
     words: list[Word] = field(default_factory=list)  # 정밀 분할에 사용, 없어도 동작
 
 
+def bundled_model_dir() -> Optional[str]:
+    """프로그램 폴더에 동봉된 Whisper 모델 경로를 찾는다.
+
+    배포 zip에 모델을 포함하거나, 사용자가 별도 모델 zip을 받아
+    프로그램 폴더의 models\\faster-whisper-large-v3 에 풀어두면 자동 인식된다.
+    """
+    bases: list[Path] = []
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).resolve().parent
+        bases += [exe_dir, exe_dir.parent]
+    bases.append(Path(__file__).resolve().parent.parent)
+    for base in bases:
+        for name in (f"faster-whisper-{MODEL}", MODEL):
+            d = base / "models" / name
+            if (d / "model.bin").is_file():
+                return str(d)
+    return None
+
+
 class Transcriber:
-    """faster-whisper 모델 로딩/인식 래퍼. 모델은 첫 사용 시 자동 다운로드."""
+    """faster-whisper 모델 로딩/인식 래퍼.
+
+    모델 탐색 순서: ① 동봉 모델(models 폴더) → ② 기존 다운로드 캐시 →
+    ③ 자동 다운로드(진행률 표시). 다운로드 실패 시 대안 안내 메시지를 띄운다.
+    """
 
     def __init__(self) -> None:
         self._model = None
@@ -40,11 +68,60 @@ class Transcriber:
     def load(self, model_size: str, progress: Callable[[str], None] = print) -> None:
         if self._model is not None and self._model_size == model_size:
             return
-        progress(f"Whisper 모델({model_size}) 로딩 중... (최초 1회 자동 다운로드)")
         from faster_whisper import WhisperModel
-        self._model = WhisperModel(model_size, device="cpu", compute_type="int8")
+
+        path = bundled_model_dir()
+        if path:
+            progress("동봉된 Whisper 모델 로딩 중...")
+        else:
+            path = self._ensure_downloaded(model_size, progress)
+            progress(f"Whisper 모델({model_size}) 로딩 중...")
+        self._model = WhisperModel(path, device="cpu", compute_type="int8")
         self._model_size = model_size
         progress("모델 로딩 완료")
+
+    def _ensure_downloaded(self, model_size: str,
+                           progress: Callable[[str], None]) -> str:
+        """캐시에 모델이 없으면 진행률을 보여주며 다운로드한다."""
+        from faster_whisper.utils import download_model
+        try:
+            return download_model(model_size, local_files_only=True)
+        except Exception:
+            pass  # 캐시 없음 → 다운로드
+
+        stop = threading.Event()
+
+        def monitor() -> None:
+            try:
+                from huggingface_hub.constants import HF_HUB_CACHE
+                cache = Path(HF_HUB_CACHE)
+            except Exception:
+                cache = Path.home() / ".cache" / "huggingface" / "hub"
+            while not stop.wait(2.0):
+                try:
+                    size = sum(
+                        f.stat().st_size
+                        for d in cache.glob(f"models--*faster-whisper-{model_size}")
+                        for f in d.rglob("*") if f.is_file())
+                    pct = min(size / MODEL_BYTES * 100, 99)
+                    progress(f"Whisper 모델 다운로드 중... {pct:.0f}% "
+                             f"(약 3.1GB, 최초 1회만 받습니다)")
+                except OSError:
+                    pass
+
+        progress("Whisper 모델 다운로드 중... (약 3.1GB, 최초 1회만 받습니다)")
+        t = threading.Thread(target=monitor, daemon=True)
+        t.start()
+        try:
+            return download_model(model_size)
+        except Exception as e:
+            raise RuntimeError(
+                "Whisper 모델 다운로드에 실패했습니다. 인터넷 연결을 확인한 뒤 다시 시도하거나, "
+                "홈페이지에서 '음성인식 모델' 파일을 받아 프로그램 폴더 안 "
+                "models\\faster-whisper-large-v3 폴더에 풀어주세요."
+            ) from e
+        finally:
+            stop.set()
 
     def transcribe(
         self,
@@ -62,13 +139,16 @@ class Transcriber:
             language=language,
             word_timestamps=True,
             vad_filter=False,
+            condition_on_previous_text=False,
         )
         all_segments = list(segments)
         for seg in all_segments:
             if total_sec > 0:
                 progress_ratio(min(seg.end / total_sec, 1.0))
         progress(f"인식 언어: {info.language} (확률 {info.language_probability:.0%})")
-        return _split_lines_from_segments(all_segments, max_words_per_line)
+        lines = _split_lines_from_segments(all_segments, max_words_per_line)
+        progress("자막 타이밍 정밀 보정 중...")
+        return _refine_with_vad(lines, audio)
 
 
 def _split_lines_from_segments(segments: list, max_words_per_line: int) -> list[SubtitleLine]:
@@ -83,6 +163,11 @@ def _split_lines_from_segments(segments: list, max_words_per_line: int) -> list[
     for seg in segments:
         text = (seg.text or "").strip()
         if not text:
+            continue
+        # 환각 필터: 무음 확률이 높고 신뢰도가 낮은 세그먼트는 배경 소음을
+        # 잘못 받아적은 것일 가능성이 크다 (openai/whisper의 기본 휴리스틱).
+        if (getattr(seg, "no_speech_prob", 0.0) > 0.6
+                and getattr(seg, "avg_logprob", 0.0) < -1.0):
             continue
 
         words = seg.words or []
@@ -142,6 +227,100 @@ def _split_lines_from_segments(segments: list, max_words_per_line: int) -> list[
         if i + 1 < len(lines) and line.end_us > lines[i + 1].start_us:
             line.end_us = lines[i + 1].start_us
     return [l for l in lines if l.text.strip()]
+
+
+def _detect_speech_regions(audio: np.ndarray) -> list[tuple[float, float]]:
+    """Silero VAD로 실제 발화 구간(초 단위)을 검출."""
+    from faster_whisper.vad import VadOptions, get_speech_timestamps
+    opts = VadOptions(
+        threshold=0.35,
+        min_speech_duration_ms=100,
+        min_silence_duration_ms=200,
+        speech_pad_ms=40,
+    )
+    regions = get_speech_timestamps(audio, vad_options=opts)
+    return [(r["start"] / SR, r["end"] / SR) for r in regions]
+
+
+def _refine_with_vad(lines: list[SubtitleLine],
+                     audio: np.ndarray) -> list[SubtitleLine]:
+    """자막 타이밍을 실제 음성 경계에 스냅.
+
+    Whisper의 segment 타이밍은 발화보다 일찍 시작하거나 늦게 끝나는 오차가
+    ±0.2~0.5초 수준으로 흔하다. VAD가 검출한 발화 구간을 기준으로:
+    - 침묵에서 시작하는 자막 → 발화 시작점으로 당김
+    - 발화가 끝났는데 남아있는 자막 → 발화 끝점으로 자름
+    - 발화가 전혀 없는 구간의 자막(환각) → 제거
+    """
+    if not lines:
+        return lines
+    try:
+        regions = _detect_speech_regions(audio)
+    except Exception:
+        return lines  # VAD 실패 시 원본 타이밍 유지
+    if not regions:
+        return lines
+
+    refined: list[SubtitleLine] = []
+    prev_end = 0.0
+    for line in lines:
+        s, e = line.start_us / US, line.end_us / US
+        ov = [(rs, re_) for rs, re_ in regions if re_ > s and rs < e]
+        if not ov:
+            # 자막 구간 자체에 발화가 없으면 근처(±0.3초)까지 확대 탐색
+            ov = [(rs, re_) for rs, re_ in regions
+                  if re_ > s - 0.3 and rs < e + 0.3]
+        if not ov:
+            continue  # 무성 구간 환각 → 제거
+
+        # 직전 발화의 꼬리(0.2초 미만)만 살짝 걸친 경우, 그 구간은
+        # 이전 자막의 발화이므로 다음 구간의 온셋을 기준으로 삼는다
+        if len(ov) > 1 and ov[0][1] - s < 0.2:
+            ov = ov[1:]
+        # 다음 발화의 머리(0.2초 미만)만 살짝 걸친 경우도 마찬가지로 제외
+        if len(ov) > 1 and e - ov[-1][0] < 0.2:
+            ov = ov[:-1]
+
+        onset, offset = ov[0][0], ov[-1][1]
+        new_s, new_e = s, e
+        if onset > s:
+            new_s = onset          # 자막이 음성보다 일찍 뜸 → 온셋으로 당김
+        elif onset >= prev_end and s - onset <= 0.6:
+            new_s = onset          # 새 온셋인데 자막이 살짝 늦음 → 온셋으로 확장
+        if offset < e:
+            new_e = offset         # 발화가 끝났는데 자막이 남음 → 끝 스냅
+        new_e = max(new_e, new_s + 0.2)
+        line.start_us, line.end_us = int(new_s * US), int(new_e * US)
+        refined.append(line)
+        prev_end = new_e
+
+    # 붙어있는 두 자막의 경계가 실제 침묵 구간과 어긋나면 경계를 침묵으로 이동.
+    # (이어붙인 녹음 등에서 Whisper가 침묵을 사이에 둔 두 발화를 연속으로
+    # 착각해 경계를 최대 1초가량 앞당기는 오차를 보정)
+    gaps = [(regions[k][1], regions[k + 1][0])
+            for k in range(len(regions) - 1)
+            if regions[k + 1][0] - regions[k][1] >= 0.25]
+    for i in range(len(refined) - 1):
+        a, b = refined[i], refined[i + 1]
+        ae, bs = a.end_us / US, b.start_us / US
+        if bs - ae > 0.05:
+            continue  # 이미 떨어져 있는 자막은 그대로
+        cand = [(gs, ge) for gs, ge in gaps
+                if a.start_us / US + 0.2 < gs and ge < b.end_us / US - 0.2
+                and abs(gs - ae) <= 1.2]
+        if not cand:
+            continue
+        gs, ge = min(cand, key=lambda g: abs(g[0] - ae))
+        a.end_us = int(gs * US)
+        b.start_us = int(ge * US)
+
+    # 겹침 제거 및 최소 표시시간 보정
+    for i, line in enumerate(refined):
+        if line.end_us - line.start_us < 500_000:
+            line.end_us = line.start_us + 500_000
+        if i + 1 < len(refined) and line.end_us > refined[i + 1].start_us:
+            line.end_us = refined[i + 1].start_us
+    return [l for l in refined if l.end_us > l.start_us]
 
 
 def _split_lines(words: list, max_words_per_line: int) -> list[SubtitleLine]:

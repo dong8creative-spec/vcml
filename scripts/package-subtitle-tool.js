@@ -9,16 +9,23 @@
  *   capcut subtitle/사용법.txt   ← 수강생용 (필수)
  *   capcut subtitle/사용법.md    ← 수강생용 (필수, txt와 동기화)
  *
- * 사용: node scripts/package-subtitle-tool.js
+ * 사용:
+ *   node scripts/package-subtitle-tool.js               # 경량 zip (모델 미포함, 첫 실행 시 자동 다운로드)
+ *   node scripts/package-subtitle-tool.js --with-model  # 풀버전 zip (~3.2GB, Whisper 모델 동봉)
+ *   node scripts/package-subtitle-tool.js --model-zip   # 모델 단독 zip (자동 다운로드 실패 사용자용)
  */
 const fs = require('fs')
 const path = require('path')
+const os = require('os')
 const { execSync } = require('child_process')
 
 const ROOT = path.join(__dirname, '..')
 const CAPCUT_DIR = path.join(ROOT, 'capcut subtitle')
 const DIST_DIR = path.join(CAPCUT_DIR, 'dist', 'CapCutSubtitle')
 const ZIP_PATH = path.join(CAPCUT_DIR, 'dist', 'CapCutSubtitle.zip')
+const FULL_ZIP_PATH = path.join(CAPCUT_DIR, 'dist', 'CapCutSubtitle-full.zip')
+const MODEL_ZIP_PATH = path.join(CAPCUT_DIR, 'dist', 'whisper-model-large-v3.zip')
+const MODEL_NAME = 'faster-whisper-large-v3'
 
 /** zip에 넣을 문서 — src(소스) → dest(dist 안 파일명) */
 const RELEASE_DOCS = [
@@ -46,27 +53,73 @@ function copyReleaseDocs() {
   return copied
 }
 
-function createZip() {
-  if (fs.existsSync(ZIP_PATH)) fs.unlinkSync(ZIP_PATH)
+function createZip(srcDir, zipPath) {
+  if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
 
   if (process.platform === 'win32') {
-    const distEsc = DIST_DIR.replace(/'/g, "''")
-    const zipEsc = ZIP_PATH.replace(/'/g, "''")
+    const distEsc = srcDir.replace(/'/g, "''")
+    const zipEsc = zipPath.replace(/'/g, "''")
     execSync(
       `powershell -NoProfile -Command "Compress-Archive -LiteralPath '${distEsc}' -DestinationPath '${zipEsc}' -CompressionLevel Optimal"`,
       { stdio: 'inherit' }
     )
   } else {
-    const parent = path.dirname(DIST_DIR)
-    const folder = path.basename(DIST_DIR)
-    execSync(`cd "${parent}" && zip -r -q "${ZIP_PATH}" "${folder}"`, { stdio: 'inherit', shell: true })
+    const parent = path.dirname(srcDir)
+    const folder = path.basename(srcDir)
+    execSync(`cd "${parent}" && zip -r -q "${zipPath}" "${folder}"`, { stdio: 'inherit', shell: true })
   }
 
-  const mb = (fs.statSync(ZIP_PATH).size / 1024 / 1024).toFixed(1)
-  console.log(`zip 생성 완료: ${path.relative(ROOT, ZIP_PATH)} (${mb} MB)`)
+  const mb = (fs.statSync(zipPath).size / 1024 / 1024).toFixed(1)
+  console.log(`zip 생성 완료: ${path.relative(ROOT, zipPath)} (${mb} MB)`)
+}
+
+/** HF 캐시에서 다운로드된 large-v3 모델 스냅샷 폴더를 찾는다. */
+function findCachedModel() {
+  const hub = process.env.HF_HOME
+    ? path.join(process.env.HF_HOME, 'hub')
+    : path.join(os.homedir(), '.cache', 'huggingface', 'hub')
+  const repoDir = path.join(hub, 'models--Systran--faster-whisper-large-v3', 'snapshots')
+  if (!fs.existsSync(repoDir)) return null
+  for (const hash of fs.readdirSync(repoDir)) {
+    const snap = path.join(repoDir, hash)
+    if (fs.existsSync(path.join(snap, 'model.bin'))) return snap
+  }
+  return null
+}
+
+/** 모델 스냅샷을 targetDir/models/faster-whisper-large-v3 로 복사(심볼릭 링크는 실체로). */
+function copyModelInto(targetDir) {
+  const snap = findCachedModel()
+  if (!snap) {
+    console.error('HF 캐시에서 large-v3 모델을 찾지 못했습니다.')
+    console.error('프로그램에서 자막을 한 번 생성해 모델을 먼저 다운로드하세요.')
+    process.exit(1)
+  }
+  const dest = path.join(targetDir, 'models', MODEL_NAME)
+  fs.mkdirSync(dest, { recursive: true })
+  let bytes = 0
+  for (const f of fs.readdirSync(snap)) {
+    const src = fs.realpathSync(path.join(snap, f)) // HF 캐시는 blob 심볼릭 링크 구조
+    fs.copyFileSync(src, path.join(dest, f))
+    bytes += fs.statSync(src).size
+  }
+  console.log(`모델 복사 완료: models/${MODEL_NAME} (${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB)`)
+  return dest
 }
 
 function main() {
+  const args = process.argv.slice(2)
+
+  if (args.includes('--model-zip')) {
+    // 모델 단독 zip: 자동 다운로드가 안 되는 사용자가 받아서
+    // 프로그램 폴더의 models\faster-whisper-large-v3 에 풀어 쓰는 용도
+    const stage = path.join(CAPCUT_DIR, 'dist', 'models')
+    fs.rmSync(stage, { recursive: true, force: true })
+    copyModelInto(path.join(CAPCUT_DIR, 'dist'))
+    createZip(stage, MODEL_ZIP_PATH)
+    return
+  }
+
   const exe = path.join(DIST_DIR, 'CapCutSubtitle.exe')
   if (!fs.existsSync(DIST_DIR) || !fs.existsSync(exe)) {
     console.error('빌드 폴더가 없습니다:', DIST_DIR)
@@ -77,7 +130,16 @@ function main() {
 
   const n = copyReleaseDocs()
   console.log(`문서 ${n}개 포함`)
-  createZip()
+
+  const modelDir = path.join(DIST_DIR, 'models')
+  if (args.includes('--with-model')) {
+    copyModelInto(DIST_DIR)
+    createZip(DIST_DIR, FULL_ZIP_PATH)
+  } else {
+    // 경량 zip에는 모델이 들어가지 않도록 제거
+    fs.rmSync(modelDir, { recursive: true, force: true })
+    createZip(DIST_DIR, ZIP_PATH)
+  }
 }
 
 main()

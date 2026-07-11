@@ -7,6 +7,7 @@ const { getSignedDownloadUrl } = require('../utils/storage')
 const router = express.Router()
 
 const SUBTITLE_ZIP_PATH = process.env.SUBTITLE_TOOL_STORAGE_PATH || 'subtitle-tool/CapCutSubtitle.zip'
+const SUBTITLE_MODEL_ZIP_PATH = process.env.SUBTITLE_MODEL_STORAGE_PATH || 'subtitle-tool/whisper-model-large-v3.zip'
 const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://vcml.kr'
 
 function signUserToken(user) {
@@ -75,6 +76,27 @@ router.get('/download', authMiddleware, async (req, res) => {
     res.status(missing ? 404 : 500).json({
       error: missing
         ? '다운로드 파일이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'
+        : '다운로드 링크를 만들지 못했습니다.',
+    })
+  }
+})
+
+/** GET /api/subtitle/download-model — 음성인식 모델 zip 서명 URL
+ * (자동 다운로드가 안 되는 환경용. 프로그램 폴더의 models\faster-whisper-large-v3 에 압축 해제) */
+router.get('/download-model', authMiddleware, async (req, res) => {
+  try {
+    const result = await db.ensureSubtitleEntitlement(req.user.id)
+    if (!result.ok) {
+      return res.status(403).json(result)
+    }
+    const url = await getSignedDownloadUrl(SUBTITLE_MODEL_ZIP_PATH, 60 * 60 * 1000)
+    res.json({ url, filename: 'whisper-model-large-v3.zip', expires_in: 3600 })
+  } catch (e) {
+    console.error('subtitle download-model:', e)
+    const missing = /찾을 수 없습니다/.test(e.message || '')
+    res.status(missing ? 404 : 500).json({
+      error: missing
+        ? '모델 파일이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'
         : '다운로드 링크를 만들지 못했습니다.',
     })
   }

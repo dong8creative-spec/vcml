@@ -493,7 +493,8 @@ class App(tk.Tk):
                     self.after(0, self._refresh_auth_ui)
                 except Exception:
                     traceback.print_exc()
-            self.after(0, lambda: toast(self, "자막 생성에 실패했습니다.", "error"))
+            msg = str(e) if isinstance(e, RuntimeError) and str(e) else "자막 생성에 실패했습니다."
+            self.after(0, lambda m=msg: toast(self, m, "error"))
             self.set_status("자막 생성 실패")
         finally:
             self.after(0, lambda: self._set_busy(False))
