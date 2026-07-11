@@ -66,7 +66,7 @@
 
   <div class="st-card hidden" id="card-device">
     <h2>앱 기기 연동</h2>
-    <p class="st-meta" style="margin-bottom:10px">아래 코드로 데스크톱 앱을 이 계정에 연결합니다.</p>
+    <p class="st-meta" style="margin-bottom:10px">프로그램을 실행하면 표시되는 연동 코드를 아래 입력창에 붙여넣고 기기 연동을 승인합니다.</p>
     <div class="st-code" id="device-code-label">————</div>
     <div class="st-actions">
       <button type="button" class="st-btn" id="btn-approve" disabled>이 기기로 연동</button>
@@ -80,13 +80,30 @@
 
   <div class="st-card">
     <h2>이용 안내</h2>
-    <ul class="st-list">
-      <li><strong>캡컷 초신속 스탠다드 수강생만</strong> 구글 로그인·기기 연동 후 이용할 수 있습니다. <strong>강의 시작 2시간 전</strong>부터 다운로드·이용이 가능합니다.</li>
-      <li>최초 이용 허가 시 <strong>100코인</strong>이 지급됩니다.</li>
-      <li>해당 강의 수강 후기를 남기면 <strong>100코인</strong>이 추가 지급됩니다 (1회).</li>
-      <li>자막 생성 시 타임라인 길이 기준 <strong>1분당 1코인</strong>이 차감됩니다 (최소 1코인).</li>
-      <li>Windows용 zip을 받아 압축 해제한 뒤 실행 파일을 실행하세요.</li>
-    </ul>
+    <div style="margin-bottom: 18px;">
+      <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 이용 대상</div>
+      <ul class="st-list" style="margin-top: 0;">
+        <li><strong>캡컷 초신속 수강생만</strong> 이용 가능합니다.</li>
+        <li><strong>강의 시작 2시간 전</strong>부터 다운로드·이용이 가능합니다.</li>
+      </ul>
+    </div>
+    <div style="margin-bottom: 18px;">
+      <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 코인 안내</div>
+      <ul class="st-list" style="margin-top: 0;">
+        <li>최초 이용 허가 시 <strong>100코인</strong> 지급</li>
+        <li>수강 후기 작성 시 <strong>100코인</strong> 추가 지급 (1회)</li>
+        <li>자막 생성 시 타임라인 <strong>1분당 1코인</strong> 차감 (최소 1코인)</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 사용 방법</div>
+      <ul class="st-list" style="margin-top: 0;">
+        <li>구글 로그인 후 프로그램 다운로드</li>
+        <li>프로그램에서 기기 연동 코드 발급</li>
+        <li>이 페이지에서 위의 "앱 기기 연동" 섹션에 코드 입력 후 연동 승인</li>
+        <li>프로그램에서 자막 생성·편집 후 캡컷 프로젝트에 삽입</li>
+      </ul>
+    </div>
   </div>
 </div>
 
@@ -200,11 +217,6 @@ function renderEntitled(data) {
 }
 
 async function load() {
-  if (deviceCode) {
-    deviceCard.classList.remove('hidden')
-    document.getElementById('device-code-label').textContent = deviceCode.toUpperCase()
-  }
-
   if (!API.isLoggedIn()) {
     loadingEl.classList.add('hidden')
     bodyEl.classList.remove('hidden')
@@ -220,7 +232,11 @@ async function load() {
     loadingEl.classList.add('hidden')
     bodyEl.classList.remove('hidden')
     renderEntitled(data)
+
+    // 로그인 후에만 앱 기기 연동 섹션 표시
     if (deviceCode) {
+      deviceCard.classList.remove('hidden')
+      document.getElementById('device-code-label').textContent = deviceCode.toUpperCase()
       approveBtn.disabled = false
       approveBtn.onclick = approveDevice
     }
