@@ -437,23 +437,16 @@ class App(tk.Tk):
             self.community_frame.pack_forget()
             return
 
-        items = (
-            ("instagram", self.instagram_btn),
-            ("chat", self.chat_btn),
-            ("website", self.website_btn),
-        )
-        visible = False
-        for key, btn in items:
-            if self._community_links.get(key):
-                btn.pack(side="left", padx=(0, 6))
-                visible = True
-        if visible:
-            self.community_frame.pack(fill="x", pady=(6, 0), side="bottom")
-        else:
-            self.community_frame.pack_forget()
+        # 후기 작성 여부와 무관하게 로그인된 수강생에게는 항상 노출한다.
+        self.website_btn.pack(side="left", padx=(0, 6))
+        self.instagram_btn.pack(side="left", padx=(0, 6))
+        self.chat_btn.pack(side="left", padx=(0, 6))
+        self.community_frame.pack(fill="x", pady=(6, 0), side="bottom")
 
     def _open_community_link(self, key: str) -> None:
         url = (self._community_links.get(key) or "").strip()
+        if key == "website" and not url:
+            url = "https://vcml.kr"
         if not url:
             toast(self, "아직 연결된 링크가 없습니다.", "warning")
             return
