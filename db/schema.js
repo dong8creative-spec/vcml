@@ -4824,8 +4824,8 @@ const db = {
         ok: false,
         code: 'course_not_started',
         error: label
-          ? `${label}부터 ${program?.name || '도각 자막패치'}를 이용할 수 있습니다. (강의 시작 2시간 전)`
-          : `강의 시작 2시간 전부터 ${program?.name || '도각 자막패치'}를 이용할 수 있습니다.`,
+          ? `${label}부터 ${program?.name || '타닥싱크'}를 이용할 수 있습니다. (강의 시작 2시간 전)`
+          : `강의 시작 2시간 전부터 ${program?.name || '타닥싱크'}를 이용할 수 있습니다.`,
         has_google: true,
         enrolled: true,
         course_slug: course.slug,
@@ -5159,15 +5159,31 @@ const db = {
   },
 
   async ensureDefaultSubtitleProgram() {
-    const existing = await db.getCourseProgramBySlug('dogak-subtitle')
-    if (existing) return existing
+    let existing = await db.getCourseProgramBySlug('tadak-sync')
+    if (!existing) existing = await db.getCourseProgramBySlug('dogak-subtitle')
+    if (existing) {
+      const patch = {}
+      if (existing.name !== '타닥싱크') patch.name = '타닥싱크'
+      if (existing.slug !== 'tadak-sync') patch.slug = 'tadak-sync'
+      if (String(existing.storage_path || '').includes('CapCutSubtitle') || !existing.storage_path) {
+        patch.storage_path = 'subtitle-tool/TadakSync.zip'
+      }
+      if (!existing.feature_label || String(existing.feature_label).includes('도각')) {
+        patch.feature_label = '수강생 전용 타닥싱크(TadakSync) 제공'
+      }
+      if (Object.keys(patch).length) {
+        await db.updateCourseProgram(existing.id, patch)
+        return { ...existing, ...patch }
+      }
+      return existing
+    }
     return db.createCourseProgram({
-      name: '도각 자막패치',
-      slug: 'dogak-subtitle',
+      name: '타닥싱크',
+      slug: 'tadak-sync',
       type: 'desktop_coin',
-      storage_path: 'subtitle-tool/CapCutSubtitle.zip',
+      storage_path: 'subtitle-tool/TadakSync.zip',
       page_path: '/subtitle-tool.html',
-      feature_label: '수강생 전용 도각 자막패치 제공',
+      feature_label: '수강생 전용 타닥싱크(TadakSync) 제공',
       requires_google: 1,
       early_access_hours: 2,
       initial_coins: SUBTITLE_INITIAL_COINS,

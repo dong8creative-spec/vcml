@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * 도각 자막패치 배포 zip 패키징
+ * 타닥싱크(TadakSync) 배포 zip 패키징
  *
- * 1) capcut subtitle/dist/CapCutSubtitle 에 사용법 등 문서 복사
- * 2) CapCutSubtitle.zip 생성
+ * 1) capcut subtitle/dist/TadakSync 에 사용법 등 문서 복사
+ * 2) TadakSync.zip 생성
  *
  * 사용법 파일 위치 (이 파일들을 수정하면 zip에 반영됨):
  *   capcut subtitle/사용법.txt   ← 수강생용 (필수)
@@ -21,9 +21,9 @@ const { execSync } = require('child_process')
 
 const ROOT = path.join(__dirname, '..')
 const CAPCUT_DIR = path.join(ROOT, 'capcut subtitle')
-const DIST_DIR = path.join(CAPCUT_DIR, 'dist', 'CapCutSubtitle')
-const ZIP_PATH = path.join(CAPCUT_DIR, 'dist', 'CapCutSubtitle.zip')
-const FULL_ZIP_PATH = path.join(CAPCUT_DIR, 'dist', 'CapCutSubtitle-full.zip')
+const DIST_DIR = path.join(CAPCUT_DIR, 'dist', 'TadakSync')
+const ZIP_PATH = path.join(CAPCUT_DIR, 'dist', 'TadakSync.zip')
+const FULL_ZIP_PATH = path.join(CAPCUT_DIR, 'dist', 'TadakSync-full.zip')
 const MODEL_ZIP_PATH = path.join(CAPCUT_DIR, 'dist', 'whisper-model-large-v3.zip')
 const MODEL_NAME = 'faster-whisper-large-v3'
 
@@ -31,7 +31,8 @@ const MODEL_NAME = 'faster-whisper-large-v3'
 const RELEASE_DOCS = [
   { src: path.join(CAPCUT_DIR, '사용법.txt'), dest: '사용법.txt', required: true },
   { src: path.join(CAPCUT_DIR, '사용법.md'), dest: '사용법.md', required: true },
-  { src: path.join(CAPCUT_DIR, '도각 자막패치 사용법 v1.0.0.pdf'), dest: '도각 자막패치 사용법 v1.0.0.pdf', required: false },
+  { src: path.join(CAPCUT_DIR, '도각 자막패치 사용법 v1.0.0.pdf'), dest: '타닥싱크 사용법.pdf', required: false },
+  { src: path.join(CAPCUT_DIR, '타닥싱크 사용법.pdf'), dest: '타닥싱크 사용법.pdf', required: false },
 ]
 
 function copyReleaseDocs() {
@@ -47,7 +48,7 @@ function copyReleaseDocs() {
     }
     const target = path.join(DIST_DIR, doc.dest)
     fs.copyFileSync(doc.src, target)
-    console.log(`문서 복사: ${path.relative(ROOT, doc.src)} → dist/CapCutSubtitle/${doc.dest}`)
+    console.log(`문서 복사: ${path.relative(ROOT, doc.src)} → dist/TadakSync/${doc.dest}`)
     copied++
   }
   return copied
@@ -120,10 +121,10 @@ function main() {
     return
   }
 
-  const exe = path.join(DIST_DIR, 'CapCutSubtitle.exe')
+  const exe = path.join(DIST_DIR, 'TadakSync.exe')
   if (!fs.existsSync(DIST_DIR) || !fs.existsSync(exe)) {
     console.error('빌드 폴더가 없습니다:', DIST_DIR)
-    console.error('먼저 PyInstaller로 dist/CapCutSubtitle 을 빌드하세요.')
+    console.error('먼저 PyInstaller로 dist/TadakSync 을 빌드하세요.')
     console.error('(capcut subtitle/README.md 의 배포판 빌드 참고)')
     process.exit(1)
   }

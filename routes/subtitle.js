@@ -6,7 +6,7 @@ const { getSignedDownloadUrl } = require('../utils/storage')
 
 const router = express.Router()
 
-const SUBTITLE_ZIP_PATH = process.env.SUBTITLE_TOOL_STORAGE_PATH || 'subtitle-tool/CapCutSubtitle.zip'
+const SUBTITLE_ZIP_PATH = process.env.SUBTITLE_TOOL_STORAGE_PATH || 'subtitle-tool/TadakSync.zip'
 const SUBTITLE_MODEL_ZIP_PATH = process.env.SUBTITLE_MODEL_STORAGE_PATH || 'subtitle-tool/whisper-model-large-v3.zip'
 const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://vcml.kr'
 
@@ -69,7 +69,7 @@ router.get('/download', authMiddleware, async (req, res) => {
       return res.status(403).json(result)
     }
     const url = await getSignedDownloadUrl(SUBTITLE_ZIP_PATH, 15 * 60 * 1000)
-    res.json({ url, filename: 'CapCutSubtitle.zip', expires_in: 900 })
+    res.json({ url, filename: 'TadakSync.zip', expires_in: 900 })
   } catch (e) {
     console.error('subtitle download:', e)
     const missing = /찾을 수 없습니다/.test(e.message || '')

@@ -1,4 +1,4 @@
-"""도각 자막패치 GUI (Tkinter) - 브루(Vrew) 스타일 문서 편집."""
+"""타닥싱크(TadakSync) GUI (Tkinter) - 브루(Vrew) 스타일 문서 편집."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def _parse_sec(text: str) -> int:
 class App(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title(f"도각 자막패치 v{__version__}")
+        self.title(f"타닥싱크 TadakSync v{__version__}")
         self.geometry("1000x720")
         self.minsize(820, 560)
         self.configure(bg=theme.WHITE)
@@ -103,7 +103,7 @@ class App(tk.Tk):
         gate_inner.pack(expand=True)
         ttk.Label(
             gate_inner,
-            text="도각 자막패치",
+            text="타닥싱크 TadakSync",
             font=("맑은 고딕", 18, "bold"),
         ).pack(pady=(40, 8))
         ttk.Label(
@@ -403,7 +403,7 @@ class App(tk.Tk):
         ok = confirm(
             self,
             "구글 로그인",
-            "도각 자막패치는 캡컷 초신속 스탠다드 수강생 전용입니다.\n"
+            "타닥싱크는 캡컷 초신속 스탠다드 수강생 전용입니다.\n"
             "브라우저에서 구글 로그인 후 이 기기를 연동해야 사용할 수 있습니다.\n\n"
             "지금 로그인할까요? (취소하면 프로그램이 종료됩니다.)",
             ok_text="로그인",

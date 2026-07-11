@@ -268,7 +268,7 @@
                 <input type="url" id="live-replay-url" placeholder="https://..." maxlength="500" />
               </div>
               <div class="form-group">
-                <label>제공 프로그램 <span style="font-size: 13.2px;color:#aaa">도각 자막패치 등</span></label>
+                <label>제공 프로그램 <span style="font-size: 13.2px;color:#aaa">타닥싱크 등</span></label>
                 <select id="live-program-id">
                   <option value="">없음</option>
                 </select>
@@ -563,7 +563,7 @@
         <div class="card-header">
           <div>
             <div class="card-title">수강생 프로그램</div>
-            <p class="sec-sub">강의에 연결할 데스크톱 프로그램(도각 자막패치 등)을 관리합니다. 기본 오픈 시점은 강의 시작 2시간 전입니다.</p>
+            <p class="sec-sub">강의에 연결할 데스크톱 프로그램(타닥싱크 등)을 관리합니다. 기본 오픈 시점은 강의 시작 2시간 전입니다.</p>
           </div>
           <button type="button" class="btn-primary-sm" onclick="openProgramModal()"><i class="ti ti-plus"></i> 프로그램 추가</button>
         </div>
@@ -586,11 +586,11 @@
           </div>
           <div class="modal-body modal-body--form">
             <input type="hidden" id="pg-id" />
-            <div class="form-group"><label>이름</label><input type="text" id="pg-name" placeholder="도각 자막패치" /></div>
-            <div class="form-group"><label>식별자(slug)</label><input type="text" id="pg-slug" placeholder="dogak-subtitle" /></div>
+            <div class="form-group"><label>이름</label><input type="text" id="pg-name" placeholder="타닥싱크" /></div>
+            <div class="form-group"><label>식별자(slug)</label><input type="text" id="pg-slug" placeholder="tadak-sync" /></div>
             <div class="form-group"><label>페이지 경로</label><input type="text" id="pg-page" placeholder="/subtitle-tool.html" /></div>
-            <div class="form-group"><label>Storage 경로</label><input type="text" id="pg-storage" placeholder="subtitle-tool/CapCutSubtitle.zip" /></div>
-            <div class="form-group"><label>혜택 문구</label><input type="text" id="pg-feature" placeholder="수강생 전용 도각 자막패치 제공" /></div>
+            <div class="form-group"><label>Storage 경로</label><input type="text" id="pg-storage" placeholder="subtitle-tool/TadakSync.zip" /></div>
+            <div class="form-group"><label>혜택 문구</label><input type="text" id="pg-feature" placeholder="수강생 전용 타닥싱크(TadakSync) 제공" /></div>
             <div class="two-col">
               <div class="form-group"><label>시작 N시간 전 오픈</label><input type="number" id="pg-early" min="0" step="0.5" value="2" /></div>
               <div class="form-group"><label>공개</label>
@@ -3342,7 +3342,7 @@
       document.getElementById('pg-name').value = p?.name || ''
       document.getElementById('pg-slug').value = p?.slug || ''
       document.getElementById('pg-page').value = p?.page_path || '/subtitle-tool.html'
-      document.getElementById('pg-storage').value = p?.storage_path || 'subtitle-tool/CapCutSubtitle.zip'
+      document.getElementById('pg-storage').value = p?.storage_path || 'subtitle-tool/TadakSync.zip'
       document.getElementById('pg-feature').value = p?.feature_label || ''
       document.getElementById('pg-early').value = p?.early_access_hours ?? 2
       document.getElementById('pg-published').value = p?.is_published === 0 ? '0' : '1'

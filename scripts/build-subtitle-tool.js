@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** PyInstaller로 dist/CapCutSubtitle 재빌드 */
+/** PyInstaller로 dist/TadakSync 재빌드 */
 const { execSync } = require('child_process')
 const path = require('path')
 const fs = require('fs')
@@ -14,7 +14,7 @@ if (!fs.existsSync(python)) {
   process.exit(1)
 }
 
-execSync(`${JSON.stringify(python)} -m PyInstaller --noconfirm --clean CapCutSubtitle.spec`, {
+execSync(`${JSON.stringify(python)} -m PyInstaller --noconfirm --clean TadakSync.spec`, {
   cwd: capcutDir,
   stdio: 'inherit',
   shell: true,

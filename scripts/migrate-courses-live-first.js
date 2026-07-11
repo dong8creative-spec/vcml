@@ -1,5 +1,5 @@
 /**
- * 기존 강의를 live_first로 전환하고 도각 자막패치 프로그램을 연결합니다.
+ * 기존 강의를 live_first로 전환하고 타닥싱크(TadakSync) 프로그램을 연결합니다.
  *
  * 사용:
  *   node scripts/migrate-courses-live-first.js --dry-run

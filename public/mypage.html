@@ -530,7 +530,7 @@ function formatLectureStartLabel(date) {
 function renderSubtitleToolDownload(c) {
   const hasProgram = c.program || c.program_id || c.slug === 'capcut-pro-basic'
   if (!hasProgram) return ''
-  const programName = c.program?.name || '도각 자막패치'
+  const programName = c.program?.name || '타닥싱크'
   const pagePath = c.program?.page_path || '/subtitle-tool.html'
   if (!API.isAdmin() && !isCourseLectureStarted(c)) {
     const openAt = getProgramOpenAt(c)

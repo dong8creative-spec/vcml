@@ -1,4 +1,4 @@
-# 도각 자막패치
+﻿# 타닥싱크(TadakSync)
 
 캡컷(CapCut) PC 버전 프로젝트의 음성을 **OpenAI Whisper**(오픈소스 음성인식)로 인식해서
 자막을 자동 생성하고, 수정한 뒤 **캡컷 프로젝트에 텍스트 트랙으로 바로 삽입**하는 프로그램입니다.
@@ -29,13 +29,13 @@ capcut subtitle/사용법.md    ← 배포 zip에 함께 포함
 npm run redeploy:subtitle-tool
 ```
 
-내부 동작: `dist/CapCutSubtitle`에 문서 복사 → zip 생성 → Firebase Storage 업로드
+내부 동작: `dist/TadakSync`에 문서 복사 → zip 생성 → Firebase Storage 업로드
 
 ## 설치 방법 (배포판 사용자)
 
-1. [도각 자막패치 페이지](https://vcml.kr/subtitle-tool.html)에서 구글 로그인 후 zip 다운로드
+1. [타닥싱크(TadakSync) 페이지](https://vcml.kr/subtitle-tool.html)에서 구글 로그인 후 zip 다운로드
 2. 원하는 폴더에 압축 해제 → **`사용법.txt`** 또는 **`사용법.md`** 참고
-3. `CapCutSubtitle.exe` 실행 → **구글 로그인** → 브라우저에서 **이 기기로 연동**
+3. `TadakSync.exe` 실행 → **구글 로그인** → 브라우저에서 **이 기기로 연동**
 4. 처음 자막을 생성할 때 Whisper 모델을 자동 다운로드합니다 (인터넷 필요, 이후엔 오프라인 동작)
 
 > 캡컷 초신속 스탠다드(`capcut-pro-basic`) 수강생만 이용할 수 있습니다.
@@ -88,11 +88,11 @@ py -3.12 -m venv .venv
 ### 배포판 빌드
 
 ```powershell
-.\.venv\Scripts\pip install pyinstaller
-.\.venv\Scripts\pyinstaller --noconfirm --clean --windowed --name CapCutSubtitle `
-  --collect-all ctranslate2 --collect-all faster_whisper --collect-all av `
-  --collect-all onnxruntime --collect-all pycapcut run.py
-# 결과물: dist\CapCutSubtitle\
+# 프로젝트 루트(vcml)에서 권장
+npm run build:subtitle-tool
+# 또는 수동:
+.\.venv\Scripts\pyinstaller --noconfirm --clean TadakSync.spec
+# 결과물: dist\TadakSync\
 # 사용법.txt 수정 후: npm run redeploy:subtitle-tool (프로젝트 루트)
 ```
 

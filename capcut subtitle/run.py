@@ -1,4 +1,4 @@
-"""도각 자막패치 실행 진입점 (PyInstaller 빌드 대상)."""
+"""타닥싱크(TadakSync) 실행 진입점 (PyInstaller 빌드 대상)."""
 
 import multiprocessing
 

@@ -1153,7 +1153,7 @@ router.delete('/faqs/:id', async (req, res) => {
   res.json({ success: true })
 })
 
-// ── 수강생 프로그램 (도각 자막패치 등) ──
+// ── 수강생 프로그램 (타닥싱크 등) ──
 router.get('/programs', async (req, res) => {
   try {
     res.json(await db.listCoursePrograms())
