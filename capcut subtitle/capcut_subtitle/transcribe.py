@@ -61,17 +61,87 @@ class Transcriber:
             audio,
             language=language,
             word_timestamps=True,
-            vad_filter=True,
-            vad_parameters={"min_silence_duration_ms": 400},
+            vad_filter=False,
         )
-        words = []
-        for seg in segments:
-            for w in seg.words or []:
-                words.append(w)
+        all_segments = list(segments)
+        for seg in all_segments:
             if total_sec > 0:
                 progress_ratio(min(seg.end / total_sec, 1.0))
         progress(f"인식 언어: {info.language} (확률 {info.language_probability:.0%})")
-        return _split_lines(words, max_words_per_line)
+        return _split_lines_from_segments(all_segments, max_words_per_line)
+
+
+def _split_lines_from_segments(segments: list, max_words_per_line: int) -> list[SubtitleLine]:
+    """Segment 기반 분할 (word 타이밍은 보조용).
+
+    Whisper의 segment는 문장 단위로 이미 나뉘어 있고, 타이밍(start/end)도
+    정확하다. 각 segment 내의 word를 사용해 어절 단위로 세부 분할하되,
+    전체 구간은 segment의 시작/끝을 따른다.
+    """
+    lines: list[SubtitleLine] = []
+
+    for seg in segments:
+        text = (seg.text or "").strip()
+        if not text:
+            continue
+
+        words = seg.words or []
+        if not words:
+            # word 정보가 없으면 segment 전체를 하나의 라인으로
+            lines.append(SubtitleLine(
+                start_us=int(seg.start * US),
+                end_us=int(seg.end * US),
+                text=text,
+            ))
+            continue
+
+        # Segment 내에서 word를 max_words_per_line씩 묶어 서브라인 생성
+        cur_words = []
+        seg_lines: list[SubtitleLine] = []
+
+        def flush_subline():
+            nonlocal cur_words
+            if not cur_words:
+                return
+            sub_text = "".join(w.word for w in cur_words).strip()
+            if sub_text:
+                # Subline의 시작/끝: word 타이밍을 사용하되, segment 범위 내로 제한
+                start = max(seg.start, cur_words[0].start)
+                end = min(seg.end, cur_words[-1].end)
+                seg_lines.append(SubtitleLine(
+                    start_us=int(start * US),
+                    end_us=int(end * US),
+                    text=sub_text,
+                ))
+            cur_words = []
+
+        for w in words:
+            token = w.word.strip()
+            if not token:
+                continue
+            cur_words.append(w)
+            if len(cur_words) >= max_words_per_line:
+                flush_subline()
+
+        flush_subline()
+
+        # Segment에서 서브라인이 없으면 전체를 하나로
+        if not seg_lines:
+            lines.append(SubtitleLine(
+                start_us=int(seg.start * US),
+                end_us=int(seg.end * US),
+                text=text,
+            ))
+        else:
+            lines.extend(seg_lines)
+
+    # 라인 간 겹침 제거 및 최소 표시시간 보정
+    for i, line in enumerate(lines):
+        if line.end_us - line.start_us < 500_000:
+            line.end_us = line.start_us + 500_000
+        if i + 1 < len(lines) and line.end_us > lines[i + 1].start_us:
+            line.end_us = lines[i + 1].start_us
+    return [l for l in lines if l.text.strip()]
 
 
 def _split_lines(words: list, max_words_per_line: int) -> list[SubtitleLine]:
