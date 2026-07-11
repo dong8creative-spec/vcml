@@ -117,8 +117,8 @@ class Transcriber:
         except Exception as e:
             raise RuntimeError(
                 "Whisper 모델 다운로드에 실패했습니다. 인터넷 연결을 확인한 뒤 다시 시도하거나, "
-                "홈페이지에서 '음성인식 모델' 파일을 받아 프로그램 폴더 안 "
-                "models\\faster-whisper-large-v3 폴더에 풀어주세요."
+                "홈페이지에서 '음성인식 모델' zip을 받아 TadakSync.exe가 있는 "
+                "프로그램 폴더에 압축 해제해 주세요. (models 폴더가 생깁니다)"
             ) from e
         finally:
             stop.set()
@@ -156,11 +156,15 @@ def _close_gaps(lines: list[SubtitleLine]) -> list[SubtitleLine]:
 
     각 자막의 끝 시각을 다음 자막의 시작 시각까지 연장해,
     화면에서 자막이 끊기지 않고 다음 자막이 뜰 때까지 유지되게 한다.
+    단, 다음 자막까지 2초 넘게 침묵이 이어지면 2초까지만 유지해
+    말이 없는 장면에 옛 자막이 계속 남아있지 않게 한다.
     """
     if len(lines) < 2:
         return lines
+    max_hold_us = 2_000_000
     for i in range(len(lines) - 1):
-        lines[i].end_us = lines[i + 1].start_us
+        lines[i].end_us = min(lines[i + 1].start_us,
+                              lines[i].end_us + max_hold_us)
     return [l for l in lines if l.end_us > l.start_us]
 
 
@@ -295,8 +299,8 @@ def _refine_with_vad(lines: list[SubtitleLine],
         new_s, new_e = s, e
         if onset > s:
             new_s = onset          # 자막이 음성보다 일찍 뜸 → 온셋으로 당김
-        elif onset >= prev_end and s - onset <= 0.6:
-            new_s = onset          # 새 온셋인데 자막이 살짝 늦음 → 온셋으로 확장
+        elif onset >= prev_end and s - onset <= 1.0:
+            new_s = onset          # 새 온셋인데 자막이 늦음 → 온셋으로 확장
         if offset < e:
             new_e = offset         # 발화가 끝났는데 자막이 남음 → 끝 스냅
         new_e = max(new_e, new_s + 0.2)
@@ -323,6 +327,28 @@ def _refine_with_vad(lines: list[SubtitleLine],
         gs, ge = min(cand, key=lambda g: abs(g[0] - ae))
         a.end_us = int(gs * US)
         b.start_us = int(ge * US)
+
+    # 연속 발화 안의 경계(사이에 침묵이 없는 줄바꿈)는 주변 ±0.25초에서
+    # 에너지가 가장 낮은 지점(어절 사이의 짧은 숨)으로 옮겨 미세 오차를 줄인다
+    frame = int(0.02 * SR)  # 20ms
+    for i in range(len(refined) - 1):
+        a, b = refined[i], refined[i + 1]
+        ae, bs = a.end_us / US, b.start_us / US
+        if bs - ae > 0.05:
+            continue
+        if not any(rs + 0.2 < bs < re_ - 0.2 for rs, re_ in regions):
+            continue  # 침묵 경계는 위에서 이미 처리됨
+        lo = max(int((bs - 0.25) * SR), int(a.start_us / US * SR) + frame)
+        hi = min(int((bs + 0.25) * SR), int(b.end_us / US * SR) - frame)
+        if hi - lo < frame * 2:
+            continue
+        best_t, best_rms = bs, None
+        for p in range(lo, hi - frame, frame // 2):
+            rms = float(np.sqrt(np.mean(audio[p:p + frame] ** 2)))
+            if best_rms is None or rms < best_rms:
+                best_rms, best_t = rms, (p + frame / 2) / SR
+        a.end_us = int(best_t * US)
+        b.start_us = int(best_t * US)
 
     # 겹침 제거 및 최소 표시시간 보정 (간격 0은 호출부 _close_gaps에서 처리)
     for i, line in enumerate(refined):

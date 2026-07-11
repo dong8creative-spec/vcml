@@ -153,7 +153,7 @@ async function downloadModel() {
     const data = await API.get('/subtitle/download-model')
     if (!data.url) throw new Error('다운로드 주소를 받지 못했습니다.')
     location.href = data.url
-    showMsg('음성인식 모델(약 3GB) 다운로드가 시작됩니다. 완료 후 프로그램 폴더 안 <b>models\\faster-whisper-large-v3</b> 폴더에 압축 해제하세요.', 'ok')
+    showMsg('음성인식 모델(약 3GB) 다운로드가 시작됩니다. 완료 후 TadakSync.exe가 있는 프로그램 폴더에 바로 압축 해제하세요. (models 폴더가 생깁니다)', 'ok')
   } catch (e) {
     showMsg(e.message || '다운로드에 실패했습니다.', 'err')
   } finally {
@@ -229,7 +229,7 @@ function renderEntitled(data) {
       음성인식 모델(약 3GB)은 첫 자막 생성 시 자동으로 받아집니다.
       자동 다운로드가 안 되는 환경(사내망·방화벽 등)에서만
       <a href="#" id="btn-download-model" onclick="downloadModel();return false">모델 파일 별도 받기</a>
-      후 프로그램 폴더의 <b>models\\faster-whisper-large-v3</b> 폴더에 압축 해제하세요.
+      후 TadakSync.exe가 있는 프로그램 폴더에 바로 압축 해제하세요.
     </p>
   `
   if (data.just_granted_initial) {

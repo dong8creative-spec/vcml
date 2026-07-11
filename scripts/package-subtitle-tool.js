@@ -58,12 +58,11 @@ function createZip(srcDir, zipPath) {
   if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
 
   if (process.platform === 'win32') {
-    const distEsc = srcDir.replace(/'/g, "''")
-    const zipEsc = zipPath.replace(/'/g, "''")
-    execSync(
-      `powershell -NoProfile -Command "Compress-Archive -LiteralPath '${distEsc}' -DestinationPath '${zipEsc}' -CompressionLevel Optimal"`,
-      { stdio: 'inherit' }
-    )
+    // Compress-Archive는 2GB 초과 파일에서 실패("Stream was too long")하므로
+    // Windows 내장 bsdtar(zip64 지원)를 사용한다
+    const parent = path.dirname(srcDir)
+    const folder = path.basename(srcDir)
+    execSync(`tar.exe -a -cf "${zipPath}" -C "${parent}" "${folder}"`, { stdio: 'inherit' })
   } else {
     const parent = path.dirname(srcDir)
     const folder = path.basename(srcDir)
