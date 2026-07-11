@@ -14,6 +14,7 @@ import numpy as np
 from . import __version__, capcut, inject, theme
 from . import license as license_api
 from . import srt as srt_io
+from .account_ui import CoinPurchaseDialog, LoginDialog, MemberInfoDialog
 from .playback import Player
 from .transcribe import (LANGUAGE_CHOICES, MODEL, SubtitleLine,
                          Transcriber, merge_lines, split_line)
@@ -95,6 +96,12 @@ class App(tk.Tk):
         self.login_btn.pack(side="right")
         self.logout_btn = theme.RoundedButton(
             auth_frame, "로그아웃", command=self.on_logout,
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK, min_width=90)
+        self.coin_btn = theme.RoundedButton(
+            auth_frame, "코인 충전", command=self.on_open_coin_purchase,
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK, min_width=90)
+        self.myinfo_btn = theme.RoundedButton(
+            auth_frame, "내 정보", command=self.on_open_member_info,
             fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK, min_width=90)
 
         # 미로그인 게이트
@@ -266,15 +273,12 @@ class App(tk.Tk):
         state = "disabled" if busy else "normal"
         for b in (self.gen_btn, self.insert_btn, self.login_btn,
                   self.export_btn, self.import_btn, self.play_btn,
-                  self.add_row_btn, self.refresh_btn):
+                  self.add_row_btn, self.refresh_btn, self.logout_btn,
+                  self.myinfo_btn, self.coin_btn):
             try:
                 b.configure(state=state)
             except tk.TclError:
                 pass
-        try:
-            self.logout_btn.configure(state=state)
-        except tk.TclError:
-            pass
 
     def _require_auth(self, action: str = "이 기능") -> bool:
         if self._authenticated and self._auth and self._auth.get("token"):
@@ -324,16 +328,20 @@ class App(tk.Tk):
             self.set_status("구글 로그인 후 이용할 수 있습니다.")
 
     def _refresh_auth_ui(self) -> None:
+        self.login_btn.pack_forget()
+        self.logout_btn.pack_forget()
+        self.myinfo_btn.pack_forget()
+        self.coin_btn.pack_forget()
         if self._authenticated and self._auth and self._auth.get("token"):
             name = self._auth.get("user_name") or "수강생"
             bal = self._balance
             bal_txt = f" · 코인 {bal}" if bal is not None else ""
             self.auth_var.set(f"{name} 로그인됨{bal_txt}")
-            self.login_btn.pack_forget()
             self.logout_btn.pack(side="right")
+            self.myinfo_btn.pack(side="right", padx=(0, 6))
+            self.coin_btn.pack(side="right", padx=(0, 6))
         else:
             self.auth_var.set("로그인 필요 — 캡컷 초신속 스탠다드 수강생 전용")
-            self.logout_btn.pack_forget()
             self.login_btn.pack(side="right")
 
     def _startup_verify_worker(self) -> None:
@@ -344,8 +352,9 @@ class App(tk.Tk):
             self._balance = me.get("balance")
             self._auth = license_api.save_auth(
                 self._auth["token"],
-                self._auth.get("user_name"),
+                me.get("name") or self._auth.get("user_name"),
                 self._balance,
+                me.get("email"),
             )
             self.after(0, lambda: self._set_authenticated(True, self._auth, self._balance))
             self.after(0, lambda: toast(self, "로그인 확인 완료", "success"))
@@ -364,8 +373,9 @@ class App(tk.Tk):
             self._balance = me.get("balance")
             self._auth = license_api.save_auth(
                 self._auth["token"],
-                self._auth.get("user_name"),
+                me.get("name") or self._auth.get("user_name"),
                 self._balance,
+                me.get("email"),
             )
             self.after(0, self._refresh_auth_ui)
         except Exception:
@@ -375,23 +385,17 @@ class App(tk.Tk):
     def on_login(self) -> None:
         if self._busy:
             return
-        self._set_busy(True)
-        self.set_status("브라우저에서 구글 로그인 후 기기를 연동하세요…")
-        threading.Thread(target=self._login_worker, daemon=True).start()
+        LoginDialog(self, exit_on_cancel=not self._authenticated,
+                   on_done=self._on_login_dialog_done)
 
-    def _login_worker(self) -> None:
-        try:
-            auth = license_api.start_device_login(on_status=self.set_status)
-            self.after(0, lambda: self._set_authenticated(True, auth, auth.get("balance")))
-            self.after(0, lambda: toast(self, "로그인되었습니다.", "success"))
-            self.set_status("로그인 완료. 프로젝트를 선택하고 자막을 생성하세요.")
-        except Exception as e:
-            license_api.clear_auth()
-            self.after(0, lambda: self._set_authenticated(False))
-            self.after(0, lambda: toast(self, str(e) or "로그인에 실패했습니다.", "error"))
-            self.set_status("로그인 실패")
-        finally:
-            self.after(0, lambda: self._set_busy(False))
+    def _on_login_dialog_done(self, auth: dict | None) -> None:
+        if auth is None:
+            if not self._authenticated:
+                self._on_close()
+            return
+        self._set_authenticated(True, auth, auth.get("balance"))
+        toast(self, "로그인되었습니다.", "success")
+        self.set_status("로그인 완료. 프로젝트를 선택하고 자막을 생성하세요.")
 
     def on_logout(self) -> None:
         license_api.clear_auth()
@@ -402,19 +406,17 @@ class App(tk.Tk):
     def _prompt_login_on_start(self) -> None:
         if self._authenticated and self._auth and self._auth.get("token"):
             return
-        ok = confirm(
-            self,
-            "구글 로그인",
-            "타닥싱크는 캡컷 초신속 스탠다드 수강생 전용입니다.\n"
-            "브라우저에서 구글 로그인 후 이 기기를 연동해야 사용할 수 있습니다.\n\n"
-            "지금 로그인할까요? (취소하면 프로그램이 종료됩니다.)",
-            ok_text="로그인",
-            cancel_text="종료",
-        )
-        if ok:
-            self.on_login()
-        else:
-            self._on_close()
+        LoginDialog(self, exit_on_cancel=True, on_done=self._on_login_dialog_done)
+
+    def on_open_member_info(self) -> None:
+        if not self._require_auth("내 정보"):
+            return
+        MemberInfoDialog(self, self)
+
+    def on_open_coin_purchase(self) -> None:
+        if not self._require_auth("코인 충전"):
+            return
+        CoinPurchaseDialog(self)
 
     # ------------------------------------------------------------- 생성
     def on_generate(self) -> None:

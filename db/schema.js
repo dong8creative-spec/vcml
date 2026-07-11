@@ -4997,6 +4997,26 @@ const db = {
     return out
   },
 
+  async getSubtitleCoinHistory(userId, limit = 30) {
+    // where + orderBy 복합 쿼리는 Firestore 색인 생성이 필요해 배포 단계를 늘리므로,
+    // user_id로만 필터링한 뒤 created_at(ISO 문자열) 기준 정렬은 메모리에서 처리한다.
+    const snap = await fs.collection('subtitle_coin_ledger')
+      .where('user_id', '==', userId)
+      .get()
+    const rows = snap.docs.map(d => {
+      const data = d.data()
+      return {
+        delta: data.delta || 0,
+        balance_after: data.balance_after || 0,
+        reason: data.reason || '',
+        minutes: data.minutes || null,
+        created_at: data.created_at || null,
+      }
+    })
+    rows.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    return rows.slice(0, limit)
+  },
+
   async createSubtitleDeviceCode() {
     const code = crypto.randomBytes(4).toString('hex')
     const expiresAt = new Date(Date.now() + SUBTITLE_DEVICE_CODE_TTL_MS).toISOString()

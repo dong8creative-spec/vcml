@@ -54,11 +54,14 @@ def load_auth() -> dict | None:
     return data
 
 
-def save_auth(token: str, user_name: str | None = None, balance: int | None = None) -> dict:
+def save_auth(token: str, user_name: str | None = None, balance: int | None = None,
+              email: str | None = None) -> dict:
+    prev = load_auth() or {}
     data = {
         "token": token,
-        "user_name": user_name,
+        "user_name": user_name if user_name is not None else prev.get("user_name"),
         "balance": balance,
+        "email": email if email is not None else prev.get("email"),
         "saved_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     auth_path().write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -113,20 +116,30 @@ def new_job_id() -> str:
     return uuid.uuid4().hex
 
 
-def start_device_login(on_status=None) -> dict:
-    """브라우저 연동 후 수강 권한 확인·JWT 저장. 성공 시 auth dict 반환."""
+def start_device_login(on_status=None, on_code=None, cancel_event=None) -> dict:
+    """브라우저 연동 후 수강 권한 확인·JWT 저장. 성공 시 auth dict 반환.
+
+    on_code(code, verify_url)는 연동 코드가 발급된 직후 한 번 호출된다(팝업에 코드 표시용).
+    cancel_event가 set되면 폴링을 즉시 중단하고 RuntimeError("cancelled")를 던진다.
+    """
     started = _request("POST", "/api/subtitle/device/start")
     code = started.get("code")
     verify_url = started.get("verify_url")
     if not code or not verify_url:
         raise RuntimeError("연동 코드를 받지 못했습니다.")
+    if on_code:
+        on_code(code, verify_url)
     if on_status:
         on_status(f"브라우저에서 구글 로그인 후 연동하세요. 코드: {code}")
     webbrowser.open(verify_url)
 
     deadline = time.time() + POLL_TIMEOUT_SEC
     while time.time() < deadline:
+        if cancel_event is not None and cancel_event.is_set():
+            raise RuntimeError("cancelled")
         time.sleep(POLL_INTERVAL_SEC)
+        if cancel_event is not None and cancel_event.is_set():
+            raise RuntimeError("cancelled")
         polled = _request("GET", "/api/subtitle/device/poll?" + urllib.parse.urlencode({"code": code}))
         status = polled.get("status")
         if status == "denied":
@@ -148,7 +161,7 @@ def start_device_login(on_status=None) -> dict:
             except RuntimeError:
                 clear_auth()
                 raise
-            return save_auth(token, user_name, me.get("balance"))
+            return save_auth(token, user_name, me.get("balance"), me.get("email"))
         if status in ("expired", "invalid"):
             raise RuntimeError("연동 코드가 만료되었습니다. 다시 로그인해 주세요.")
         if on_status:
@@ -196,3 +209,8 @@ def refund(token: str, job_id: str) -> dict:
         body={"job_id": job_id},
         token=token,
     )
+
+
+def fetch_history(token: str, limit: int = 30) -> list[dict]:
+    result = _request("GET", f"/api/subtitle/history?limit={limit}", token=token)
+    return result.get("history", [])

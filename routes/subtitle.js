@@ -47,6 +47,8 @@ router.get('/me', authMiddleware, async (req, res) => {
       return res.status(403).json(result)
     }
     res.json({
+      email: req.user.email || null,
+      name: req.user.name || null,
       balance: result.balance,
       initial_granted: result.initial_granted,
       review_bonus_granted: result.review_bonus_granted,
@@ -58,6 +60,22 @@ router.get('/me', authMiddleware, async (req, res) => {
   } catch (e) {
     console.error('subtitle me:', e)
     res.status(500).json({ error: '잔액을 불러오지 못했습니다.' })
+  }
+})
+
+/** GET /api/subtitle/history — 코인 사용/지급 내역 */
+router.get('/history', authMiddleware, async (req, res) => {
+  try {
+    const result = await db.ensureSubtitleEntitlement(req.user.id)
+    if (!result.ok) {
+      return res.status(403).json(result)
+    }
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30))
+    const history = await db.getSubtitleCoinHistory(req.user.id, limit)
+    res.json({ history })
+  } catch (e) {
+    console.error('subtitle history:', e)
+    res.status(500).json({ error: '사용 내역을 불러오지 못했습니다.' })
   }
 })
 
