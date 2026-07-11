@@ -694,6 +694,8 @@ router.post('/courses', async (req, res) => {
     title, description, category, price, sale_price, thumbnail_icon, thumb_style,
     badge, sort_order, is_published, checkout_provider, store_checkout_urls, coupon_allowed,
     checkout_starts_at, checkout_ends_at,
+    live_starts_at, live_ends_at, live_schedule, meet_code,
+    live_replay_url, live_material_url, live_chat_url, program_id, course_type,
   } = req.body
   if (!title || !String(title).trim()) return res.status(400).json({ error: '제목을 입력하세요.' })
   if (!category || !String(category).trim()) return res.status(400).json({ error: '카테고리를 입력하세요.' })
@@ -710,6 +712,7 @@ router.post('/courses', async (req, res) => {
     }
   }
   try {
+    const sale = Number(sale_price != null ? sale_price : price) || 0
     const course = await db.createRecordedCourse({
       title: String(title).trim(),
       description,
@@ -726,6 +729,14 @@ router.post('/courses', async (req, res) => {
       coupon_allowed,
       checkout_starts_at,
       checkout_ends_at,
+      live_starts_at,
+      live_ends_at,
+      live_schedule,
+      meet_code,
+      live_replay_url,
+      live_material_url,
+      live_chat_url,
+      program_id,
     })
     if (course?.error === 'invalid_starts') {
       return res.status(400).json({ error: '결제 시작일 형식이 올바르지 않습니다.' })
@@ -735,6 +746,24 @@ router.post('/courses', async (req, res) => {
     }
     if (course?.error === 'invalid_range') {
       return res.status(400).json({ error: '결제 마감일은 시작일보다 뒤여야 합니다.' })
+    }
+    if (course?.error === 'invalid_live_starts') {
+      return res.status(400).json({ error: '강의 시작일 형식이 올바르지 않습니다.' })
+    }
+    if (course?.error === 'invalid_live_ends') {
+      return res.status(400).json({ error: '강의 종료일 형식이 올바르지 않습니다.' })
+    }
+    if (course?.error === 'invalid_live_range') {
+      return res.status(400).json({ error: '강의 종료일은 시작일보다 뒤여야 합니다.' })
+    }
+    // 무료면 course_type=live, 유료면 recorded 유지 (둘 다 live_first)
+    if (course?.id && (course_type === 'live' || sale === 0)) {
+      await db.updateCourse(course.id, {
+        course_type: 'live',
+        badge: course.badge || 'LIVE',
+        thumb_style: 'dark',
+      })
+      course.course_type = 'live'
     }
     res.json({ success: true, course })
   } catch (e) {

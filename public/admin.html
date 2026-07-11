@@ -218,8 +218,7 @@
               <button type="button" class="filter-tab" data-course-filter="archived">구버전·비공개</button>
             </div>
             <button type="button" class="btn-sm" id="btn-sync-catalog"><i class="ti ti-refresh"></i> 카탈로그 동기화</button>
-            <button class="btn-primary-sm" onclick="openRecordedCreateModal()"><i class="ti ti-video"></i> 일반 강의 등록</button>
-            <button class="btn-primary-sm" onclick="openLiveCreateModal()"><i class="ti ti-broadcast"></i> 라이브 강의 등록</button>
+            <button class="btn-primary-sm" onclick="openCourseCreateModal()"><i class="ti ti-plus"></i> 강의 등록</button>
           </div>
         </div>
         <table class="data-table">
@@ -274,7 +273,7 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>강의 자료 다운로드 링크 <span style="font-size: 13.2px;color:#aaa">후기 작성 후 · 종료일부터 7일</span></label>
+                <label>강의 자료 다운로드 링크 <span style="font-size: 13.2px;color:#aaa">시작 1시간 전 ~ 종료 후 1주일</span></label>
                 <input type="url" id="live-material-url" placeholder="https://..." maxlength="500" />
               </div>
               <div class="form-group">
@@ -437,15 +436,25 @@
               <div id="cm-hero-gallery-list" style="display:flex;flex-direction:column;gap:10px"></div>
               <button type="button" class="btn-sm" id="cm-hero-gallery-add" style="margin-top:12px;width:fit-content">+ 이미지 추가</button>
             </div>
-            <div id="cm-live-links" class="modal-live-links" style="display:none">
-              <div class="modal-live-links__title">라이브 링크 · 자료</div>
-              <p class="modal-live-links__desc">Meet, 자료, 다시보기, 단톡방 링크를 등록합니다. 긴 URL도 편하게 입력할 수 있습니다.</p>
-              <div class="form-group">
-                <label>Google Meet 코드 <span>예: abc-defg-hij · 시작 2시간 전부터 입장 버튼 노출</span></label>
-                <input type="text" id="cm-live-meet-code" placeholder="meet.google.com/ 뒤 코드" maxlength="120" />
+            <div id="cm-live-links" class="modal-live-links">
+              <div class="modal-live-links__title">강의 일정 · 링크 · 자료</div>
+              <p class="modal-live-links__desc">모든 강의는 라이브 우선입니다. 시작·종료 시간과 Meet·자료·다시보기 링크를 등록합니다.</p>
+              <div class="two-col">
+                <div class="form-group">
+                  <label>강의 시작 일시</label>
+                  <input type="datetime-local" id="cm-live-starts" />
+                </div>
+                <div class="form-group">
+                  <label>강의 종료 일시 <span>미입력 시 시작 3시간 후</span></label>
+                  <input type="datetime-local" id="cm-live-ends" />
+                </div>
               </div>
               <div class="form-group">
-                <label>강의 자료 다운로드 링크 <span>Google Drive 등 URL · 강의 당일만 다운로드</span></label>
+                <label>Google Meet 코드 <span>예: abc-defg-hij · 시작 2시간 전부터 입장</span></label>
+                <input type="text" id="cm-live-meet-code" placeholder="meet.google.com/ 뒤 코드 또는 전체 URL" maxlength="120" />
+              </div>
+              <div class="form-group">
+                <label>강의 자료 다운로드 링크 <span>시작 1시간 전 ~ 종료 후 1주일</span></label>
                 <input type="url" id="cm-live-material-url" placeholder="https://..." maxlength="500" />
               </div>
               <div class="form-group">
@@ -456,7 +465,12 @@
                 <label>수강생 단톡방 링크</label>
                 <input type="url" id="cm-live-chat-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
               </div>
-              <p class="modal-live-links__hint">라이브 일정·상태는 목록의 「라이브」 버튼에서 설정합니다.</p>
+              <div class="form-group">
+                <label>제공 프로그램</label>
+                <select id="cm-program-id">
+                  <option value="">없음</option>
+                </select>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -1969,19 +1983,20 @@
     </div>
   </div>
 
-  <!-- 일반(VOD) 강의 등록 모달 -->
+  <!-- 강의 등록 모달 (공통) -->
   <div id="recorded-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:16px;padding:28px;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto">
+    <div style="background:#fff;border-radius:16px;padding:28px;width:560px;max-width:92vw;max-height:90vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-video"></i> 일반 강의 등록</div>
-        <button onclick="closeRecordedCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
+        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-plus"></i> 강의 등록</div>
+        <button onclick="closeCourseCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
       </div>
       <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#555555;margin-bottom:20px;line-height:1.6">
-        녹화(VOD) 강의를 새로 만듭니다. 등록 후 「편집」에서 썸네일·스마트스토어 링크·챕터 등을 설정할 수 있습니다.
+        모든 강의는 동일한 양식으로 등록합니다. 판매가 0원이면 무료 라이브로 저장됩니다.<br>
+        자료 다운로드: 시작 1시간 전 ~ 종료 후 1주일 · 후기 작성: 종료 후 1주일
       </div>
       <div class="form-group">
         <label>강의 제목 <span style="color:#111111">*</span></label>
-        <input type="text" id="rc-title" placeholder="예: 편집 초신속 마스터반" />
+        <input type="text" id="rc-title" placeholder="예: 편집 초신속 스탠다드" />
       </div>
       <div class="form-group">
         <label>카테고리 <span style="color:#111111">*</span></label>
@@ -1997,9 +2012,35 @@
           <input type="number" id="rc-price" min="0" step="1000" placeholder="89000" />
         </div>
         <div class="form-group">
-          <label>판매가 (원)</label>
+          <label>판매가 (원) <span style="font-size:13.2px;color:#aaa">0 = 무료</span></label>
           <input type="number" id="rc-sale-price" min="0" step="1000" placeholder="69000" />
         </div>
+      </div>
+      <div class="two-col">
+        <div class="form-group">
+          <label>강의 시작 일시 <span style="color:#111111">*</span></label>
+          <input type="datetime-local" id="rc-live-starts" />
+        </div>
+        <div class="form-group">
+          <label>강의 종료 일시 <span style="font-size:13.2px;color:#aaa">미입력 시 시작+3시간</span></label>
+          <input type="datetime-local" id="rc-live-ends" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Google Meet 코드</label>
+        <input type="text" id="rc-meet-code" placeholder="abc-defg-hij 또는 전체 URL" />
+      </div>
+      <div class="form-group">
+        <label>강의 자료 다운로드 링크 <span style="font-size:13.2px;color:#aaa">시작 1시간 전 ~ 종료 후 1주일</span></label>
+        <input type="url" id="rc-material-url" placeholder="https://..." maxlength="500" />
+      </div>
+      <div class="form-group">
+        <label>다시보기 링크</label>
+        <input type="url" id="rc-replay-url" placeholder="https://..." maxlength="500" />
+      </div>
+      <div class="form-group">
+        <label>수강생 단톡방 링크</label>
+        <input type="url" id="rc-chat-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
       </div>
       <div class="two-col">
         <div class="form-group">
@@ -2018,62 +2059,7 @@
         <label>썸네일 아이콘</label>
         <input type="text" id="rc-icon" placeholder="ti-video" value="ti-video" />
       </div>
-      <button class="btn-save" style="width:100%;margin-top:8px" onclick="createRecordedCourse()">일반 강의 등록</button>
-    </div>
-  </div>
-
-  <!-- 라이브 강의 등록 모달 -->
-  <div id="live-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:16px;padding:28px;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-broadcast" style="color:#111111"></i> 라이브 강의 등록</div>
-        <button onclick="closeLiveCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
-      </div>
-      <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#555555;margin-bottom:20px;line-height:1.6">
-        라이브 강의는 <b>무료</b>로 제공됩니다.<br>신청 수강생에게는 단톡방 링크·Google Meet로 안내합니다.
-      </div>
-      <div class="form-group">
-        <label>강의 제목 <span style="color:#111111">*</span></label>
-        <input type="text" id="lc-title" placeholder="예: 캡컷 PRO 라이브 Q&A" />
-      </div>
-      <div class="form-group">
-        <label>카테고리 <span style="color:#111111">*</span></label>
-        <select id="lc-category">
-          <option>영상 편집</option>
-          <option>모션그래픽</option>
-          <option>색보정</option>
-          <option>유튜브·콘텐츠</option>
-          <option>촬영·조명</option>
-          <option>광고·상업</option>
-          <option>드론·항공</option>
-          <option>사운드</option>
-          <option>기타</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>강의 설명</label>
-        <textarea id="lc-desc" rows="3" placeholder="라이브 강의 내용을 간략히 설명해주세요" style="width:100%;padding:10px 14px;border:0.5px solid #ddd;border-radius:8px;font-size: 16.8px;resize:vertical;font-family:inherit"></textarea>
-      </div>
-      <div class="form-group">
-        <label>라이브 일정 <span style="color:#111111">*</span></label>
-        <input type="datetime-local" id="lc-schedule" />
-      </div>
-      <div class="form-group">
-        <label>Google Meet 코드</label>
-        <input type="text" id="lc-meet-code" placeholder="abc-defg-hij (나중에 입력 가능)" />
-        <div style="font-size: 13.2px;color:#aaa;margin-top:4px">Google Meet 생성 후 URL에서 코드 부분만 입력 (meet.google.com/ 뒤)</div>
-      </div>
-      <div class="form-group">
-        <label>썸네일 아이콘</label>
-        <select id="lc-icon">
-          <option value="ti-broadcast">📡 방송 (기본)</option>
-          <option value="ti-video">🎬 카메라</option>
-          <option value="ti-microphone">🎤 마이크</option>
-          <option value="ti-presentation">📊 프레젠테이션</option>
-          <option value="ti-sparkles">✨ 스파클</option>
-        </select>
-      </div>
-      <button class="btn-save" style="width:100%;margin-top:8px" onclick="createLiveCourse()">라이브 강의 등록</button>
+      <button class="btn-save" style="width:100%;margin-top:8px" onclick="createCourseFromForm()">강의 등록</button>
     </div>
   </div>
 
@@ -3063,19 +3049,17 @@
       renderCmThumbPreview(c.thumbnail_url && String(c.thumbnail_url).startsWith('http') ? c.thumbnail_url : (String(c.thumbnail_url || '').startsWith('data:') ? c.thumbnail_url : null))
       _cmHeroGallery = Array.isArray(c.hero_gallery) ? [...c.hero_gallery] : []
       renderCmHeroGalleryList()
-      const isLive = c.course_type === 'live'
       const checkoutWindow = document.getElementById('cm-checkout-window')
-      if (checkoutWindow) checkoutWindow.style.display = isLive ? 'none' : ''
-      document.getElementById('cm-checkout-starts').value = isLive ? '' : isoToDatetimeLocal(c.checkout_starts_at)
-      document.getElementById('cm-checkout-ends').value = isLive ? '' : isoToDatetimeLocal(c.checkout_ends_at)
-      const liveLinks = document.getElementById('cm-live-links')
-      if (liveLinks) liveLinks.style.display = isLive ? '' : 'none'
-      if (isLive) {
-        document.getElementById('cm-live-meet-code').value = c.meet_code || ''
-        document.getElementById('cm-live-material-url').value = c.live_material_url || ''
-        document.getElementById('cm-live-replay-url').value = c.live_replay_url || ''
-        document.getElementById('cm-live-chat-url').value = c.live_chat_url || ''
-      }
+      if (checkoutWindow) checkoutWindow.style.display = ''
+      document.getElementById('cm-checkout-starts').value = isoToDatetimeLocal(c.checkout_starts_at)
+      document.getElementById('cm-checkout-ends').value = isoToDatetimeLocal(c.checkout_ends_at)
+      document.getElementById('cm-live-starts').value = isoToDatetimeLocal(c.live_starts_at)
+      document.getElementById('cm-live-ends').value = isoToDatetimeLocal(c.live_ends_at)
+      document.getElementById('cm-live-meet-code').value = c.meet_code || ''
+      document.getElementById('cm-live-material-url').value = c.live_material_url || ''
+      document.getElementById('cm-live-replay-url').value = c.live_replay_url || ''
+      document.getElementById('cm-live-chat-url').value = c.live_chat_url || ''
+      fillCmProgramSelect(c.program_id)
       document.getElementById('course-modal').style.display = 'flex'
     }
 
@@ -3114,18 +3098,25 @@
       if (_cmThumbPending !== undefined) payload.thumbnail_url = _cmThumbPending
       else if (thumbUrl) payload.thumbnail_url = thumbUrl
       payload.hero_gallery = _cmHeroGallery.map(s => String(s || '').trim()).filter(Boolean).slice(0, 9)
-      if (course?.course_type !== 'live') {
-        const startsVal = document.getElementById('cm-checkout-starts')?.value
-        const endsVal = document.getElementById('cm-checkout-ends')?.value
-        payload.checkout_starts_at = startsVal ? new Date(startsVal).toISOString() : null
-        payload.checkout_ends_at = endsVal ? new Date(endsVal).toISOString() : null
+      const startsVal = document.getElementById('cm-checkout-starts')?.value
+      const endsVal = document.getElementById('cm-checkout-ends')?.value
+      payload.checkout_starts_at = startsVal ? new Date(startsVal).toISOString() : null
+      payload.checkout_ends_at = endsVal ? new Date(endsVal).toISOString() : null
+      const liveStartsVal = document.getElementById('cm-live-starts')?.value
+      const liveEndsVal = document.getElementById('cm-live-ends')?.value
+      payload.live_starts_at = liveStartsVal ? new Date(liveStartsVal).toISOString() : null
+      payload.live_ends_at = liveEndsVal ? new Date(liveEndsVal).toISOString() : null
+      if (payload.live_starts_at) {
+        payload.live_schedule = new Date(liveStartsVal).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
       }
-      if (course?.course_type === 'live') {
-        payload.meet_code = document.getElementById('cm-live-meet-code').value.trim() || null
-        payload.live_material_url = document.getElementById('cm-live-material-url').value.trim() || null
-        payload.live_replay_url = document.getElementById('cm-live-replay-url').value.trim() || null
-        payload.live_chat_url = document.getElementById('cm-live-chat-url').value.trim() || null
-      }
+      payload.delivery_mode = 'live_first'
+      payload.meet_code = document.getElementById('cm-live-meet-code').value.trim() || null
+      payload.live_material_url = document.getElementById('cm-live-material-url').value.trim() || null
+      payload.live_replay_url = document.getElementById('cm-live-replay-url').value.trim() || null
+      payload.live_chat_url = document.getElementById('cm-live-chat-url').value.trim() || null
+      payload.program_id = document.getElementById('cm-program-id')?.value || null
+      if (Number(payload.sale_price) === 0) payload.course_type = 'live'
+      else if (course?.course_type === 'live' && Number(payload.sale_price) > 0) payload.course_type = 'recorded'
       const btn = document.getElementById('cm-save-btn')
       btn.disabled = true
       btn.textContent = '저장 중...'
@@ -5910,40 +5901,76 @@
       });
     });
 
-    function openRecordedCreateModal() {
+    function openCourseCreateModal() {
       document.getElementById('recorded-create-overlay').style.display = 'flex'
     }
-    function closeRecordedCreateModal() {
+    function closeCourseCreateModal() {
       document.getElementById('recorded-create-overlay').style.display = 'none'
     }
+    function openRecordedCreateModal() { openCourseCreateModal() }
+    function closeRecordedCreateModal() { closeCourseCreateModal() }
+    function openLiveCreateModal() { openCourseCreateModal() }
+    function closeLiveCreateModal() { closeCourseCreateModal() }
 
-    async function createRecordedCourse() {
+    async function fillCmProgramSelect(selectedId) {
+      const sel = document.getElementById('cm-program-id')
+      if (!sel) return
+      try {
+        if (!_programsCache) {
+          _programsCache = await API.get('/admin/programs')
+        }
+      } catch (_) {
+        _programsCache = []
+      }
+      const list = Array.isArray(_programsCache) ? _programsCache : (_programsCache?.programs || [])
+      sel.innerHTML = `<option value="">없음</option>` + list.map(p =>
+        `<option value="${escAttr(p.id)}"${String(p.id) === String(selectedId || '') ? ' selected' : ''}>${esc(p.name || p.slug)}</option>`
+      ).join('')
+    }
+
+    async function createCourseFromForm() {
       const title = document.getElementById('rc-title').value.trim()
       const category = document.getElementById('rc-category').value.trim()
       const description = document.getElementById('rc-desc').value.trim()
       const price = parseInt(document.getElementById('rc-price').value, 10) || 0
-      const sale_price = parseInt(document.getElementById('rc-sale-price').value, 10) || 0
+      const sale_price = parseInt(document.getElementById('rc-sale-price').value, 10)
+      const sale = Number.isFinite(sale_price) ? sale_price : price
       const sort_order = parseInt(document.getElementById('rc-sort-order').value, 10) || undefined
       const is_published = parseInt(document.getElementById('rc-published').value, 10)
       const thumbnail_icon = document.getElementById('rc-icon').value.trim() || 'ti-video'
+      const startsVal = document.getElementById('rc-live-starts').value
+      const endsVal = document.getElementById('rc-live-ends').value
       if (!title) { alert('강의 제목을 입력해주세요.'); return }
       if (!category) { alert('카테고리를 입력해주세요.'); return }
+      if (!startsVal) { alert('강의 시작 일시를 입력해주세요.'); return }
+      const live_starts_at = new Date(startsVal).toISOString()
+      const live_ends_at = endsVal ? new Date(endsVal).toISOString() : null
       try {
         const res = await API.post('/admin/courses', {
           title,
           category,
           description,
           price,
-          sale_price: sale_price || price,
+          sale_price: sale,
           sort_order,
           is_published,
           thumbnail_icon,
+          live_starts_at,
+          live_ends_at,
+          live_schedule: new Date(startsVal).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
+          meet_code: document.getElementById('rc-meet-code').value.trim() || null,
+          live_material_url: document.getElementById('rc-material-url').value.trim() || null,
+          live_replay_url: document.getElementById('rc-replay-url').value.trim() || null,
+          live_chat_url: document.getElementById('rc-chat-url').value.trim() || null,
+          course_type: sale === 0 ? 'live' : 'recorded',
         })
-        alert('일반 강의가 등록되었습니다.')
-        closeRecordedCreateModal()
+        alert('강의가 등록되었습니다.')
+        closeCourseCreateModal()
         await loadCourses()
         if (res.course?.id) openCourseModal(res.course.id)
-        ;['rc-title', 'rc-desc', 'rc-price', 'rc-sale-price', 'rc-sort-order'].forEach(id => {
+        ;['rc-title', 'rc-desc', 'rc-price', 'rc-sale-price', 'rc-sort-order',
+          'rc-live-starts', 'rc-live-ends', 'rc-meet-code', 'rc-material-url',
+          'rc-replay-url', 'rc-chat-url'].forEach(id => {
           const el = document.getElementById(id)
           if (el) el.value = ''
         })
@@ -5955,38 +5982,8 @@
       }
     }
 
-    function openLiveCreateModal() {
-      document.getElementById('live-create-overlay').style.display = 'flex'
-    }
-    function closeLiveCreateModal() {
-      document.getElementById('live-create-overlay').style.display = 'none'
-    }
-
-    async function createLiveCourse() {
-      const title = document.getElementById('lc-title').value.trim()
-      const category = document.getElementById('lc-category').value
-      const description = document.getElementById('lc-desc').value.trim()
-      const scheduleVal = document.getElementById('lc-schedule').value
-      const meet_code = document.getElementById('lc-meet-code').value.trim()
-      const thumbnail_icon = document.getElementById('lc-icon').value
-      if (!title) { alert('강의 제목을 입력해주세요.'); return }
-      if (!scheduleVal) { alert('라이브 일정을 선택해주세요.'); return }
-      try {
-        await API.post('/admin/live-courses', {
-          title, category, description, thumbnail_icon,
-          live_schedule: new Date(scheduleVal).toLocaleString('ko-KR'),
-          live_starts_at: new Date(scheduleVal).toISOString(),
-          meet_code: meet_code || null,
-        })
-        alert('라이브 강의가 등록되었습니다.')
-        closeLiveCreateModal()
-        loadCourses()
-        ;['lc-title','lc-desc','lc-meet-code'].forEach(id => document.getElementById(id).value = '')
-        document.getElementById('lc-schedule').value = ''
-      } catch(e) {
-        alert(e.message || '등록 중 오류가 발생했습니다.')
-      }
-    }
+    async function createRecordedCourse() { return createCourseFromForm() }
+    async function createLiveCourse() { return createCourseFromForm() }
 
     // 상단 날짜 동적 초기화
     ;(function() {

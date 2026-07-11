@@ -1133,7 +1133,8 @@ const PROGRAM_EARLY_ACCESS_MS = 2 * 60 * 60 * 1000
 const REPLAY_OPEN_HOUR_KST = 13
 const ANTICIPATION_MODIFY_LOCK_MS = 60 * 60 * 1000
 const LIVE_REVIEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000  // 강의 종료 후 7일
-const LIVE_MATERIAL_AFTER_REVIEW_MS = 7 * 24 * 60 * 60 * 1000
+const LIVE_MATERIAL_OPEN_BEFORE_MS = 60 * 60 * 1000     // 강의 시작 1시간 전
+const LIVE_MATERIAL_AFTER_END_MS = 7 * 24 * 60 * 60 * 1000  // 종료 후 7일
 const PAID_COURSE_ACCESS_MONTHS = 3
 
 function kstCalendarParts(date) {
@@ -1275,13 +1276,15 @@ function getLiveLectureEndAt(course) {
   return parseLiveEndsAt(course)
 }
 
-/** 강의 종료 시각부터 7일간 자료 다운로드 허용 */
+/** 강의 시작 1시간 전 ~ 종료 후 7일간 자료 다운로드 허용 */
 function isLiveMaterialOpenByLectureEnd(course, at = new Date()) {
+  const start = parseLiveStart(course)
   const endAt = getLiveLectureEndAt(course)
-  if (!endAt) return false
+  if (!start || !endAt) return false
   const now = at.getTime()
-  const endMs = endAt.getTime()
-  return now >= endMs && now <= endMs + LIVE_MATERIAL_AFTER_REVIEW_MS
+  const openMs = start.getTime() - LIVE_MATERIAL_OPEN_BEFORE_MS
+  const closeMs = endAt.getTime() + LIVE_MATERIAL_AFTER_END_MS
+  return now >= openMs && now <= closeMs
 }
 
 function isLiveMaterialOpenByReview(course, at = new Date()) {
@@ -1347,8 +1350,8 @@ function getLiveResourceAccess(course, { enrolled = false, hasReview = false, re
   const replayUrl = String(course?.live_replay_url || '').trim()
   const materialUrl = String(course?.live_material_url || '').trim()
   const lectureDay = isLiveLectureDay(course, at)
-  const materialShow = enrolled && !!materialUrl && hasReview
-  const materialOpen = hasReview && isLiveMaterialOpenByLectureEnd(course, at)
+  const materialShow = enrolled && !!materialUrl
+  const materialOpen = isLiveMaterialOpenByLectureEnd(course, at)
   const start = parseLiveStart(course)
   const lectureEnded = isLiveCourseEnded(course, at)
   const replayOpensAt = getReplayOpensAt(course)
@@ -2342,6 +2345,8 @@ const db = {
     live_schedule,
     meet_code,
     live_replay_url,
+    live_material_url,
+    live_chat_url,
     program_id,
   }) {
     const slug = buildCourseSlug(title)
@@ -2382,6 +2387,8 @@ const db = {
       live_schedule: live_schedule || null,
       meet_code: meet_code || null,
       live_replay_url: live_replay_url || null,
+      live_material_url: live_material_url || null,
+      live_chat_url: live_chat_url || null,
       live_status: 'upcoming',
       program_id: program_id || null,
       created_at: now(),

@@ -237,12 +237,10 @@ router.get('/courses/:courseId/live-material', authMiddleware, async (req, res) 
   if (!await db.isEnrolled(req.user.id, course.id)) {
     return res.status(403).json({ error: '수강 신청 후 이용할 수 있습니다.' })
   }
-  const myReview = await db.getReviewByUserAndCourse(req.user.id, course.id)
-  if (!myReview?.rating) {
-    return res.status(403).json({ error: '후기 작성 후 이용할 수 있습니다.' })
-  }
   if (!db.isLiveMaterialOpenByLectureEnd(course)) {
-    return res.status(403).json({ error: '강의자료 다운로드 기간이 종료되었습니다. (강의 종료 후 1주일)' })
+    return res.status(403).json({
+      error: '강의자료 다운로드 기간이 아닙니다. (강의 시작 1시간 전 ~ 종료 후 1주일)',
+    })
   }
   const url = String(course.live_material_url || '').trim()
   if (!url || !/^https?:\/\/.+/i.test(url)) {

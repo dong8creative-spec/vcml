@@ -585,7 +585,7 @@ function renderLiveMeetBtn(c, start) {
 }
 
 function renderLiveMaterialButton(c) {
-  if (!isLiveLikeCourse(c) || !c.my_review?.rating) return ''
+  if (!isLiveLikeCourse(c)) return ''
   if (!c.live_resources?.material_available) return ''
   return `<button type="button" class="btn-enroll btn-enroll--material" onclick="event.stopPropagation();LiveSession.openMaterial('${escapeHtml(c.id)}')"><i class="ti ti-download"></i> 강의자료 다운로드</button>`
 }
