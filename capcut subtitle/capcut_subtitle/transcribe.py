@@ -148,7 +148,20 @@ class Transcriber:
         progress(f"인식 언어: {info.language} (확률 {info.language_probability:.0%})")
         lines = _split_lines_from_segments(all_segments, max_words_per_line)
         progress("자막 타이밍 정밀 보정 중...")
-        return _refine_with_vad(lines, audio)
+        return _close_gaps(_refine_with_vad(lines, audio))
+
+
+def _close_gaps(lines: list[SubtitleLine]) -> list[SubtitleLine]:
+    """연속 자막 사이 간격을 0으로 맞춘다.
+
+    각 자막의 끝 시각을 다음 자막의 시작 시각까지 연장해,
+    화면에서 자막이 끊기지 않고 다음 자막이 뜰 때까지 유지되게 한다.
+    """
+    if len(lines) < 2:
+        return lines
+    for i in range(len(lines) - 1):
+        lines[i].end_us = lines[i + 1].start_us
+    return [l for l in lines if l.end_us > l.start_us]
 
 
 def _split_lines_from_segments(segments: list, max_words_per_line: int) -> list[SubtitleLine]:
@@ -220,7 +233,7 @@ def _split_lines_from_segments(segments: list, max_words_per_line: int) -> list[
         else:
             lines.extend(seg_lines)
 
-    # 라인 간 겹침 제거 및 최소 표시시간 보정
+    # 라인 간 겹침 제거 및 최소 표시시간 보정 (최종 간격 0 처리는 _close_gaps)
     for i, line in enumerate(lines):
         if line.end_us - line.start_us < 500_000:
             line.end_us = line.start_us + 500_000
@@ -314,7 +327,7 @@ def _refine_with_vad(lines: list[SubtitleLine],
         a.end_us = int(gs * US)
         b.start_us = int(ge * US)
 
-    # 겹침 제거 및 최소 표시시간 보정
+    # 겹침 제거 및 최소 표시시간 보정 (간격 0은 호출부 _close_gaps에서 처리)
     for i, line in enumerate(refined):
         if line.end_us - line.start_us < 500_000:
             line.end_us = line.start_us + 500_000
