@@ -164,6 +164,12 @@ router.get('/courses', authMiddleware, async (req, res) => {
       }),
       total_chapters: chapters.length,
       completed_chapters: completed,
+      progress_pct: chapters.length > 0 ? Math.min(100, Math.round((completed / chapters.length) * 100)) : 0,
+      certificate_eligible: chapters.length > 0
+        && Math.round((completed / chapters.length) * 100) >= db.CERTIFICATE_THRESHOLD_PCT
+        && !db.getPaidCourseAccessMeta(c, { enrolledAt: e.enrolled_at, paidAt: order?.paid_at }).access_expired,
+      certificate_threshold_pct: db.CERTIFICATE_THRESHOLD_PCT,
+      certificate_issued_at: e.certificate_issued_at || null,
       last_chapter_id: e.last_chapter_id || null,
       paid_amount: order ? Number(order.amount || 0) : 0,
       can_cancel: cancelPlan.allowed,
@@ -302,6 +308,37 @@ router.post('/progress', authMiddleware, async (req, res) => {
   }
   await db.upsertProgress(req.user.id, chapter_id, completed, watched_sec || 0)
   res.json({ success: true })
+})
+
+router.get('/courses/:courseId/certificate', authMiddleware, async (req, res) => {
+  try {
+    const eligibility = await db.assertCertificateEligibility(req.user.id, req.params.courseId)
+    if (!eligibility.ok) {
+      const status = eligibility.code === 'not_enrolled' || eligibility.code === 'course_not_found' ? 404
+        : eligibility.code === 'incomplete' ? 403
+          : 400
+      return res.status(status).json(eligibility)
+    }
+    const { buildCertificatePdf } = require('../utils/certificatePdf')
+    const issuedAt = new Date().toISOString()
+    const pdf = await buildCertificatePdf({
+      studentName: eligibility.user?.name || req.user.name || '수강생',
+      courseTitle: eligibility.course.title,
+      progressPct: eligibility.progress.progress_pct,
+      thresholdPct: eligibility.threshold_pct,
+      issuedAt,
+    })
+    await db.recordCertificateIssued(req.user.id, req.params.courseId, {
+      progress_pct: eligibility.progress.progress_pct,
+    })
+    const safeName = String(eligibility.course.slug || eligibility.course.id).replace(/[^\w.-]+/g, '_')
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="certificate-${safeName}.pdf"`)
+    res.send(pdf)
+  } catch (e) {
+    console.error('certificate:', e)
+    res.status(500).json({ error: e.message || '수료증을 발급하지 못했습니다.' })
+  }
 })
 
 router.post('/reviews', authMiddleware, async (req, res) => {

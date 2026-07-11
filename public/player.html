@@ -195,17 +195,10 @@
           : `<div class="video-placeholder">
               <div class="vp-icon"><i class="ti ti-player-play"></i></div>
               <div class="vp-title">${esc(ch.title)}</div>
-              <div class="vp-note">영상 파일 업로드 후 이 영역에서 자동 재생됩니다.<br>현재는 수강 완료 처리만 가능합니다.</div>
-              <button class="vp-play-btn" onclick="simulateWatch('${esc(ch.id)}', ${ch.next_id ? `'${esc(ch.next_id)}'` : 'null'})">
-                <i class="ti ti-player-play"></i> 수강 완료 처리하기
-              </button>
+              <div class="vp-note">영상이 아직 등록되지 않았습니다.<br>등록 후 이 영역에서 재생할 수 있습니다.</div>
             </div>`
 
       document.getElementById('player-main').innerHTML = `
-        ${!ch.video_url ? `<div class="player-beta-banner">
-          <i class="ti ti-info-circle"></i>
-          <span>오픈 베타: 영상 업로드 전 시뮬레이션 모드입니다. 실제 영상은 정식 오픈 후 연결됩니다.</span>
-        </div>` : ''}
         <div class="video-area">${videoHtml}</div>
         <div class="chapter-info">
           <div class="ci-header">
@@ -220,20 +213,6 @@
             ${ch.next_id ? `<button onclick="loadChapter('${esc(ch.next_id)}')" class="ci-btn next"><i class="ti ti-arrow-right"></i> 다음 강의</button>` : ''}
           </div>
         </div>`
-    }
-
-    async function simulateWatch(chId, nextId) {
-      try {
-        await API.post('/my/progress', { chapter_id: chId, completed: true, watched_sec: 600 })
-
-        // 사이드 챕터 목록 새로 로드
-        const updated = await API.get('/courses/' + slug)
-        renderChapterList(updated.chapters)
-
-        toast('수강 완료! 🎉', 'success')
-        if (nextId) setTimeout(() => loadChapter(nextId), 1000)
-        else toast('강의를 모두 완료했습니다! 수료증을 확인하세요.', 'success')
-      } catch(e) { toast(e.message, 'error') }
     }
 
     load()

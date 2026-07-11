@@ -1,6 +1,12 @@
 const jwt = require('jsonwebtoken')
 const { isAllowedAdmin } = require('../utils/adminAccess')
 
+function clientIp(req) {
+  const fwd = req.headers['x-forwarded-for']
+  if (fwd) return String(fwd).split(',')[0].trim()
+  return req.ip || req.socket?.remoteAddress || ''
+}
+
 function authMiddleware(req, res, next) {
   const header = req.headers.authorization
   if (!header || !header.startsWith('Bearer ')) {
@@ -51,4 +57,47 @@ function allowedReviewTypes(viewer) {
   return types
 }
 
-module.exports = { authMiddleware, adminMiddleware, optionalAuth, allowedReviewTypes }
+/** 타닥싱크 앱 전용 — JWT + 계정당 1기기 세션 검증 */
+function subtitleAppAuth(req, res, next) {
+  const header = req.headers.authorization
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ error: '로그인이 필요합니다.', code: 'auth_required' })
+  }
+  let user
+  try {
+    user = jwt.verify(header.slice(7), process.env.JWT_SECRET)
+  } catch (e) {
+    console.error('JWT 검증 오류:', e.message)
+    return res.status(401).json({ error: '세션이 만료되었습니다.', code: 'token_expired' })
+  }
+  req.user = user
+  if (!user?.subtitle) {
+    return res.status(401).json({
+      error: '앱 기기 연동이 필요합니다. 프로그램에서 다시 로그인해 주세요.',
+      code: 'subtitle_login_required',
+    })
+  }
+  const deviceId = String(req.headers['x-subtitle-device-id'] || '').trim()
+  if (!deviceId) {
+    return res.status(401).json({
+      error: '기기 정보가 없습니다. 프로그램을 다시 실행해 주세요.',
+      code: 'device_required',
+    })
+  }
+  const db = require('../db/schema')
+  db.assertSubtitleDeviceSession(user.id, {
+    deviceId,
+    sessionId: user.session_id,
+    ip: clientIp(req),
+  }).then((session) => {
+    if (!session.ok) {
+      return res.status(401).json({ error: session.error, code: session.code })
+    }
+    next()
+  }).catch((e) => {
+    console.error('subtitleAppAuth:', e)
+    res.status(500).json({ error: '기기 연동을 확인하지 못했습니다.' })
+  })
+}
+
+module.exports = { authMiddleware, adminMiddleware, optionalAuth, allowedReviewTypes, subtitleAppAuth, clientIp }

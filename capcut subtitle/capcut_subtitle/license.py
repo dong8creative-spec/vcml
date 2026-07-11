@@ -18,6 +18,7 @@ DEFAULT_API_BASE = os.environ.get("CAPCUT_SUBTITLE_API", "https://vcml.kr")
 APP_DIR_NAME = "TadakSync"
 LEGACY_APP_DIR_NAME = "CapCutSubtitle"
 AUTH_FILE = "auth.json"
+DEVICE_ID_FILE = "device_id.txt"
 POLL_INTERVAL_SEC = 2.0
 POLL_TIMEOUT_SEC = 10 * 60
 
@@ -74,11 +75,38 @@ def clear_auth() -> None:
         path.unlink()
 
 
+def get_device_id() -> str:
+    """이 PC 고유 기기 ID (계정당 1프로그램 연동용)."""
+    path = app_data_dir() / DEVICE_ID_FILE
+    if path.exists():
+        try:
+            did = path.read_text(encoding="utf-8").strip()
+            if len(did) >= 16:
+                return did
+        except OSError:
+            pass
+    did = uuid.uuid4().hex
+    try:
+        path.write_text(did, encoding="utf-8")
+    except OSError:
+        pass
+    return did
+
+
 def api_base() -> str:
     return (os.environ.get("CAPCUT_SUBTITLE_API") or DEFAULT_API_BASE).rstrip("/")
 
 
-def _request(method: str, path: str, body: dict | None = None, token: str | None = None) -> dict:
+def review_write_url(course_id: str | None = None) -> str:
+    """마이페이지 수강 후기 작성 화면 URL."""
+    params = {"tab": "courses"}
+    if course_id:
+        params["review_course"] = course_id
+    return f"{api_base()}/mypage.html?{urllib.parse.urlencode(params)}"
+
+
+def _request(method: str, path: str, body: dict | None = None, token: str | None = None,
+             device_id: str | None = None) -> dict:
     url = api_base() + path
     data = None
     headers = {"Accept": "application/json"}
@@ -87,6 +115,9 @@ def _request(method: str, path: str, body: dict | None = None, token: str | None
         headers["Content-Type"] = "application/json"
     if token:
         headers["Authorization"] = "Bearer " + token
+    did = device_id or (get_device_id() if token else None)
+    if did:
+        headers["X-Subtitle-Device-Id"] = did
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=30) as res:
@@ -122,7 +153,8 @@ def start_device_login(on_status=None, on_code=None, cancel_event=None) -> dict:
     on_code(code, verify_url)는 연동 코드가 발급된 직후 한 번 호출된다(팝업에 코드 표시용).
     cancel_event가 set되면 폴링을 즉시 중단하고 RuntimeError("cancelled")를 던진다.
     """
-    started = _request("POST", "/api/subtitle/device/start")
+    started = _request("POST", "/api/subtitle/device/start",
+                       body={"device_id": get_device_id()})
     code = started.get("code")
     verify_url = started.get("verify_url")
     if not code or not verify_url:
@@ -151,6 +183,8 @@ def start_device_login(on_status=None, on_code=None, cancel_event=None) -> dict:
                 )
             elif code == "google_required":
                 msg = polled.get("error") or "구글 로그인 계정만 이용할 수 있습니다."
+            elif code in ("session_revoked", "device_mismatch"):
+                msg = polled.get("error") or "다른 기기에서 로그인되어 연동이 해제되었습니다."
             clear_auth()
             raise RuntimeError(msg)
         if status == "approved" and polled.get("token"):
@@ -176,7 +210,7 @@ def fetch_me(token: str) -> dict:
 def verify_entitlement(token: str) -> dict:
     """수강·구글 권한 확인. 실패 시 RuntimeError (payload.code / status 포함)."""
     try:
-        return fetch_me(token)
+        me = fetch_me(token)
     except RuntimeError as e:
         payload = getattr(e, "payload", None) or {}
         code = payload.get("code")
@@ -184,15 +218,37 @@ def verify_entitlement(token: str) -> dict:
             err = RuntimeError(
                 payload.get("error")
                 or "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다.")
+            err.status = getattr(e, "status", 403)  # type: ignore[attr-defined]
         elif code == "google_required":
             err = RuntimeError(
                 payload.get("error")
                 or "구글 로그인 계정만 이용할 수 있습니다.")
+            err.status = getattr(e, "status", 403)  # type: ignore[attr-defined]
+        elif code == "session_revoked":
+            err = RuntimeError(
+                payload.get("error")
+                or "다른 기기에서 로그인되어 이 기기의 연동이 해제되었습니다.")
+            err.status = 401  # type: ignore[attr-defined]
+        elif code == "device_mismatch":
+            err = RuntimeError(
+                payload.get("error")
+                or "이 기기와 연동된 계정이 아닙니다. 다시 로그인해 주세요.")
+            err.status = 401  # type: ignore[attr-defined]
+        elif code in ("subtitle_login_required", "device_required", "token_expired"):
+            err = RuntimeError(
+                payload.get("error")
+                or "기기 연동이 만료되었습니다. 다시 로그인해 주세요.")
+            err.status = 401  # type: ignore[attr-defined]
         else:
             raise
-        err.status = getattr(e, "status", 403)  # type: ignore[attr-defined]
         err.payload = payload  # type: ignore[attr-defined]
         raise err from e
+    if not me.get("enrolled"):
+        err = RuntimeError(
+            "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다.")
+        err.status = 403  # type: ignore[attr-defined]
+        raise err
+    return me
 
 
 def consume(token: str, minutes: int, job_id: str) -> dict:

@@ -35,12 +35,10 @@
     overlay.innerHTML = `
       <div class="welcome-popup" role="dialog" aria-labelledby="welcome-popup-title">
         <button type="button" class="welcome-popup-close" aria-label="닫기" onclick="WelcomePopup.close()">&times;</button>
-        <div class="welcome-popup-badge">오픈 베타</div>
-        <h2 id="welcome-popup-title">${name}님, 가입해 주셔서 정말 감사합니다!</h2>
+        <h2 id="welcome-popup-title">${name}님, 가입해 주셔서 감사합니다!</h2>
         <p class="welcome-popup-body">
-          오픈 베타에 함께해 주셔서 반갑습니다. 타닥클래스는 <strong>6월 30일(월) 정식 오픈</strong>을 준비하고 있으며,
-          캡컷 PRO 강의 4종(초보자반·기초반·초고속 영상제작반·영상납품 수익화)을 순차적으로 제공할 예정입니다.
-          <a href="/notices.html">공지사항</a>에서 자세한 내용을 확인해 주세요.
+          타닥클래스에 오신 것을 환영합니다. 원하는 강의를 둘러보고 바로 수강을 시작해 보세요.
+          공지·일정은 <a href="/notices.html">공지사항</a>에서 확인할 수 있습니다.
         </p>
         <div class="welcome-popup-actions">
           <a href="/#all" class="welcome-popup-btn primary">강의 보러 가기</a>

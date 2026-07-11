@@ -131,6 +131,17 @@ router.get('/students/:id', async (req, res) => {
     ])
     const courseIds = [...new Set([...orders.map(o => o.course_id), ...enrollments.map(e => e.course_id)].filter(Boolean))]
     const courseMap = await db.batchGetCourses(courseIds)
+    const enrollmentsWithProgress = await Promise.all(enrollments.map(async e => {
+      const progress = await db.getCourseProgressSummary(user.id, e.course_id)
+      return {
+        course_id: e.course_id,
+        course_title: courseMap[e.course_id]?.title || '-',
+        enrolled_at: e.enrolled_at || null,
+        last_watched_at: e.last_watched_at || progress.last_watched_at || null,
+        ...progress,
+        certificate_issued_at: e.certificate_issued_at || null,
+      }
+    }))
     res.json({
       id: user.id,
       name: user.name,
@@ -150,12 +161,9 @@ router.get('/students/:id', async (req, res) => {
         status: o.status,
         paid_at: o.paid_at,
         refunded_at: o.refunded_at || null,
+        external_order_id: o.external_order_id || null,
       })),
-      enrollments: enrollments.map(e => ({
-        course_id: e.course_id,
-        course_title: courseMap[e.course_id]?.title || '-',
-        enrolled_at: e.enrolled_at || null,
-      })),
+      enrollments: enrollmentsWithProgress,
     })
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -220,10 +228,11 @@ router.get('/courses/:id/enrollments', async (req, res) => {
   try {
     const course = await db.getCourseById(req.params.id)
     if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
-    const [enrollments, pending] = await Promise.all([
+    const [enrollmentsRaw, pending] = await Promise.all([
       db.getActiveEnrolleesByCourse(course.id),
       db.listPendingEnrollments(course.id),
     ])
+    const enrollments = await db.attachProgressToEnrollees(course.id, enrollmentsRaw)
     await db.syncCourseStudentCount(course.id)
     res.json({
       course: { id: course.id, title: course.title, sale_price: course.sale_price, course_type: course.course_type },
@@ -235,6 +244,42 @@ router.get('/courses/:id/enrollments', async (req, res) => {
   } catch (e) {
     console.error('admin course enrollments:', e)
     res.status(500).json({ error: '수강생 목록을 불러오지 못했습니다.' })
+  }
+})
+
+router.get('/courses/:id/progress-export', async (req, res) => {
+  try {
+    const course = await db.getCourseById(req.params.id)
+    if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+    const enrollmentsRaw = await db.getActiveEnrolleesByCourse(course.id)
+    const enrollments = await db.attachProgressToEnrollees(course.id, enrollmentsRaw)
+    const escCsv = (v) => {
+      const s = String(v ?? '')
+      if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
+      return s
+    }
+    const header = ['이름', '이메일', '연락처', '진도%', '완료챕터', '전체챕터', '시청초', '최종수강일', '신청일']
+    const lines = [header.join(',')]
+    for (const row of enrollments) {
+      lines.push([
+        escCsv(row.name),
+        escCsv(row.email),
+        escCsv(row.phone || ''),
+        escCsv(row.progress_pct ?? 0),
+        escCsv(row.completed_chapters ?? 0),
+        escCsv(row.total_chapters ?? 0),
+        escCsv(row.watched_sec ?? 0),
+        escCsv(row.last_watched_at || ''),
+        escCsv(row.enrolled_at || row.paid_at || ''),
+      ].join(','))
+    }
+    const filename = `progress-${(course.slug || course.id)}.csv`
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.send('\uFEFF' + lines.join('\n'))
+  } catch (e) {
+    console.error('admin progress export:', e)
+    res.status(500).json({ error: '진도 CSV를 만들지 못했습니다.' })
   }
 })
 
@@ -256,6 +301,7 @@ router.post('/courses/:id/enrollments', async (req, res) => {
       discount: body.discount,
       note: body.note,
       paid_at: body.paid_at,
+      external_order_id: body.external_order_id,
       source: 'manual',
     }, req.user.id)
     if (!result.ok) {
@@ -286,7 +332,9 @@ function mapCsvHeader(header) {
     return 'name'
   }
   if (['amount', '금액', '결제금액', '판매가'].includes(h) || h.includes('금액')) return 'amount'
-  if (['note', '메모', '비고', '주문번호', '상품주문번호'].includes(h) || h.includes('주문번호') || h.includes('메모')) return 'note'
+  if (['external_order_id', '주문번호', '상품주문번호', '스토어주문번호', 'orderid', 'order_id'].includes(h)
+    || (h.includes('주문번호') && !h.includes('메모'))) return 'external_order_id'
+  if (['note', '메모', '비고'].includes(h) || h.includes('메모') || h.includes('비고')) return 'note'
   return null
 }
 
@@ -387,7 +435,8 @@ router.post('/courses/:id/enrollments/import', async (req, res) => {
         name,
         amount: Number.isFinite(amount) ? amount : undefined,
         note: note || undefined,
-        method: req.body?.method,
+        external_order_id: row.external_order_id || row.주문번호 || undefined,
+        method: req.body?.method || '스마트스토어',
         source: 'csv',
       }, req.user.id)
 
@@ -696,12 +745,19 @@ router.post('/courses', async (req, res) => {
     checkout_starts_at, checkout_ends_at,
     live_starts_at, live_ends_at, live_schedule, meet_code,
     live_replay_url, live_material_url, live_chat_url, program_id, course_type,
+    delivery_mode,
   } = req.body
   if (!title || !String(title).trim()) return res.status(400).json({ error: '제목을 입력하세요.' })
   if (!category || !String(category).trim()) return res.status(400).json({ error: '카테고리를 입력하세요.' })
-  if (checkout_provider === 'smartstore') {
+  const sale = Number(sale_price != null ? sale_price : price) || 0
+  const published = is_published === true || is_published === 1 || is_published === '1'
+  const mode = delivery_mode === 'vod_only' ? 'vod_only' : 'live_first'
+  const provider = checkout_provider === 'site'
+    ? 'site'
+    : (checkout_provider === 'smartstore' || (!checkout_provider && sale > 0) ? 'smartstore' : 'site')
+  if (provider === 'smartstore') {
     const urls = db.normalizeStoreCheckoutUrls(store_checkout_urls || {})
-    if (!urls.none) {
+    if (!urls.none && published) {
       return res.status(400).json({ error: '스마트스토어 결제 시 정가(쿠폰 없음) 링크는 필수입니다.' })
     }
     for (const [key, url] of Object.entries(urls)) {
@@ -711,8 +767,10 @@ router.post('/courses', async (req, res) => {
       }
     }
   }
+  if (mode === 'live_first' && !live_starts_at) {
+    return res.status(400).json({ error: '라이브 강의 시작 일시를 입력하세요.' })
+  }
   try {
-    const sale = Number(sale_price != null ? sale_price : price) || 0
     const course = await db.createRecordedCourse({
       title: String(title).trim(),
       description,
@@ -723,20 +781,24 @@ router.post('/courses', async (req, res) => {
       thumb_style,
       badge,
       sort_order,
-      is_published: is_published === true || is_published === 1 || is_published === '1',
-      checkout_provider,
+      is_published: published,
+      checkout_provider: provider,
       store_checkout_urls,
       coupon_allowed,
       checkout_starts_at,
       checkout_ends_at,
-      live_starts_at,
-      live_ends_at,
-      live_schedule,
-      meet_code,
-      live_replay_url,
-      live_material_url,
-      live_chat_url,
+      live_starts_at: mode === 'live_first' ? live_starts_at : null,
+      live_ends_at: mode === 'live_first' ? live_ends_at : null,
+      live_schedule: mode === 'live_first' ? live_schedule : null,
+      meet_code: mode === 'live_first' ? meet_code : null,
+      live_replay_url: mode === 'live_first' ? live_replay_url : null,
+      live_material_url: mode === 'live_first' ? live_material_url : null,
+      live_chat_url: mode === 'live_first' ? live_chat_url : null,
       program_id,
+      delivery_mode: mode,
+      course_type: mode === 'vod_only'
+        ? 'recorded'
+        : (course_type === 'live' || sale === 0 ? 'live' : 'recorded'),
     })
     if (course?.error === 'invalid_starts') {
       return res.status(400).json({ error: '결제 시작일 형식이 올바르지 않습니다.' })
@@ -747,6 +809,9 @@ router.post('/courses', async (req, res) => {
     if (course?.error === 'invalid_range') {
       return res.status(400).json({ error: '결제 마감일은 시작일보다 뒤여야 합니다.' })
     }
+    if (course?.error === 'live_starts_required') {
+      return res.status(400).json({ error: '라이브 강의 시작 일시를 입력하세요.' })
+    }
     if (course?.error === 'invalid_live_starts') {
       return res.status(400).json({ error: '강의 시작일 형식이 올바르지 않습니다.' })
     }
@@ -755,15 +820,6 @@ router.post('/courses', async (req, res) => {
     }
     if (course?.error === 'invalid_live_range') {
       return res.status(400).json({ error: '강의 종료일은 시작일보다 뒤여야 합니다.' })
-    }
-    // 무료면 course_type=live, 유료면 recorded 유지 (둘 다 live_first)
-    if (course?.id && (course_type === 'live' || sale === 0)) {
-      await db.updateCourse(course.id, {
-        course_type: 'live',
-        badge: course.badge || 'LIVE',
-        thumb_style: 'dark',
-      })
-      course.course_type = 'live'
     }
     res.json({ success: true, course })
   } catch (e) {

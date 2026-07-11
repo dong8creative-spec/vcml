@@ -63,6 +63,8 @@ class App(tk.Tk):
         self._auth = license_api.load_auth()
         self._balance: int | None = self._auth.get("balance") if self._auth else None
         self._authenticated = False
+        self._auth_verifying = bool(self._auth and self._auth.get("token"))
+        self._session_epoch = 0
         self._last_balance_sync = 0.0
 
         self._build_ui()
@@ -119,7 +121,8 @@ class App(tk.Tk):
         ttk.Label(
             gate_inner,
             text="캡컷 초신속 스탠다드 수강생 전용입니다.\n"
-                 "구글 로그인 후 기기 연동이 완료되어야 사용할 수 있습니다.",
+                 "구글 로그인 후 기기 연동이 완료되어야 사용할 수 있습니다.\n"
+                 "계정당 1대 PC만 연동되며, 다른 기기에서 연동하면 기존 기기는 해제됩니다.",
             foreground=theme.TEXT_MUTED,
             justify="center",
         ).pack(pady=(0, 20))
@@ -283,8 +286,17 @@ class App(tk.Tk):
             except tk.TclError:
                 pass
 
+    def _is_logged_in(self) -> bool:
+        return bool(
+            self._authenticated and self._auth and self._auth.get("token")
+        )
+
+    def _bump_session_epoch(self) -> int:
+        self._session_epoch += 1
+        return self._session_epoch
+
     def _require_auth(self, action: str = "이 기능") -> bool:
-        if self._authenticated and self._auth and self._auth.get("token"):
+        if self._is_logged_in():
             return True
         toast(self, f"{action}을(를) 쓰려면 캡컷 초신속 스탠다드 수강 후 구글 로그인이 필요합니다.", "warning")
         self._apply_auth_lock()
@@ -293,7 +305,7 @@ class App(tk.Tk):
 
     def _apply_auth_lock(self) -> None:
         """로그인 여부에 따라 메인 UI / 게이트 전환."""
-        if self._authenticated:
+        if self._is_logged_in():
             self.gate_frame.pack_forget()
             self.main_panel.pack(fill="both", expand=True, before=self._status_frame)
         else:
@@ -312,9 +324,12 @@ class App(tk.Tk):
                 pass
 
     def _set_authenticated(self, ok: bool, auth: dict | None = None, balance: int | None = None) -> None:
+        if ok and not (auth and auth.get("token")):
+            ok = False
         self._authenticated = ok
         if ok and auth:
             self._auth = auth
+            self._auth_verifying = False
             if balance is not None:
                 self._balance = balance
             elif auth.get("balance") is not None:
@@ -322,6 +337,7 @@ class App(tk.Tk):
         elif not ok:
             self._auth = None
             self._balance = None
+            self._auth_verifying = False
         self._refresh_auth_ui()
         self._apply_auth_lock()
         if ok:
@@ -335,7 +351,7 @@ class App(tk.Tk):
         self.logout_btn.pack_forget()
         self.myinfo_btn.pack_forget()
         self.coin_btn.pack_forget()
-        if self._authenticated and self._auth and self._auth.get("token"):
+        if self._is_logged_in():
             name = self._auth.get("user_name") or "수강생"
             bal = self._balance
             bal_txt = f" · 코인 {bal}" if bal is not None else ""
@@ -343,13 +359,16 @@ class App(tk.Tk):
             self.logout_btn.pack(side="right")
             self.myinfo_btn.pack(side="right", padx=(0, 6))
             self.coin_btn.pack(side="right", padx=(0, 6))
+        elif self._auth_verifying:
+            self.auth_var.set("로그인 확인 중…")
+            self.login_btn.pack(side="right")
         else:
             self.auth_var.set("로그인 필요 — 캡컷 초신속 스탠다드 수강생 전용")
             self.login_btn.pack(side="right")
 
     def apply_me_snapshot(self, me: dict) -> None:
         """서버 /me 응답을 앱 전역 상태(잔액·이름·이메일)에 반영하고 저장."""
-        if not (self._auth and self._auth.get("token")):
+        if not self._is_logged_in():
             return
         if me.get("balance") is not None:
             self._balance = me.get("balance")
@@ -370,50 +389,79 @@ class App(tk.Tk):
         return getattr(e, "status", None) in (401, 403)
 
     def _startup_verify_worker(self) -> None:
+        epoch = self._session_epoch
+        token = (self._auth or {}).get("token")
         try:
-            if not self._auth or not self._auth.get("token"):
+            if not token:
                 raise RuntimeError("no token")
-            me = license_api.verify_entitlement(self._auth["token"])
-            self._balance = me.get("balance")
-            self._last_balance_sync = time.monotonic()
-            self._auth = license_api.save_auth(
-                self._auth["token"],
-                me.get("name") or self._auth.get("user_name"),
-                self._balance,
+            me = license_api.verify_entitlement(token)
+            if epoch != self._session_epoch:
+                return
+            balance = me.get("balance")
+            auth = license_api.save_auth(
+                token,
+                me.get("name") or (self._auth or {}).get("user_name"),
+                balance,
                 me.get("email"),
             )
-            self.after(0, lambda: self._set_authenticated(True, self._auth, self._balance))
-            self.after(0, lambda: toast(self, "로그인 확인 완료", "success"))
+            self.after(0, lambda: self._finish_session_restore(epoch, auth, balance))
         except Exception as e:
-            no_token = str(e) == "no token"
-            if no_token or self._is_auth_denied(e):
+            if epoch != self._session_epoch:
+                return
+            self.after(0, lambda err=e, tok=token: self._handle_verify_failure(epoch, tok, err))
+
+    def _finish_session_restore(self, epoch: int, auth: dict, balance: int | None) -> None:
+        """저장된 세션 자동 복구 — 서버 확인 후에만 로그인 처리(토스트 없음)."""
+        if epoch != self._session_epoch:
+            return
+        self._set_authenticated(True, auth, balance)
+        self._last_balance_sync = time.monotonic()
+
+    def _handle_verify_failure(self, epoch: int, token: str | None, err: Exception) -> None:
+        if epoch != self._session_epoch:
+            return
+        no_token = str(err) == "no token"
+        if no_token or self._is_auth_denied(err):
+            stored = license_api.load_auth()
+            if stored and stored.get("token") == token:
                 license_api.clear_auth()
-                msg = str(e) if str(e) and not no_token else "세션이 만료되었습니다. 다시 로그인해 주세요."
-            else:
-                # 네트워크 장애 등: 저장된 세션은 남겨두고 다음 실행에서 재시도
-                msg = "서버에 연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 로그인해 주세요."
-            self.after(0, lambda: self._set_authenticated(False))
-            self.after(0, lambda m=msg: toast(self, m, "warning"))
-            self.after(400, self._prompt_login_on_start)
+            msg = str(err) if str(err) and not no_token else "세션이 만료되었습니다. 다시 로그인해 주세요."
+        else:
+            msg = "서버에 연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 로그인해 주세요."
+        self._set_authenticated(False)
+        toast(self, msg, "warning")
+        self.after(400, self._prompt_login_on_start)
 
     def _refresh_balance_worker(self) -> None:
+        epoch = self._session_epoch
         try:
-            if not self._auth or not self._auth.get("token"):
+            if not self._is_logged_in():
                 return
-            me = license_api.verify_entitlement(self._auth["token"])
+            token = self._auth["token"]
+            me = license_api.verify_entitlement(token)
+            if epoch != self._session_epoch:
+                return
             self._last_balance_sync = time.monotonic()
             self.after(0, lambda m=me: self.apply_me_snapshot(m))
         except Exception as e:
+            if epoch != self._session_epoch:
+                return
             if self._is_auth_denied(e):
-                license_api.clear_auth()
+                token = (self._auth or {}).get("token")
+                stored = license_api.load_auth()
+                if stored and stored.get("token") == token:
+                    license_api.clear_auth()
+                msg = str(e) if str(e) else "세션이 만료되었습니다. 다시 로그인해 주세요."
                 self.after(0, lambda: self._set_authenticated(False))
+                self.after(0, lambda m=msg: toast(self, m, "warning"))
+                self.after(400, self._prompt_login_on_start)
             # 일시적 오류는 무시 — 다음 동기화 때 다시 시도
 
     def _on_focus_sync(self, event) -> None:
         """앱 창이 다시 포커스를 얻으면 잔액을 재동기화 (최소 30초 간격)."""
         if event.widget is not self:
             return
-        if not (self._authenticated and self._auth and self._auth.get("token")):
+        if not self._is_logged_in():
             return
         if self._busy or time.monotonic() - self._last_balance_sync < 30:
             return
@@ -423,26 +471,31 @@ class App(tk.Tk):
     def on_login(self) -> None:
         if self._busy:
             return
-        LoginDialog(self, exit_on_cancel=not self._authenticated,
+        self._bump_session_epoch()
+        self._auth_verifying = False
+        LoginDialog(self, exit_on_cancel=not self._is_logged_in(),
                    on_done=self._on_login_dialog_done)
 
     def _on_login_dialog_done(self, auth: dict | None) -> None:
         if auth is None:
-            if not self._authenticated:
+            if not self._is_logged_in():
                 self._on_close()
             return
+        self._bump_session_epoch()
         self._set_authenticated(True, auth, auth.get("balance"))
+        self._last_balance_sync = time.monotonic()
         toast(self, "로그인되었습니다.", "success")
         self.set_status("로그인 완료. 프로젝트를 선택하고 자막을 생성하세요.")
 
     def on_logout(self) -> None:
+        self._bump_session_epoch()
         license_api.clear_auth()
         self._set_authenticated(False)
         toast(self, "로그아웃되었습니다.", "info")
         self.after(200, self._prompt_login_on_start)
 
     def _prompt_login_on_start(self) -> None:
-        if self._authenticated and self._auth and self._auth.get("token"):
+        if self._is_logged_in():
             return
         LoginDialog(self, exit_on_cancel=True, on_done=self._on_login_dialog_done)
 
@@ -454,7 +507,7 @@ class App(tk.Tk):
     def on_open_coin_purchase(self) -> None:
         if not self._require_auth("코인 충전"):
             return
-        CoinPurchaseDialog(self)
+        CoinPurchaseDialog(self, self)
 
     # ------------------------------------------------------------- 생성
     def on_generate(self) -> None:
@@ -500,6 +553,12 @@ class App(tk.Tk):
                         "error"))
                     self.set_status("코인 부족")
                     return
+                if self._is_auth_denied(e):
+                    license_api.clear_auth()
+                    self.after(0, lambda: self._set_authenticated(False))
+                    self.after(0, lambda m=str(e): toast(self, m, "warning"))
+                    self.after(400, self._prompt_login_on_start)
+                    return
                 raise
             consumed = True
             self._balance = consumed_res.get("balance", self._balance)
@@ -535,6 +594,14 @@ class App(tk.Tk):
                     self.after(0, self._refresh_auth_ui)
                 except Exception:
                     traceback.print_exc()
+            if self._is_auth_denied(e):
+                license_api.clear_auth()
+                self.after(0, lambda: self._set_authenticated(False))
+                msg = str(e) if str(e) else "기기 연동이 만료되었습니다. 다시 로그인해 주세요."
+                self.after(0, lambda m=msg: toast(self, m, "warning"))
+                self.after(400, self._prompt_login_on_start)
+                self.set_status("로그인 필요")
+                return
             msg = str(e) if isinstance(e, RuntimeError) and str(e) else "자막 생성에 실패했습니다."
             self.after(0, lambda m=msg: toast(self, m, "error"))
             self.set_status("자막 생성 실패")

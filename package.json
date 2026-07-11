@@ -22,6 +22,7 @@
     "express": "^4.19.2",
     "firebase-admin": "^12.7.0",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^2.2.0"
+    "multer": "^2.2.0",
+    "pdfkit": "^0.19.1"
   }
 }

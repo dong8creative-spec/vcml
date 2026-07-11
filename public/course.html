@@ -95,12 +95,12 @@
     </div>
   </div>
 
-  <!-- 결제 모달 -->
+  <!-- 쿠폰 전액 수강 모달 (0원만) -->
   <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
     <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-beta-banner">
+      <div class="modal-beta-banner" id="modal-info-banner">
         <i class="ti ti-info-circle"></i>
-        <span><strong>테스트 결제 기간입니다.</strong> 실제 결제는 이루어지지 않으며, 버튼을 누르면 즉시 수강 등록됩니다. 7일 이내 <a href="/refund.html" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">환불 신청</a>은 마이페이지에서 가능합니다.</span>
+        <span id="modal-info-text"><strong>쿠폰 전액 할인</strong> 시 즉시 수강이 등록됩니다. 유료 결제는 당분간 네이버 스마트스토어를 이용해 주세요.</span>
       </div>
       <div class="modal-header">
         <div class="modal-title">수강 신청</div>
@@ -108,19 +108,12 @@
       </div>
       <div class="modal-course-info" id="modal-course-info"></div>
       <div class="modal-coupon-info" id="modal-coupon-info"></div>
-      <div class="modal-section-title">결제 수단 선택</div>
-      <div class="pay-options">
-        <label class="pay-option"><input type="radio" name="paymethod" value="카카오페이" checked /><span class="pay-label"><i class="ti ti-brand-kakao"></i> 카카오페이</span></label>
-        <label class="pay-option"><input type="radio" name="paymethod" value="네이버페이" /><span class="pay-label"><i class="ti ti-n-a"></i> 네이버페이</span></label>
-        <label class="pay-option"><input type="radio" name="paymethod" value="신용카드(이니시스)" /><span class="pay-label"><i class="ti ti-credit-card"></i> 신용카드</span></label>
-        <label class="pay-option"><input type="radio" name="paymethod" value="가상계좌" /><span class="pay-label"><i class="ti ti-building-bank"></i> 가상계좌</span></label>
-      </div>
       <div class="modal-total" id="modal-total"></div>
-      <div class="modal-withdrawal-notice">
-        <i class="ti ti-info-circle"></i>
-        <span>강의를 <strong>1강이라도 재생한 시점부터 청약철회가 제한</strong>됩니다. 미수강 시 결제일로부터 7일 이내 전액 환불 가능합니다. (<a href="/refund.html" target="_blank" rel="noopener">환불정책 확인</a>)</span>
+      <div class="modal-withdrawal-notice" id="modal-smartstore-notice" style="display:none">
+        <i class="ti ti-shopping-bag"></i>
+        <span>이 강의는 <strong>네이버 스마트스토어</strong>에서 결제해 주세요. 결제 확인 후 Admin에서 수강이 등록됩니다.</span>
       </div>
-      <button class="btn-pay" id="btn-pay" onclick="submitOrder()">수강 신청 완료하기</button>
+      <button class="btn-pay" id="btn-pay" onclick="submitOrder()">쿠폰으로 수강 시작</button>
     </div>
   </div>
 
@@ -501,7 +494,7 @@
 
     function renderCouponCheckoutNote(c) {
       if (c.course_type === 'live' || isFreeVod(c)) return ''
-      if (usesSmartstoreCheckout(c)) {
+      if (isPaidCourse(c)) {
         return `<p class="buy-coupon-note">네이버 스마트스토어 결제 · 쿠폰 보유 시 자동 안내</p>`
       }
       if (!isCourseCouponAllowed(c)) {
@@ -689,7 +682,8 @@
       if (c.course_type === 'live') return '무료 수강 신청'
       if (isFreeVod(c)) return '무료 수강 시작'
       if (usesSmartstoreCheckout(c)) return '스마트스토어에서 구매'
-      return '결제하고 수강 시작'
+      if (isPaidCourse(c)) return '수강 신청'
+      return '쿠폰으로 수강 시작'
     }
 
     function renderAnticipationBtn(c) {
@@ -750,12 +744,8 @@
           return renderEndedLiveActions(c)
         }
         if (isPaidLiveFirst(c)) {
-          if (usesSmartstoreCheckout(c)) {
-            return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-bag"></i> ${enrollButtonLabel(c)}`, `onclick="openStoreCheckout()"`)}
+          return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-bag"></i> ${enrollButtonLabel(c)}`, `onclick="openPaidCheckout()"`)}
               ${renderAnticipationBtn(c)}`)
-          }
-          return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-cart"></i> ${enrollButtonLabel(c)}`, `onclick="openModal()"`)}
-            ${renderAnticipationBtn(c)}`)
         }
         return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-user-plus"></i> ${enrollButtonLabel(c)}`, `onclick="submitCourseEnroll()"`)}
           ${renderAnticipationBtn(c)}`)
@@ -764,12 +754,10 @@
         return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-player-play"></i> ${enrollButtonLabel(c)}`, `onclick="submitCourseEnroll()"`)}
           ${renderAnticipationBtn(c)}`)
       }
-      if (usesSmartstoreCheckout(c)) {
-        return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-bag"></i> ${enrollButtonLabel(c)}`, `onclick="openStoreCheckout()"`)}
+      if (isPaidCourse(c)) {
+        return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-bag"></i> ${enrollButtonLabel(c)}`, `onclick="openPaidCheckout()"`)}
           ${renderAnticipationBtn(c)}`)
       }
-      return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-cart"></i> ${enrollButtonLabel(c)}`, `onclick="openModal()"`)}
-        ${renderAnticipationBtn(c)}`)
     }
 
     function buildMeetPayload(c) {
@@ -1121,6 +1109,7 @@
     }
 
     let selectedCouponCode = null
+    let modalFinalAmount = null
     let storeCheckoutLink = null
     let storeTierCache = null
 
@@ -1253,6 +1242,37 @@
       }
     }
 
+    function openPaidCheckout() {
+      if (usesSmartstoreCheckout(courseData)) {
+        openStoreCheckout()
+        return
+      }
+      // 스마트스토어 미설정 유료 강의: 쿠폰 전액(0원)만 사이트에서 처리
+      openModal()
+    }
+
+    function updateModalCheckoutState(finalAmount, preview) {
+      modalFinalAmount = finalAmount
+      const btn = document.getElementById('btn-pay')
+      const notice = document.getElementById('modal-smartstore-notice')
+      const infoText = document.getElementById('modal-info-text')
+      const isFree = finalAmount <= 0
+      if (notice) notice.style.display = isFree ? 'none' : ''
+      if (infoText) {
+        infoText.innerHTML = isFree
+          ? '<strong>쿠폰 전액 할인</strong>이 적용되었습니다. 아래 버튼으로 즉시 수강을 시작할 수 있습니다.'
+          : '당분간 유료 결제는 <strong>네이버 스마트스토어</strong>에서 진행됩니다. 쿠폰으로 전액 할인되면 이 화면에서 즉시 수강이 등록됩니다.'
+      }
+      if (btn) {
+        btn.disabled = !isFree
+        btn.textContent = isFree ? '쿠폰으로 수강 시작' : '스마트스토어에서 결제해 주세요'
+      }
+      if (!isFree && preview?.smartstore_only) {
+        document.getElementById('modal-coupon-info').innerHTML +=
+          `<div class="modal-coupon-skipped" style="margin-top:8px"><i class="ti ti-shopping-bag"></i> 결제 금액이 남아 있어 사이트에서 바로 결제할 수 없습니다.</div>`
+      }
+    }
+
     async function openModal() {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug + (checkoutNoCoupon ? '&coupon=0' : '')); return }
       if (!assertCheckoutOpen(courseData)) return
@@ -1263,13 +1283,13 @@
       document.getElementById('modal-course-info').innerHTML = `<div class="mci-title">${esc(courseData.title)}</div>`
       document.getElementById('modal-coupon-info').innerHTML = ''
       selectedCouponCode = null
-      let total = Number(courseData.sale_price)
-      document.getElementById('modal-total').innerHTML = `총 결제금액 <b>₩${total.toLocaleString()}</b>`
+      modalFinalAmount = Number(courseData.sale_price)
+      document.getElementById('modal-total').innerHTML = `결제 예정금액 <b>₩${modalFinalAmount.toLocaleString()}</b>`
       document.getElementById('modal-overlay').classList.remove('hidden')
       const skipCoupon = shouldSkipCouponForCheckout(courseData)
       try {
         const preview = await API.get('/orders/preview?course_id=' + courseData.id + (skipCoupon ? '&coupon=0' : ''))
-        total = preview.final_amount
+        modalFinalAmount = preview.final_amount
         selectedCouponCode = skipCoupon ? null : (preview.coupon_code || null)
         if (preview.discount > 0) {
           const couponLabel = preview.is_stackable ? '기대평·후기 쿠폰 자동 적용' : '쿠폰 자동 적용'
@@ -1278,42 +1298,58 @@
         } else if (skipCoupon) {
           const note = !isCourseCouponAllowed(courseData)
             ? '이 강의는 쿠폰 적용이 불가합니다.'
-            : '정가 결제 링크입니다. 쿠폰이 적용되지 않습니다.'
+            : '정가 기준입니다. 쿠폰이 적용되지 않습니다.'
           document.getElementById('modal-coupon-info').innerHTML =
             `<div class="modal-coupon-skipped"><i class="ti ti-ticket-off"></i> ${note}</div>`
         }
-        document.getElementById('modal-total').innerHTML = `총 결제금액 <b>₩${total.toLocaleString()}</b>`
-      } catch (_) {}
+        document.getElementById('modal-total').innerHTML = `결제 예정금액 <b>₩${modalFinalAmount.toLocaleString()}</b>`
+        updateModalCheckoutState(modalFinalAmount, preview)
+      } catch (_) {
+        updateModalCheckoutState(modalFinalAmount, null)
+      }
     }
     function closeModal() { document.getElementById('modal-overlay').classList.add('hidden') }
 
     async function submitOrder() {
-      const method = document.querySelector('input[name=paymethod]:checked').value
+      if (modalFinalAmount > 0) {
+        toast('유료 강의는 네이버 스마트스토어에서 결제해 주세요.', 'info')
+        return
+      }
       const btn = document.getElementById('btn-pay')
       btn.disabled = true; btn.textContent = '처리 중...'
       try {
-        const payload = { course_id: courseData.id, method }
+        const payload = { course_id: courseData.id, method: '쿠폰전액' }
         if (shouldSkipCouponForCheckout(courseData)) {
           payload.skip_coupon = true
         } else if (selectedCouponCode) {
           payload.coupon_code = selectedCouponCode
         }
-        const res = await API.post('/orders', payload)
-        let msg = isLiveLikeCourse(courseData)
-          ? '수강 신청이 완료되었습니다! 강의 페이지에서 라이브 일정을 확인하세요.'
-          : '수강 신청이 완료되었습니다! 바로 강의를 시작합니다.'
-        if (res.reward_coupon) {
-          msg += ` 의뢰인 혜택: 1만원 쿠폰 ${res.reward_coupon.count}장이 발급되었습니다. (마이페이지 > 내 쿠폰에서 확인)`
+        const res = await API.post('/orders/prepare', payload)
+
+        if (res.immediate) {
+          let msg = isLiveLikeCourse(courseData)
+            ? '수강 신청이 완료되었습니다! 강의 페이지에서 라이브 일정을 확인하세요.'
+            : '수강 신청이 완료되었습니다! 바로 강의를 시작합니다.'
+          if (res.reward_coupon) {
+            msg += ` 의뢰인 혜택: 1만원 쿠폰 ${res.reward_coupon.count}장이 발급되었습니다.`
+          }
+          toast(msg, 'success')
+          closeModal()
+          const dest = isLiveLikeCourse(courseData)
+            ? '/course.html?slug=' + encodeURIComponent(slug)
+            : '/player.html?slug=' + slug + '&chapter=first'
+          setTimeout(() => location.href = dest, 1200)
+          return
         }
-        toast(msg, 'success')
-        closeModal()
-        const dest = isLiveLikeCourse(courseData)
-          ? '/course.html?slug=' + encodeURIComponent(slug)
-          : '/player.html?slug=' + slug + '&chapter=first'
-        setTimeout(() => location.href = dest, 1500)
+
+        throw new Error('수강 등록에 실패했습니다.')
       } catch(err) {
-        toast(err.message, 'error')
-        btn.disabled = false; btn.textContent = '결제하기'
+        if (err?.code === 'smartstore_required' || err?.code === 'smartstore_checkout') {
+          toast(err.message || '네이버 스마트스토어에서 결제해 주세요.', 'info')
+        } else {
+          toast(err.message || '수강 신청에 실패했습니다.', 'error')
+        }
+        btn.disabled = false; btn.textContent = '쿠폰으로 수강 시작'
       }
     }
 

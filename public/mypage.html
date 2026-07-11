@@ -621,6 +621,7 @@ function renderLiveCourseCard(c) {
     </a>
     ${hasActions ? `<div class="my-lc-actions">${replayBtn}${materialBtn}${meetWrap}</div>` : ''}
     ${renderSubtitleToolDownload(c)}
+    ${renderCertificateAction(c)}
     ${renderCourseReviewBlock(c)}
     ${renderCancelAction(c)}
   </div>`
@@ -636,6 +637,45 @@ function renderCancelAction(c) {
     : ''
   return `${refundNote}<div class="mc-actions"><button type="button" class="mc-cancel-btn" onclick="cancelEnrollment('${c.id}')">${label}</button></div>`
 }
+
+function renderCertificateAction(c) {
+  if (c.access?.access_expired) return ''
+  if (c.certificate_eligible) {
+    return `<div class="mc-actions"><button type="button" class="mc-cancel-btn" style="border-color:#22c55e;color:#15803d" onclick="downloadCertificate('${c.id}')"><i class="ti ti-certificate"></i> 수료증 다운로드</button></div>`
+  }
+  const pct = Number(c.progress_pct) || 0
+  const need = Number(c.certificate_threshold_pct) || 80
+  if (c.total_chapters > 0 && pct > 0 && pct < need) {
+    return `<div class="mc-cancel-hint">수료증: 챕터 완료율 ${need}% 이상 필요 (현재 ${pct}%)</div>`
+  }
+  return ''
+}
+
+async function downloadCertificate(courseId) {
+  try {
+    const token = API.token()
+    const res = await fetch('/api/my/courses/' + courseId + '/certificate', {
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || '수료증을 받을 수 없습니다.')
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `certificate-${courseId}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    toast('수료증이 다운로드되었습니다.', 'success')
+  } catch (e) {
+    toast(e.message || '수료증 다운로드에 실패했습니다.', 'error')
+  }
+}
+window.downloadCertificate = downloadCertificate
 
 async function cancelEnrollment(courseId) {
   let preview
@@ -793,6 +833,7 @@ function renderVodCourseCard(c) {
       </div>
     </a>
     ${renderSubtitleToolDownload(c)}
+    ${renderCertificateAction(c)}
     ${renderCourseReviewBlock(c)}
     ${renderCancelAction(c)}
   </div>`

@@ -926,24 +926,17 @@ function normalizeFooterConfig(data = {}) {
 }
 
 const DEFAULT_TEST_ROOM_CONFIG = {
-  enabled: true,
+  enabled: false,
   label: '테스트룸',
-  hint: '편집 테스트 · 대기자 커뮤니티',
-  instagram_url: 'https://www.instagram.com/official_vcml/',
+  hint: '',
+  instagram_url: '',
   instagram_label: '인스타그램',
-  kakao_url: 'https://open.kakao.com/o/gjEgOrBi',
+  kakao_url: '',
   kakao_label: '카카오 대기방',
 }
 
 function devTestRoomFallback(cfg) {
-  if (process.env.NODE_ENV === 'production') return cfg
-  const next = { ...cfg }
-  if (!next.instagram_url && !next.kakao_url) {
-    next.enabled = true
-    next.instagram_url = DEFAULT_TEST_ROOM_CONFIG.instagram_url
-    next.kakao_url = DEFAULT_TEST_ROOM_CONFIG.kakao_url
-  }
-  return next
+  return { ...cfg, enabled: false }
 }
 
 function normalizeTestRoomConfig(data = {}) {
@@ -1947,6 +1940,8 @@ const db = {
           paid_amount: Number(order.amount || 0),
           method: order.method || '-',
           paid_at: order.paid_at || null,
+          external_order_id: order.external_order_id || null,
+          provider: order.provider || null,
         })
       }
     }
@@ -2028,7 +2023,11 @@ const db = {
           paid_at: paidAt,
           note: opts.note || null,
           admin_enrolled: true,
+          provider: /스마트스토어/i.test(method) ? 'smartstore' : (opts.provider || 'admin'),
           coupons_applied: appliedCoupons.length,
+          ...(opts.external_order_id
+            ? { external_order_id: String(opts.external_order_id).trim().slice(0, 120) }
+            : {}),
         }
         const ref = await fs.collection('orders').add(data)
         order = { id: ref.id, ...data }
@@ -2220,6 +2219,7 @@ const db = {
       discount: payload.discount || 0,
       note: payload.note || null,
       paid_at: payload.paid_at || null,
+      external_order_id: payload.external_order_id || null,
     }
 
     if (userId) {
@@ -2348,48 +2348,64 @@ const db = {
     live_material_url,
     live_chat_url,
     program_id,
+    delivery_mode,
+    course_type,
   }) {
     const slug = buildCourseSlug(title)
     const sale = Number(sale_price != null ? sale_price : price) || 0
     const listPrice = Number(price != null ? price : sale) || sale
+    const mode = delivery_mode === 'vod_only' ? 'vod_only' : 'live_first'
     const checkoutWindow = normalizeCheckoutWindowInput(checkout_starts_at, checkout_ends_at)
     if (checkoutWindow.error) return { error: checkoutWindow.error }
-    const liveWindow = normalizeLiveWindowInput(live_starts_at, live_ends_at)
-    if (liveWindow.error) return { error: liveWindow.error }
-    let endsAt = liveWindow.live_ends_at
-    if (liveWindow.live_starts_at && !endsAt) {
-      endsAt = new Date(new Date(liveWindow.live_starts_at).getTime() + LIVE_END_AFTER_MS).toISOString()
+
+    let liveWindow = { live_starts_at: null, live_ends_at: null }
+    let endsAt = null
+    let schedule = null
+    if (mode === 'live_first') {
+      liveWindow = normalizeLiveWindowInput(live_starts_at, live_ends_at)
+      if (liveWindow.error) return { error: liveWindow.error }
+      if (!liveWindow.live_starts_at) return { error: 'live_starts_required' }
+      endsAt = liveWindow.live_ends_at
+      if (liveWindow.live_starts_at && !endsAt) {
+        endsAt = new Date(new Date(liveWindow.live_starts_at).getTime() + LIVE_END_AFTER_MS).toISOString()
+      }
+      schedule = live_schedule || null
     }
+
+    const resolvedType = course_type === 'live' || (mode === 'live_first' && sale === 0)
+      ? 'live'
+      : 'recorded'
+
     const data = {
       slug,
       title,
       description: description || '',
       category: category || '영상 편집',
       thumbnail_icon: thumbnail_icon || 'ti-video',
-      thumb_style: thumb_style === 'dark' ? 'dark' : 'light',
+      thumb_style: thumb_style === 'dark' || resolvedType === 'live' ? 'dark' : 'light',
       price: listPrice,
       sale_price: sale,
-      badge: badge || null,
+      badge: badge || (resolvedType === 'live' ? 'LIVE' : null),
       sort_order: sort_order != null ? Number(sort_order) : 999,
       rating: 0,
       review_count: 0,
       student_count: 0,
       is_published: is_published ? 1 : 0,
-      course_type: 'recorded',
-      delivery_mode: 'live_first',
+      course_type: resolvedType,
+      delivery_mode: mode,
       coupon_allowed: coupon_allowed === false || coupon_allowed === 0 ? 0 : 1,
-      checkout_provider: checkout_provider === 'smartstore' ? 'smartstore' : 'site',
+      checkout_provider: checkout_provider === 'site' ? 'site' : 'smartstore',
       store_checkout_urls: normalizeStoreCheckoutUrls(store_checkout_urls || {}),
       checkout_starts_at: checkoutWindow.checkout_starts_at,
       checkout_ends_at: checkoutWindow.checkout_ends_at,
-      live_starts_at: liveWindow.live_starts_at,
-      live_ends_at: endsAt,
-      live_schedule: live_schedule || null,
-      meet_code: meet_code || null,
-      live_replay_url: live_replay_url || null,
-      live_material_url: live_material_url || null,
-      live_chat_url: live_chat_url || null,
-      live_status: 'upcoming',
+      live_starts_at: mode === 'live_first' ? liveWindow.live_starts_at : null,
+      live_ends_at: mode === 'live_first' ? endsAt : null,
+      live_schedule: mode === 'live_first' ? schedule : null,
+      meet_code: mode === 'live_first' ? (meet_code || null) : null,
+      live_replay_url: mode === 'live_first' ? (live_replay_url || null) : null,
+      live_material_url: mode === 'live_first' ? (live_material_url || null) : null,
+      live_chat_url: mode === 'live_first' ? (live_chat_url || null) : null,
+      live_status: mode === 'live_first' ? 'upcoming' : null,
       program_id: program_id || null,
       created_at: now(),
     }
@@ -2397,8 +2413,8 @@ const db = {
     await fs.collection('chapters').add({
       course_id: ref.id,
       order_num: 1,
-      title: '강의 소개',
-      duration: '10분',
+      title: mode === 'vod_only' ? '1강' : '강의 소개',
+      duration: mode === 'vod_only' ? '' : '10분',
       is_free: sale === 0 ? 1 : 0,
       video_url: null,
     })
@@ -2657,11 +2673,182 @@ const db = {
   },
 
   // orders
-  async createOrder(userId, courseId, amount, method, discount = 0) {
-    const data = { user_id: userId, course_id: courseId, amount, discount, method, status: 'paid', paid_at: now() }
+  async createOrder(userId, courseId, amount, method, discount = 0, extra = {}) {
+    const data = {
+      user_id: userId,
+      course_id: courseId,
+      amount,
+      discount,
+      method,
+      status: extra.status || 'paid',
+      paid_at: extra.status && extra.status !== 'paid' ? null : (extra.paid_at || now()),
+      created_at: now(),
+      ...(extra.external_order_id ? { external_order_id: String(extra.external_order_id).slice(0, 120) } : {}),
+      ...(extra.payment_key ? { payment_key: extra.payment_key } : {}),
+      ...(extra.order_name ? { order_name: extra.order_name } : {}),
+      ...(extra.coupon_ids ? { coupon_ids: extra.coupon_ids } : {}),
+      ...(extra.coupon_holds ? { coupon_holds: extra.coupon_holds } : {}),
+      ...(extra.admin_enrolled != null ? { admin_enrolled: extra.admin_enrolled } : {}),
+      ...(extra.note ? { note: extra.note } : {}),
+      ...(extra.provider ? { provider: extra.provider } : {}),
+    }
     const ref = await fs.collection('orders').add(data)
     return { id: ref.id, ...data }
   },
+
+  async createPendingOrder(userId, courseId, amount, method, discount, meta = {}) {
+    return db.createOrder(userId, courseId, amount, method, discount, {
+      status: 'pending',
+      paid_at: null,
+      order_name: meta.order_name || null,
+      coupon_ids: meta.coupon_ids || [],
+      coupon_holds: meta.coupon_holds || [],
+      provider: meta.provider || 'site',
+    })
+  },
+
+  async holdCouponsForOrder(couponIds, orderId) {
+    const held = []
+    const ids = Array.isArray(couponIds) ? couponIds : []
+    for (const id of ids) {
+      const ref = fs.collection('coupons').doc(id)
+      const snap = await ref.get()
+      if (!snap.exists) continue
+      const data = snap.data()
+      if (data.status !== 'available') continue
+      await ref.update({
+        status: 'held',
+        held_order_id: orderId,
+        held_at: now(),
+      })
+      held.push(id)
+    }
+    return held
+  },
+
+  async releaseCouponHolds(orderId, couponIds = null) {
+    let ids = couponIds
+    if (!ids) {
+      const order = await db.getOrderById(orderId)
+      ids = order?.coupon_holds || order?.coupon_ids || []
+    }
+    for (const id of ids || []) {
+      const ref = fs.collection('coupons').doc(id)
+      const snap = await ref.get()
+      if (!snap.exists) continue
+      const data = snap.data()
+      if (data.status !== 'held') continue
+      if (data.held_order_id && data.held_order_id !== orderId) continue
+      await ref.update({
+        status: 'available',
+        held_order_id: null,
+        held_at: null,
+      })
+    }
+  },
+
+  async consumeHeldCoupons(order, course) {
+    const holds = order.coupon_holds || order.coupon_ids || []
+    let used = 0
+    for (const id of holds) {
+      const ref = fs.collection('coupons').doc(id)
+      const snap = await ref.get()
+      if (!snap.exists) continue
+      const data = snap.data()
+      if (data.status !== 'held' && data.status !== 'available') continue
+      // held → used (bypass available-only check in useCoupon)
+      await ref.update({
+        status: 'used',
+        used_at: now(),
+        held_order_id: null,
+        held_at: null,
+        order_id: order.id,
+        used_context: 'course_order',
+        used_target_type: 'course',
+        used_target_id: order.course_id,
+        used_target_title: course?.title || null,
+      })
+      used++
+    }
+    return used
+  },
+
+  /**
+   * pending 주문을 paid로 확정하고 수강 등록. 멱등.
+   */
+  async confirmPaidOrderAndEnroll(orderId, paymentMeta = {}) {
+    const order = await db.getOrderById(orderId)
+    if (!order) return { ok: false, code: 'order_not_found', error: '주문을 찾을 수 없습니다.' }
+    if (order.status === 'paid') {
+      return { ok: true, already: true, order, enrolled: true }
+    }
+    if (order.status !== 'pending') {
+      return { ok: false, code: 'invalid_status', error: '결제할 수 없는 주문 상태입니다.' }
+    }
+    const course = await db.getCourseById(order.course_id)
+    if (!course) return { ok: false, code: 'course_not_found', error: '강의를 찾을 수 없습니다.' }
+
+    if (!(await db.isEnrolled(order.user_id, order.course_id))) {
+      const enrollResult = await db.enrollAtomically(order.user_id, order.course_id, course)
+      if (enrollResult?.error === 'enrollment_full') {
+        await db.failPendingOrder(orderId, 'enrollment_full')
+        await db.releaseCouponHolds(orderId)
+        return { ok: false, code: 'enrollment_full', error: '모집 정원이 마감되었습니다.' }
+      }
+    }
+
+    await fs.collection('orders').doc(orderId).update({
+      status: 'paid',
+      paid_at: now(),
+      payment_key: paymentMeta.paymentKey || paymentMeta.payment_key || order.payment_key || null,
+      method: paymentMeta.method || order.method || '카드',
+      provider: paymentMeta.provider || order.provider || 'site',
+      approved_at: paymentMeta.approvedAt || now(),
+    })
+
+    await db.consumeHeldCoupons(order, course)
+    const rewardCoupon = await db.issueClientCourseRewardCoupons(order.user_id, course, orderId)
+    await db.syncCourseStudentCount(order.course_id)
+    cacheInvalidate('admin:stats', 'admin:courseStats', 'homepage:data*')
+
+    const updated = await db.getOrderById(orderId)
+    return {
+      ok: true,
+      already: false,
+      order: updated,
+      course,
+      reward_coupon: rewardCoupon,
+      enrolled: true,
+    }
+  },
+
+  async failPendingOrder(orderId, reason = null) {
+    const order = await db.getOrderById(orderId)
+    if (!order || order.status !== 'pending') return false
+    await fs.collection('orders').doc(orderId).update({
+      status: 'failed',
+      failed_at: now(),
+      fail_reason: reason || null,
+    })
+    await db.releaseCouponHolds(orderId)
+    return true
+  },
+
+  async getOrderByPaymentKey(paymentKey) {
+    if (!paymentKey) return null
+    const snap = await fs.collection('orders').where('payment_key', '==', String(paymentKey)).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+  },
+
+  async updateOrderFields(orderId, fields) {
+    if (!orderId || !fields || !Object.keys(fields).length) return
+    await fs.collection('orders').doc(orderId).update(fields)
+  },
+
+  async updateOrderPaymentKey(orderId, paymentKey) {
+    await db.updateOrderFields(orderId, { payment_key: paymentKey })
+  },
+
   async getOrderById(orderId) {
     const doc = await fs.collection('orders').doc(orderId).get()
     return docToObj(doc)
@@ -2669,16 +2856,21 @@ const db = {
   async cancelOrder(orderId) {
     await fs.collection('orders').doc(orderId).update({ status: 'cancelled', cancelled_at: now() })
   },
-  async refundOrder(orderId, refundAmount) {
+  async refundOrder(orderId, refundAmount, extra = {}) {
     await fs.collection('orders').doc(orderId).update({
       status: 'refunded',
       refunded_at: now(),
       refund_amount: refundAmount,
+      ...(extra.refund_provider ? { refund_provider: extra.refund_provider } : {}),
     })
   },
   async getActiveOrderForCourse(userId, courseId) {
     const orders = await db.getOrdersByUser(userId)
     return orders.find(o => o.course_id === courseId && o.status === 'paid') || null
+  },
+  async getPendingOrderForCourse(userId, courseId) {
+    const orders = await db.getOrdersByUser(userId)
+    return orders.find(o => o.course_id === courseId && o.status === 'pending') || null
   },
   async unenroll(userId, courseId) {
     const snap = await fs.collection('enrollments').where('user_id', '==', userId).get()
@@ -2816,9 +3008,13 @@ const db = {
     const plan = db.computeEnrollmentCancelPlan(course, order, progress, chapters)
     if (!plan.allowed) return { error: 'not_allowed', message: plan.error }
 
+    let refundedOrderId = null
+
     await db.unenroll(userId, courseId)
     if (order && plan.type === 'refund') {
-      await db.refundOrder(order.id, plan.refund_amount)
+      await db.refundOrder(order.id, plan.refund_amount, {
+        refund_provider: order.provider || null,
+      })
       refundedOrderId = order.id
     } else if (order && plan.type === 'cancel') {
       await db.cancelOrder(order.id)
@@ -2888,6 +3084,106 @@ const db = {
         await fs.collection('enrollments').doc(enrollSnap.docs[0].id).update({ last_chapter_id: chapterId, last_watched_at: now() })
       }
     }
+  },
+
+  /** 강의 진도 집계 (Admin·수료증 공통) */
+  summarizeProgressRows(chapters, progressRows, enrollment = null) {
+    const total = Array.isArray(chapters) ? chapters.length : 0
+    const rows = Array.isArray(progressRows) ? progressRows : []
+    const completed = rows.filter(p => p.completed).length
+    const watchedSec = rows.reduce((sum, p) => sum + (Number(p.watched_sec) || 0), 0)
+    let lastWatchedAt = enrollment?.last_watched_at || null
+    for (const p of rows) {
+      const t = p.updated_at || null
+      if (t && (!lastWatchedAt || String(t) > String(lastWatchedAt))) lastWatchedAt = t
+    }
+    const progressPct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0
+    return {
+      total_chapters: total,
+      completed_chapters: completed,
+      progress_pct: progressPct,
+      watched_sec: watchedSec,
+      last_watched_at: lastWatchedAt,
+    }
+  },
+
+  async getCourseProgressSummary(userId, courseId) {
+    const [chapters, progress, enrollments] = await Promise.all([
+      db.getChaptersByCourse(courseId),
+      db.getProgressByCourse(userId, courseId),
+      db.getEnrollmentsByUser(userId),
+    ])
+    const enrollment = enrollments.find(e => e.course_id === courseId) || null
+    return db.summarizeProgressRows(chapters, progress, enrollment)
+  },
+
+  async attachProgressToEnrollees(courseId, enrollees) {
+    const chapters = await db.getChaptersByCourse(courseId)
+    const list = Array.isArray(enrollees) ? enrollees : []
+    if (!list.length) return []
+    const enrollments = await db.getEnrollmentsByCourse(courseId)
+    const enrollByUser = new Map()
+    for (const e of enrollments) {
+      const prev = enrollByUser.get(e.user_id)
+      if (!prev || String(e.enrolled_at || '') > String(prev.enrolled_at || '')) {
+        enrollByUser.set(e.user_id, e)
+      }
+    }
+    return Promise.all(list.map(async row => {
+      const progress = await db.getProgressByCourse(row.user_id, courseId)
+      const summary = db.summarizeProgressRows(chapters, progress, enrollByUser.get(row.user_id))
+      return { ...row, ...summary }
+    }))
+  },
+
+  CERTIFICATE_THRESHOLD_PCT: 80,
+
+  async assertCertificateEligibility(userId, courseId) {
+    if (!await db.isEnrolled(userId, courseId)) {
+      return { ok: false, code: 'not_enrolled', error: '수강 중인 강의가 아닙니다.' }
+    }
+    const course = await db.getCourseById(courseId)
+    if (!course) return { ok: false, code: 'course_not_found', error: '강의를 찾을 수 없습니다.' }
+    const access = await db.getCourseAccessMeta(userId, course)
+    if (access.access_expired) {
+      return { ok: false, code: 'access_expired', error: '수강 기간이 만료되어 수료증을 발급할 수 없습니다.' }
+    }
+    const summary = await db.getCourseProgressSummary(userId, courseId)
+    if (summary.total_chapters <= 0) {
+      return { ok: false, code: 'no_chapters', error: '수료 기준 챕터가 없습니다.' }
+    }
+    if (summary.progress_pct < db.CERTIFICATE_THRESHOLD_PCT) {
+      return {
+        ok: false,
+        code: 'incomplete',
+        error: `챕터 완료율 ${db.CERTIFICATE_THRESHOLD_PCT}% 이상이어야 수료증을 발급할 수 있습니다. (현재 ${summary.progress_pct}%)`,
+        progress: summary,
+        threshold_pct: db.CERTIFICATE_THRESHOLD_PCT,
+      }
+    }
+    const user = await db.findUserById(userId)
+    return {
+      ok: true,
+      course,
+      user,
+      progress: summary,
+      threshold_pct: db.CERTIFICATE_THRESHOLD_PCT,
+    }
+  },
+
+  async recordCertificateIssued(userId, courseId, meta = {}) {
+    const snap = await fs.collection('enrollments')
+      .where('user_id', '==', userId)
+      .where('course_id', '==', courseId)
+      .limit(1).get()
+    if (snap.empty) return null
+    const payload = {
+      certificate_issued_at: now(),
+      certificate_threshold_pct: db.CERTIFICATE_THRESHOLD_PCT,
+      certificate_progress_pct: meta.progress_pct ?? null,
+    }
+    await snap.docs[0].ref.update(payload)
+    return { id: snap.docs[0].id, ...snap.docs[0].data(), ...payload }
   },
 
   // reviews
@@ -4341,8 +4637,22 @@ const db = {
       revenue, todayRevenue, monthRevenue,
       todayOrders, monthOrders,
       newStudents: enrollments.size, orderCount: orders.size,
-      refundPending: refundCount, totalStudents: users.size,
+      refundPending: refundCount,
+      monthRefundCount: refundCount,
+      totalStudents: users.size,
+      smartstoreOrders: 0,
+      siteOrders: 0,
     }
+    orders.docs.forEach(d => {
+      const o = d.data()
+      const method = String(o.method || '')
+      const provider = String(o.provider || '')
+      if (o.admin_enrolled || method.includes('스마트스토어') || provider === 'smartstore') {
+        result.smartstoreOrders++
+      } else if (provider === 'site' || method === '쿠폰전액') {
+        result.siteOrders++
+      }
+    })
     cacheSet('admin:stats', result, TTL.STATS)
     return result
   },
@@ -5017,7 +5327,7 @@ const db = {
     return rows.slice(0, limit)
   },
 
-  async createSubtitleDeviceCode() {
+  async createSubtitleDeviceCode(deviceId = null) {
     const code = crypto.randomBytes(4).toString('hex')
     const expiresAt = new Date(Date.now() + SUBTITLE_DEVICE_CODE_TTL_MS).toISOString()
     const data = {
@@ -5026,6 +5336,7 @@ const db = {
       user_id: null,
       token: null,
       user_name: null,
+      device_id: deviceId ? String(deviceId).trim().slice(0, 64) : null,
       expires_at: expiresAt,
       created_at: now(),
     }
@@ -5083,6 +5394,65 @@ const db = {
       }
     }
     return { status: row.status || 'pending' }
+  },
+
+  async getSubtitleDeviceSession(userId) {
+    if (!userId) return null
+    const snap = await fs.collection('subtitle_device_sessions').doc(String(userId)).get()
+    return snap.exists ? { id: snap.id, ...snap.data() } : null
+  },
+
+  /** 계정당 1기기 — 새 연동 시 기존 세션을 대체한다. */
+  async bindSubtitleDeviceSession(userId, deviceId, ip = null) {
+    const did = String(deviceId || '').trim().slice(0, 64)
+    if (!did) return { ok: false, code: 'device_required', error: '기기 정보가 없습니다.' }
+    const ref = fs.collection('subtitle_device_sessions').doc(String(userId))
+    const prev = await ref.get()
+    const sessionId = crypto.randomBytes(16).toString('hex')
+    const ts = now()
+    const replaced = !!(prev.exists && prev.data().device_id && prev.data().device_id !== did)
+    await ref.set({
+      device_id: did,
+      session_id: sessionId,
+      linked_at: ts,
+      linked_ip: ip || null,
+      last_seen_at: ts,
+      last_ip: ip || null,
+    })
+    return { ok: true, session_id: sessionId, device_id: did, replaced }
+  },
+
+  async assertSubtitleDeviceSession(userId, { deviceId, sessionId, ip = null } = {}) {
+    const did = String(deviceId || '').trim()
+    const sid = String(sessionId || '').trim()
+    if (!userId || !did || !sid) {
+      return { ok: false, code: 'session_revoked', error: '기기 연동이 만료되었습니다. 다시 로그인해 주세요.' }
+    }
+    const ref = fs.collection('subtitle_device_sessions').doc(String(userId))
+    const snap = await ref.get()
+    if (!snap.exists) {
+      return { ok: false, code: 'session_revoked', error: '기기 연동이 만료되었습니다. 다시 로그인해 주세요.' }
+    }
+    const data = snap.data()
+    if (data.session_id !== sid) {
+      return {
+        ok: false,
+        code: 'session_revoked',
+        error: '다른 기기에서 로그인되어 이 기기의 연동이 해제되었습니다.',
+      }
+    }
+    if (data.device_id !== did) {
+      return {
+        ok: false,
+        code: 'device_mismatch',
+        error: '이 기기와 연동된 계정이 아닙니다. 다시 로그인해 주세요.',
+      }
+    }
+    await ref.update({
+      last_seen_at: now(),
+      last_ip: ip || data.last_ip || null,
+    })
+    return { ok: true }
   },
 
   // ── course_programs ──

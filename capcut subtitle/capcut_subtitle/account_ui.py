@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 import tkinter as tk
+import webbrowser
 from tkinter import ttk
 
 from . import theme
@@ -173,7 +174,7 @@ class LoginDialog(tk.Toplevel):
 
 
 class CoinPurchaseDialog(tk.Toplevel):
-    """코인 충전 팝업. 결제(KG이니시스)는 아직 연동 전이라 안내만 표시한다."""
+    """코인 충전 팝업. 후기 보너스 안내·작성 링크 + 결제(준비 중)."""
 
     _PACKAGES = [
         (100, 5_000),
@@ -181,8 +182,9 @@ class CoinPurchaseDialog(tk.Toplevel):
         (1000, 40_000),
     ]
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, app) -> None:
         super().__init__(parent)
+        self._app = app
         self.title("코인 충전")
         self.resizable(False, False)
         self.configure(bg=WHITE)
@@ -190,13 +192,23 @@ class CoinPurchaseDialog(tk.Toplevel):
         self.attributes("-topmost", True)
 
         card = tk.Frame(self, bg=WHITE)
-        card.pack(fill="both", expand=True, padx=24, pady=20)
+        card.pack(fill="both", expand=True, padx=24, pady=18)
 
-        tk.Label(card, text="코인 충전", font=("맑은 고딕", 14, "bold"),
-                 fg=PRIMARY, bg=WHITE).pack(anchor="w", pady=(0, 4))
-        tk.Label(card, text="카드 결제(KG이니시스 연동)는 준비 중입니다. 곧 이용하실 수 있어요.",
+        tk.Label(card, text="코인 충전", font=("맑은 고딕", 13, "bold"),
+                 fg=PRIMARY, bg=WHITE).pack(anchor="w", pady=(0, 2))
+        tk.Label(card, text="카드 결제(KG이니시스)는 준비 중입니다.",
                  font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE,
-                 wraplength=300, justify="left").pack(anchor="w", pady=(0, 14))
+                 wraplength=300, justify="left").pack(anchor="w", pady=(0, 10))
+
+        self._review_row = tk.Frame(card, bg=WHITE)
+        self._review_row.pack(fill="x", pady=(0, 10))
+        self._review_note = tk.Label(
+            self._review_row, text="후기 보너스 확인 중…",
+            font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE, anchor="w")
+        self._review_note.pack(side="left", fill="x", expand=True)
+        self._review_btn: RoundedButton | None = None
+
+        ttk.Separator(card, orient="horizontal").pack(fill="x", pady=(0, 10))
 
         self._choice = tk.IntVar(value=0)
         for i, (coins, price) in enumerate(self._PACKAGES):
@@ -206,7 +218,7 @@ class CoinPurchaseDialog(tk.Toplevel):
                           font=("맑은 고딕", 10)).pack(anchor="w", pady=3)
 
         btn_row = tk.Frame(card, bg=WHITE)
-        btn_row.pack(fill="x", pady=(16, 0))
+        btn_row.pack(fill="x", pady=(14, 0))
         RoundedButton(btn_row, "결제하기 (준비 중)", command=self._notify_soon,
                       fill=theme.DISABLED_FILL, hover=theme.DISABLED_FILL,
                       fg=theme.DISABLED_FG).pack(side="left")
@@ -216,6 +228,56 @@ class CoinPurchaseDialog(tk.Toplevel):
         self.update_idletasks()
         _center_over(self, parent, max(340, self.winfo_reqwidth()), self.winfo_reqheight())
         self.grab_set()
+        threading.Thread(target=self._load_review_status, daemon=True).start()
+
+    def _load_review_status(self) -> None:
+        me = None
+        err = None
+        token = self._app._auth.get("token") if self._app._auth else None
+        if token:
+            try:
+                me = license_api.fetch_me(token)
+            except Exception as e:
+                err = e
+        self.after(0, lambda: self._apply_review_status(me, err))
+
+    def _apply_review_status(self, me: dict | None, err: Exception | None) -> None:
+        try:
+            if self._review_btn is not None:
+                self._review_btn.destroy()
+                self._review_btn = None
+        except tk.TclError:
+            return
+
+        if me:
+            if me.get("review_bonus_granted"):
+                self._review_note.config(
+                    text="후기 보너스 +100코인 지급 완료",
+                    fg=TEXT_MUTED,
+                )
+            else:
+                self._review_note.config(
+                    text="수강 후기 작성 시 +100코인",
+                    fg=TEXT_MUTED,
+                )
+                self._review_btn = RoundedButton(
+                    self._review_row, "후기 작성하기",
+                    command=lambda m=me: self._open_review_page(m),
+                    min_width=96,
+                )
+                self._review_btn.pack(side="right")
+            return
+
+        if err is not None and getattr(err, "status", None) not in (401, 403):
+            self._review_note.config(text="후기 보너스 정보를 불러오지 못했습니다.", fg=TEXT_MUTED)
+        else:
+            self._review_note.config(text="", fg=TEXT_MUTED)
+
+    def _open_review_page(self, me: dict) -> None:
+        url = license_api.review_write_url(me.get("course_id"))
+        webbrowser.open(url)
+        toast(self, "브라우저에서 후기를 작성해 주세요. 작성 후 앱으로 돌아오면 코인이 반영됩니다.",
+              "info", duration=3200)
 
     def _notify_soon(self) -> None:
         toast(self, "카드 결제 연동을 준비 중입니다. 조금만 기다려 주세요!", "info")
@@ -256,7 +318,7 @@ class MemberInfoDialog(tk.Toplevel):
             "보유 코인": tk.StringVar(
                 value=f"{app._balance} 코인" if app._balance is not None else "-"),
             "수강 상태": tk.StringVar(
-                value="수강 중 · 기기 연동됨" if app._authenticated else "-"),
+                value="수강 중 · 기기 연동됨" if app._is_logged_in() else "-"),
             "후기 보너스": tk.StringVar(value="확인 중…"),
         }
         info = ttk.Frame(card)
@@ -269,7 +331,7 @@ class MemberInfoDialog(tk.Toplevel):
 
         btn_row = tk.Frame(card, bg=WHITE)
         btn_row.pack(fill="x", pady=(0, 14))
-        RoundedButton(btn_row, "코인 충전", command=lambda: CoinPurchaseDialog(self)
+        RoundedButton(btn_row, "코인 충전", command=lambda: CoinPurchaseDialog(self, app)
                      ).pack(side="left")
 
         ttk.Label(card, text="코인 사용 내역", font=("맑은 고딕", 10, "bold"),

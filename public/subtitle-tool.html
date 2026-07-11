@@ -66,7 +66,8 @@
 
   <div class="st-card hidden" id="card-device">
     <h2>앱 기기 연동</h2>
-    <p class="st-meta" style="margin-bottom:10px">프로그램을 실행하면 표시되는 연동 코드를 아래 입력창에 붙여넣고 기기 연동을 승인합니다.</p>
+    <p class="st-meta" style="margin-bottom:6px">프로그램을 실행하면 표시되는 연동 코드를 아래 입력창에 붙여넣고 기기 연동을 승인합니다.</p>
+    <p class="st-meta" style="margin-bottom:10px;font-size:12px;color:#888">계정당 1대 PC만 연동됩니다. 새 기기 연동 시 기존 기기는 자동 해제됩니다.</p>
     <div class="st-code" id="device-code-label">————</div>
     <div class="st-actions">
       <button type="button" class="st-btn" id="btn-approve" disabled>이 기기로 연동</button>
@@ -165,8 +166,11 @@ async function approveDevice() {
   if (!deviceCode) return
   approveBtn.disabled = true
   try {
-    await API.post('/subtitle/device/approve', { code: deviceCode })
-    showMsg('기기 연동이 완료되었습니다. 앱으로 돌아가 주세요.', 'ok')
+    const res = await API.post('/subtitle/device/approve', { code: deviceCode })
+    const msg = res?.replaced
+      ? '기존 기기 연동이 해제되고 이 기기로 연동되었습니다. 앱으로 돌아가 주세요.'
+      : '기기 연동이 완료되었습니다. 앱으로 돌아가 주세요.'
+    showMsg(msg, 'ok')
     approveBtn.textContent = '연동 완료'
   } catch (e) {
     showMsg(e.message || '기기 연동에 실패했습니다.', 'err')

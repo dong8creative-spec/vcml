@@ -1,7 +1,7 @@
 const express = require('express')
 const jwt = require('jsonwebtoken')
 const db = require('../db/schema')
-const { authMiddleware } = require('../middleware/auth')
+const { authMiddleware, subtitleAppAuth, clientIp } = require('../middleware/auth')
 const { getSignedDownloadUrl } = require('../utils/storage')
 
 const router = express.Router()
@@ -10,7 +10,7 @@ const SUBTITLE_ZIP_PATH = process.env.SUBTITLE_TOOL_STORAGE_PATH || 'subtitle-to
 const SUBTITLE_MODEL_ZIP_PATH = process.env.SUBTITLE_MODEL_STORAGE_PATH || 'subtitle-tool/whisper-model-large-v3.zip'
 const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://vcml.kr'
 
-function signUserToken(user) {
+function signSubtitleToken(user, deviceId, sessionId) {
   return jwt.sign(
     {
       id: user.id,
@@ -18,10 +18,12 @@ function signUserToken(user) {
       name: user.name,
       role: user.role,
       member_type: user.member_type || 'student',
-      profileComplete: !!user.profile_complete,
+      subtitle: true,
+      device_id: deviceId,
+      session_id: sessionId,
     },
     process.env.JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '7d' },
   )
 }
 
@@ -39,8 +41,8 @@ router.get('/entitlement', authMiddleware, async (req, res) => {
   }
 })
 
-/** GET /api/subtitle/me — 잔액 조회 */
-router.get('/me', authMiddleware, async (req, res) => {
+/** GET /api/subtitle/me — 잔액 조회 (앱 전용, 1계정 1기기) */
+router.get('/me', subtitleAppAuth, async (req, res) => {
   try {
     const result = await db.ensureSubtitleEntitlement(req.user.id)
     if (!result.ok) {
@@ -54,6 +56,7 @@ router.get('/me', authMiddleware, async (req, res) => {
       review_bonus_granted: result.review_bonus_granted,
       course_slug: result.course_slug,
       course_title: result.course_title,
+      course_id: result.course_id || null,
       enrolled: !!result.enrolled,
       has_google: !!result.has_google,
     })
@@ -63,8 +66,8 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 })
 
-/** GET /api/subtitle/history — 코인 사용/지급 내역 */
-router.get('/history', authMiddleware, async (req, res) => {
+/** GET /api/subtitle/history — 코인 사용/지급 내역 (앱 전용) */
+router.get('/history', subtitleAppAuth, async (req, res) => {
   try {
     const result = await db.ensureSubtitleEntitlement(req.user.id)
     if (!result.ok) {
@@ -123,7 +126,11 @@ router.get('/download-model', authMiddleware, async (req, res) => {
 /** POST /api/subtitle/device/start — 앱이 연동 코드 발급 (인증 불필요) */
 router.post('/device/start', async (req, res) => {
   try {
-    const { code, expires_at } = await db.createSubtitleDeviceCode()
+    const deviceId = String(req.body?.device_id || '').trim().slice(0, 64)
+    if (!deviceId) {
+      return res.status(400).json({ error: '기기 정보가 필요합니다.', code: 'device_required' })
+    }
+    const { code, expires_at } = await db.createSubtitleDeviceCode(deviceId)
     res.json({
       code,
       expires_at,
@@ -149,7 +156,25 @@ router.post('/device/approve', authMiddleware, async (req, res) => {
     const user = await db.findUserById(req.user.id)
     if (!user) return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' })
 
-    const token = signUserToken(user)
+    const codeRow = await db.getSubtitleDeviceCode(code)
+    if (!codeRow) {
+      return res.status(400).json({ ok: false, code: 'invalid_code', error: '연동 코드를 찾을 수 없습니다.' })
+    }
+    const deviceId = codeRow.device_id
+    if (!deviceId) {
+      return res.status(400).json({
+        ok: false,
+        code: 'device_required',
+        error: '기기 정보가 없는 연동 코드입니다. 앱을 최신 버전으로 업데이트한 뒤 다시 시도해 주세요.',
+      })
+    }
+
+    const bound = await db.bindSubtitleDeviceSession(req.user.id, deviceId, clientIp(req))
+    if (!bound.ok) {
+      return res.status(400).json(bound)
+    }
+
+    const token = signSubtitleToken(user, deviceId, bound.session_id)
     const approved = await db.approveSubtitleDeviceCode(code, user.id, token, user.name)
     if (!approved.ok) {
       const status = approved.code === 'expired' || approved.code === 'invalid_code' ? 400 : 409
@@ -158,6 +183,7 @@ router.post('/device/approve', authMiddleware, async (req, res) => {
     res.json({
       success: true,
       already: !!approved.already,
+      replaced: !!bound.replaced,
       balance: entitlement.balance,
     })
   } catch (e) {
@@ -203,8 +229,8 @@ router.get('/device/poll', async (req, res) => {
   }
 })
 
-/** POST /api/subtitle/consume — { minutes, job_id } */
-router.post('/consume', authMiddleware, async (req, res) => {
+/** POST /api/subtitle/consume — { minutes, job_id } (앱 전용) */
+router.post('/consume', subtitleAppAuth, async (req, res) => {
   try {
     const minutes = req.body?.minutes
     const jobId = req.body?.job_id
@@ -220,8 +246,8 @@ router.post('/consume', authMiddleware, async (req, res) => {
   }
 })
 
-/** POST /api/subtitle/refund — { job_id } */
-router.post('/refund', authMiddleware, async (req, res) => {
+/** POST /api/subtitle/refund — { job_id } (앱 전용) */
+router.post('/refund', subtitleAppAuth, async (req, res) => {
   try {
     const jobId = req.body?.job_id
     const result = await db.refundSubtitleCoins(req.user.id, jobId)

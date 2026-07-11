@@ -141,9 +141,9 @@
         <div class="metric-card">
           <div class="metric-icon orange"><i class="ti ti-arrow-back-up"></i></div>
           <div class="metric-body">
-            <div class="metric-label">이번 달 환불</div>
+            <div class="metric-label">이번 달 환불 완료</div>
             <div class="metric-num" id="stat-refunds">-</div>
-            <div class="metric-change">이번 달 기준</div>
+            <div class="metric-change">이번 달 환불 완료 건수</div>
           </div>
         </div>
       </div>
@@ -208,7 +208,7 @@
         <div class="card-header">
           <div>
             <div class="card-title">강의 목록 <span id="courses-count-label" class="td-sub fw-600"></span></div>
-            <p class="sec-sub">사이트에 노출되는 운영 강의 목록입니다.</p>
+            <p class="sec-sub">라이브 강의가 기본입니다. 종료 후 다시보기를 등록하고, VOD는 별도로 개설합니다.</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto">
             <div class="filter-tabs" id="course-filter-tabs">
@@ -218,7 +218,8 @@
               <button type="button" class="filter-tab" data-course-filter="archived">구버전·비공개</button>
             </div>
             <button type="button" class="btn-sm" id="btn-sync-catalog"><i class="ti ti-refresh"></i> 카탈로그 동기화</button>
-            <button class="btn-primary-sm" onclick="openCourseCreateModal()"><i class="ti ti-plus"></i> 강의 등록</button>
+            <button type="button" class="btn-sm" onclick="openVodCreateModal()"><i class="ti ti-video"></i> VOD 강의 개설</button>
+            <button class="btn-primary-sm" onclick="openCourseCreateModal()"><i class="ti ti-broadcast"></i> 라이브 강의 등록</button>
           </div>
         </div>
         <table class="data-table">
@@ -231,18 +232,19 @@
         </table>
       </div>
 
-      <!-- 라이브 강의 설정 패널 -->
+      <!-- 라이브·다시보기 설정 패널 -->
       <div class="card mt16" id="live-panel" style="display:none">
         <div class="card-header">
-          <div class="card-title"><i class="ti ti-broadcast"></i> 라이브 강의 설정 — <span id="live-panel-title"></span></div>
+          <div class="card-title"><i class="ti ti-broadcast"></i> 라이브·다시보기 설정 — <span id="live-panel-title"></span></div>
         </div>
+        <p class="sec-sub" style="margin:0 0 16px;line-height:1.6">① 일정·Meet 확인 → ② 라이브 진행 → ③ 종료 후 다시보기 링크 등록 (다음날 오후 1시 공개)</p>
         <div class="two-col">
           <div>
             <div class="form-group">
               <label>강의 유형</label>
               <select id="live-type" onchange="onLiveTypeChange()">
-                <option value="recorded">유료/녹화 강의 (라이브 시작 → 다시보기)</option>
-                <option value="live">무료 라이브 강의</option>
+                <option value="recorded">유료 라이브 (종료 후 다시보기)</option>
+                <option value="live">무료 라이브</option>
               </select>
             </div>
             <div id="live-fields">
@@ -263,7 +265,7 @@
                 <input type="url" id="live-chat-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
               </div>
               <div class="form-group">
-                <label>다시보기 링크 <span style="font-size: 13.2px;color:#aaa">종료 후 다음 날 오후 1시 공개</span></label>
+                <label>다시보기 링크 <span style="font-size: 13.2px;color:#aaa">라이브 종료 후 등록 · 다음날 오후 1시 공개</span></label>
                 <input type="url" id="live-replay-url" placeholder="https://..." maxlength="500" />
               </div>
               <div class="form-group">
@@ -380,8 +382,8 @@
             <div class="form-group">
               <label>결제 방식</label>
               <select id="cm-checkout-provider">
-                <option value="site">사이트 내 결제</option>
                 <option value="smartstore">네이버 스마트스토어</option>
+                <option value="site">쿠폰 전액만 (PG 없음)</option>
               </select>
             </div>
             <div id="cm-smartstore-fields" style="display:none">
@@ -404,7 +406,7 @@
                 <input type="checkbox" id="cm-coupon-allowed" checked />
                 <span>쿠폰 사용 가능 (기대평·후기 등)</span>
               </label>
-              <p class="sec-sub" id="cm-coupon-help" style="margin-top:8px;line-height:1.5">사이트 결제: 끄면 정가만 결제됩니다. 스마트스토어: 끄면 쿠폰 질문 없이 정가 링크만 안내합니다.</p>
+              <p class="sec-sub" id="cm-coupon-help" style="margin-top:8px;line-height:1.5">스마트스토어: 끄면 쿠폰 질문 없이 정가 링크만 안내합니다. 쿠폰 전액만: 사이트에서 0원일 때만 즉시 등록됩니다.</p>
               <div id="cm-purchase-links" class="sec-sub" style="margin-top:10px;line-height:1.6"></div>
             </div>
             <div class="form-group">
@@ -437,8 +439,8 @@
               <button type="button" class="btn-sm" id="cm-hero-gallery-add" style="margin-top:12px;width:fit-content">+ 이미지 추가</button>
             </div>
             <div id="cm-live-links" class="modal-live-links">
-              <div class="modal-live-links__title">강의 일정 · 링크 · 자료</div>
-              <p class="modal-live-links__desc">모든 강의는 라이브 우선입니다. 시작·종료 시간과 Meet·자료·다시보기 링크를 등록합니다.</p>
+              <div class="modal-live-links__title">라이브 일정 · 링크 · 자료</div>
+              <p class="modal-live-links__desc">라이브 → 종료 후 다시보기 강의입니다. 다시보기 링크는 종료 후 「라이브·다시보기」 패널에서도 등록할 수 있습니다.</p>
               <div class="two-col">
                 <div class="form-group">
                   <label>강의 시작 일시</label>
@@ -495,6 +497,7 @@
                 CSV 가져오기
                 <input type="file" id="enroll-csv-input" accept=".csv,text/csv,text/plain" style="display:none" onchange="importEnrollmentsCsv(event)" />
               </label>
+              <button type="button" class="btn-sm" onclick="exportCourseProgressCsv()"><i class="ti ti-download"></i> 진도 CSV</button>
               <span style="font-size:12px;color:#888">유료 등록 시 보유 10% 쿠폰 최대 2장 자동 소모 · 미가입자는 대기 등록</span>
             </div>
 
@@ -505,10 +508,12 @@
                 <select id="enroll-user-select" size="8" style="width:100%;margin:8px 0;padding:6px 8px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box" onchange="onEnrollUserSelectChange()">
                   <option value="">회원을 선택하세요</option>
                 </select>
-                <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+                  <input type="text" id="enroll-external-order-id" placeholder="스마트스토어 주문번호 (선택)" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid #ddd;border-radius:8px" />
                   <button type="button" class="btn-sm btn-primary" id="enroll-add-btn" onclick="submitManualEnrollment()">등록</button>
                   <span id="enroll-add-status" style="font-size:12px;color:#666"></span>
                 </div>
+                <p style="margin:0 0 12px;font-size:12px;color:#888">운영 체크리스트: 스토어 결제 확인 → 회원 선택(또는 대기 등록) → 주문번호 입력 → 등록. CSV 가져오기 시에도 주문번호 열을 넣을 수 있습니다.</p>
                 <details style="font-size:13px">
                   <summary style="cursor:pointer;font-weight:600;color:#555">미가입자 대기 등록 (직접 입력)</summary>
                   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0">
@@ -537,11 +542,13 @@
                     <th class="th-sortable" data-sort="phone" onclick="sortCourseEnrollments('phone')">연락처 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
                     <th class="th-sortable" data-sort="member_type" onclick="sortCourseEnrollments('member_type')">유형 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
                     <th class="th-sortable" data-sort="payment" onclick="sortCourseEnrollments('payment')">결제 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+                    <th class="th-sortable" data-sort="progress_pct" onclick="sortCourseEnrollments('progress_pct')">진도 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
+                    <th class="th-sortable" data-sort="last_watched_at" onclick="sortCourseEnrollments('last_watched_at')">최종수강 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
                     <th class="th-sortable" data-sort="enrolled_at" onclick="sortCourseEnrollments('enrolled_at')">신청일 <i class="th-sort-icon ti ti-arrows-sort"></i></th>
                   </tr>
                 </thead>
                 <tbody id="course-enrollments-body">
-                  <tr><td colspan="6" style="text-align:center;color:#888;padding:24px">로딩 중...</td></tr>
+                  <tr><td colspan="8" style="text-align:center;color:#888;padding:24px">로딩 중...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1725,32 +1732,14 @@
           <button class="btn-save" type="button" disabled title="준비 중">저장</button>
         </div>
 
-        <div class="card" style="opacity:0.72">
+        <div class="card">
           <div class="card-header">
-            <div class="card-title">결제 설정</div>
-            <span class="badge-status">준비 중</span>
+            <div class="card-title">결제 안내</div>
+            <span class="badge-status paid">스마트스토어</span>
           </div>
-          <p class="card-body sec-sub">결제 연동 전까지는 .env 또는 서버 설정으로 관리합니다.</p>
-          <div class="form-group">
-            <label>KG이니시스 상점 ID</label>
-            <input type="text" placeholder="INIpay 상점 ID 입력" disabled />
-          </div>
-          <div class="form-group">
-            <label>네이버페이 파트너 ID</label>
-            <input type="text" placeholder="네이버페이 파트너 ID" disabled />
-          </div>
-          <div class="form-group">
-            <label>카카오페이 CID</label>
-            <input type="text" placeholder="카카오페이 CID" disabled />
-          </div>
-          <div class="form-group">
-            <label>운영 모드</label>
-            <select disabled>
-              <option>테스트 (sandbox)</option>
-              <option>실운영 (production)</option>
-            </select>
-          </div>
-          <button class="btn-save" type="button" disabled title="준비 중">저장</button>
+          <p class="card-body sec-sub">당분간 유료 강의 결제는 <strong>네이버 스마트스토어</strong>에서 진행합니다. 결제 확인 후 Admin에서 수강을 등록하세요.</p>
+          <p class="sec-sub" style="margin-top:8px">사이트에서는 쿠폰으로 <strong>0원(전액 할인)</strong>일 때만 즉시 수강 등록됩니다. 강의별 스토어 링크는 <a href="#" onclick="showSection('courses');return false">강의 관리</a>에서 설정합니다.</p>
+          <p class="sec-sub" style="margin-top:8px">다음 주부터 사이트 결제는 <strong>카카오페이 · KG이니시스</strong>만 연동할 예정입니다. (토스페이먼츠 미사용)</p>
         </div>
 
         <div class="card" style="grid-column:1/-1">
@@ -1825,51 +1814,6 @@
           </div>
         </div>
 
-        <div class="card" style="grid-column:1/-1">
-          <div class="card-header"><div class="card-title">테스트룸 — 우측 고정 커뮤니티 버튼</div></div>
-          <p style="font-size:15px;color:#666;line-height:1.6;margin-bottom:20px">
-            사이트 우측에 인스타그램·카카오 오픈채팅 버튼을 고정 노출합니다. 편집 테스트 대기자 커뮤니티 안내용으로 사용하세요.
-          </p>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px">
-            <div>
-              <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:16px;cursor:pointer">
-                <input type="checkbox" id="tr-enabled" /> 우측 버튼 노출
-              </label>
-              <div class="form-group">
-                <label>버튼 라벨</label>
-                <input type="text" id="tr-label" maxlength="20" placeholder="테스트룸" />
-              </div>
-              <div class="form-group">
-                <label>안내 문구 <span style="font-size:13px;color:#aaa">(PC에서만 표시)</span></label>
-                <input type="text" id="tr-hint" maxlength="80" placeholder="편집 테스트 · 대기자 커뮤니티" />
-              </div>
-            </div>
-            <div>
-              <div class="form-group">
-                <label>인스타그램 URL</label>
-                <input type="url" id="tr-instagram-url" placeholder="https://instagram.com/..." maxlength="500" />
-              </div>
-              <div class="form-group">
-                <label>인스타 버튼 이름</label>
-                <input type="text" id="tr-instagram-label" maxlength="24" placeholder="인스타그램" />
-              </div>
-            </div>
-            <div>
-              <div class="form-group">
-                <label>카카오 오픈채팅 URL</label>
-                <input type="url" id="tr-kakao-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
-              </div>
-              <div class="form-group">
-                <label>카카오 버튼 이름</label>
-                <input type="text" id="tr-kakao-label" maxlength="24" placeholder="카카오 대기방" />
-              </div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;padding-top:8px;border-top:1px solid var(--border);margin-top:8px">
-            <button type="button" class="btn-save" id="tr-save-btn">테스트룸 저장</button>
-            <span id="tr-save-status" style="font-size:14px;color:#888"></span>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -1983,16 +1927,17 @@
     </div>
   </div>
 
-  <!-- 강의 등록 모달 (공통) -->
+  <!-- 라이브 강의 등록 모달 -->
   <div id="recorded-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:16px;padding:28px;width:560px;max-width:92vw;max-height:90vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-plus"></i> 강의 등록</div>
+        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-broadcast"></i> 라이브 강의 등록</div>
         <button onclick="closeCourseCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
       </div>
       <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#555555;margin-bottom:20px;line-height:1.6">
-        모든 강의는 동일한 양식으로 등록합니다. 판매가 0원이면 무료 라이브로 저장됩니다.<br>
-        자료 다운로드: 시작 1시간 전 ~ 종료 후 1주일 · 후기 작성: 종료 후 1주일
+        <strong>운영 순서</strong><br>
+        1) 라이브 일정·Meet 등록 → 2) 강의 진행 → 3) 종료 후 「라이브·다시보기」에서 다시보기 링크 등록<br>
+        판매가 0원이면 무료 라이브로 저장됩니다. 다시보기는 이 화면이 아니라 종료 후에 등록하세요.
       </div>
       <div class="form-group">
         <label>강의 제목 <span style="color:#111111">*</span></label>
@@ -2012,7 +1957,7 @@
           <input type="number" id="rc-price" min="0" step="1000" placeholder="89000" />
         </div>
         <div class="form-group">
-          <label>판매가 (원) <span style="font-size:13.2px;color:#aaa">0 = 무료</span></label>
+          <label>판매가 (원) <span style="font-size:13.2px;color:#aaa">0 = 무료 라이브</span></label>
           <input type="number" id="rc-sale-price" min="0" step="1000" placeholder="69000" />
         </div>
       </div>
@@ -2035,10 +1980,6 @@
         <input type="url" id="rc-material-url" placeholder="https://..." maxlength="500" />
       </div>
       <div class="form-group">
-        <label>다시보기 링크</label>
-        <input type="url" id="rc-replay-url" placeholder="https://..." maxlength="500" />
-      </div>
-      <div class="form-group">
         <label>수강생 단톡방 링크</label>
         <input type="url" id="rc-chat-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
       </div>
@@ -2057,9 +1998,63 @@
       </div>
       <div class="form-group">
         <label>썸네일 아이콘</label>
-        <input type="text" id="rc-icon" placeholder="ti-video" value="ti-video" />
+        <input type="text" id="rc-icon" placeholder="ti-broadcast" value="ti-broadcast" />
       </div>
-      <button class="btn-save" style="width:100%;margin-top:8px" onclick="createCourseFromForm()">강의 등록</button>
+      <button class="btn-save" style="width:100%;margin-top:8px" onclick="createCourseFromForm()">라이브 강의 등록</button>
+    </div>
+  </div>
+
+  <!-- VOD 강의 개설 모달 -->
+  <div id="vod-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:28px;width:560px;max-width:92vw;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-video"></i> VOD 강의 개설</div>
+        <button onclick="closeVodCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
+      </div>
+      <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#555555;margin-bottom:20px;line-height:1.6">
+        라이브 없이 챕터·영상 URL로 운영하는 녹화 강의입니다.<br>
+        등록 후 <strong>커리큘럼</strong>에서 챕터와 영상 링크를 추가하세요.
+      </div>
+      <div class="form-group">
+        <label>강의 제목 <span style="color:#111111">*</span></label>
+        <input type="text" id="vod-title" placeholder="예: 캡컷 기초 마스터" />
+      </div>
+      <div class="form-group">
+        <label>카테고리 <span style="color:#111111">*</span></label>
+        <input type="text" id="vod-category" placeholder="캡컷 PRO" value="캡컷 PRO" />
+      </div>
+      <div class="form-group">
+        <label>강의 설명</label>
+        <textarea id="vod-desc" rows="3" placeholder="강의 내용을 간략히 설명해주세요" style="width:100%;padding:10px 14px;border:0.5px solid #ddd;border-radius:8px;font-size: 16.8px;resize:vertical;font-family:inherit"></textarea>
+      </div>
+      <div class="two-col">
+        <div class="form-group">
+          <label>정가 (원)</label>
+          <input type="number" id="vod-price" min="0" step="1000" placeholder="89000" />
+        </div>
+        <div class="form-group">
+          <label>판매가 (원) <span style="font-size:13.2px;color:#aaa">0 = 무료</span></label>
+          <input type="number" id="vod-sale-price" min="0" step="1000" placeholder="69000" />
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="form-group">
+          <label>노출 순서</label>
+          <input type="number" id="vod-sort-order" min="1" placeholder="999" />
+        </div>
+        <div class="form-group">
+          <label>공개 여부</label>
+          <select id="vod-published">
+            <option value="0">비공개 (준비 중)</option>
+            <option value="1">공개</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>썸네일 아이콘</label>
+        <input type="text" id="vod-icon" placeholder="ti-video" value="ti-video" />
+      </div>
+      <button class="btn-save" style="width:100%;margin-top:8px" onclick="createVodCourseFromForm()">VOD 강의 개설</button>
     </div>
   </div>
 
@@ -2109,7 +2104,11 @@
         const todayOrdEl = document.getElementById('stat-today-orders')
         if (todayOrdEl) todayOrdEl.textContent = `오늘 ${stats.todayOrders||0}건 · 이번달 ${stats.monthOrders||0}건`
         const enrollEl = document.getElementById('stat-enroll-count')
-        if (enrollEl) enrollEl.textContent = `총 수강 ${stats.newStudents||0}건`
+        if (enrollEl) {
+          const ss = stats.smartstoreOrders || 0
+          const site = stats.siteOrders || 0
+          enrollEl.textContent = `총 수강 ${stats.newStudents||0}건 · 스토어 ${ss} · 쿠폰전액 ${site}`
+        }
 
         const tbody = document.getElementById('recent-orders-body');
         if (tbody) {
@@ -2158,15 +2157,19 @@
 
     function isLiveLikeCourseAdmin(c) {
       if (!c) return false
+      if (c.delivery_mode === 'vod_only') return false
       if (c.delivery_mode === 'live_first') return true
       if (c.course_type === 'live') return true
       if (c.live_starts_at || c.live_schedule) return true
       return false
     }
 
+    function isVodCourseAdmin(c) {
+      return c?.delivery_mode === 'vod_only' || (!isLiveLikeCourseAdmin(c) && c?.course_type !== 'offline' && !c?.is_offline)
+    }
+
     function courseTypeLabelAdmin(c) {
-      if (c?.delivery_mode === 'live_first') return '라이브 우선'
-      if (c?.course_type === 'live') return '라이브'
+      if (c?.delivery_mode === 'live_first' || (isLiveLikeCourseAdmin(c) && c?.delivery_mode !== 'vod_only')) return '라이브→다시보기'
       if (c?.course_type === 'offline' || c?.is_offline) return '오프라인'
       return 'VOD'
     }
@@ -2199,16 +2202,17 @@
       tbody.innerHTML = sorted.map(c => {
         const isLive = isLiveLikeCourseAdmin(c)
         const isOffline = c.course_type === 'offline' || c.is_offline
-        const typeBadge = c.delivery_mode === 'live_first'
-          ? `<span class="badge-status" style="background:#fff3e0;color:#e65100">🎬 라이브 우선</span>`
-          : isLive
-          ? `<span class="badge-status" style="background:#f5f5f5;color:#111111">🔴 라이브</span>`
+        const typeBadge = c.delivery_mode === 'vod_only' || (!isLive && !isOffline)
+          ? `<span class="badge-status" style="background:#f5f5f5;color:#555">VOD</span>`
           : isOffline
-            ? `<span class="badge-status" style="background:#e8eaf6;color:#3949ab">📍 오프라인</span>`
-            : `<span class="badge-status" style="background:#f5f5f5;color:#555">📹 VOD</span>`
+            ? `<span class="badge-status" style="background:#e8eaf6;color:#3949ab">오프라인</span>`
+            : `<span class="badge-status" style="background:#fff3e0;color:#e65100">라이브→다시보기</span>`
         const catalogBadge = c.is_catalog
           ? ''
           : `<span class="badge-status refund" style="margin-left:4px">구버전</span>`
+        const liveBtn = isLive
+          ? `<button class="btn-sm" onclick="openLivePanel('${c.id}')">라이브·다시보기</button>`
+          : ''
         return `
         <tr>
           <td>${c.sort_order ?? '-'}</td>
@@ -2222,7 +2226,7 @@
             <button class="btn-sm" onclick="openCourseEnrollmentsModal('${c.id}')">수강생</button>
             <button class="btn-sm" onclick="openCourseModal('${c.id}')">편집</button>
             <button class="btn-sm" onclick="togglePublish('${c.id}', ${c.is_published})">${c.is_published?'비공개':'공개'}</button>
-            <button class="btn-sm" onclick="openLivePanel('${c.id}')">라이브</button>
+            ${liveBtn}
           </td>
         </tr>`
       }).join('')
@@ -2471,11 +2475,12 @@
       if (!select) return
       const prev = select.value || localStorage.getItem('admin_curriculum_course') || ''
       const list = (_courses || [])
-        .filter(c => c.is_published)
+        .slice()
         .sort((a, b) => (Number(a.sort_order) || 999) - (Number(b.sort_order) || 999) || String(a.title).localeCompare(b.title))
       select.innerHTML = `<option value="">강의를 선택하세요</option>${list.map(c => {
         const type = courseTypeLabelAdmin(c)
-        return `<option value="${c.id}">${esc(c.title)} (${type})</option>`
+        const pub = c.is_published ? '' : ' · 비공개'
+        return `<option value="${c.id}">${esc(c.title)} (${type}${pub})</option>`
       }).join('')}`
       if (prev && list.some(c => String(c.id) === String(prev))) select.value = prev
       await loadCurriculumChapters()
@@ -2633,9 +2638,10 @@
     function formatEnrollmentPayment(row) {
       const amountLabel = row.paid_amount > 0 ? `${Number(row.paid_amount).toLocaleString()}원` : '무료'
       const method = String(row.method || '').trim()
-      if (!method || method === '-' || (row.paid_amount <= 0 && method === '무료')) return amountLabel
-      if (row.paid_amount > 0 && method === amountLabel) return amountLabel
-      return `${amountLabel} · ${method}`
+      const ext = row.external_order_id ? ` · #${row.external_order_id}` : ''
+      if (!method || method === '-' || (row.paid_amount <= 0 && method === '무료')) return amountLabel + ext
+      if (row.paid_amount > 0 && method === amountLabel) return amountLabel + ext
+      return `${amountLabel} · ${method}${ext}`
     }
 
     function renderCourseEnrollmentsTable(rows) {
@@ -2643,20 +2649,33 @@
       if (!tbody) return
       const sorted = sortRows(rows, _enrollmentSort, ENROLLMENT_SORT_GETTERS)
       if (!sorted.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">신청한 수강생이 없습니다.</td></tr>'
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888;padding:24px">신청한 수강생이 없습니다.</td></tr>'
         updateSortHeaders(document.querySelector('.enrollments-table'), _enrollmentSort)
         return
       }
-      tbody.innerHTML = sorted.map(row => `
+      tbody.innerHTML = sorted.map(row => {
+        const pct = Number(row.progress_pct) || 0
+        const done = Number(row.completed_chapters) || 0
+        const total = Number(row.total_chapters) || 0
+        return `
           <tr>
             <td class="enrollments-col-name">${esc(row.name)}</td>
             <td class="td-sub enrollments-col-email">${esc(row.email)}</td>
             <td class="enrollments-col-phone">${esc(row.phone || '-')}</td>
             <td class="enrollments-col-type">${esc(memberTypeLabel[row.member_type] || row.member_type || '-')}</td>
             <td class="enrollments-col-pay">${esc(formatEnrollmentPayment(row))}</td>
+            <td class="enrollments-col-progress">
+              <div style="display:flex;align-items:center;gap:8px;min-width:120px">
+                <div style="flex:1;height:6px;background:#eee;border-radius:3px;overflow:hidden">
+                  <div style="height:100%;width:${pct}%;background:${pct >= 80 ? '#22c55e' : '#6366f1'}"></div>
+                </div>
+                <span style="font-size:12px;white-space:nowrap">${pct}% (${done}/${total})</span>
+              </div>
+            </td>
+            <td class="td-date">${formatAdminDate(row.last_watched_at)}</td>
             <td class="td-date enrollments-col-date">${formatAdminDate(row.enrolled_at || row.paid_at)}</td>
-          </tr>
-        `).join('')
+          </tr>`
+      }).join('')
       updateSortHeaders(document.querySelector('.enrollments-table'), _enrollmentSort)
     }
 
@@ -2734,6 +2753,32 @@
       }
       return data
     }
+
+    async function exportCourseProgressCsv() {
+      if (!_courseEnrollmentCourseId) return
+      try {
+        const token = API.token()
+        const res = await fetch('/api/admin/courses/' + _courseEnrollmentCourseId + '/progress-export', {
+          headers: token ? { Authorization: 'Bearer ' + token } : {},
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || '진도 CSV 다운로드 실패')
+        }
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `progress-${_courseEnrollmentCourseId}.csv`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+      } catch (e) {
+        alert(e.message || '진도 CSV 다운로드 실패')
+      }
+    }
+    window.exportCourseProgressCsv = exportCourseProgressCsv
 
     function getEnrollableStudents() {
       const enrolledIds = new Set((_courseEnrollmentRows || []).map(r => r.user_id).filter(Boolean))
@@ -2835,6 +2880,8 @@
         email: document.getElementById('enroll-manual-email')?.value?.trim() || undefined,
         phone: document.getElementById('enroll-manual-phone')?.value?.trim() || undefined,
         name: document.getElementById('enroll-manual-name')?.value?.trim() || undefined,
+        external_order_id: document.getElementById('enroll-external-order-id')?.value?.trim() || undefined,
+        method: '스마트스토어',
       }
       if (!body.user_id && !body.email && !body.phone) {
         if (status) status.textContent = '드롭다운에서 회원을 선택하거나, 미가입자 정보를 직접 입력하세요.'
@@ -2856,13 +2903,18 @@
         }
         _enrollSelectedUserId = null
         clearEnrollUserSelect()
-        ;['enroll-manual-email', 'enroll-manual-phone', 'enroll-manual-name'].forEach(id => {
+        ;['enroll-manual-email', 'enroll-manual-phone', 'enroll-manual-name', 'enroll-external-order-id'].forEach(id => {
           const el = document.getElementById(id)
           if (el) el.value = ''
         })
         await reloadCourseEnrollments()
       } catch (e) {
         if (status) status.textContent = e.message || '등록 실패'
+        const resultEl = document.getElementById('enroll-import-result')
+        if (resultEl && /이미|중복|정원/.test(e.message || '')) {
+          resultEl.style.display = ''
+          resultEl.innerHTML = `<div style="color:#b45309">${esc(e.message)}</div>`
+        }
       } finally {
         if (btn) btn.disabled = false
       }
@@ -2976,7 +3028,7 @@
     })
 
     function syncCmCheckoutFields() {
-      const provider = document.getElementById('cm-checkout-provider')?.value || 'site'
+      const provider = document.getElementById('cm-checkout-provider')?.value || 'smartstore'
       const smart = document.getElementById('cm-smartstore-fields')
       if (smart) smart.style.display = provider === 'smartstore' ? '' : 'none'
       const c = _courses.find(x => String(x.id) === String(_courseEditId))
@@ -3005,8 +3057,9 @@
         el.innerHTML = `<strong>구매 링크 (쿠폰 불가)</strong><br><code style="font-size:12px;word-break:break-all">${base}</code>`
         return
       }
-      el.innerHTML = `<strong>쿠폰 적용</strong><br><code style="font-size:12px;word-break:break-all">${base}</code>`
-        + `<br><br><strong>정가 전용</strong><br><code style="font-size:12px;word-break:break-all">${full}</code>`
+      el.innerHTML = `<strong>안내</strong><br>쿠폰으로 전액 할인(0원)일 때만 사이트에서 즉시 수강 등록됩니다. 유료 결제는 스마트스토어 강의로 설정하세요.<br><br>`
+        + `<strong>강의 페이지</strong><br><code style="font-size:12px;word-break:break-all">${base}</code>`
+        + (couponAllowed ? `<br><br><strong>정가 전용</strong><br><code style="font-size:12px;word-break:break-all">${full}</code>` : '')
     }
 
     function isoToDatetimeLocal(iso) {
@@ -3060,6 +3113,8 @@
       document.getElementById('cm-live-replay-url').value = c.live_replay_url || ''
       document.getElementById('cm-live-chat-url').value = c.live_chat_url || ''
       fillCmProgramSelect(c.program_id)
+      const liveLinks = document.getElementById('cm-live-links')
+      if (liveLinks) liveLinks.style.display = isVodCourseAdmin(c) ? 'none' : ''
       document.getElementById('course-modal').style.display = 'flex'
     }
 
@@ -3102,21 +3157,34 @@
       const endsVal = document.getElementById('cm-checkout-ends')?.value
       payload.checkout_starts_at = startsVal ? new Date(startsVal).toISOString() : null
       payload.checkout_ends_at = endsVal ? new Date(endsVal).toISOString() : null
-      const liveStartsVal = document.getElementById('cm-live-starts')?.value
-      const liveEndsVal = document.getElementById('cm-live-ends')?.value
-      payload.live_starts_at = liveStartsVal ? new Date(liveStartsVal).toISOString() : null
-      payload.live_ends_at = liveEndsVal ? new Date(liveEndsVal).toISOString() : null
-      if (payload.live_starts_at) {
-        payload.live_schedule = new Date(liveStartsVal).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
+      const isVod = isVodCourseAdmin(course)
+      payload.delivery_mode = isVod ? 'vod_only' : 'live_first'
+      if (!isVod) {
+        const liveStartsVal = document.getElementById('cm-live-starts')?.value
+        const liveEndsVal = document.getElementById('cm-live-ends')?.value
+        payload.live_starts_at = liveStartsVal ? new Date(liveStartsVal).toISOString() : null
+        payload.live_ends_at = liveEndsVal ? new Date(liveEndsVal).toISOString() : null
+        if (payload.live_starts_at) {
+          payload.live_schedule = new Date(liveStartsVal).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
+        }
+        payload.meet_code = document.getElementById('cm-live-meet-code').value.trim() || null
+        payload.live_material_url = document.getElementById('cm-live-material-url').value.trim() || null
+        payload.live_replay_url = document.getElementById('cm-live-replay-url').value.trim() || null
+        payload.live_chat_url = document.getElementById('cm-live-chat-url').value.trim() || null
+        payload.program_id = document.getElementById('cm-program-id')?.value || null
+        if (Number(payload.sale_price) === 0) payload.course_type = 'live'
+        else if (course?.course_type === 'live' && Number(payload.sale_price) > 0) payload.course_type = 'recorded'
+      } else {
+        payload.course_type = 'recorded'
+        payload.live_starts_at = null
+        payload.live_ends_at = null
+        payload.live_schedule = null
+        payload.meet_code = null
+        payload.live_material_url = null
+        payload.live_replay_url = null
+        payload.live_chat_url = null
+        payload.live_status = null
       }
-      payload.delivery_mode = 'live_first'
-      payload.meet_code = document.getElementById('cm-live-meet-code').value.trim() || null
-      payload.live_material_url = document.getElementById('cm-live-material-url').value.trim() || null
-      payload.live_replay_url = document.getElementById('cm-live-replay-url').value.trim() || null
-      payload.live_chat_url = document.getElementById('cm-live-chat-url').value.trim() || null
-      payload.program_id = document.getElementById('cm-program-id')?.value || null
-      if (Number(payload.sale_price) === 0) payload.course_type = 'live'
-      else if (course?.course_type === 'live' && Number(payload.sale_price) > 0) payload.course_type = 'recorded'
       const btn = document.getElementById('cm-save-btn')
       btn.disabled = true
       btn.textContent = '저장 중...'
@@ -3158,6 +3226,10 @@
       _selectedCourseId = courseId
       const c = _courses.find(c => String(c.id) === String(courseId))
       if (!c) return
+      if (isVodCourseAdmin(c)) {
+        alert('VOD 강의에는 라이브·다시보기 설정이 없습니다. 커리큘럼에서 챕터를 관리하세요.')
+        return
+      }
       document.getElementById('live-panel').style.display = 'block'
       document.getElementById('live-panel-title').textContent = c.title
       document.getElementById('live-type').value = c.course_type || 'recorded'
@@ -3424,6 +3496,8 @@
       phone: r => (r.phone || '').replace(/\D/g, ''),
       member_type: r => (r.member_type || '').trim(),
       payment: r => Number(r.paid_amount) || 0,
+      progress_pct: r => Number(r.progress_pct) || 0,
+      last_watched_at: r => r.last_watched_at || '',
       enrolled_at: r => r.enrolled_at || r.paid_at || '',
     }
 
@@ -3537,13 +3611,30 @@
           </div>
           <div style="font-weight:600;margin-bottom:8px">수강 강의 (${d.enrollments?.length||0})</div>
           <table class="data-table" style="margin-bottom:20px">
-            <thead><tr><th>강의명</th><th>등록일</th></tr></thead>
-            <tbody>${(d.enrollments||[]).map(e=>`<tr><td>${esc(e.course_title||'-')}</td><td class="td-date">${fmtD(e.enrolled_at)}</td></tr>`).join('')||'<tr class="empty-state-row"><td colspan="2">수강 내역 없음</td></tr>'}</tbody>
+            <thead><tr><th>강의명</th><th>진도</th><th>최종수강</th><th>등록일</th></tr></thead>
+            <tbody>${(d.enrollments||[]).map(e => {
+              const pct = Number(e.progress_pct) || 0
+              const done = Number(e.completed_chapters) || 0
+              const total = Number(e.total_chapters) || 0
+              return `<tr>
+                <td>${esc(e.course_title||'-')}</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;min-width:110px">
+                    <div style="flex:1;height:6px;background:#eee;border-radius:3px;overflow:hidden">
+                      <div style="height:100%;width:${pct}%;background:${pct >= 80 ? '#22c55e' : '#6366f1'}"></div>
+                    </div>
+                    <span style="font-size:12px;white-space:nowrap">${pct}% (${done}/${total})</span>
+                  </div>
+                </td>
+                <td class="td-date">${fmtD(e.last_watched_at)}</td>
+                <td class="td-date">${fmtD(e.enrolled_at)}</td>
+              </tr>`
+            }).join('')||'<tr class="empty-state-row"><td colspan="4">수강 내역 없음</td></tr>'}</tbody>
           </table>
           <div style="font-weight:600;margin-bottom:8px">결제 내역 (${d.orders?.length||0})</div>
           <table class="data-table">
             <thead><tr><th>강의</th><th>금액</th><th>상태</th><th>결제일</th></tr></thead>
-            <tbody>${(d.orders||[]).map(o=>`<tr><td>${esc(o.course_title||'-')}</td><td>${(o.amount||0).toLocaleString()}원</td><td><span class="badge-status ${o.status==='paid'?'paid':'refund'}">${o.status==='paid'?'결제완료':'환불'}</span></td><td class="td-date">${fmtD(o.paid_at)}</td></tr>`).join('')||'<tr class="empty-state-row"><td colspan="4">결제 내역 없음</td></tr>'}</tbody>
+            <tbody>${(d.orders||[]).map(o=>`<tr><td>${esc(o.course_title||'-')}</td><td>${(o.amount||0).toLocaleString()}원</td><td><span class="badge-status ${o.status==='paid'?'paid':'refund'}">${o.status==='paid'?'결제완료':o.status==='pending'?'대기':o.status==='refunded'?'환불':esc(o.status||'-')}</span></td><td class="td-date">${fmtD(o.paid_at)}</td></tr>`).join('')||'<tr class="empty-state-row"><td colspan="4">결제 내역 없음</td></tr>'}</tbody>
           </table>`;
       } catch(e) {
         body.innerHTML = `<p style="color:#e53e3e">${esc(e.message)}</p>`;
@@ -3984,30 +4075,6 @@
         if (statusEl) statusEl.textContent = '설정을 불러오지 못했습니다.'
       }
       await loadFooterSettings()
-      await loadTestRoomSettings()
-    }
-
-    function fillTestRoomEditor(cfg) {
-      document.getElementById('tr-enabled').checked = !!cfg.enabled
-      document.getElementById('tr-label').value = cfg.label || '테스트룸'
-      document.getElementById('tr-hint').value = cfg.hint || ''
-      document.getElementById('tr-instagram-url').value = cfg.instagram_url || ''
-      document.getElementById('tr-instagram-label').value = cfg.instagram_label || '인스타그램'
-      document.getElementById('tr-kakao-url').value = cfg.kakao_url || ''
-      document.getElementById('tr-kakao-label').value = cfg.kakao_label || '카카오 대기방'
-    }
-
-    async function loadTestRoomSettings() {
-      const statusEl = document.getElementById('tr-save-status')
-      try {
-        const cfg = await API.get('/admin/test-room')
-        fillTestRoomEditor(cfg)
-        if (statusEl && cfg.updated_at) {
-          statusEl.textContent = '마지막 저장: ' + cfg.updated_at.slice(0, 16).replace('T', ' ')
-        }
-      } catch (e) {
-        if (statusEl) statusEl.textContent = '테스트룸 설정을 불러오지 못했습니다.'
-      }
     }
 
     let _heroPendingImage = undefined
@@ -5589,29 +5656,6 @@
       }
     })
 
-    document.getElementById('tr-save-btn')?.addEventListener('click', async () => {
-      const statusEl = document.getElementById('tr-save-status')
-      const btn = document.getElementById('tr-save-btn')
-      try {
-        btn.disabled = true
-        const result = await API.patch('/admin/test-room', {
-          enabled: document.getElementById('tr-enabled').checked,
-          label: document.getElementById('tr-label').value.trim(),
-          hint: document.getElementById('tr-hint').value.trim(),
-          instagram_url: document.getElementById('tr-instagram-url').value.trim(),
-          instagram_label: document.getElementById('tr-instagram-label').value.trim(),
-          kakao_url: document.getElementById('tr-kakao-url').value.trim(),
-          kakao_label: document.getElementById('tr-kakao-label').value.trim(),
-        })
-        fillTestRoomEditor(result)
-        if (statusEl) {
-          statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
-        }
-      } catch (e) {
-        alert(e.message || '저장 실패')
-      } finally {
-        btn.disabled = false
-      }
     })
 
     let _epConfig = null
@@ -5912,20 +5956,11 @@
     function openLiveCreateModal() { openCourseCreateModal() }
     function closeLiveCreateModal() { closeCourseCreateModal() }
 
-    async function fillCmProgramSelect(selectedId) {
-      const sel = document.getElementById('cm-program-id')
-      if (!sel) return
-      try {
-        if (!_programsCache) {
-          _programsCache = await API.get('/admin/programs')
-        }
-      } catch (_) {
-        _programsCache = []
-      }
-      const list = Array.isArray(_programsCache) ? _programsCache : (_programsCache?.programs || [])
-      sel.innerHTML = `<option value="">없음</option>` + list.map(p =>
-        `<option value="${escAttr(p.id)}"${String(p.id) === String(selectedId || '') ? ' selected' : ''}>${esc(p.name || p.slug)}</option>`
-      ).join('')
+    function openVodCreateModal() {
+      document.getElementById('vod-create-overlay').style.display = 'flex'
+    }
+    function closeVodCreateModal() {
+      document.getElementById('vod-create-overlay').style.display = 'none'
     }
 
     async function createCourseFromForm() {
@@ -5937,7 +5972,7 @@
       const sale = Number.isFinite(sale_price) ? sale_price : price
       const sort_order = parseInt(document.getElementById('rc-sort-order').value, 10) || undefined
       const is_published = parseInt(document.getElementById('rc-published').value, 10)
-      const thumbnail_icon = document.getElementById('rc-icon').value.trim() || 'ti-video'
+      const thumbnail_icon = document.getElementById('rc-icon').value.trim() || 'ti-broadcast'
       const startsVal = document.getElementById('rc-live-starts').value
       const endsVal = document.getElementById('rc-live-ends').value
       if (!title) { alert('강의 제목을 입력해주세요.'); return }
@@ -5960,30 +5995,92 @@
           live_schedule: new Date(startsVal).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
           meet_code: document.getElementById('rc-meet-code').value.trim() || null,
           live_material_url: document.getElementById('rc-material-url').value.trim() || null,
-          live_replay_url: document.getElementById('rc-replay-url').value.trim() || null,
           live_chat_url: document.getElementById('rc-chat-url').value.trim() || null,
+          delivery_mode: 'live_first',
           course_type: sale === 0 ? 'live' : 'recorded',
+          checkout_provider: sale > 0 ? 'smartstore' : 'site',
         })
-        alert('강의가 등록되었습니다.')
+        alert('라이브 강의가 등록되었습니다. 종료 후 「라이브·다시보기」에서 다시보기 링크를 등록하세요.')
         closeCourseCreateModal()
         await loadCourses()
-        if (res.course?.id) openCourseModal(res.course.id)
+        if (res.course?.id) openLivePanel(res.course.id)
         ;['rc-title', 'rc-desc', 'rc-price', 'rc-sale-price', 'rc-sort-order',
           'rc-live-starts', 'rc-live-ends', 'rc-meet-code', 'rc-material-url',
-          'rc-replay-url', 'rc-chat-url'].forEach(id => {
+          'rc-chat-url'].forEach(id => {
           const el = document.getElementById(id)
           if (el) el.value = ''
         })
         document.getElementById('rc-category').value = '캡컷 PRO'
         document.getElementById('rc-published').value = '0'
-        document.getElementById('rc-icon').value = 'ti-video'
+        document.getElementById('rc-icon').value = 'ti-broadcast'
       } catch (e) {
         alert(e.message || '등록 중 오류가 발생했습니다.')
       }
     }
 
+    async function createVodCourseFromForm() {
+      const title = document.getElementById('vod-title').value.trim()
+      const category = document.getElementById('vod-category').value.trim()
+      const description = document.getElementById('vod-desc').value.trim()
+      const price = parseInt(document.getElementById('vod-price').value, 10) || 0
+      const sale_price = parseInt(document.getElementById('vod-sale-price').value, 10)
+      const sale = Number.isFinite(sale_price) ? sale_price : price
+      const sort_order = parseInt(document.getElementById('vod-sort-order').value, 10) || undefined
+      const is_published = parseInt(document.getElementById('vod-published').value, 10)
+      const thumbnail_icon = document.getElementById('vod-icon').value.trim() || 'ti-video'
+      if (!title) { alert('강의 제목을 입력해주세요.'); return }
+      if (!category) { alert('카테고리를 입력해주세요.'); return }
+      try {
+        const res = await API.post('/admin/courses', {
+          title,
+          category,
+          description,
+          price,
+          sale_price: sale,
+          sort_order,
+          is_published,
+          thumbnail_icon,
+          delivery_mode: 'vod_only',
+          course_type: 'recorded',
+          checkout_provider: sale > 0 ? 'smartstore' : 'site',
+        })
+        alert('VOD 강의가 개설되었습니다. 커리큘럼에서 챕터·영상 URL을 등록하세요.')
+        closeVodCreateModal()
+        await loadCourses()
+        if (res.course?.id) {
+          localStorage.setItem('admin_curriculum_course', res.course.id)
+          showSection('curriculum')
+        }
+        ;['vod-title', 'vod-desc', 'vod-price', 'vod-sale-price', 'vod-sort-order'].forEach(id => {
+          const el = document.getElementById(id)
+          if (el) el.value = ''
+        })
+        document.getElementById('vod-category').value = '캡컷 PRO'
+        document.getElementById('vod-published').value = '0'
+        document.getElementById('vod-icon').value = 'ti-video'
+      } catch (e) {
+        alert(e.message || '개설 중 오류가 발생했습니다.')
+      }
+    }
+
     async function createRecordedCourse() { return createCourseFromForm() }
     async function createLiveCourse() { return createCourseFromForm() }
+
+    async function fillCmProgramSelect(selectedId) {
+      const sel = document.getElementById('cm-program-id')
+      if (!sel) return
+      try {
+        if (!_programsCache) {
+          _programsCache = await API.get('/admin/programs')
+        }
+      } catch (_) {
+        _programsCache = []
+      }
+      const list = Array.isArray(_programsCache) ? _programsCache : (_programsCache?.programs || [])
+      sel.innerHTML = `<option value="">없음</option>` + list.map(p =>
+        `<option value="${escAttr(p.id)}"${String(p.id) === String(selectedId || '') ? ' selected' : ''}>${esc(p.name || p.slug)}</option>`
+      ).join('')
+    }
 
     // 상단 날짜 동적 초기화
     ;(function() {
