@@ -752,7 +752,9 @@ router.post('/live-courses', async (req, res) => {
 router.post('/courses/:id/send-live-invite', async (req, res) => {
   const course = await db.getCourseById(req.params.id)
   if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
-  if (course.course_type !== 'live') return res.status(400).json({ error: '라이브 강의가 아닙니다.' })
+  if (course.course_type !== 'live' && !db.courseSupportsLiveReplay(course)) {
+    return res.status(400).json({ error: '라이브 강의가 아닙니다.' })
+  }
   if (!course.meet_code) return res.status(400).json({ error: 'Google Meet 코드를 먼저 입력해주세요.' })
   if (!course.live_schedule) return res.status(400).json({ error: '라이브 일정을 먼저 입력해주세요.' })
 

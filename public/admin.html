@@ -2169,6 +2169,21 @@
     }
 
     let _courses = []
+
+    function isLiveLikeCourseAdmin(c) {
+      if (!c) return false
+      if (c.delivery_mode === 'live_first') return true
+      if (c.course_type === 'live') return true
+      if (c.live_starts_at || c.live_schedule) return true
+      return false
+    }
+
+    function courseTypeLabelAdmin(c) {
+      if (c?.delivery_mode === 'live_first') return '라이브 우선'
+      if (c?.course_type === 'live') return '라이브'
+      if (c?.course_type === 'offline' || c?.is_offline) return '오프라인'
+      return 'VOD'
+    }
     let _selectedCourseId = null
     let _courseEditId = null
     let _courseFilter = 'published'
@@ -2196,9 +2211,11 @@
       }
       const sorted = [...filtered].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
       tbody.innerHTML = sorted.map(c => {
-        const isLive = c.course_type === 'live'
+        const isLive = isLiveLikeCourseAdmin(c)
         const isOffline = c.course_type === 'offline' || c.is_offline
-        const typeBadge = isLive
+        const typeBadge = c.delivery_mode === 'live_first'
+          ? `<span class="badge-status" style="background:#fff3e0;color:#e65100">🎬 라이브 우선</span>`
+          : isLive
           ? `<span class="badge-status" style="background:#f5f5f5;color:#111111">🔴 라이브</span>`
           : isOffline
             ? `<span class="badge-status" style="background:#e8eaf6;color:#3949ab">📍 오프라인</span>`
@@ -2471,7 +2488,7 @@
         .filter(c => c.is_published)
         .sort((a, b) => (Number(a.sort_order) || 999) - (Number(b.sort_order) || 999) || String(a.title).localeCompare(b.title))
       select.innerHTML = `<option value="">강의를 선택하세요</option>${list.map(c => {
-        const type = c.course_type === 'live' ? '라이브' : 'VOD'
+        const type = courseTypeLabelAdmin(c)
         return `<option value="${c.id}">${esc(c.title)} (${type})</option>`
       }).join('')}`
       if (prev && list.some(c => String(c.id) === String(prev))) select.value = prev

@@ -256,17 +256,35 @@
     }
 
     function isFreeVod(c) {
-      return c.course_type !== 'live' && Number(c.sale_price) === 0
+      return !isLiveLikeCourse(c) && Number(c.sale_price) === 0
+    }
+
+    function isFreeLive(c) {
+      return isLiveLikeCourse(c) && Number(c.sale_price) === 0
+    }
+
+    function isPaidLiveFirst(c) {
+      return isLiveLikeCourse(c) && Number(c.sale_price) > 0
+    }
+
+    function renderLiveBuyFeatures(c) {
+      return `<ul class="buy-features">
+            <li><span class="feat-icon feat-icon--live"><i class="ti ti-broadcast"></i></span> 라이브 실시간 강의</li>
+            <li><span class="feat-icon feat-icon--meet"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span> Google Meet 참여</li>
+            ${c.live_ended || c.live_resources?.live_ended ? `<li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 강의 종료 후 다음 날 오후 1시 다시보기</li>` : (c.enrolled ? `<li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 강의 종료 후 다음 날 오후 1시 다시보기 (수강생 전용)</li>` : '')}
+            <li><span class="feat-icon feat-icon--material"><i class="ti ti-download"></i></span> 후기 작성 후 강의 종료일로부터 1주일간 자료 다운로드</li>
+            ${c.program?.feature_label || c.slug === 'capcut-pro-basic' ? `<li><span class="feat-icon feat-icon--material"><i class="ti ti-subtitles"></i></span> ${esc(c.program?.feature_label || '수강생 전용 도각 자막패치 제공')}</li>` : ''}
+          </ul>`
     }
 
     function formatSalePrice(c) {
-      if (c.course_type === 'live') return ''
+      if (isFreeLive(c)) return ''
       if (isFreeVod(c)) return 'Free / 무료'
       return `₩${Number(c.sale_price).toLocaleString()}`
     }
 
     function renderCurriculumSection(c) {
-      if (c.course_type === 'live') {
+      if (isLiveLikeCourse(c)) {
         if (c.live_curriculum_image) {
           return `<img class="live-curriculum-image" src="${esc(c.live_curriculum_image)}" alt="강의 커리큘럼" />`
         }
@@ -566,7 +584,7 @@
         ${renderBuyThumb(c, thumbClass)}
         <div class="buy-body">
           ${renderBuyGuarantee(c)}
-          ${c.course_type === 'live' ? `
+          ${c.course_type === 'live' && isFreeLive(c) ? `
           <div class="buy-intro">
             <div class="buy-live-head">
               <div class="buy-live-price">무료</div>
@@ -576,12 +594,19 @@
           </div>
           ${renderBuyEnrollmentNote(c)}
           ${renderEnrollActions(c)}
-          <ul class="buy-features">
-            <li><span class="feat-icon feat-icon--live"><i class="ti ti-broadcast"></i></span> 라이브 실시간 강의</li>
-            <li><span class="feat-icon feat-icon--meet"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span> Google Meet 참여</li>
-            ${c.live_ended || c.live_resources?.live_ended ? `<li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 강의 종료 후 다음 날 오후 1시 다시보기</li>` : (c.enrolled ? `<li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 강의 종료 후 다음 날 오후 1시 다시보기 (수강생 전용)</li>` : '')}
-            <li><span class="feat-icon feat-icon--material"><i class="ti ti-download"></i></span> 후기 작성 후 강의 종료일로부터 1주일간 자료 다운로드</li>
-          </ul>` : `
+          ${renderLiveBuyFeatures(c)}` : isPaidLiveFirst(c) ? `
+          ${renderBuyEnrollmentNote(c)}
+          <div class="buy-pricing">
+            <div class="buy-price-row">
+              ${c.price !== c.sale_price ? `<span class="buy-original">₩${Number(c.price).toLocaleString()}</span><span class="buy-disc">${Math.round((1-c.sale_price/c.price)*100)}%</span>` : ''}
+            </div>
+            <div class="buy-price">₩${Number(c.sale_price).toLocaleString()}</div>
+            ${c.live_schedule ? `<div class="buy-live-schedule"><i class="ti ti-calendar"></i> ${c.live_schedule}</div>` : ''}
+            ${renderCheckoutScheduleNote(c)}
+            ${renderCouponCheckoutNote(c)}
+          </div>
+          ${renderEnrollActions(c)}
+          ${renderLiveBuyFeatures(c)}` : `
           ${renderBuyEnrollmentNote(c)}
           <div class="buy-pricing">
             <div class="buy-price-row">
@@ -723,6 +748,14 @@
               ${renderAnticipationBtn(c)}`)
           }
           return renderEndedLiveActions(c)
+        }
+        if (isPaidLiveFirst(c)) {
+          if (usesSmartstoreCheckout(c)) {
+            return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-bag"></i> ${enrollButtonLabel(c)}`, `onclick="openStoreCheckout()"`)}
+              ${renderAnticipationBtn(c)}`)
+          }
+          return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-shopping-cart"></i> ${enrollButtonLabel(c)}`, `onclick="openModal()"`)}
+            ${renderAnticipationBtn(c)}`)
         }
         return wrapBuyActions(`${renderApplyBtn(c, `<i class="ti ti-user-plus"></i> ${enrollButtonLabel(c)}`, `onclick="submitCourseEnroll()"`)}
           ${renderAnticipationBtn(c)}`)
@@ -1051,7 +1084,7 @@
 
     async function submitCourseEnroll() {
       if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
-      if (courseData?.course_type === 'live' && isCourseEnded(courseData) && !courseData?.live_resources?.replay_configured) {
+      if (isLiveLikeCourse(courseData) && isCourseEnded(courseData) && !courseData?.live_resources?.replay_configured) {
         toast('종료된 강의입니다.', 'error')
         return
       }
@@ -1062,9 +1095,11 @@
       }
       try {
         await API.post('/courses/' + slug + '/enroll', {})
-        toast(courseData.course_type === 'live' ? (isCourseEnded(courseData) && !courseData.enrolled ? '다시보기 신청이 완료되었습니다.' : '라이브 수강 신청이 완료되었습니다.') : '수강 신청이 완료되었습니다.', 'success')
+        toast(isLiveLikeCourse(courseData)
+          ? (isCourseEnded(courseData) && !courseData.enrolled ? '다시보기 신청이 완료되었습니다.' : '라이브 수강 신청이 완료되었습니다.')
+          : '수강 신청이 완료되었습니다.', 'success')
         setTimeout(() => {
-          if (courseData.course_type !== 'live') {
+          if (!isLiveLikeCourse(courseData)) {
             location.href = '/player.html?slug=' + slug + '&chapter=first'
           } else {
             location.reload()
@@ -1264,13 +1299,18 @@
           payload.coupon_code = selectedCouponCode
         }
         const res = await API.post('/orders', payload)
-        let msg = '수강 신청이 완료되었습니다! 바로 강의를 시작합니다.'
+        let msg = isLiveLikeCourse(courseData)
+          ? '수강 신청이 완료되었습니다! 강의 페이지에서 라이브 일정을 확인하세요.'
+          : '수강 신청이 완료되었습니다! 바로 강의를 시작합니다.'
         if (res.reward_coupon) {
           msg += ` 의뢰인 혜택: 1만원 쿠폰 ${res.reward_coupon.count}장이 발급되었습니다. (마이페이지 > 내 쿠폰에서 확인)`
         }
         toast(msg, 'success')
         closeModal()
-        setTimeout(() => location.href = '/player.html?slug=' + slug + '&chapter=first', 1500)
+        const dest = isLiveLikeCourse(courseData)
+          ? '/course.html?slug=' + encodeURIComponent(slug)
+          : '/player.html?slug=' + slug + '&chapter=first'
+        setTimeout(() => location.href = dest, 1500)
       } catch(err) {
         toast(err.message, 'error')
         btn.disabled = false; btn.textContent = '결제하기'

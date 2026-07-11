@@ -325,6 +325,10 @@ if (!window.LiveSession) (function () {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }
 
+  function dismissKey(courseId, startMs) {
+    return `live-remind:${courseId}:${startMs}`
+  }
+
   let activePopupCourseId = null
 
   async function checkLiveReminders() {

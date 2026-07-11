@@ -361,15 +361,15 @@ async function loadAll() {
     const courses = (window._homepageData?.courses) || await API.get('/courses')
     const published = courses.filter(c => c.is_published !== false)
     allPublishedCourses = published
-    const live = published.filter(c => c.course_type === 'live')
-    const free = published.filter(c => c.course_type !== 'live' && c.sale_price === 0)
+    const liveFree = published.filter(c => window.CourseEnrollmentUI?.isLiveLikeCourse?.(c) && Number(c.sale_price) === 0)
+    const free = published.filter(c => !window.CourseEnrollmentUI?.isLiveLikeCourse?.(c) && c.sale_price === 0)
     const all = orderCourses(published)
 
     if (isHomeSectionEnabled('all_courses')) {
       updateCourseGrid(filterCourses())
     }
     if (isHomeSectionEnabled('free_courses')) {
-      document.getElementById('shelf-free').innerHTML = [...free, ...live].slice(0, 8).map(freeCourseCard).join('') || '<p class="empty">무료 강의가 없습니다.</p>'
+      document.getElementById('shelf-free').innerHTML = [...free, ...liveFree].slice(0, 8).map(freeCourseCard).join('') || '<p class="empty">무료 강의가 없습니다.</p>'
     }
     if (isHomeSectionEnabled('new_courses')) {
       const newest = [...published].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))

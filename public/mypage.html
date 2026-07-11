@@ -620,6 +620,7 @@ function renderLiveCourseCard(c) {
       </div>
     </a>
     ${hasActions ? `<div class="my-lc-actions">${replayBtn}${materialBtn}${meetWrap}</div>` : ''}
+    ${renderSubtitleToolDownload(c)}
     ${renderCourseReviewBlock(c)}
     ${renderCancelAction(c)}
   </div>`

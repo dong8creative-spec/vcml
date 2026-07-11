@@ -66,8 +66,9 @@
   }
 
   function isCheckoutBlocked(c) {
-    if (!c || c.course_type === 'live') return false
+    if (!c) return false
     if (Number(c.sale_price) === 0) return false
+    if (isLiveLikeCourse(c) && c.course_type === 'live') return false
     return !!(c.checkout_closed || c.checkout_upcoming)
   }
 
@@ -79,12 +80,11 @@
   }
 
   function enrollBtnLabel(c, liveStatusMap) {
-    const isLive = c.course_type === 'live'
-    if (isLive && isLiveEnded(c)) return '종료된 강의'
-    const isFree = isLive || Number(c.sale_price) === 0
-    if (isLive) {
+    if (isLiveLikeCourse(c) && isLiveEnded(c)) return '종료된 강의'
+    const isFree = Number(c.sale_price) === 0
+    if (isLiveLikeCourse(c)) {
       const status = liveStatusMap[c.live_status || 'upcoming'] || '신청 가능'
-      return isFree ? `무료 · ${status}` : status
+      return isFree ? `무료 · ${status}` : `₩${Number(c.sale_price).toLocaleString()} · ${status}`
     }
     if (isFree) return '무료 · 강의 보기'
     return `₩${Number(c.sale_price).toLocaleString()} · 강의 보기`
@@ -105,9 +105,8 @@
 
   /** 강의 상세 buy-card — 풀폭 신청 버튼 */
   function cardEnrollBtnHtml(c, liveStatusMap) {
-    const isLive = c.course_type === 'live'
     const label = enrollBtnLabel(c, liveStatusMap)
-    const ended = isLive && isLiveEnded(c)
+    const ended = isLiveLikeCourse(c) && isLiveEnded(c)
     const baseClass = `card-enroll-btn${ended ? ' card-enroll-btn--muted' : ''}`
     return `<div class="${baseClass}"><span class="card-enroll-btn-label">${label}</span></div>`
   }
