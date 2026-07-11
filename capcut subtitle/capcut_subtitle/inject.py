@@ -35,6 +35,7 @@ class SubtitleStyle:
     border: bool = True
     bold: bool = False
     transform_y: float = -0.8   # -1(하단) ~ 1(상단)
+    as_caption: bool = True     # True면 캡컷 '자동 캡션'과 같은 캡션 트랙으로 삽입
 
 
 def _new_id() -> str:
@@ -144,10 +145,17 @@ def _build_track(data: dict, lines: list[SubtitleLine],
     track = copy.deepcopy(TRACK_TPL)
     track["id"] = _new_id()
     track["name"] = TRACK_NAME
+    if style.as_caption:
+        # 캡컷 '자동 캡션'과 동일한 캡션 트랙: 소재 type을 subtitle로,
+        # 트랙 flag를 1로 설정하면 캡컷이 자막(캡션) 트랙으로 취급해
+        # 캡션 패널에서 일괄 편집·스타일 변경이 가능하다.
+        track["flag"] = 1
 
     for line in lines:
         mat = copy.deepcopy(MATERIAL_TPL)
         mat["id"] = _new_id()
+        if style.as_caption:
+            mat["type"] = "subtitle"
         mat["content"] = _build_content(line.text, style, font_path)
         mat["font_path"] = font_path
         mat["font_size"] = style.size

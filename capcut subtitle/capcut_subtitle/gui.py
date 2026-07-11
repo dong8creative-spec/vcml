@@ -152,6 +152,7 @@ class App(tk.Tk):
         self.posy_var = tk.DoubleVar(value=-0.8)
         self.border_var = tk.BooleanVar(value=True)
         self.bold_var = tk.BooleanVar(value=False)
+        self.caption_var = tk.BooleanVar(value=True)  # 자동 캡션 방식 삽입
 
         def add_opt(label: str, widget: tk.Widget) -> None:
             ttk.Label(opt, text=label).pack(side="left", padx=(10, 2))
@@ -167,6 +168,7 @@ class App(tk.Tk):
                                      textvariable=self.posy_var))
         ttk.Checkbutton(opt, text="테두리", variable=self.border_var).pack(side="left", padx=(10, 0))
         ttk.Checkbutton(opt, text="굵게", variable=self.bold_var).pack(side="left", padx=(6, 0))
+        ttk.Checkbutton(opt, text="자동 캡션 방식", variable=self.caption_var).pack(side="left", padx=(6, 0))
 
         # 실행 버튼
         btns = ttk.Frame(self.main_panel)
@@ -772,6 +774,7 @@ class App(tk.Tk):
                 border=self.border_var.get(),
                 bold=self.bold_var.get(),
                 transform_y=float(self.posy_var.get()),
+                as_caption=self.caption_var.get(),
             )
             backup = inject.inject_subtitles(project.dir, self.lines, style)
             toast(self, f"{len(self.lines)}개 자막이 삽입되었습니다.", "success")
