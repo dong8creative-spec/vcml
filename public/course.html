@@ -168,6 +168,9 @@
   <script src="/js/site-layout.js"></script>
   <script src="/js/site-header.js?v=10"></script>
   <script src="/js/home-nav.js"></script>
+  <script src="/js/utils/dom.js?v=1"></script>
+  <script src="/js/course/live-helpers.js?v=1"></script>
+  <script src="/js/course/checkout-helpers.js?v=1"></script>
   <script src="/js/course-enrollment-ui.js?v=3"></script>
   <script>
     const slug = new URLSearchParams(location.search).get('slug')
@@ -178,23 +181,12 @@
     const ANTICIPATION_MIN = 20
     const ANTICIPATION_MAX = 150
 
-    function esc(s) {
-      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-    }
-
-    function formatDate(iso) {
-      if (!iso) return ''
-      const d = new Date(iso)
-      if (Number.isNaN(d.getTime())) return String(iso).slice(0, 10)
-      return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`
-    }
+    const esc = (...a) => (window.DomUtils?.esc || ((x) => String(x || '')))(...a)
+    const formatDate = (...a) => (window.DomUtils?.formatDate || ((x) => x || ''))(...a)
 
     function isLiveLikeCourse(c) {
-      if (!c) return false
-      if (c.delivery_mode === 'live_first') return true
-      if (c.course_type === 'live') return true
-      if (c.live_starts_at || c.live_schedule) return true
-      return false
+      return window.LiveHelpers?.isLiveLikeCourse?.(c)
+        || !!(c && (c.delivery_mode === 'live_first' || c.course_type === 'live' || c.live_starts_at || c.live_schedule))
     }
 
     async function load() {
@@ -249,15 +241,15 @@
     }
 
     function isFreeVod(c) {
-      return !isLiveLikeCourse(c) && Number(c.sale_price) === 0
+      return window.LiveHelpers?.isFreeVod?.(c) ?? (!isLiveLikeCourse(c) && Number(c.sale_price) === 0)
     }
 
     function isFreeLive(c) {
-      return isLiveLikeCourse(c) && Number(c.sale_price) === 0
+      return window.LiveHelpers?.isFreeLive?.(c) ?? (isLiveLikeCourse(c) && Number(c.sale_price) === 0)
     }
 
     function isPaidLiveFirst(c) {
-      return isLiveLikeCourse(c) && Number(c.sale_price) > 0
+      return window.LiveHelpers?.isPaidLiveFirst?.(c) ?? (isLiveLikeCourse(c) && Number(c.sale_price) > 0)
     }
 
     function renderLiveBuyFeatures(c) {
@@ -475,97 +467,25 @@
       </div>`
     }
 
-    function usesSmartstoreCheckout(c) {
-      return !!c?.uses_smartstore_checkout
-    }
-
-    function isPaidCourse(c) {
-      return Number(c?.sale_price) > 0
-    }
-
-    function isCourseCouponAllowed(c) {
-      return c && c.coupon_allowed !== false && c.coupon_allowed !== 0
-    }
-
-    function shouldSkipCouponForCheckout(c) {
-      if (!isCourseCouponAllowed(c)) return true
-      return checkoutNoCoupon
-    }
-
-    function renderCouponCheckoutNote(c) {
-      if (c.course_type === 'live' || isFreeVod(c)) return ''
-      if (isPaidCourse(c)) {
-        return `<p class="buy-coupon-note">네이버 스마트스토어 결제 · 쿠폰 보유 시 자동 안내</p>`
-      }
-      if (!isCourseCouponAllowed(c)) {
-        return `<p class="buy-coupon-note buy-coupon-note--disabled">이 강의는 쿠폰 적용이 불가합니다.</p>`
-      }
-      if (checkoutNoCoupon) {
-        return `<p class="buy-coupon-note">정가 결제 링크입니다. 보유 쿠폰이 적용되지 않습니다.</p>`
-      }
-      return ''
-    }
-
-    const REFUND_GUARANTEE_LOCK_MS = 60 * 60 * 1000
-
-    function getCourseLectureStart(c) {
-      const raw = c?.live_starts_at || c?.checkout_ends_at
-      if (!raw) return null
-      const d = new Date(raw)
-      return isNaN(d.getTime()) ? null : d
-    }
-
-    const PROGRAM_EARLY_ACCESS_MS = 2 * 60 * 60 * 1000
-
-    function isCourseLectureStarted(c, at = new Date()) {
-      const start = getCourseLectureStart(c)
-      if (!start) return true
-      return at.getTime() >= start.getTime() - PROGRAM_EARLY_ACCESS_MS
-    }
-
-    function getProgramOpenAt(c) {
-      const start = getCourseLectureStart(c)
-      if (!start) return null
-      return new Date(start.getTime() - PROGRAM_EARLY_ACCESS_MS)
-    }
-
-    function formatLectureStartLabel(date) {
-      if (!date) return ''
-      return date.toLocaleString('ko-KR', {
-        timeZone: 'Asia/Seoul',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      })
-    }
-
-    function isRefundGuaranteeActive(c, at = new Date()) {
-      const start = getCourseLectureStart(c)
-      if (!start) return true
-      return at.getTime() < start.getTime() - REFUND_GUARANTEE_LOCK_MS
-    }
-
-    function renderBuyGuarantee(c) {
-      if (c.course_type === 'live' || isFreeVod(c) || !isRefundGuaranteeActive(c)) return ''
-      return `<div class="buy-guarantee"><i class="ti ti-shield-check"></i> 강의 시작 1시간 전까지 전액 환불 보장</div>`
-    }
-
-    function renderCheckoutScheduleNote(c) {
-      if (c.course_type === 'live' || isFreeVod(c) || !c.checkout_has_window) return ''
-      const msg = c.checkout_message
-      if (!msg) return ''
-      const mod = c.checkout_upcoming ? ' buy-checkout-schedule--upcoming'
-        : c.checkout_closed ? ' buy-checkout-schedule--closed' : ''
-      return `<p class="buy-checkout-schedule${mod}"><i class="ti ti-calendar-time"></i> ${esc(msg)}</p>`
-    }
-
+    function usesSmartstoreCheckout(c) { return CourseCheckout.usesSmartstoreCheckout(c) }
+    function isPaidCourse(c) { return CourseCheckout.isPaidCourse(c) }
+    function isCourseCouponAllowed(c) { return CourseCheckout.isCourseCouponAllowed(c) }
+    function shouldSkipCouponForCheckout(c) { return CourseCheckout.shouldSkipCouponForCheckout(c, checkoutNoCoupon) }
+    function renderCouponCheckoutNote(c) { return CourseCheckout.renderCouponCheckoutNote(c, { checkoutNoCoupon, isFreeVod }) }
+    const REFUND_GUARANTEE_LOCK_MS = CourseCheckout.REFUND_GUARANTEE_LOCK_MS
+    function getCourseLectureStart(c) { return CourseCheckout.getCourseLectureStart(c) }
+    const PROGRAM_EARLY_ACCESS_MS = CourseCheckout.PROGRAM_EARLY_ACCESS_MS
+    function isCourseLectureStarted(c, at) { return CourseCheckout.isCourseLectureStarted(c, at) }
+    function getProgramOpenAt(c) { return CourseCheckout.getProgramOpenAt(c) }
+    function formatLectureStartLabel(date) { return CourseCheckout.formatLectureStartLabel(date) }
+    function isRefundGuaranteeActive(c, at) { return CourseCheckout.isRefundGuaranteeActive(c, at) }
+    function renderBuyGuarantee(c) { return CourseCheckout.renderBuyGuarantee(c, { isFreeVod, esc }) }
+    function renderCheckoutScheduleNote(c) { return CourseCheckout.renderCheckoutScheduleNote(c, { isFreeVod, esc }) }
     function assertCheckoutOpen(c) {
-      if (isFreeVod(c) || c.enrolled || c.checkout_open !== false) return true
-      toast(c.checkout_message || '현재 결제할 수 없습니다.', 'error')
-      return false
+      return CourseCheckout.assertCheckoutOpen(c, {
+        isFreeVod,
+        toast: typeof toast === 'function' ? toast : () => {},
+      })
     }
 
     function renderBuyCard(c) {

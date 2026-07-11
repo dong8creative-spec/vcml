@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const db = require('../db/schema')
+const db = require('../db')
 const { mergeDetailIntroImages } = require('../utils/course-detail-assets')
 const jwt = require('jsonwebtoken')
 const { authMiddleware } = require('../middleware/auth')

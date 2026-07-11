@@ -2060,35 +2060,22 @@
 
   <script src="js/api.js"></script>
   <script src="js/hero-button-actions.js"></script>
+  <script src="/js/utils/dom.js?v=1"></script>
+  <script src="/js/admin/utils.js?v=1"></script>
+  <script src="/js/admin/images.js?v=1"></script>
+  <script src="/js/admin/seq-nav.js?v=1"></script>
+  <script src="/js/admin/auth.js?v=1"></script>
+  <script src="/js/admin/router.js?v=1"></script>
+  <script src="/js/admin/modules/support.js?v=1"></script>
+  <script src="/js/admin/modules/ops.js?v=1"></script>
   <script>
-    // ── 헬퍼 ──
-    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
-    function escAttr(s) {
-      return String(s ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-    }
-    function fmtD(iso) { return iso ? iso.slice(0,10) : '-' }
+    // ── 헬퍼 (AdminUtils 위임) ──
+    const esc = (...a) => AdminUtils.esc(...a)
+    const escAttr = (...a) => AdminUtils.escAttr(...a)
+    const fmtD = (...a) => AdminUtils.fmtD(...a)
 
     // ── 어드민 인증 체크 ──
-    (async function () {
-      if (!API.isLoggedIn()) {
-        location.href = '/login.html?next=/admin.html'
-        return
-      }
-      try {
-        const { allowed } = await API.get('/auth/admin-access')
-        if (!allowed) {
-          alert('관리자 접근 권한이 없는 계정입니다.')
-          location.href = '/'
-        }
-      } catch {
-        location.href = '/login.html?next=/admin.html'
-      }
-    })();
+    AdminAuth.guardAdminAccess()
 
     // ── 데이터 로드 함수들 ──
     async function loadDashboard() {
@@ -3440,37 +3427,6 @@
       }
     }
 
-    // ── 순차 네비게이션 ──
-    window._seq = {}
-    window.seqSet = function(key, list, idx, openFn) {
-      window._seq[key] = { list: list, idx: idx, open: openFn }
-    }
-    window.seqUpdateNav = function(key) {
-      const s = window._seq[key]
-      if (!s || s.idx < 0) return
-      const nav = document.getElementById(key + '-seq-nav')
-      const label = document.getElementById(key + '-seq-label')
-      const prev = document.getElementById(key + '-seq-prev')
-      const next = document.getElementById(key + '-seq-next')
-      if (!nav) return
-      if (s.list.length > 1) {
-        nav.style.display = 'flex'
-        label.textContent = (s.idx + 1) + ' / ' + s.list.length
-        prev.disabled = s.idx === 0
-        next.disabled = s.idx === s.list.length - 1
-      } else {
-        nav.style.display = 'none'
-      }
-    }
-    window.seqStep = function(key, delta) {
-      const s = window._seq[key]
-      if (!s) return
-      const newIdx = s.idx + delta
-      if (newIdx < 0 || newIdx >= s.list.length) return
-      s.idx = newIdx
-      s.open(s.list[newIdx])
-    }
-
     let _allStudents = []
     const _studentSort = { key: 'created_at', dir: 'desc' }
     const _enrollmentSort = { key: 'enrolled_at', dir: 'desc' }
@@ -3909,28 +3865,6 @@
       loadReviews();
     }
 
-    const titles = {
-      dashboard: '대시보드 개요',
-      courses: '강의 목록',
-      programs: '수강생 프로그램',
-      curriculum: '커리큘럼 편집',
-      students: '수강생 목록',
-      orders: '결제 내역',
-      coupons: '쿠폰 관리',
-      refunds: '환불 요청',
-      instructors: '강사 소개',
-      reviews: '수강 후기',
-      notices: '공지사항',
-      'editor-apps': '에디터즈 신청',
-      'editor-program': '선발 프로그램 설계',
-      projects: '클라이언츠 현황',
-      submissions: '미션 제출 검수',
-      tickets: '고객 문의',
-      faqs: 'FAQ 관리',
-      homepage: '홈페이지 관리',
-      settings: '사이트 설정',
-    };
-
     // ── 편집자 신청 관리 ──
     const expLabel = { 0:'6개월~1년', 1:'1년↑', 2:'2년↑', 3:'3년↑', 5:'5년↑' }
     let currentAppId = null
@@ -4038,28 +3972,7 @@
     }
 
     function resizeEditorApplyImage(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => {
-          const img = new Image()
-          img.onload = () => {
-            const max = 960
-            let w = img.width, h = img.height
-            if (w > max || h > max) {
-              if (w > h) { h = Math.round(h * max / w); w = max }
-              else { w = Math.round(w * max / h); h = max }
-            }
-            const canvas = document.createElement('canvas')
-            canvas.width = w; canvas.height = h
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-            resolve(canvas.toDataURL('image/jpeg', 0.85))
-          }
-          img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'))
-          img.src = reader.result
-        }
-        reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'))
-        reader.readAsDataURL(file)
-      })
+      return AdminImages.resizeEditorApplyImage(file)
     }
 
     async function loadSettings() {
@@ -4099,199 +4012,14 @@
       }
     }
 
-    function resizeDetailIntroWebp(file, { maxWidth = 1000, maxHeight = 5000, maxBase64Len = 950000, quality = 0.85 } = {}) {
-      if (file.type !== 'image/webp' && !file.name.toLowerCase().endsWith('.webp')) {
-        return Promise.reject(new Error('WebP 이미지만 업로드할 수 있습니다.'))
-      }
-      return resizeCanvasImageToWebpFromSource(file, { maxWidth, maxHeight, maxBase64Len, quality })
-    }
-
-    function resizeDetailIntroWebpToBlob(file, opts) {
-      if (file.type !== 'image/webp' && !file.name.toLowerCase().endsWith('.webp')) {
-        return Promise.reject(new Error('WebP 이미지만 업로드할 수 있습니다.'))
-      }
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => {
-          const img = new Image()
-          img.onload = () => encodeCanvasWebpBlob(img, opts).then(resolve).catch(reject)
-          img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'))
-          img.src = reader.result
-        }
-        reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'))
-        reader.readAsDataURL(file)
-      })
-    }
-
-    function encodeCanvasWebpBlob(img, { maxWidth = 1000, maxHeight = 5000, maxBase64Len = 950000, quality = 0.85 } = {}) {
-      let w = img.width
-      let h = img.height
-      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth }
-      if (h > maxHeight) { w = Math.round(w * maxHeight / h); h = maxHeight }
-
-      const attempt = (width, height, q, scale) => new Promise((resolve, reject) => {
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
-        canvas.toBlob(blob => {
-          if (!blob) {
-            reject(new Error('이 브라우저는 WebP 변환을 지원하지 않습니다.'))
-            return
-          }
-          const approxLen = Math.ceil(blob.size * 4 / 3) + 40
-          if (approxLen > maxBase64Len && q > 0.45) {
-            attempt(width, height, Math.round((q - 0.05) * 100) / 100, scale).then(resolve).catch(reject)
-            return
-          }
-          if (approxLen > maxBase64Len && scale > 0.5) {
-            const nextScale = Math.round((scale - 0.08) * 100) / 100
-            attempt(
-              Math.max(200, Math.round(w * nextScale)),
-              Math.max(200, Math.round(h * nextScale)),
-              Math.max(0.45, q),
-              nextScale
-            ).then(resolve).catch(reject)
-            return
-          }
-          if (approxLen > maxBase64Len) {
-            reject(new Error('이미지를 충분히 압축할 수 없습니다. 더 작은 WebP 파일을 사용해주세요.'))
-            return
-          }
-          resolve(blob)
-        }, 'image/webp', q)
-      })
-
-      return attempt(w, h, quality, 1)
-    }
-
-    function convertImageSrcToWebp(src, opts) {
-      return new Promise((resolve, reject) => {
-        const img = new Image()
-        img.onload = () => {
-          try {
-            resolve(encodeCanvasWebp(img, opts))
-          } catch (e) {
-            reject(new Error('WebP 변환에 실패했습니다.'))
-          }
-        }
-        img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'))
-        img.src = src
-      })
-    }
-
-    function resizeCanvasImageToWebpFromSource(file, opts) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => {
-          const img = new Image()
-          img.onload = () => {
-            try {
-              resolve(encodeCanvasWebp(img, opts))
-            } catch (e) {
-              reject(new Error('WebP 변환에 실패했습니다.'))
-            }
-          }
-          img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'))
-          img.src = reader.result
-        }
-        reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'))
-        reader.readAsDataURL(file)
-      })
-    }
-
-    function encodeCanvasWebp(img, { maxWidth = 1000, maxHeight = 5000, maxBase64Len = 950000, quality = 0.85 } = {}) {
-      let w = img.width
-      let h = img.height
-      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth }
-      if (h > maxHeight) { w = Math.round(w * maxHeight / h); h = maxHeight }
-
-      const encode = (width, height, q) => {
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, width, height)
-        const dataUrl = canvas.toDataURL('image/webp', q)
-        if (!dataUrl.startsWith('data:image/webp')) {
-          throw new Error('이 브라우저는 WebP 변환을 지원하지 않습니다.')
-        }
-        return dataUrl
-      }
-
-      let q = quality
-      let dataUrl = encode(w, h, q)
-      while (dataUrl.length > maxBase64Len && q > 0.45) {
-        q = Math.round((q - 0.05) * 100) / 100
-        dataUrl = encode(w, h, q)
-      }
-      let scale = 1
-      while (dataUrl.length > maxBase64Len && scale > 0.5) {
-        scale = Math.round((scale - 0.08) * 100) / 100
-        const sw = Math.max(200, Math.round(w * scale))
-        const sh = Math.max(200, Math.round(h * scale))
-        dataUrl = encode(sw, sh, Math.max(0.45, q))
-      }
-      if (dataUrl.length > maxBase64Len) {
-        throw new Error('이미지를 충분히 압축할 수 없습니다. 더 작은 WebP 파일을 사용해주세요.')
-      }
-      return dataUrl
-    }
-
-    function resizeUploadImage(file, { maxWidth = 1000, maxHeight = null, maxBase64Len = 450000, quality = 0.85 } = {}) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => {
-          const img = new Image()
-          img.onload = () => {
-            let w = img.width
-            let h = img.height
-            const limitW = maxWidth || 1200
-            const limitH = maxHeight || limitW
-            if (w > limitW) { h = Math.round(h * limitW / w); w = limitW }
-            if (h > limitH) { w = Math.round(w * limitH / h); h = limitH }
-
-            const encode = (width, height, q) => {
-              const canvas = document.createElement('canvas')
-              canvas.width = width
-              canvas.height = height
-              const ctx = canvas.getContext('2d')
-              ctx.fillStyle = '#ffffff'
-              ctx.fillRect(0, 0, width, height)
-              ctx.drawImage(img, 0, 0, width, height)
-              return canvas.toDataURL('image/jpeg', q)
-            }
-
-            let q = quality
-            let dataUrl = encode(w, h, q)
-            while (dataUrl.length > maxBase64Len && q > 0.5) {
-              q = Math.round((q - 0.05) * 100) / 100
-              dataUrl = encode(w, h, q)
-            }
-            let scale = 1
-            while (dataUrl.length > maxBase64Len && scale > 0.45) {
-              scale = Math.round((scale - 0.1) * 100) / 100
-              const sw = Math.max(320, Math.round(w * scale))
-              const sh = Math.max(240, Math.round(h * scale))
-              dataUrl = encode(sw, sh, Math.max(0.5, q))
-            }
-            if (dataUrl.length > maxBase64Len) {
-              reject(new Error('이미지를 충분히 압축할 수 없습니다. 더 작은 이미지를 사용해주세요.'))
-              return
-            }
-            resolve(dataUrl)
-          }
-          img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'))
-          img.src = reader.result
-        }
-        reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'))
-        reader.readAsDataURL(file)
-      })
-    }
-
-    function resizeSiteImage(file, max = 800) {
-      return resizeUploadImage(file, { maxWidth: max, maxHeight: max, maxBase64Len: 450000 })
-    }
+    const resizeDetailIntroWebp = (...a) => AdminImages.resizeDetailIntroWebp(...a)
+    const resizeDetailIntroWebpToBlob = (...a) => AdminImages.resizeDetailIntroWebpToBlob(...a)
+    const encodeCanvasWebpBlob = (...a) => AdminImages.encodeCanvasWebpBlob(...a)
+    const convertImageSrcToWebp = (...a) => AdminImages.convertImageSrcToWebp(...a)
+    const resizeCanvasImageToWebpFromSource = (...a) => AdminImages.resizeCanvasImageToWebpFromSource(...a)
+    const encodeCanvasWebp = (...a) => AdminImages.encodeCanvasWebp(...a)
+    const resizeUploadImage = (...a) => AdminImages.resizeUploadImage(...a)
+    const resizeSiteImage = (...a) => AdminImages.resizeSiteImage(...a)
 
     function renderCmHeroGalleryList() {
       const list = document.getElementById('cm-hero-gallery-list')
@@ -5828,36 +5556,9 @@
       } catch (e) { alert(e.message || '저장 실패') }
     })
 
-    async function loadRefunds() {
-      const tbody = document.getElementById('refunds-table-body')
-      const countEl = document.getElementById('refund-count')
-      const badgeEl = document.getElementById('refund-badge')
-      if (!tbody) return
-      try {
-        const orders = await API.get('/admin/orders')
-        const refunds = orders.filter(o => o.status && o.status !== 'paid')
-        if (countEl) countEl.textContent = refunds.length + '건'
-        if (badgeEl) { badgeEl.textContent = refunds.length; badgeEl.style.display = refunds.length ? '' : 'none' }
-        if (!refunds.length) {
-          tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">환불 내역이 없습니다.</td></tr>'
-          return
-        }
-        const statusLabel = { refunded: '환불완료', cancelled: '취소' }
-        tbody.innerHTML = refunds.map(o => `<tr>
-          <td><div class="user-cell"><div class="avatar-sm">${esc((o.user_name||'?')[0])}</div> ${esc(o.user_name||'-')}</div></td>
-          <td class="td-sub">${esc(o.course_title||'-')}</td>
-          <td>${(o.amount||0).toLocaleString()}원</td>
-          <td>${o.refund_amount != null ? (o.refund_amount).toLocaleString()+'원' : '-'}</td>
-          <td class="td-date">${fmtD(o.paid_at)}</td>
-          <td class="td-date">${fmtD(o.refunded_at)}</td>
-          <td><span class="badge-status refund">${statusLabel[o.status]||esc(o.status)}</span></td>
-        </tr>`).join('')
-      } catch(e) {
-        if (tbody) tbody.innerHTML = `<tr class="empty-state-row"><td colspan="7">${esc(e.message||'불러오기 실패')}</td></tr>`
-      }
-    }
 
-    const sectionLoaders = {
+    // 섹션 로더 등록 (모듈 + 인라인)
+    AdminRouter.registerLoaders({
       dashboard: loadDashboard,
       courses: loadCourses,
       programs: loadProgramsAdmin,
@@ -5865,83 +5566,26 @@
       students: loadStudents,
       orders: loadOrders,
       coupons: loadCouponsAdmin,
-      refunds: loadRefunds,
+      refunds: () => AdminOps.loadRefunds(),
       reviews: loadReviews,
       instructors: loadInstructors,
       'editor-apps': () => loadEditorApps('pending'),
       'editor-program': loadEditorProgramDesign,
-      'projects': () => loadProjects('open'),
+      projects: () => AdminOps.loadProjects('open'),
       submissions: loadSubmissions,
-      notices: loadNotices,
-      tickets: () => loadTickets('open'),
-      faqs: loadFaqs,
+      notices: () => AdminSupport.loadNotices(),
+      tickets: () => AdminSupport.loadTickets('open'),
+      faqs: () => AdminSupport.loadFaqs(),
       homepage: loadHomepage,
       settings: loadSettings,
-    };
-
-    // ── 의뢰 현황 ──
-    const projStatusLabel = { open:'모집중', matched:'매칭완료', in_progress:'진행중', completed:'완료', cancelled:'취소' }
-    async function loadProjects(status) {
-      ['open','matched','completed','all'].forEach(t => {
-        const el = document.getElementById('ptab-'+t)
-        if (el) el.classList.toggle('active', (status||'all') === t)
-      })
-      const tbody = document.getElementById('projects-tbody')
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr>'
-      try {
-        const qs = status ? `?status=${status}` : ''
-        const projects = await API.get('/projects' + qs)
-        if (!projects.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">클라이언츠가 없습니다.</td></tr>'; return }
-        const statusMap = { open:'<span class="status-tag done">모집중</span>', matched:'<span class="status-tag pending">매칭완료</span>', completed:'<span class="status-tag">완료</span>', cancelled:'<span class="status-tag refund">취소</span>' }
-        tbody.innerHTML = projects.map(p => {
-          const budget = p.budget_min||p.budget_max ? `${p.budget_min?'₩'+Number(p.budget_min).toLocaleString():''}${p.budget_max?'~₩'+Number(p.budget_max).toLocaleString():''}` : '협의'
-          return `<tr>
-            <td><a href="/project-detail.html?id=${p.id}" target="_blank" style="color:#111111">${p.title}</a></td>
-            <td>${p.category}</td>
-            <td>${p.client_name||'-'}</td>
-            <td style="font-size: 14.4px">${budget}</td>
-            <td style="text-align:center">${p.quote_count||0}</td>
-            <td class="td-date">${p.deadline||'-'}</td>
-            <td class="td-date">${(p.created_at||'').slice(0,10)}</td>
-            <td>${statusMap[p.status]||p.status}</td>
-            <td class="td-actions">
-              ${p.status==='open'?`<button class="btn-sm-danger" onclick="cancelProject('${p.id}')">취소</button>`:''}
-            </td>
-          </tr>`
-        }).join('')
-      } catch(e) {
-        tbody.innerHTML = '<tr><td colspan="9" style="color:#e00;text-align:center;padding:24px">오류: ' + (e.message||'불러오기 실패') + '</td></tr>'
-      }
-    }
-
-    async function cancelProject(id) {
-      if (!confirm('이 클라이언츠를 취소하시겠습니까?')) return
-      try {
-        await API.patch('/projects/' + id + '/status', { status: 'cancelled' })
-        loadProjects('open')
-      } catch(e) { alert(e.message||'처리 중 오류') }
-    }
-
-    function showSection(name) {
-      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-
-      const navEl = document.querySelector(`[data-section="${name}"]`);
-      const secEl = document.getElementById(`sec-${name}`);
-      if (navEl) navEl.classList.add('active');
-      if (secEl) secEl.classList.add('active');
-      document.getElementById('page-title').textContent = titles[name] || name;
-
-      if (name === 'homepage') ensureHomePreviewFrame()
-      if (sectionLoaders[name]) sectionLoaders[name]();
-    }
-
-    document.querySelectorAll('.nav-item').forEach(el => {
-      el.addEventListener('click', e => {
-        e.preventDefault();
-        showSection(el.dataset.section);
-      });
-    });
+      institution: typeof loadInstitutionCourses === 'function' ? loadInstitutionCourses : undefined,
+    })
+    window.loadRefunds = () => AdminOps.loadRefunds()
+    window.loadProjects = (status) => AdminOps.loadProjects(status)
+    window.loadNotices = () => AdminSupport.loadNotices()
+    window.loadTickets = (status) => AdminSupport.loadTickets(status)
+    window.loadFaqs = () => AdminSupport.loadFaqs()
+    AdminRouter.bindNav()
 
     function openCourseCreateModal() {
       document.getElementById('recorded-create-overlay').style.display = 'flex'
@@ -6090,195 +5734,6 @@
 
     // 초기 로드
     loadDashboard();
-
-    // ── 공지사항 ──
-    let _noticeEditId = null
-    async function loadNotices() {
-      const tbody = document.getElementById('notices-tbody')
-      try {
-        const notices = await API.get('/admin/notices')
-        if (!notices.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="5">등록된 공지가 없습니다.</td></tr>'; return }
-        tbody.innerHTML = notices.map(n => `
-          <tr>
-            <td>${n.is_pinned ? '<span class="status-tag done">고정</span>' : '-'}</td>
-            <td><strong style="font-size:14px">${esc(n.title)}</strong></td>
-            <td><span class="status-tag ${n.is_public ? 'done' : 'draft'}">${n.is_public ? '공개' : '비공개'}</span></td>
-            <td class="td-date">${(n.created_at||'').slice(0,10)}</td>
-            <td class="td-actions">
-              <button class="btn-sm" onclick="openNoticeEdit('${n.id}')">편집</button>
-              <button class="btn-sm-danger" onclick="deleteNotice('${n.id}')">삭제</button>
-            </td>
-          </tr>`).join('')
-      } catch(e) { tbody.innerHTML = `<tr class="empty-state-row"><td colspan="5">${e.message}</td></tr>` }
-    }
-
-    function openNoticeModal(n) {
-      _noticeEditId = n ? n.id : null
-      document.getElementById('notice-modal-title').textContent = n ? '공지 편집' : '새 공지 작성'
-      document.getElementById('nm-title').value = n ? n.title : ''
-      document.getElementById('nm-content').value = n ? n.content : ''
-      document.getElementById('nm-public').checked = n ? !!n.is_public : false
-      document.getElementById('nm-pin').checked = n ? !!n.is_pinned : false
-      document.getElementById('notice-modal').style.display = 'flex'
-    }
-    window.openNoticeEdit = async (id) => {
-      const n = await API.get('/admin/notices').then(list => list.find(x => x.id === id)).catch(() => null)
-      if (n) openNoticeModal(n)
-    }
-    window.deleteNotice = async (id) => {
-      if (!confirm('공지를 삭제하시겠습니까?')) return
-      await API.del('/admin/notices/' + id)
-      loadNotices()
-    }
-    document.getElementById('notice-create-btn').addEventListener('click', () => openNoticeModal(null))
-    document.getElementById('nm-save').addEventListener('click', async () => {
-      const title = document.getElementById('nm-title').value.trim()
-      const content = document.getElementById('nm-content').value.trim()
-      if (!title || !content) return alert('제목과 내용을 입력하세요.')
-      const body = { title, content, is_public: document.getElementById('nm-public').checked, is_pinned: document.getElementById('nm-pin').checked }
-      if (_noticeEditId) {
-        await API.patch('/admin/notices/' + _noticeEditId, body)
-      } else {
-        await API.post('/admin/notices', body)
-      }
-      document.getElementById('notice-modal').style.display = 'none'
-      loadNotices()
-    })
-
-    // ── 고객 문의 ──
-    let _ticketId = null
-    async function loadTickets(status) {
-      ['open','answered','closed','all'].forEach(t => {
-        const el = document.getElementById('ttab-' + t)
-        if (el) el.classList.toggle('active', (status||'open') === t)
-      })
-      const tbody = document.getElementById('tickets-tbody')
-      tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">불러오는 중...</td></tr>'
-      try {
-        const qs = (status && status !== 'all') ? `?status=${status}` : ''
-        const tickets = await API.get('/admin/tickets' + qs)
-        if (!tickets.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="7">문의가 없습니다.</td></tr>'; return }
-        const smap = { open: '미답변', answered: '답변완료', closed: '종료' }
-        const scls = { open: 'pending', answered: 'answered', closed: 'draft' }
-        window.seqSet('ticket', tickets, -1, item => openTicket(item.id || item))
-        tbody.innerHTML = tickets.map((t, i) => `
-          <tr class="ticket-row" onclick="openTicketSeq(${i})">
-            <td><span class="pill ${scls[t.status]||'pending'}">${t.type||'일반'}</span></td>
-            <td>
-              <div class="ticket-subject">${esc(t.subject)}</div>
-              <div class="ticket-preview">${esc(t.content)}</div>
-            </td>
-            <td>${esc(t.name)}</td>
-            <td class="td-date">${esc(t.email)}</td>
-            <td><span class="status-tag ${scls[t.status]||'pending'}">${smap[t.status]||t.status}</span></td>
-            <td class="td-date">${(t.created_at||'').slice(0,10)}</td>
-            <td class="td-actions">
-              <button class="btn-sm-danger" onclick="event.stopPropagation();deleteTicket('${t.id}')">삭제</button>
-            </td>
-          </tr>`).join('')
-      } catch(e) { tbody.innerHTML = `<tr class="empty-state-row"><td colspan="7">${e.message}</td></tr>` }
-    }
-    window.openTicketSeq = function(idx) {
-      if (!window._seq.ticket) return
-      window._seq.ticket.idx = idx
-      openTicket(window._seq.ticket.list[idx].id)
-    }
-    window.openTicket = async (id) => {
-      _ticketId = id
-      window.seqUpdateNav('ticket')
-      try {
-        const t = await API.get('/admin/tickets/' + id)
-        document.getElementById('ticket-modal-title').textContent = `문의 — ${esc(t.subject)}`
-        document.getElementById('ticket-answer-input').value = t.answer || ''
-        document.getElementById('ticket-modal-body').innerHTML = `
-          <div class="review-panel">
-            <p><strong>이름:</strong> ${esc(t.name)} &nbsp;·&nbsp; <strong>이메일:</strong> ${esc(t.email)}</p>
-            <p><strong>유형:</strong> ${esc(t.type||'일반')} &nbsp;·&nbsp; <strong>접수:</strong> ${(t.created_at||'').slice(0,16).replace('T',' ')}</p>
-          </div>
-          <p style="font-size:15px;line-height:1.8;margin-top:8px;white-space:pre-line">${esc(t.content)}</p>
-          ${t.answer ? `<div class="review-panel" style="margin-top:16px;border-left:3px solid var(--primary)"><strong>이전 답변</strong><br>${esc(t.answer)}</div>` : ''}`
-        document.getElementById('ticket-modal').style.display = 'flex'
-      } catch(e) { alert(e.message) }
-    }
-    window.deleteTicket = async (id) => {
-      if (!confirm('문의를 삭제하시겠습니까?')) return
-      await API.del('/admin/tickets/' + id)
-      loadTickets('all')
-    }
-    document.getElementById('ticket-answer-btn').addEventListener('click', async () => {
-      if (!_ticketId) return
-      const answer = document.getElementById('ticket-answer-input').value.trim()
-      if (!answer) return alert('답변 내용을 입력하세요.')
-      await API.post('/admin/tickets/' + _ticketId + '/answer', { answer })
-      document.getElementById('ticket-modal').style.display = 'none'
-      loadTickets('open')
-    })
-    document.getElementById('ticket-close-btn').addEventListener('click', async () => {
-      if (!_ticketId || !confirm('이 문의를 종료 처리하시겠습니까?')) return
-      await API.patch('/admin/tickets/' + _ticketId + '/status', { status: 'closed' })
-      document.getElementById('ticket-modal').style.display = 'none'
-      loadTickets('open')
-    })
-
-    // ── FAQ ──
-    let _faqEditId = null
-    async function loadFaqs() {
-      const tbody = document.getElementById('faqs-tbody')
-      try {
-        const faqs = await API.get('/admin/faqs')
-        if (!faqs.length) { tbody.innerHTML = '<tr class="empty-state-row"><td colspan="5">등록된 FAQ가 없습니다.</td></tr>'; return }
-        tbody.innerHTML = faqs.map(f => `
-          <tr>
-            <td class="td-date">${f.sort_order ?? '-'}</td>
-            <td><span class="pill pending">${esc(f.category||'일반')}</span></td>
-            <td style="max-width:320px"><div style="font-size:14px;font-weight:600">${esc(f.question)}</div><div class="td-sub" style="margin-top:3px">${esc(f.answer).slice(0,60)}...</div></td>
-            <td><span class="status-tag ${f.is_public ? 'done' : 'draft'}">${f.is_public ? '공개' : '비공개'}</span></td>
-            <td class="td-actions">
-              <button class="btn-sm" onclick="openFaqEdit('${f.id}')">편집</button>
-              <button class="btn-sm-danger" onclick="deleteFaq('${f.id}')">삭제</button>
-            </td>
-          </tr>`).join('')
-      } catch(e) { tbody.innerHTML = `<tr class="empty-state-row"><td colspan="5">${e.message}</td></tr>` }
-    }
-    function openFaqModal(f) {
-      _faqEditId = f ? f.id : null
-      document.getElementById('faq-modal-title').textContent = f ? 'FAQ 편집' : 'FAQ 추가'
-      document.getElementById('fm-category').value = f ? (f.category||'일반') : '일반'
-      document.getElementById('fm-question').value = f ? f.question : ''
-      document.getElementById('fm-answer').value = f ? f.answer : ''
-      document.getElementById('fm-order').value = f ? (f.sort_order??'') : ''
-      document.getElementById('fm-public').checked = f ? !!f.is_public : true
-      document.getElementById('faq-modal').style.display = 'flex'
-    }
-    window.openFaqEdit = async (id) => {
-      const faqs = await API.get('/admin/faqs').catch(() => [])
-      const f = faqs.find(x => x.id === id)
-      if (f) openFaqModal(f)
-    }
-    window.deleteFaq = async (id) => {
-      if (!confirm('FAQ를 삭제하시겠습니까?')) return
-      await API.del('/admin/faqs/' + id)
-      loadFaqs()
-    }
-    document.getElementById('faq-create-btn').addEventListener('click', () => openFaqModal(null))
-    document.getElementById('fm-save').addEventListener('click', async () => {
-      const question = document.getElementById('fm-question').value.trim()
-      const answer = document.getElementById('fm-answer').value.trim()
-      if (!question || !answer) return alert('질문과 답변을 입력하세요.')
-      const body = {
-        question, answer,
-        category: document.getElementById('fm-category').value,
-        is_public: document.getElementById('fm-public').checked,
-        sort_order: parseInt(document.getElementById('fm-order').value) || undefined,
-      }
-      if (_faqEditId) {
-        await API.patch('/admin/faqs/' + _faqEditId, body)
-      } else {
-        await API.post('/admin/faqs', body)
-      }
-      document.getElementById('faq-modal').style.display = 'none'
-      loadFaqs()
-    })
 
     // ── 미션 제출 검수 ──
     let _subReviewId = null

@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const db = require('../db/schema')
+const db = require('../db')
 const { CLIENT_COURSE_REWARD_REASON } = require('../db/schema')
 const { authMiddleware } = require('../middleware/auth')
 

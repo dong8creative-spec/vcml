@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const db = require('../db/schema')
+const db = require('../db')
 const userPayload = require('../db/schema').userPayload
 const { authMiddleware } = require('../middleware/auth')
 
