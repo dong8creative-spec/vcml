@@ -173,6 +173,44 @@ class LoginDialog(tk.Toplevel):
         self._on_done(auth)
 
 
+class ReviewPromptDialog(tk.Toplevel):
+    """후기 작성 유도 팝업 — 세션당 1회, 후기 보너스 미지급 수강생에게만."""
+
+    def __init__(self, parent, app) -> None:
+        super().__init__(parent)
+        self._app = app
+        self.title("후기 이벤트")
+        self.resizable(False, False)
+        self.configure(bg=WHITE)
+        self.transient(parent)
+        self.attributes("-topmost", True)
+
+        card = tk.Frame(self, bg=WHITE)
+        card.pack(fill="both", expand=True, padx=28, pady=22)
+
+        tk.Label(card, text="🎁 100코인 받아가세요", font=("맑은 고딕", 13, "bold"),
+                 fg=PRIMARY, bg=WHITE).pack(pady=(0, 8))
+        tk.Label(card,
+                 text="타닥싱크가 도움이 되었나요?\n"
+                      "수강 후기에 별점 5점을 남겨주시면 100코인을 드려요.",
+                 font=("맑은 고딕", 10), fg=TEXT_MUTED, bg=WHITE,
+                 justify="center", wraplength=300).pack(pady=(0, 16))
+
+        btns = tk.Frame(card, bg=WHITE)
+        btns.pack()
+        RoundedButton(btns, "후기 쓰고 100코인 받기", command=self._go,
+                      min_width=160).pack(side="left", padx=4)
+        RoundedButton(btns, "나중에", command=self.destroy,
+                      fill=SKY, hover=SKY_DARK, fg=TEXT_DARK).pack(side="left", padx=4)
+
+        self.update_idletasks()
+        _center_over(self, parent, max(360, self.winfo_reqwidth()), self.winfo_reqheight())
+
+    def _go(self) -> None:
+        self.destroy()
+        self._app.on_open_review()
+
+
 class CoinPurchaseDialog(tk.Toplevel):
     """코인 충전 팝업. 후기 보너스 안내·작성 링크 + 결제(준비 중)."""
 
@@ -329,10 +367,11 @@ class MemberInfoDialog(tk.Toplevel):
             ttk.Label(info, textvariable=var, font=("맑은 고딕", 10, "bold")
                      ).grid(row=i, column=1, sticky="w", pady=2, padx=(4, 0))
 
-        btn_row = tk.Frame(card, bg=WHITE)
-        btn_row.pack(fill="x", pady=(0, 14))
-        RoundedButton(btn_row, "코인 충전", command=lambda: CoinPurchaseDialog(self, app)
+        self._btn_row = tk.Frame(card, bg=WHITE)
+        self._btn_row.pack(fill="x", pady=(0, 14))
+        RoundedButton(self._btn_row, "코인 충전", command=lambda: CoinPurchaseDialog(self, app)
                      ).pack(side="left")
+        self._review_btn: RoundedButton | None = None
 
         ttk.Label(card, text="코인 사용 내역", font=("맑은 고딕", 10, "bold"),
                  foreground=PRIMARY).pack(anchor="w", pady=(0, 4))
@@ -397,6 +436,19 @@ class MemberInfoDialog(tk.Toplevel):
             self._vars["후기 보너스"].set(
                 "지급 완료 (+100코인)" if me.get("review_bonus_granted")
                 else "수강 후기 작성 시 +100코인")
+            # 후기 미작성자에게는 바로가기 버튼 노출
+            try:
+                if self._review_btn is not None:
+                    self._review_btn.destroy()
+                    self._review_btn = None
+                if not me.get("review_bonus_granted"):
+                    self._review_btn = RoundedButton(
+                        self._btn_row, "후기 쓰고 +100코인",
+                        command=self._app.on_open_review,
+                        fill=SKY, hover=SKY_DARK, fg=TEXT_DARK)
+                    self._review_btn.pack(side="left", padx=(8, 0))
+            except tk.TclError:
+                pass
             # 앱 전체 상태에도 최신 잔액 반영 (웹에서 받은 보너스 동기화)
             app.apply_me_snapshot(me)
         elif me_err is not None:
