@@ -165,11 +165,12 @@ def _close_gaps(lines: list[SubtitleLine]) -> list[SubtitleLine]:
 
 
 def _split_lines_from_segments(segments: list, max_words_per_line: int) -> list[SubtitleLine]:
-    """Segment 기반 분할 (word 타이밍은 보조용).
+    """Segment 기반 분할 — 문장 경계를 존중하는 어절 규칙.
 
-    Whisper의 segment는 문장 단위로 이미 나뉘어 있고, 타이밍(start/end)도
-    정확하다. 각 segment 내의 word를 사용해 어절 단위로 세부 분할하되,
-    전체 구간은 segment의 시작/끝을 따른다.
+    규칙:
+    1. 기본 상한은 max_words_per_line(기본 5어절)
+    2. 마침표(.!? 등)로 끝나는 문장은 다음 문장 어절을 끌어와 채우지 않음
+       → 3어절 문장은 3어절 그대로, 7어절 문장은 5+2로만 나눔
     """
     lines: list[SubtitleLine] = []
 
@@ -183,9 +184,8 @@ def _split_lines_from_segments(segments: list, max_words_per_line: int) -> list[
                 and getattr(seg, "avg_logprob", 0.0) < -1.0):
             continue
 
-        words = seg.words or []
+        words = [w for w in (seg.words or []) if (w.word or "").strip()]
         if not words:
-            # word 정보가 없으면 segment 전체를 하나의 라인으로
             lines.append(SubtitleLine(
                 start_us=int(seg.start * US),
                 end_us=int(seg.end * US),
@@ -193,37 +193,34 @@ def _split_lines_from_segments(segments: list, max_words_per_line: int) -> list[
             ))
             continue
 
-        # Segment 내에서 word를 max_words_per_line씩 묶어 서브라인 생성
-        cur_words = []
-        seg_lines: list[SubtitleLine] = []
+        # 1) 문장 단위로 묶기 (마침표 어절에서 끊음)
+        sentences: list[list] = []
+        cur_sent: list = []
+        for w in words:
+            cur_sent.append(w)
+            if _SENTENCE_END.search(w.word.strip()):
+                sentences.append(cur_sent)
+                cur_sent = []
+        if cur_sent:
+            sentences.append(cur_sent)
 
-        def flush_subline():
-            nonlocal cur_words
-            if not cur_words:
-                return
-            sub_text = "".join(w.word for w in cur_words).strip()
-            if sub_text:
-                # Subline의 시작/끝: word 타이밍을 사용하되, segment 범위 내로 제한
-                start = max(seg.start, cur_words[0].start)
-                end = min(seg.end, cur_words[-1].end)
+        # 2) 문장 안에서만 max_words씩 청크 (문장 간 병합 금지)
+        seg_lines: list[SubtitleLine] = []
+        for sent in sentences:
+            for i in range(0, len(sent), max_words_per_line):
+                chunk = sent[i:i + max_words_per_line]
+                sub_text = "".join(w.word for w in chunk).strip()
+                if not sub_text:
+                    continue
+                start = max(seg.start, chunk[0].start)
+                end = min(seg.end, chunk[-1].end)
                 seg_lines.append(SubtitleLine(
                     start_us=int(start * US),
                     end_us=int(end * US),
                     text=sub_text,
+                    words=[(w.word, int(w.start * US), int(w.end * US)) for w in chunk],
                 ))
-            cur_words = []
 
-        for w in words:
-            token = w.word.strip()
-            if not token:
-                continue
-            cur_words.append(w)
-            if len(cur_words) >= max_words_per_line:
-                flush_subline()
-
-        flush_subline()
-
-        # Segment에서 서브라인이 없으면 전체를 하나로
         if not seg_lines:
             lines.append(SubtitleLine(
                 start_us=int(seg.start * US),
@@ -337,52 +334,41 @@ def _refine_with_vad(lines: list[SubtitleLine],
 
 
 def _split_lines(words: list, max_words_per_line: int) -> list[SubtitleLine]:
-    """어절 단위로 자막을 분할.
+    """어절 단위로 자막을 분할 (문장 경계 존중).
 
     Whisper는 한국어/일본어에서 각 어절을 앞에 공백이 붙은 개별 토큰
-    (' 네', ' 여러분', ' 반갑습니다.')으로 반환한다. 즉 words의 각 원소가
-    곧 하나의 어절이므로, 이를 max_words_per_line개씩 묶어 라인을 만든다.
-    각 라인의 시작/끝 시간은 첫 어절의 시작 ~ 마지막 어절의 끝으로,
-    말이 시작하는 지점부터 끝나는 지점까지 정확히 맞춘다.
+    (' 네', ' 여러분', ' 반갑습니다.')으로 반환한다.
+    마침표로 끝나는 문장 경계를 넘지 않고, 문장 안에서만
+    max_words_per_line개씩 묶는다.
     """
+    valid = [w for w in words if (w.word or "").strip()]
+    sentences: list[list] = []
+    cur_sent: list = []
+    for w in valid:
+        # 어절 사이 긴 침묵은 문장 경계로도 취급
+        if cur_sent and w.start - cur_sent[-1].end > 0.8:
+            sentences.append(cur_sent)
+            cur_sent = []
+        cur_sent.append(w)
+        if _SENTENCE_END.search(w.word.strip()):
+            sentences.append(cur_sent)
+            cur_sent = []
+    if cur_sent:
+        sentences.append(cur_sent)
+
     lines: list[SubtitleLine] = []
-    cur: list = []  # 현재 라인에 쌓인 어절(단어 객체)들
-
-    def flush() -> None:
-        nonlocal cur
-        if not cur:
-            return
-        text = "".join(w.word for w in cur).strip()
-        if text:
+    for sent in sentences:
+        for i in range(0, len(sent), max_words_per_line):
+            chunk = sent[i:i + max_words_per_line]
+            text = "".join(w.word for w in chunk).strip()
+            if not text:
+                continue
             lines.append(SubtitleLine(
-                start_us=int(cur[0].start * US),
-                end_us=int(cur[-1].end * US),
+                start_us=int(chunk[0].start * US),
+                end_us=int(chunk[-1].end * US),
                 text=text,
-                words=[(w.word, int(w.start * US), int(w.end * US)) for w in cur],
+                words=[(w.word, int(w.start * US), int(w.end * US)) for w in chunk],
             ))
-        cur = []
-
-    for w in words:
-        token = w.word.strip()
-        if not token:  # 순수 공백 토큰(드묾)은 건너뜀
-            continue
-
-        # 어절 사이 침묵이 0.8초 이상이면 여기서 라인 분리
-        if cur and w.start - cur[-1].end > 0.8:
-            flush()
-
-        cur.append(w)
-
-        # 어절 수가 상한에 도달하면 라인 분리
-        if len(cur) >= max_words_per_line:
-            flush()
-            continue
-
-        # 문장 끝(.!? 등) 또는 6초 초과 시 라인 분리
-        if _SENTENCE_END.search(token) or (w.end - cur[0].start) > 6.0:
-            flush()
-
-    flush()
 
     # 라인 간 겹침 제거 및 최소 표시시간 보정
     for i, line in enumerate(lines):
