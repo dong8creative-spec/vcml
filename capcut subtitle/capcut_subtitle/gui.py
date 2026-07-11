@@ -787,8 +787,11 @@ class App(tk.Tk):
         if not self.lines:
             toast(self, "내보낼 자막이 없습니다.", "warning")
             return
+        sel = self.proj_tree.selection()
+        default_name = self.projects[int(sel[0])].name if sel else "자막"
         path = filedialog.asksaveasfilename(
-            defaultextension=".srt", filetypes=[("SRT 자막", "*.srt")])
+            defaultextension=".srt", filetypes=[("SRT 자막", "*.srt")],
+            initialfile=f"{default_name}.srt")
         if path:
             srt_io.dump(self.lines, path)
             self.set_status(f"SRT 저장 완료: {path}")
