@@ -222,7 +222,11 @@ class CoinPurchaseDialog(tk.Toplevel):
 
 
 class MemberInfoDialog(tk.Toplevel):
-    """내 정보: 이름/이메일/코인 잔액/수강 상태 + 코인 사용 내역."""
+    """내 정보: 이름/이메일/코인 잔액/수강·후기 상태 + 코인 사용 내역.
+
+    열 때마다 서버에서 최신 정보를 조회하므로, 웹에서 후기를 작성해 받은
+    보너스 코인 등도 이 창을 열면(또는 새로고침을 누르면) 바로 반영된다.
+    """
 
     def __init__(self, parent, app) -> None:
         super().__init__(parent)
@@ -237,22 +241,30 @@ class MemberInfoDialog(tk.Toplevel):
         card.pack(fill="both", expand=True, padx=22, pady=18)
 
         auth = app._auth or {}
-        tk.Label(card, text="내 정보", font=("맑은 고딕", 14, "bold"),
-                 fg=PRIMARY, bg=WHITE).pack(anchor="w", pady=(0, 12))
+        head = tk.Frame(card, bg=WHITE)
+        head.pack(fill="x", pady=(0, 12))
+        tk.Label(head, text="내 정보", font=("맑은 고딕", 14, "bold"),
+                 fg=PRIMARY, bg=WHITE).pack(side="left")
+        self._refresh_btn = RoundedButton(head, "새로고침", command=self._refresh,
+                                          fill=SKY, hover=SKY_DARK, fg=TEXT_DARK, min_width=80)
+        self._refresh_btn.pack(side="right")
 
+        # 캐시된 값으로 먼저 그리고, 서버 조회가 끝나면 갱신한다
+        self._vars = {
+            "이름": tk.StringVar(value=auth.get("user_name") or "-"),
+            "이메일": tk.StringVar(value=auth.get("email") or "-"),
+            "보유 코인": tk.StringVar(
+                value=f"{app._balance} 코인" if app._balance is not None else "-"),
+            "수강 상태": tk.StringVar(
+                value="수강 중 · 기기 연동됨" if app._authenticated else "-"),
+            "후기 보너스": tk.StringVar(value="확인 중…"),
+        }
         info = ttk.Frame(card)
         info.pack(fill="x", pady=(0, 10))
-        enrolled_txt = "수강 중 · 기기 연동됨" if app._authenticated else "-"
-        rows = [
-            ("이름", auth.get("user_name") or "-"),
-            ("이메일", auth.get("email") or "-"),
-            ("보유 코인", f"{app._balance} 코인" if app._balance is not None else "-"),
-            ("수강 상태", enrolled_txt),
-        ]
-        for i, (label, value) in enumerate(rows):
+        for i, (label, var) in enumerate(self._vars.items()):
             ttk.Label(info, text=label, foreground=TEXT_MUTED, width=9
                      ).grid(row=i, column=0, sticky="w", pady=2)
-            ttk.Label(info, text=value, font=("맑은 고딕", 10, "bold")
+            ttk.Label(info, textvariable=var, font=("맑은 고딕", 10, "bold")
                      ).grid(row=i, column=1, sticky="w", pady=2, padx=(4, 0))
 
         btn_row = tk.Frame(card, bg=WHITE)
@@ -274,35 +286,85 @@ class MemberInfoDialog(tk.Toplevel):
             anchor = "w" if col == "date" else "center"
             self._history_tree.column(col, width=w, anchor=anchor)
         self._history_tree.pack(fill="both", expand=True)
-        self._history_tree.insert("", "end", values=("불러오는 중…", "", "", ""))
 
         self.update_idletasks()
         _center_over(self, parent, max(440, self.winfo_reqwidth()), self.winfo_reqheight())
 
-        threading.Thread(target=self._load_history, daemon=True).start()
+        self._refresh()
 
-    def _load_history(self) -> None:
-        history = None
+    # ------------------------------------------------------------- 로딩
+    def _refresh(self) -> None:
         try:
-            token = self._app._auth.get("token") if self._app._auth else None
-            if token:
+            self._refresh_btn.configure(state="disabled")
+        except tk.TclError:
+            pass
+        self._set_history_rows([("불러오는 중…", "", "", "")])
+        threading.Thread(target=self._load_all, daemon=True).start()
+
+    def _load_all(self) -> None:
+        token = self._app._auth.get("token") if self._app._auth else None
+        me, me_err, history, hist_err = None, None, None, None
+        if token:
+            try:
+                me = license_api.fetch_me(token)
+            except Exception as e:
+                me_err = e
+            try:
                 history = license_api.fetch_history(token, limit=30)
-        except Exception:
-            history = None
-        self.after(0, lambda: self._render_history(history))
+            except Exception as e:
+                hist_err = e
+        self.after(0, lambda: self._apply(me, me_err, history, hist_err))
 
-    def _render_history(self, history: list[dict] | None) -> None:
+    def _apply(self, me, me_err, history, hist_err) -> None:
         try:
-            self._history_tree.delete(*self._history_tree.get_children())
+            self._refresh_btn.configure(state="normal")
         except tk.TclError:
             return
-        if not history:
-            self._history_tree.insert("", "end", values=("내역이 없습니다.", "", "", ""))
-            return
-        for h in history:
-            date = (h.get("created_at") or "")[:16].replace("T", " ")
-            reason = _REASON_LABEL.get(h.get("reason"), h.get("reason") or "-")
-            delta = h.get("delta", 0)
-            delta_txt = f"+{delta}" if delta > 0 else str(delta)
-            self._history_tree.insert(
-                "", "end", values=(date, reason, delta_txt, h.get("balance_after", "-")))
+
+        if me:
+            app = self._app
+            if me.get("name"):
+                self._vars["이름"].set(me["name"])
+            if me.get("email"):
+                self._vars["이메일"].set(me["email"])
+            if me.get("balance") is not None:
+                self._vars["보유 코인"].set(f"{me['balance']} 코인")
+            self._vars["수강 상태"].set(
+                f"{me.get('course_title') or '수강 중'} · 기기 연동됨"
+                if me.get("enrolled") else "-")
+            self._vars["후기 보너스"].set(
+                "지급 완료 (+100코인)" if me.get("review_bonus_granted")
+                else "수강 후기 작성 시 +100코인")
+            # 앱 전체 상태에도 최신 잔액 반영 (웹에서 받은 보너스 동기화)
+            app.apply_me_snapshot(me)
+        elif me_err is not None:
+            self._vars["후기 보너스"].set("-")
+            status = getattr(me_err, "status", None)
+            if status not in (401, 403):
+                toast(self, "서버에서 최신 정보를 불러오지 못했습니다. 저장된 정보로 표시합니다.",
+                      "warning")
+
+        if history:
+            rows = []
+            for h in history:
+                date = (h.get("created_at") or "")[:16].replace("T", " ")
+                reason = _REASON_LABEL.get(h.get("reason"), h.get("reason") or "-")
+                delta = h.get("delta", 0)
+                delta_txt = f"+{delta}" if delta > 0 else str(delta)
+                rows.append((date, reason, delta_txt, h.get("balance_after", "-")))
+            self._set_history_rows(rows)
+        elif hist_err is not None:
+            status = getattr(hist_err, "status", None)
+            msg = ("서버 업데이트 준비 중입니다." if status == 404
+                   else "내역을 불러오지 못했습니다.")
+            self._set_history_rows([(msg, "", "", "")])
+        else:
+            self._set_history_rows([("내역이 없습니다.", "", "", "")])
+
+    def _set_history_rows(self, rows) -> None:
+        try:
+            self._history_tree.delete(*self._history_tree.get_children())
+            for row in rows:
+                self._history_tree.insert("", "end", values=row)
+        except tk.TclError:
+            pass

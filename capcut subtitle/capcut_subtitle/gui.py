@@ -63,11 +63,14 @@ class App(tk.Tk):
         self._auth = license_api.load_auth()
         self._balance: int | None = self._auth.get("balance") if self._auth else None
         self._authenticated = False
+        self._last_balance_sync = 0.0
 
         self._build_ui()
         self._refresh_auth_ui()
         self._apply_auth_lock()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+        # 웹에서 일어난 변화(후기 보너스·코인 충전)를 앱 복귀 시 자동 반영
+        self.bind("<FocusIn>", self._on_focus_sync)
         if self._auth and self._auth.get("token"):
             self.set_status("로그인 확인 중…")
             threading.Thread(target=self._startup_verify_worker, daemon=True).start()
@@ -344,12 +347,35 @@ class App(tk.Tk):
             self.auth_var.set("로그인 필요 — 캡컷 초신속 스탠다드 수강생 전용")
             self.login_btn.pack(side="right")
 
+    def apply_me_snapshot(self, me: dict) -> None:
+        """서버 /me 응답을 앱 전역 상태(잔액·이름·이메일)에 반영하고 저장."""
+        if not (self._auth and self._auth.get("token")):
+            return
+        if me.get("balance") is not None:
+            self._balance = me.get("balance")
+        self._auth = license_api.save_auth(
+            self._auth["token"],
+            me.get("name") or self._auth.get("user_name"),
+            self._balance,
+            me.get("email"),
+        )
+        self._refresh_auth_ui()
+
+    @staticmethod
+    def _is_auth_denied(e: Exception) -> bool:
+        """서버가 명시적으로 권한을 거부(만료·미수강)한 오류인지.
+
+        일시적 네트워크 장애나 서버 5xx로는 로그아웃하지 않기 위한 구분.
+        """
+        return getattr(e, "status", None) in (401, 403)
+
     def _startup_verify_worker(self) -> None:
         try:
             if not self._auth or not self._auth.get("token"):
                 raise RuntimeError("no token")
             me = license_api.verify_entitlement(self._auth["token"])
             self._balance = me.get("balance")
+            self._last_balance_sync = time.monotonic()
             self._auth = license_api.save_auth(
                 self._auth["token"],
                 me.get("name") or self._auth.get("user_name"),
@@ -359,9 +385,14 @@ class App(tk.Tk):
             self.after(0, lambda: self._set_authenticated(True, self._auth, self._balance))
             self.after(0, lambda: toast(self, "로그인 확인 완료", "success"))
         except Exception as e:
-            license_api.clear_auth()
+            no_token = str(e) == "no token"
+            if no_token or self._is_auth_denied(e):
+                license_api.clear_auth()
+                msg = str(e) if str(e) and not no_token else "세션이 만료되었습니다. 다시 로그인해 주세요."
+            else:
+                # 네트워크 장애 등: 저장된 세션은 남겨두고 다음 실행에서 재시도
+                msg = "서버에 연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 로그인해 주세요."
             self.after(0, lambda: self._set_authenticated(False))
-            msg = str(e) if str(e) and str(e) != "no token" else "세션이 만료되었습니다. 다시 로그인해 주세요."
             self.after(0, lambda m=msg: toast(self, m, "warning"))
             self.after(400, self._prompt_login_on_start)
 
@@ -370,17 +401,24 @@ class App(tk.Tk):
             if not self._auth or not self._auth.get("token"):
                 return
             me = license_api.verify_entitlement(self._auth["token"])
-            self._balance = me.get("balance")
-            self._auth = license_api.save_auth(
-                self._auth["token"],
-                me.get("name") or self._auth.get("user_name"),
-                self._balance,
-                me.get("email"),
-            )
-            self.after(0, self._refresh_auth_ui)
-        except Exception:
-            license_api.clear_auth()
-            self.after(0, lambda: self._set_authenticated(False))
+            self._last_balance_sync = time.monotonic()
+            self.after(0, lambda m=me: self.apply_me_snapshot(m))
+        except Exception as e:
+            if self._is_auth_denied(e):
+                license_api.clear_auth()
+                self.after(0, lambda: self._set_authenticated(False))
+            # 일시적 오류는 무시 — 다음 동기화 때 다시 시도
+
+    def _on_focus_sync(self, event) -> None:
+        """앱 창이 다시 포커스를 얻으면 잔액을 재동기화 (최소 30초 간격)."""
+        if event.widget is not self:
+            return
+        if not (self._authenticated and self._auth and self._auth.get("token")):
+            return
+        if self._busy or time.monotonic() - self._last_balance_sync < 30:
+            return
+        self._last_balance_sync = time.monotonic()
+        threading.Thread(target=self._refresh_balance_worker, daemon=True).start()
 
     def on_login(self) -> None:
         if self._busy:

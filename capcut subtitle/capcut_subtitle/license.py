@@ -174,23 +174,25 @@ def fetch_me(token: str) -> dict:
 
 
 def verify_entitlement(token: str) -> dict:
-    """수강·구글 권한 확인. 실패 시 RuntimeError (payload.code 포함)."""
+    """수강·구글 권한 확인. 실패 시 RuntimeError (payload.code / status 포함)."""
     try:
         return fetch_me(token)
     except RuntimeError as e:
         payload = getattr(e, "payload", None) or {}
         code = payload.get("code")
         if code == "not_enrolled":
-            raise RuntimeError(
+            err = RuntimeError(
                 payload.get("error")
-                or "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다."
-            ) from e
-        if code == "google_required":
-            raise RuntimeError(
+                or "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다.")
+        elif code == "google_required":
+            err = RuntimeError(
                 payload.get("error")
-                or "구글 로그인 계정만 이용할 수 있습니다."
-            ) from e
-        raise
+                or "구글 로그인 계정만 이용할 수 있습니다.")
+        else:
+            raise
+        err.status = getattr(e, "status", 403)  # type: ignore[attr-defined]
+        err.payload = payload  # type: ignore[attr-defined]
+        raise err from e
 
 
 def consume(token: str, minutes: int, job_id: str) -> dict:
