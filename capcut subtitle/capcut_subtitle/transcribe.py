@@ -148,17 +148,11 @@ class Transcriber:
         progress(f"인식 언어: {info.language} (확률 {info.language_probability:.0%})")
         lines = _split_lines_from_segments(all_segments, max_words_per_line)
         progress("자막 타이밍 정밀 보정 중...")
-        return _close_gaps(_refine_with_vad(lines, audio))
+        return _close_gaps(_refine_speech_boundaries(lines, audio))
 
 
 def _close_gaps(lines: list[SubtitleLine]) -> list[SubtitleLine]:
-    """연속 자막 사이 간격을 0으로 맞춘다.
-
-    각 자막의 끝 시각을 다음 자막의 시작 시각까지 연장해,
-    화면에서 자막이 끊기지 않고 다음 자막이 뜰 때까지 유지되게 한다.
-    단, 다음 자막까지 2초 넘게 침묵이 이어지면 2초까지만 유지해
-    말이 없는 장면에 옛 자막이 계속 남아있지 않게 한다.
-    """
+    """표시 유지용 — start는 건드리지 않고 end만 다음 자막까지(최대 2초) 연장."""
     if len(lines) < 2:
         return lines
     max_hold_us = 2_000_000
@@ -243,120 +237,300 @@ def _split_lines_from_segments(segments: list, max_words_per_line: int) -> list[
     return [l for l in lines if l.text.strip()]
 
 
+# ── 발화 경계 스냅 (에너지 + VAD) ──────────────────────────────────
+
+_FRAME_SEC = 0.02  # 20ms
+_FRAME = int(_FRAME_SEC * SR)
+_HOP = _FRAME // 2
+
+
+def _rms_envelope(audio: np.ndarray) -> np.ndarray:
+    """20ms 프레임 / 10ms hop RMS envelope."""
+    if len(audio) < _FRAME:
+        return np.array([float(np.sqrt(np.mean(audio ** 2)))], dtype=np.float64)
+    n = 1 + (len(audio) - _FRAME) // _HOP
+    env = np.empty(n, dtype=np.float64)
+    for i in range(n):
+        a = i * _HOP
+        chunk = audio[a:a + _FRAME]
+        env[i] = float(np.sqrt(np.mean(chunk ** 2)))
+    return env
+
+
+def _frame_to_sec(i: int) -> float:
+    return (i * _HOP + _FRAME / 2) / SR
+
+
+def _sec_to_frame(t: float, n: int) -> int:
+    return max(0, min(n - 1, int(round(t * SR / _HOP))))
+
+
+def _local_thresholds(env: np.ndarray, lo_f: int, hi_f: int) -> tuple[float, float]:
+    """구간 상대 임계값: (침묵, 발화)."""
+    slice_ = env[lo_f:hi_f + 1]
+    if len(slice_) == 0:
+        return 0.0, 0.0
+    floor = float(np.percentile(slice_, 20))
+    peak = float(np.percentile(slice_, 90))
+    span = max(peak - floor, 1e-6)
+    silence = floor + 0.15 * span
+    speech = floor + 0.35 * span
+    return silence, speech
+
+
+def find_onset(audio: np.ndarray, lo: float, hi: float,
+               env: np.ndarray | None = None) -> float | None:
+    """lo~hi에서 침묵→발화로 올라가는 첫 지점(초).
+
+    창 시작이 이미 발화면, 침묵으로 떨어진 뒤의 다음 온셋을 찾는다.
+    """
+    if hi <= lo:
+        return None
+    if env is None:
+        env = _rms_envelope(audio)
+    lo_f, hi_f = _sec_to_frame(lo, len(env)), _sec_to_frame(hi, len(env))
+    if hi_f <= lo_f:
+        return None
+    silence, speech = _local_thresholds(env, lo_f, hi_f)
+    i = lo_f
+    # 이미 발화 중이면 침묵까지 스킵한 뒤 다음 rise를 찾음
+    if env[lo_f] >= speech:
+        while i <= hi_f and env[i] >= silence * 0.9:
+            i += 1
+        if i > hi_f:
+            return None
+    below = True
+    run = 0
+    for j in range(i, hi_f + 1):
+        if env[j] < silence:
+            below = True
+            run = 0
+            continue
+        if below and env[j] >= speech:
+            run += 1
+            if run >= 2:
+                return _frame_to_sec(j - 1)
+        elif env[j] >= speech:
+            run += 1
+        else:
+            run = 0
+    return None
+
+
+def find_offset(audio: np.ndarray, lo: float, hi: float,
+                env: np.ndarray | None = None) -> float | None:
+    """lo~hi에서 발화→침묵으로 떨어지는 마지막 지점(초)."""
+    if hi <= lo:
+        return None
+    if env is None:
+        env = _rms_envelope(audio)
+    lo_f, hi_f = _sec_to_frame(lo, len(env)), _sec_to_frame(hi, len(env))
+    if hi_f <= lo_f:
+        return None
+    silence, speech = _local_thresholds(env, lo_f, hi_f)
+    last = None
+    above = env[lo_f] >= speech
+    run = 0
+    for i in range(lo_f, hi_f + 1):
+        if env[i] >= speech:
+            above = True
+            run = 0
+            continue
+        if above and env[i] < silence:
+            run += 1
+            if run >= 2:
+                last = _frame_to_sec(i - 1)
+                above = False
+                run = 0
+        else:
+            run = 0
+    return last
+
+
+def _energy_valley(audio: np.ndarray, center: float, half: float = 0.3,
+                   env: np.ndarray | None = None) -> float:
+    """center ± half 에서 RMS가 가장 낮은 시각(연속 발화 줄바꿈용)."""
+    if env is None:
+        env = _rms_envelope(audio)
+    lo_f = _sec_to_frame(center - half, len(env))
+    hi_f = _sec_to_frame(center + half, len(env))
+    if hi_f <= lo_f:
+        return center
+    i = lo_f + int(np.argmin(env[lo_f:hi_f + 1]))
+    return _frame_to_sec(i)
+
+
+def _in_speech(t: float, regions: list[tuple[float, float]], pad: float = 0.0) -> bool:
+    return any(rs - pad <= t < re_ + pad for rs, re_ in regions)
+
+
+def _nearest_region(t: float, regions: list[tuple[float, float]]) -> tuple[float, float] | None:
+    if not regions:
+        return None
+    return min(regions, key=lambda r: 0.0 if r[0] <= t <= r[1] else min(abs(t - r[0]), abs(t - r[1])))
+
+
 def _detect_speech_regions(audio: np.ndarray) -> list[tuple[float, float]]:
-    """Silero VAD로 실제 발화 구간(초 단위)을 검출."""
+    """Silero VAD로 실제 발화 구간(초 단위)을 검출. pad=0으로 경계를 넓히지 않음."""
     from faster_whisper.vad import VadOptions, get_speech_timestamps
     opts = VadOptions(
-        threshold=0.35,
+        threshold=0.4,
         min_speech_duration_ms=100,
         min_silence_duration_ms=200,
-        speech_pad_ms=40,
+        speech_pad_ms=0,
     )
     regions = get_speech_timestamps(audio, vad_options=opts)
     return [(r["start"] / SR, r["end"] / SR) for r in regions]
 
 
-def _refine_with_vad(lines: list[SubtitleLine],
-                     audio: np.ndarray) -> list[SubtitleLine]:
-    """자막 타이밍을 실제 음성 경계에 스냅.
+def _refine_speech_boundaries(lines: list[SubtitleLine],
+                              audio: np.ndarray) -> list[SubtitleLine]:
+    """각 자막 start/end를 타임라인 오디오의 실제 발화 온셋·오프셋에 스냅.
 
-    Whisper의 segment 타이밍은 발화보다 일찍 시작하거나 늦게 끝나는 오차가
-    ±0.2~0.5초 수준으로 흔하다. VAD가 검출한 발화 구간을 기준으로:
-    - 침묵에서 시작하는 자막 → 발화 시작점으로 당김
-    - 발화가 끝났는데 남아있는 자막 → 발화 끝점으로 자름
-    - 발화가 전혀 없는 구간의 자막(환각) → 제거
+    Whisper 시각은 탐색 창 힌트만 제공한다. 시작을 Whisper보다 앞으로 당기지 않는다.
     """
     if not lines:
         return lines
     try:
         regions = _detect_speech_regions(audio)
     except Exception:
-        return lines  # VAD 실패 시 원본 타이밍 유지
+        regions = []
+
+    env = _rms_envelope(audio)
+    audio_dur = len(audio) / SR
+    if not regions:
+        regions = _regions_from_energy(audio, env, audio_dur)
     if not regions:
         return lines
 
     refined: list[SubtitleLine] = []
     prev_end = 0.0
-    for line in lines:
-        s, e = line.start_us / US, line.end_us / US
-        ov = [(rs, re_) for rs, re_ in regions if re_ > s and rs < e]
+
+    for idx, line in enumerate(lines):
+        s = line.start_us / US
+        e = line.end_us / US
+        next_s = lines[idx + 1].start_us / US if idx + 1 < len(lines) else audio_dur
+
+        win_lo = max(prev_end, s - 0.15, 0.0)
+        win_hi = min(e + 0.25, audio_dur)
+
+        ov = [(rs, re_) for rs, re_ in regions if re_ > win_lo and rs < win_hi]
         if not ov:
-            # 자막 구간 자체에 발화가 없으면 근처(±0.3초)까지 확대 탐색
             ov = [(rs, re_) for rs, re_ in regions
                   if re_ > s - 0.3 and rs < e + 0.3]
         if not ov:
-            continue  # 무성 구간 환각 → 제거
+            continue
 
-        # 직전 발화의 꼬리(0.2초 미만)만 살짝 걸친 경우, 그 구간은
-        # 이전 자막의 발화이므로 다음 구간의 온셋을 기준으로 삼는다
-        if len(ov) > 1 and ov[0][1] - s < 0.2:
-            ov = ov[1:]
-        # 다음 발화의 머리(0.2초 미만)만 살짝 걸친 경우도 마찬가지로 제외
-        if len(ov) > 1 and e - ov[-1][0] < 0.2:
-            ov = ov[:-1]
+        nearest = _nearest_region(s, ov) or ov[0]
+        if len(ov) > 1 and nearest[1] - max(win_lo, s) < 0.15 and nearest is ov[0]:
+            nearest = ov[1]
 
-        onset, offset = ov[0][0], ov[-1][1]
-        new_s, new_e = s, e
-        if onset > s:
-            new_s = onset          # 자막이 음성보다 일찍 뜸 → 온셋으로 당김
-        elif onset >= prev_end and s - onset <= 1.0:
-            new_s = onset          # 새 온셋인데 자막이 늦음 → 온셋으로 확장
-        if offset < e:
-            new_e = offset         # 발화가 끝났는데 자막이 남음 → 끝 스냅
+        rs, re_ = nearest
+        # 온셋: whisper 시각 근처부터 탐색 (region 시작에 묶이지 않음)
+        onset_lo = max(win_lo, prev_end)
+        onset_hi = min(win_hi, max(e + 0.1, rs + 0.5), audio_dur)
+        onset = find_onset(audio, onset_lo, max(onset_lo + 0.05, onset_hi), env)
+
+        if not _in_speech(s, regions, pad=0.02):
+            if onset is not None and onset >= s - 0.02:
+                new_s = max(onset, prev_end)
+            else:
+                onset2 = find_onset(audio, max(s, prev_end), min(e + 0.6, audio_dur), env)
+                new_s = max(onset2, prev_end) if onset2 is not None else max(s, prev_end)
+        else:
+            if onset is not None and onset > s:
+                new_s = onset
+            else:
+                new_s = max(s, prev_end)
+
+        new_s = max(new_s, prev_end)
+
+        off_lo = max(new_s + 0.1, s)
+        off_hi = min(win_hi, re_ + 0.05, next_s, audio_dur)
+        offset = find_offset(audio, off_lo, max(off_lo + 0.05, off_hi), env)
+
+        if offset is None:
+            new_e = min(max(e, new_s + 0.2), re_ if re_ > new_s else e, next_s)
+        else:
+            new_e = min(max(offset, new_s + 0.2), next_s)
+
+        if idx > 0 and refined:
+            prev = refined[-1]
+            mid = (prev.end_us / US + s) / 2
+            if (new_s - prev.end_us / US) < 0.08 and _in_speech(mid, regions):
+                valley = _energy_valley(audio, s, 0.3, env)
+                valley = max(valley, prev.start_us / US + 0.15)
+                if prev.end_us / US - 0.05 <= valley <= s + 0.3:
+                    if valley < s:
+                        prev.end_us = int(valley * US)
+                        new_s = s
+                    else:
+                        prev.end_us = int(valley * US)
+                        new_s = max(s, valley)
+                    new_s = max(new_s, prev.end_us / US)
+
         new_e = max(new_e, new_s + 0.2)
-        line.start_us, line.end_us = int(new_s * US), int(new_e * US)
+        if new_e > next_s:
+            new_e = max(new_s + 0.05, next_s)
+
+        line.start_us = int(new_s * US)
+        line.end_us = int(new_e * US)
         refined.append(line)
         prev_end = new_e
 
-    # 붙어있는 두 자막의 경계가 실제 침묵 구간과 어긋나면 경계를 침묵으로 이동.
-    # (이어붙인 녹음 등에서 Whisper가 침묵을 사이에 둔 두 발화를 연속으로
-    # 착각해 경계를 최대 1초가량 앞당기는 오차를 보정)
     gaps = [(regions[k][1], regions[k + 1][0])
             for k in range(len(regions) - 1)
-            if regions[k + 1][0] - regions[k][1] >= 0.25]
+            if regions[k + 1][0] - regions[k][1] >= 0.2]
     for i in range(len(refined) - 1):
         a, b = refined[i], refined[i + 1]
         ae, bs = a.end_us / US, b.start_us / US
         if bs - ae > 0.05:
-            continue  # 이미 떨어져 있는 자막은 그대로
+            continue
         cand = [(gs, ge) for gs, ge in gaps
-                if a.start_us / US + 0.2 < gs and ge < b.end_us / US - 0.2
-                and abs(gs - ae) <= 1.2]
+                if a.start_us / US + 0.15 < gs and ge < b.end_us / US - 0.15
+                and abs(gs - ae) <= 1.0]
         if not cand:
             continue
         gs, ge = min(cand, key=lambda g: abs(g[0] - ae))
         a.end_us = int(gs * US)
-        b.start_us = int(ge * US)
+        if ge >= bs - 0.05:
+            b.start_us = int(ge * US)
 
-    # 연속 발화 안의 경계(사이에 침묵이 없는 줄바꿈)는 주변 ±0.25초에서
-    # 에너지가 가장 낮은 지점(어절 사이의 짧은 숨)으로 옮겨 미세 오차를 줄인다
-    frame = int(0.02 * SR)  # 20ms
-    for i in range(len(refined) - 1):
-        a, b = refined[i], refined[i + 1]
-        ae, bs = a.end_us / US, b.start_us / US
-        if bs - ae > 0.05:
-            continue
-        if not any(rs + 0.2 < bs < re_ - 0.2 for rs, re_ in regions):
-            continue  # 침묵 경계는 위에서 이미 처리됨
-        lo = max(int((bs - 0.25) * SR), int(a.start_us / US * SR) + frame)
-        hi = min(int((bs + 0.25) * SR), int(b.end_us / US * SR) - frame)
-        if hi - lo < frame * 2:
-            continue
-        best_t, best_rms = bs, None
-        for p in range(lo, hi - frame, frame // 2):
-            rms = float(np.sqrt(np.mean(audio[p:p + frame] ** 2)))
-            if best_rms is None or rms < best_rms:
-                best_rms, best_t = rms, (p + frame / 2) / SR
-        a.end_us = int(best_t * US)
-        b.start_us = int(best_t * US)
-
-    # 겹침 제거 및 최소 표시시간 보정 (간격 0은 호출부 _close_gaps에서 처리)
     for i, line in enumerate(refined):
-        if line.end_us - line.start_us < 500_000:
-            line.end_us = line.start_us + 500_000
+        if line.end_us - line.start_us < 200_000:
+            line.end_us = line.start_us + 200_000
         if i + 1 < len(refined) and line.end_us > refined[i + 1].start_us:
             line.end_us = refined[i + 1].start_us
     return [l for l in refined if l.end_us > l.start_us]
+
+
+def _regions_from_energy(audio: np.ndarray, env: np.ndarray,
+                         audio_dur: float) -> list[tuple[float, float]]:
+    """VAD 실패 시 RMS로 대략적인 발화 구간을 만든다."""
+    if len(env) == 0:
+        return []
+    silence, speech = _local_thresholds(env, 0, len(env) - 1)
+    regions: list[tuple[float, float]] = []
+    in_sp = False
+    start = 0.0
+    for i, v in enumerate(env):
+        t = _frame_to_sec(i)
+        if not in_sp and v >= speech:
+            in_sp = True
+            start = t
+        elif in_sp and v < silence:
+            if t - start >= 0.08:
+                regions.append((start, t))
+            in_sp = False
+    if in_sp and audio_dur - start >= 0.08:
+        regions.append((start, audio_dur))
+    return regions
+
+
+# 하위 호환 별칭
+def _refine_with_vad(lines: list[SubtitleLine],
+                     audio: np.ndarray) -> list[SubtitleLine]:
+    return _refine_speech_boundaries(lines, audio)
 
 
 def _split_lines(words: list, max_words_per_line: int) -> list[SubtitleLine]:

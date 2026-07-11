@@ -31,8 +31,6 @@ const MODEL_NAME = 'faster-whisper-large-v3'
 const RELEASE_DOCS = [
   { src: path.join(CAPCUT_DIR, '사용법.txt'), dest: '사용법.txt', required: true },
   { src: path.join(CAPCUT_DIR, '사용법.md'), dest: '사용법.md', required: true },
-  { src: path.join(CAPCUT_DIR, '도각 자막패치 사용법 v1.0.0.pdf'), dest: '타닥싱크 사용법.pdf', required: false },
-  { src: path.join(CAPCUT_DIR, '타닥싱크 사용법.pdf'), dest: '타닥싱크 사용법.pdf', required: false },
 ]
 
 function copyReleaseDocs() {
