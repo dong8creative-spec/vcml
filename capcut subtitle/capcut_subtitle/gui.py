@@ -16,7 +16,7 @@ from . import __version__, capcut, inject, theme
 from . import license as license_api
 from . import srt as srt_io
 from .account_ui import (CoinPurchaseDialog, LoginDialog, MemberInfoDialog,
-                         ReviewPromptDialog)
+                         ReviewGuideDialog)
 from .playback import Player
 from .transcribe import (LANGUAGE_CHOICES, MODEL, SubtitleLine,
                          Transcriber, merge_lines, split_line)
@@ -71,8 +71,11 @@ class App(tk.Tk):
         self._review_bonus_granted: bool | None = None  # None=미확인
         self._has_review: bool | None = None
         self._course_id: str | None = None
+        self._coin_courses: list = []
+        self._smartstore_review: dict = {}
+        self._pending_actions: list[dict] = []
+        self._shown_inbox_ids: set[str] = set()
         self._community_links: dict[str, str] = {}
-        self._review_prompt_shown = False  # 후기 유도 팝업은 세션당 1회
 
         self._build_ui()
         self._refresh_auth_ui()
@@ -99,7 +102,7 @@ class App(tk.Tk):
         # 계정 / 코인
         auth_frame = ttk.Frame(root)
         auth_frame.pack(fill="x", pady=(0, 6))
-        self.auth_var = tk.StringVar(value="로그인 필요")
+        self.auth_var = tk.StringVar(value="로그인이 필요해요")
         ttk.Label(auth_frame, textvariable=self.auth_var,
                  foreground=theme.TEXT_MUTED).pack(side="left")
         self.login_btn = theme.RoundedButton(
@@ -115,9 +118,9 @@ class App(tk.Tk):
         self.myinfo_btn = theme.RoundedButton(
             auth_frame, "내 정보", command=self.on_open_member_info,
             fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK, min_width=90)
-        self.review_btn = theme.RoundedButton(
-            auth_frame, "후기 쓰고 +100코인", command=self.on_open_review,
-            min_width=130)
+        self.review_guide_btn = theme.RoundedButton(
+            auth_frame, "후기 안내", command=self.on_open_review_guide,
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK, min_width=90)
 
         # 미로그인 게이트
         self.gate_frame = ttk.Frame(root, padding=24)
@@ -269,7 +272,7 @@ class App(tk.Tk):
         self._status_frame.pack(fill="x", pady=(8, 0), side="bottom")
         self.progress = ttk.Progressbar(self._status_frame, mode="determinate", maximum=1.0)
         self.progress.pack(side="left", fill="x", expand=True)
-        self.status_var = tk.StringVar(value="구글 로그인 후 이용할 수 있습니다.")
+        self.status_var = tk.StringVar(value="구글 로그인 후 이용할 수 있어요.")
         ttk.Label(self._status_frame, textvariable=self.status_var).pack(side="left", padx=8)
 
     # ------------------------------------------------------------ 프로젝트
@@ -286,12 +289,12 @@ class App(tk.Tk):
         if self.projects:
             self.proj_tree.selection_set("0")
         else:
-            self.set_status("캡컷 프로젝트를 찾지 못했습니다. 캡컷에서 프로젝트를 한 번 열어주세요.")
+            self.set_status("캡컷 프로젝트를 찾지 못했어요. 캡컷에서 프로젝트를 한 번 열어봐 주세요.")
 
     def selected_project(self) -> capcut.Project | None:
         sel = self.proj_tree.selection()
         if not sel:
-            toast(self, "먼저 프로젝트를 선택하세요.", "warning")
+            toast(self, "프로젝트를 먼저 선택해 주세요.", "warning")
             return None
         return self.projects[int(sel[0])]
 
@@ -308,7 +311,7 @@ class App(tk.Tk):
         for b in (self.gen_btn, self.insert_btn, self.login_btn,
                   self.export_btn, self.import_btn, self.play_btn,
                   self.add_row_btn, self.refresh_btn, self.logout_btn,
-                  self.myinfo_btn, self.coin_btn, self.review_btn,
+                  self.myinfo_btn, self.coin_btn, self.review_guide_btn,
                   self.instagram_btn, self.chat_btn, self.website_btn):
             try:
                 b.configure(state=state)
@@ -327,7 +330,7 @@ class App(tk.Tk):
     def _require_auth(self, action: str = "이 기능") -> bool:
         if self._is_logged_in():
             return True
-        toast(self, "로그인이 필요합니다.", "warning")
+        toast(self, "로그인이 필요해요. 구글 계정으로 로그인해 주세요.", "warning")
         self._apply_auth_lock()
         self.after(200, self._prompt_login_on_start)
         return False
@@ -371,22 +374,26 @@ class App(tk.Tk):
             self._review_bonus_granted = None
             self._has_review = None
             self._course_id = None
+            self._coin_courses = []
+            self._smartstore_review = {}
+            self._pending_actions = []
+            self._shown_inbox_ids = set()
             self._community_links = {}
         self._refresh_auth_ui()
         self._refresh_community_ui()
         self._apply_auth_lock()
         if ok:
             self.refresh_projects()
-            self.set_status("프로젝트를 선택하고 [① 자막 생성]을 누르세요.")
+            self.set_status("프로젝트를 선택하고 [① 자막 생성]을 눌러 주세요.")
         else:
-            self.set_status("구글 로그인 후 이용할 수 있습니다.")
+            self.set_status("구글 로그인 후 이용할 수 있어요.")
 
     def _refresh_auth_ui(self) -> None:
         self.login_btn.pack_forget()
         self.logout_btn.pack_forget()
         self.myinfo_btn.pack_forget()
         self.coin_btn.pack_forget()
-        self.review_btn.pack_forget()
+        self.review_guide_btn.pack_forget()
         if self._is_logged_in():
             name = self._auth.get("user_name") or "수강생"
             bal = self._balance
@@ -395,13 +402,13 @@ class App(tk.Tk):
             self.logout_btn.pack(side="right")
             self.myinfo_btn.pack(side="right", padx=(0, 6))
             self.coin_btn.pack(side="right", padx=(0, 6))
-            if self._review_cta_available():
-                self.review_btn.pack(side="right", padx=(0, 6))
+            if self._review_guide_available():
+                self.review_guide_btn.pack(side="right", padx=(0, 6))
         elif self._auth_verifying:
             self.auth_var.set("로그인 확인 중…")
             self.login_btn.pack(side="right")
         else:
-            self.auth_var.set("로그인 필요 — 캡컷 초신속 스탠다드 수강생 전용")
+            self.auth_var.set("로그인이 필요해요 — 캡컷 초신속 스탠다드 수강생만 이용할 수 있어요")
             self.login_btn.pack(side="right")
 
     def apply_me_snapshot(self, me: dict) -> None:
@@ -416,6 +423,9 @@ class App(tk.Tk):
             self._has_review = bool(me.get("has_review"))
         if me.get("course_id"):
             self._course_id = me.get("course_id")
+        self._coin_courses = me.get("coin_courses") or []
+        self._smartstore_review = me.get("smartstore_review") or {}
+        self._pending_actions = me.get("pending_actions") or []
         self._community_links = {
             "instagram": me.get("community_instagram_url") or "",
             "chat": me.get("community_chat_url") or "",
@@ -429,6 +439,7 @@ class App(tk.Tk):
         )
         self._refresh_auth_ui()
         self._refresh_community_ui()
+        self._handle_pending_actions()
 
     def _refresh_community_ui(self) -> None:
         for btn in (self.instagram_btn, self.chat_btn, self.website_btn):
@@ -448,15 +459,52 @@ class App(tk.Tk):
         if key == "website" and not url:
             url = "https://vcml.kr"
         if not url:
-            toast(self, "아직 연결된 링크가 없습니다.", "warning")
+            toast(self, "아직 연결된 링크가 없어요.", "warning")
             return
         webbrowser.open(url)
 
-    def _review_completed(self) -> bool:
-        return bool(self._review_bonus_granted or self._has_review)
+    def _pending_review_courses(self) -> list:
+        return [c for c in (self._coin_courses or []) if not c.get("review_bonus_granted")]
 
-    def _review_cta_available(self) -> bool:
-        return self._review_bonus_granted is False and not self._has_review
+    def _review_guide_available(self) -> bool:
+        smart_status = (self._smartstore_review or {}).get("status")
+        smart_available = smart_status in ("none", "pending", "rejected")
+        return bool(self._pending_review_courses()) or smart_available
+
+    def _handle_pending_actions(self) -> None:
+        if not self._is_logged_in():
+            return
+        for action in self._pending_actions:
+            msg_id = str(action.get("id") or "")
+            if not msg_id or msg_id in self._shown_inbox_ids:
+                continue
+            self._shown_inbox_ids.add(msg_id)
+            typ = action.get("type")
+            title = action.get("title") or "알림"
+            body = action.get("body") or ""
+            if typ == "smartstore_rewrite":
+                confirm(
+                    self,
+                    title,
+                    body or "스마트스토어에서 작성하신 후기를 아직 확인하지 못했어요. "
+                    "후기를 작성해 주신 후 다시 「작성 완료」를 눌러 주세요.",
+                    ok_text="확인",
+                    cancel_text="닫기",
+                    kind="warning",
+                )
+                self._ack_inbox_async([msg_id])
+            elif typ == "smartstore_granted":
+                toast(self, body or "스마트스토어 후기 보너스가 지급됐어요!", "success", duration=3600)
+                self._ack_inbox_async([msg_id])
+
+    def _ack_inbox_async(self, message_ids: list[str]) -> None:
+        token = self._auth.get("token") if self._auth else None
+        if not token or not message_ids:
+            return
+        threading.Thread(
+            target=lambda: license_api.ack_inbox(token, message_ids),
+            daemon=True,
+        ).start()
 
     @staticmethod
     def _is_auth_denied(e: Exception) -> bool:
@@ -506,9 +554,9 @@ class App(tk.Tk):
             stored = license_api.load_auth()
             if stored and stored.get("token") == token:
                 license_api.clear_auth()
-            msg = str(err) if str(err) and not no_token else "세션이 만료되었습니다. 다시 로그인해 주세요."
+            msg = str(err) if str(err) and not no_token else "세션이 만료됐어요. 다시 로그인해 주세요."
         else:
-            msg = "서버에 연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 로그인해 주세요."
+            msg = "서버에 연결하지 못했어요. 인터넷 연결을 확인한 뒤 다시 로그인해 주세요."
         self._set_authenticated(False)
         toast(self, msg, "warning")
         self.after(400, self._prompt_login_on_start)
@@ -532,7 +580,7 @@ class App(tk.Tk):
                 stored = license_api.load_auth()
                 if stored and stored.get("token") == token:
                     license_api.clear_auth()
-                msg = str(e) if str(e) else "세션이 만료되었습니다. 다시 로그인해 주세요."
+                msg = str(e) if str(e) else "세션이 만료됐어요. 다시 로그인해 주세요."
                 self.after(0, lambda: self._set_authenticated(False))
                 self.after(0, lambda m=msg: toast(self, m, "warning"))
                 self.after(400, self._prompt_login_on_start)
@@ -565,7 +613,7 @@ class App(tk.Tk):
         self._bump_session_epoch()
         self._set_authenticated(True, auth, auth.get("balance"))
         self._last_balance_sync = time.monotonic()
-        toast(self, "로그인되었습니다.", "success")
+        toast(self, "로그인됐어요!", "success")
         # 후기 보너스 상태 등 계정 정보를 백그라운드로 동기화
         threading.Thread(target=self._refresh_balance_worker, daemon=True).start()
 
@@ -573,7 +621,7 @@ class App(tk.Tk):
         self._bump_session_epoch()
         license_api.clear_auth()
         self._set_authenticated(False)
-        toast(self, "로그아웃되었습니다.", "info")
+        toast(self, "로그아웃됐어요.", "info")
         self.after(200, self._prompt_login_on_start)
 
     def _prompt_login_on_start(self) -> None:
@@ -591,24 +639,10 @@ class App(tk.Tk):
             return
         CoinPurchaseDialog(self, self)
 
-    def on_open_review(self) -> None:
-        """마이페이지 후기 작성 화면을 브라우저로 연다."""
-        if not self._require_auth("후기 작성"):
+    def on_open_review_guide(self) -> None:
+        if not self._require_auth("후기 안내"):
             return
-        webbrowser.open(license_api.review_write_url(self._course_id))
-        # 후기 작성 후 앱으로 돌아오면 바로 잔액이 갱신되도록 동기화 쿨다운 해제
-        self._last_balance_sync = 0.0
-        toast(self, "브라우저에서 별점 5점과 후기를 남겨주세요.\n작성 후 앱으로 돌아오면 100코인이 반영됩니다.",
-              "info", duration=3600)
-
-    def _maybe_prompt_review(self) -> None:
-        """자막 생성 성공 후, 후기 미작성자에게 세션당 1회만 후기 유도."""
-        if self._review_prompt_shown or not self._review_cta_available():
-            return
-        if not self._is_logged_in():
-            return
-        self._review_prompt_shown = True
-        ReviewPromptDialog(self, self)
+        ReviewGuideDialog(self, self)
 
     # ------------------------------------------------------------- 생성
     def on_generate(self) -> None:
@@ -629,18 +663,18 @@ class App(tk.Tk):
         token = self._auth["token"] if self._auth else None
         consumed = False
         try:
-            self.set_status(f"[{project.name}] 타임라인 오디오 분석 중...")
+            self.set_status(f"[{project.name}] 타임라인 오디오를 분석하고 있어요...")
             res = capcut.build_timeline_audio(project)
             if res.missing_files:
                 n = len(res.missing_files)
                 self.after(0, lambda n=n: toast(
-                    self, f"원본 {n}개를 찾지 못해 해당 구간은 제외됩니다.", "warning"))
+                    self, f"원본 파일 {n}개를 찾지 못해 해당 구간은 제외했어요.", "warning"))
             if not res.used_files:
-                self.set_status("인식할 오디오가 없습니다.")
+                self.set_status("인식할 오디오를 찾지 못했어요. 프로젝트의 음성 파일을 확인해 주세요.")
                 return
             minutes = license_api.minutes_from_audio(len(res.audio), SR)
             job_id = license_api.new_job_id()
-            self.set_status(f"코인 {minutes}개 차감 중… (약 {minutes}분)")
+            self.set_status(f"코인 {minutes}개를 차감하고 있어요… (약 {minutes}분)")
             try:
                 consumed_res = license_api.consume(token, minutes, job_id)
             except Exception as e:
@@ -649,10 +683,10 @@ class App(tk.Tk):
                     bal = payload.get("balance", 0)
                     need = payload.get("needed", minutes)
                     self.after(0, lambda: toast(
-                        self, f"코인이 부족합니다. (보유 {bal} / 필요 {need})", "error"))
+                        self, f"코인이 조금 부족해요. (보유 {bal}개 / 필요 {need}개) 충전 후 다시 시도해 주세요.", "error"))
                     # 충전·후기 안내 화면으로 바로 연결
                     self.after(600, self.on_open_coin_purchase)
-                    self.set_status("코인 부족")
+                    self.set_status("코인이 부족해요")
                     return
                 if self._is_auth_denied(e):
                     license_api.clear_auth()
@@ -681,10 +715,9 @@ class App(tk.Tk):
             self.set_ratio(1.0)
             bal_txt = f" · 잔액 {self._balance}" if self._balance is not None else ""
             self.set_status(
-                f"자막 {len(lines)}개 생성 완료 (코인 {minutes}개 사용{bal_txt}) — "
-                f"확인 후 [② 캡컷 프로젝트에 삽입]"
+                f"자막 {len(lines)}개를 생성했어요! (코인 {minutes}개 사용{bal_txt}) — "
+                f"확인 후 [② 캡컷 프로젝트에 삽입]을 눌러 주세요"
             )
-            self.after(800, self._maybe_prompt_review)
         except Exception as e:
             traceback.print_exc()
             if consumed and job_id and token:
@@ -700,14 +733,14 @@ class App(tk.Tk):
             if self._is_auth_denied(e):
                 license_api.clear_auth()
                 self.after(0, lambda: self._set_authenticated(False))
-                msg = str(e) if str(e) else "기기 연동이 만료되었습니다. 다시 로그인해 주세요."
+                msg = str(e) if str(e) else "기기 연동이 만료됐어요. 다시 로그인해 주세요."
                 self.after(0, lambda m=msg: toast(self, m, "warning"))
                 self.after(400, self._prompt_login_on_start)
-                self.set_status("로그인 필요")
+                self.set_status("로그인이 필요해요")
                 return
-            msg = str(e) if isinstance(e, RuntimeError) and str(e) else "자막 생성에 실패했습니다."
+            msg = str(e) if isinstance(e, RuntimeError) and str(e) else "자막 생성에 실패했어요. 잠시 후 다시 시도해 주세요."
             self.after(0, lambda m=msg: toast(self, m, "error"))
-            self.set_status("자막 생성 실패")
+            self.set_status("자막 생성에 실패했어요")
         finally:
             self.after(0, lambda: self._set_busy(False))
 
@@ -747,7 +780,7 @@ class App(tk.Tk):
                 self.lines[i].start_us = _parse_sec(sv.get())
                 self.lines[i].end_us = _parse_sec(ev.get())
             except ValueError:
-                toast(self, "시간 형식이 올바르지 않습니다.", "warning")
+                toast(self, "시간 형식이 올바르지 않아요. 예: 1:23.45", "warning")
 
         start_entry.bind("<Return>", commit_time)
         start_entry.bind("<FocusOut>", commit_time)
@@ -872,7 +905,7 @@ class App(tk.Tk):
         if not self._require_auth("미리듣기"):
             return
         if self._audio is None:
-            toast(self, "먼저 [① 자막 생성]을 실행하세요.", "info")
+            toast(self, "먼저 [① 자막 생성]을 실행해 주세요.", "info")
             return
         self._stop_playback()
         line = self.lines[idx]
@@ -884,7 +917,7 @@ class App(tk.Tk):
         if not self._require_auth("재생"):
             return
         if self._audio is None:
-            toast(self, "먼저 [① 자막 생성]을 실행하세요.", "info")
+            toast(self, "먼저 [① 자막 생성]을 실행해 주세요.", "info")
             return
         self._start_playback(self.lines[idx].start_us)
 
@@ -895,7 +928,7 @@ class App(tk.Tk):
             self._stop_playback()
             return
         if self._audio is None:
-            toast(self, "먼저 [① 자막 생성]을 실행하세요.", "info")
+            toast(self, "먼저 [① 자막 생성]을 실행해 주세요.", "info")
             return
         self._start_playback(0)
 
@@ -966,13 +999,13 @@ class App(tk.Tk):
             return
         self._sync_all_text()
         if not self.lines:
-            toast(self, "먼저 자막을 생성하거나 SRT를 불러오세요.", "warning")
+            toast(self, "삽입할 자막이 아직 없어요. 자막을 생성하거나 SRT 파일을 불러와 주세요.", "warning")
             return
         # 캡컷이 닫혀 있으면 확인 없이 바로 삽입, 열려 있을 때만 경고
         if capcut.is_capcut_running():
             msg = ("캡컷에서 이 프로젝트가 열려 있다면 먼저 닫아주세요.\n"
-                   "열린 상태로 삽입하면 자막이 사라질 수 있습니다.\n\n"
-                   "계속 삽입할까요?")
+                   "열린 상태로 삽입하면 자막이 사라질 수 있어요.\n\n"
+                   "그래도 계속 삽입할까요?")
             if not confirm(self, "자막 삽입", msg, ok_text="삽입", kind="warning"):
                 return
         try:
@@ -984,11 +1017,11 @@ class App(tk.Tk):
                 as_caption=self.caption_var.get(),
             )
             backup = inject.inject_subtitles(project.dir, self.lines, style)
-            toast(self, f"{len(self.lines)}개 자막이 삽입되었습니다.\n캡컷에서 프로젝트를 열어 확인하세요.", "success")
-            self.set_status("삽입 완료 — 캡컷에서 프로젝트를 열어 확인하세요.")
+            toast(self, f"자막 {len(self.lines)}개를 삽입했어요!\n캡컷에서 프로젝트를 열어 확인해 주세요.", "success")
+            self.set_status("삽입 완료! 캡컷에서 프로젝트를 열어 확인해 주세요.")
         except Exception as e:
             traceback.print_exc()
-            self.after(0, lambda: toast(self, "삽입에 실패했습니다. 원본은 복구되었습니다.", "error"))
+            self.after(0, lambda: toast(self, "삽입 중 문제가 발생했어요. 걱정 마세요, 원본은 안전하게 복구됐어요.", "error"))
 
     # ------------------------------------------------------------- SRT
     def on_export_srt(self) -> None:
@@ -996,7 +1029,7 @@ class App(tk.Tk):
             return
         self._sync_all_text()
         if not self.lines:
-            toast(self, "내보낼 자막이 없습니다.", "warning")
+            toast(self, "내보낼 자막이 아직 없어요.", "warning")
             return
         sel = self.proj_tree.selection()
         default_name = self.projects[int(sel[0])].name if sel else "자막"
@@ -1005,7 +1038,7 @@ class App(tk.Tk):
             initialfile=f"{default_name}.srt")
         if path:
             srt_io.dump(self.lines, path)
-            self.set_status(f"SRT 저장 완료: {path}")
+            self.set_status(f"SRT 파일을 저장했어요: {path}")
 
     def on_import_srt(self) -> None:
         if not self._require_auth("SRT 불러오기"):
@@ -1015,9 +1048,9 @@ class App(tk.Tk):
             try:
                 self.lines = srt_io.load(path)
                 self._render_document()
-                self.set_status(f"SRT {len(self.lines)}개 라인 불러옴")
+                self.set_status(f"SRT 파일에서 자막 {len(self.lines)}개를 불러왔어요")
             except Exception:
-                toast(self, "SRT 파일을 읽지 못했습니다.", "error")
+                toast(self, "SRT 파일을 읽지 못했어요. 파일 형식을 확인해 주세요.", "error")
 
 
 def main() -> None:

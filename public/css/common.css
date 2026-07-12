@@ -263,3 +263,55 @@
   .empty-state .ti { font-size: 48px; }
   .empty-state p { font-size: 16px; }
 }
+
+/* ── 기대평·후기 혜택 안내 ── */
+.reward-notice {
+  margin: 12px 0 10px;
+  padding: 12px 14px;
+  background: #f8f9fc;
+  border: 1px solid #e8ecf4;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: #555;
+}
+.reward-notice--compact { margin-top: 10px; }
+.reward-notice-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.reward-notice-title .ti { font-size: 15px; color: #6366f1; }
+.reward-notice-list {
+  margin: 0;
+  padding-left: 18px;
+}
+.reward-notice-list li { margin-bottom: 4px; }
+.reward-notice-list li:last-child { margin-bottom: 0; }
+.reward-notice-edit,
+.reward-notice-more {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #777;
+}
+.reward-notice a { color: #4f46e5; text-decoration: underline; }
+.reward-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0 12px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #444;
+  cursor: pointer;
+}
+.reward-consent input {
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: #6366f1;
+}
+.reward-consent a { color: #4f46e5; }

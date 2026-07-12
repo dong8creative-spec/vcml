@@ -15,6 +15,7 @@ from .theme import RoundedButton, _center_over, toast
 _REASON_LABEL = {
     "initial": "최초 지급",
     "review_bonus": "후기 보너스",
+    "smartstore_review": "스마트스토어 후기",
     "consume": "자막 생성",
     "refund": "환불",
 }
@@ -71,8 +72,8 @@ class LoginDialog(tk.Toplevel):
     def _show_intro(self) -> None:
         self._clear_body()
         tk.Label(self._body,
-                 text="캡컷 초신속 스탠다드 수강생 전용입니다.\n"
-                      "구글 로그인 후 이 기기를 연동해야 사용할 수 있습니다.",
+                 text="캡컷 초신속 스탠다드 수강생만 이용할 수 있어요.\n"
+                      "구글 로그인 후 이 기기를 연동하면 바로 사용할 수 있어요.",
                  font=("맑은 고딕", 10), fg=TEXT_MUTED, bg=WHITE, justify="center",
                  wraplength=320).pack(pady=(0, 20))
         btns = tk.Frame(self._body, bg=WHITE)
@@ -113,7 +114,7 @@ class LoginDialog(tk.Toplevel):
         if code and code != "발급 중…":
             self.clipboard_clear()
             self.clipboard_append(code)
-            self._status_var.set("코드를 복사했습니다.")
+            self._status_var.set("코드를 복사했어요.")
 
     # ------------------------------------------------------------- 로직
     def _worker(self) -> None:
@@ -127,7 +128,7 @@ class LoginDialog(tk.Toplevel):
         except Exception as e:
             if str(e) == "cancelled":
                 return
-            msg = str(e) or "로그인에 실패했습니다."
+            msg = str(e) or "로그인에 실패했어요. 다시 시도해 주세요."
             self.after(0, lambda: self._fail(msg))
 
     def _safe_set_status(self, msg: str) -> None:
@@ -173,46 +174,198 @@ class LoginDialog(tk.Toplevel):
         self._on_done(auth)
 
 
-class ReviewPromptDialog(tk.Toplevel):
-    """후기 작성 유도 팝업 — 세션당 1회, 후기 보너스 미지급 수강생에게만."""
+class ReviewGuideDialog(tk.Toplevel):
+    """수강 후기 안내 모듈 — 강의별 후기 작성 버튼 (미지급 보너스만)."""
 
-    def __init__(self, parent, app) -> None:
+    def __init__(self, parent, app, me: dict | None = None) -> None:
         super().__init__(parent)
         self._app = app
-        self.title("후기 이벤트")
+        self.title("수강 후기 안내")
         self.resizable(False, False)
         self.configure(bg=WHITE)
         self.transient(parent)
         self.attributes("-topmost", True)
 
-        card = tk.Frame(self, bg=WHITE)
-        card.pack(fill="both", expand=True, padx=28, pady=22)
+        self._card = tk.Frame(self, bg=WHITE)
+        self._card.pack(fill="both", expand=True, padx=28, pady=22)
 
-        tk.Label(card, text="🎁 100코인 받아가세요", font=("맑은 고딕", 13, "bold"),
+        tk.Label(self._card, text="수강 후기 안내", font=("맑은 고딕", 13, "bold"),
                  fg=PRIMARY, bg=WHITE).pack(pady=(0, 8))
-        tk.Label(card,
-                 text="타닥싱크가 도움이 되었나요?\n"
-                      "수강 후기에 별점 5점을 남겨주시면 100코인을 드려요.",
-                 font=("맑은 고딕", 10), fg=TEXT_MUTED, bg=WHITE,
-                 justify="center", wraplength=300).pack(pady=(0, 16))
+        self._intro = tk.Label(
+            self._card,
+            text="수강 후기를 남기시면 강의별 코인을 더 받을 수 있어요.\n"
+                 "아래 버튼을 눌러 브라우저에서 작성해 주세요.",
+            font=("맑은 고딕", 10), fg=TEXT_MUTED, bg=WHITE,
+            justify="center", wraplength=320)
+        self._intro.pack(pady=(0, 14))
 
-        btns = tk.Frame(card, bg=WHITE)
-        btns.pack()
-        RoundedButton(btns, "후기 쓰고 100코인 받기", command=self._go,
-                      min_width=160).pack(side="left", padx=4)
-        RoundedButton(btns, "나중에", command=self.destroy,
-                      fill=SKY, hover=SKY_DARK, fg=TEXT_DARK).pack(side="left", padx=4)
+        self._btn_area = tk.Frame(self._card, bg=WHITE)
+        self._btn_area.pack(fill="x", pady=(0, 12))
+
+        ttk.Separator(self._card, orient="horizontal").pack(fill="x", pady=(2, 12))
+        self._smartstore_area = tk.Frame(self._card, bg=WHITE)
+        self._smartstore_area.pack(fill="x", pady=(0, 12))
+
+        self._status = tk.Label(
+            self._card, text="", font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE,
+            justify="center", wraplength=320)
+        self._status.pack(pady=(0, 8))
+
+        RoundedButton(self._card, "닫기", command=self.destroy,
+                      fill=SKY, hover=SKY_DARK, fg=TEXT_DARK).pack()
 
         self.update_idletasks()
-        _center_over(self, parent, max(360, self.winfo_reqwidth()), self.winfo_reqheight())
+        _center_over(self, parent, max(380, self.winfo_reqwidth()), self.winfo_reqheight())
+        self.grab_set()
 
-    def _go(self) -> None:
-        self.destroy()
-        self._app.on_open_review()
+        if me is not None:
+            self._render_review_options(me)
+        else:
+            self._status.config(text="수강 정보를 불러오는 중…")
+            threading.Thread(target=self._load_me, daemon=True).start()
+
+    def _load_me(self) -> None:
+        me = None
+        err = None
+        token = self._app._auth.get("token") if self._app._auth else None
+        if token:
+            try:
+                me = license_api.fetch_me(token)
+            except Exception as e:
+                err = e
+        self.after(0, lambda: self._on_me_loaded(me, err))
+
+    def _on_me_loaded(self, me: dict | None, err: Exception | None) -> None:
+        try:
+            if not self.winfo_exists():
+                return
+        except tk.TclError:
+            return
+        if me:
+            if hasattr(self._app, "apply_me_snapshot"):
+                self._app.apply_me_snapshot(me)
+            self._render_review_options(me)
+            return
+        if err is not None and getattr(err, "status", None) not in (401, 403):
+            self._status.config(text="수강 정보를 불러오지 못했어요.")
+        else:
+            self._status.config(text="수강 정보를 확인할 수 없어요.")
+
+    def _render_review_options(self, me: dict) -> None:
+        for child in self._btn_area.winfo_children():
+            child.destroy()
+        for child in self._smartstore_area.winfo_children():
+            child.destroy()
+
+        courses = me.get("coin_courses") or []
+        pending = [c for c in courses if not c.get("review_bonus_granted")]
+
+        if not pending:
+            tk.Label(self._btn_area, text="강의 후기 보너스를 모두 받았어요",
+                     font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE).pack(anchor="w")
+        for course in pending:
+            title = (course.get("course_title") or "수강 강의").strip()
+            bonus = int(course.get("review_bonus_coins") or 50)
+            course_id = course.get("course_id")
+            label = f"{title} 후기 (+{bonus:,}코인)"
+            btn = RoundedButton(
+                self._btn_area, label,
+                command=lambda cid=course_id: self._open_review(cid),
+                min_width=300,
+            )
+            btn.pack(fill="x", pady=4)
+        self._render_smartstore(me.get("smartstore_review") or {})
+        self._status.config(text="")
+
+    def _render_smartstore(self, state: dict) -> None:
+        status = state.get("status") or "none"
+        bonus = int(state.get("bonus_coins") or 150)
+        reject_reason = state.get("reject_reason") or ""
+        store_url = (state.get("store_review_url") or "").strip()
+
+        tk.Label(self._smartstore_area, text="네이버 스마트스토어 후기",
+                 font=("맑은 고딕", 10, "bold"), fg=PRIMARY, bg=WHITE).pack(anchor="w")
+
+        if status == "approved":
+            tk.Label(self._smartstore_area, text="스마트스토어 후기 보너스를 받았어요!",
+                     font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE).pack(anchor="w", pady=(4, 0))
+            return
+
+        if status == "pending":
+            tk.Label(self._smartstore_area, text="작성 완료 신고를 접수했어요. 관리자가 확인하는 중이니 조금만 기다려 주세요!",
+                     font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE,
+                     wraplength=320, justify="left").pack(anchor="w", pady=(4, 0))
+            return
+
+        guide = (f"네이버 스마트스토어에 후기를 작성한 뒤 완료 버튼을 눌러 주시면, "
+                 f"관리자가 확인하고 +{bonus:,}코인을 지급해 드려요.")
+        if status == "rejected" and reject_reason:
+            guide = f"{reject_reason}\n\n{guide}"
+        tk.Label(self._smartstore_area, text=guide,
+                 font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE,
+                 wraplength=320, justify="left").pack(anchor="w", pady=(4, 8))
+
+        row = tk.Frame(self._smartstore_area, bg=WHITE)
+        row.pack(fill="x")
+        RoundedButton(row, "스토어 후기 작성", command=lambda u=store_url: self._open_store(u),
+                      fill=SKY, hover=SKY_DARK, fg=TEXT_DARK, min_width=132).pack(side="left")
+        RoundedButton(row, f"작성 완료했어요 (+{bonus:,})", command=self._claim_smartstore,
+                      min_width=170).pack(side="left", padx=(8, 0))
+
+    def _open_store(self, url: str) -> None:
+        if not url:
+            toast(self, "스마트스토어 후기 작성 링크가 아직 준비되지 않았어요.", "warning")
+            return
+        webbrowser.open(url)
+
+    def _claim_smartstore(self) -> None:
+        if not theme.confirm(
+            self,
+            "작성 완료 신고",
+            "네이버 스마트스토어에 후기를 정말 작성하셨나요?\n관리자가 확인한 뒤 보너스 지급 여부를 알려드릴게요.",
+            ok_text="작성 완료",
+            cancel_text="취소",
+        ):
+            return
+        self._status.config(text="작성 완료 신고를 접수하는 중…")
+        threading.Thread(target=self._claim_smartstore_worker, daemon=True).start()
+
+    def _claim_smartstore_worker(self) -> None:
+        token = self._app._auth.get("token") if self._app._auth else None
+        try:
+            result = license_api.claim_smartstore_review(token)
+            me = license_api.fetch_me(token)
+            self.after(0, lambda: self._after_claim_smartstore(result, me, None))
+        except Exception as e:
+            self.after(0, lambda err=e: self._after_claim_smartstore(None, None, err))
+
+    def _after_claim_smartstore(self, _result: dict | None, me: dict | None,
+                                err: Exception | None) -> None:
+        if err is not None:
+            toast(self, str(err) or "작성 완료 신고에 실패했어요. 다시 시도해 주세요.", "warning")
+            self._status.config(text="")
+            return
+        if me:
+            if hasattr(self._app, "apply_me_snapshot"):
+                self._app.apply_me_snapshot(me)
+            self._render_review_options(me)
+        toast(self, "작성 완료 신고를 접수했어요! 관리자가 확인하면 코인이 지급돼요.",
+              "success", duration=3200)
+
+    def _open_review(self, course_id: str | None) -> None:
+        if not course_id:
+            toast(self, "강의 정보를 찾을 수 없어요.", "warning")
+            return
+        webbrowser.open(license_api.review_write_url(course_id))
+        if hasattr(self._app, "_last_balance_sync"):
+            self._app._last_balance_sync = 0.0
+        toast(self, "브라우저에서 수강 후기를 남겨 주세요.\n"
+              "작성 후 앱으로 돌아오면 코인이 반영돼요.",
+              "info", duration=3600)
 
 
 class CoinPurchaseDialog(tk.Toplevel):
-    """코인 충전 팝업. 후기 보너스 안내·작성 링크 + 결제(준비 중)."""
+    """코인 충전 팝업 (결제 준비 중)."""
 
     _PACKAGES = [
         (100, 5_000),
@@ -234,19 +387,9 @@ class CoinPurchaseDialog(tk.Toplevel):
 
         tk.Label(card, text="코인 충전", font=("맑은 고딕", 13, "bold"),
                  fg=PRIMARY, bg=WHITE).pack(anchor="w", pady=(0, 2))
-        tk.Label(card, text="카드 결제(KG이니시스)는 준비 중입니다.",
+        tk.Label(card, text="카드 결제(KG이니시스)는 준비 중이에요.",
                  font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE,
                  wraplength=300, justify="left").pack(anchor="w", pady=(0, 10))
-
-        self._review_row = tk.Frame(card, bg=WHITE)
-        self._review_row.pack(fill="x", pady=(0, 10))
-        self._review_note = tk.Label(
-            self._review_row, text="후기 보너스 확인 중…",
-            font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE, anchor="w")
-        self._review_note.pack(side="left", fill="x", expand=True)
-        self._review_btn: RoundedButton | None = None
-
-        ttk.Separator(card, orient="horizontal").pack(fill="x", pady=(0, 10))
 
         self._choice = tk.IntVar(value=0)
         for i, (coins, price) in enumerate(self._PACKAGES):
@@ -266,60 +409,9 @@ class CoinPurchaseDialog(tk.Toplevel):
         self.update_idletasks()
         _center_over(self, parent, max(340, self.winfo_reqwidth()), self.winfo_reqheight())
         self.grab_set()
-        threading.Thread(target=self._load_review_status, daemon=True).start()
-
-    def _load_review_status(self) -> None:
-        me = None
-        err = None
-        token = self._app._auth.get("token") if self._app._auth else None
-        if token:
-            try:
-                me = license_api.fetch_me(token)
-            except Exception as e:
-                err = e
-        self.after(0, lambda: self._apply_review_status(me, err))
-
-    def _apply_review_status(self, me: dict | None, err: Exception | None) -> None:
-        try:
-            if self._review_btn is not None:
-                self._review_btn.destroy()
-                self._review_btn = None
-        except tk.TclError:
-            return
-
-        if me:
-            review_done = bool(me.get("review_bonus_granted") or me.get("has_review"))
-            if review_done:
-                self._review_note.config(
-                    text="수강 후기를 남겨주셨어요",
-                    fg=TEXT_MUTED,
-                )
-            else:
-                self._review_note.config(
-                    text="수강 후기 작성 시 +100코인",
-                    fg=TEXT_MUTED,
-                )
-                self._review_btn = RoundedButton(
-                    self._review_row, "후기 작성하기",
-                    command=lambda m=me: self._open_review_page(m),
-                    min_width=96,
-                )
-                self._review_btn.pack(side="right")
-            return
-
-        if err is not None and getattr(err, "status", None) not in (401, 403):
-            self._review_note.config(text="후기 보너스 정보를 불러오지 못했습니다.", fg=TEXT_MUTED)
-        else:
-            self._review_note.config(text="", fg=TEXT_MUTED)
-
-    def _open_review_page(self, me: dict) -> None:
-        url = license_api.review_write_url(me.get("course_id"))
-        webbrowser.open(url)
-        toast(self, "브라우저에서 후기를 작성해 주세요. 작성 후 앱으로 돌아오면 코인이 반영됩니다.",
-              "info", duration=3200)
 
     def _notify_soon(self) -> None:
-        toast(self, "카드 결제 연동을 준비 중입니다. 조금만 기다려 주세요!", "info")
+        toast(self, "카드 결제 연동을 준비하고 있어요. 조금만 기다려 주세요!", "info")
 
 
 class MemberInfoDialog(tk.Toplevel):
@@ -372,7 +464,6 @@ class MemberInfoDialog(tk.Toplevel):
         self._btn_row.pack(fill="x", pady=(0, 14))
         RoundedButton(self._btn_row, "코인 충전", command=lambda: CoinPurchaseDialog(self, app)
                      ).pack(side="left")
-        self._review_btn: RoundedButton | None = None
 
         ttk.Label(card, text="코인 사용 내역", font=("맑은 고딕", 10, "bold"),
                  foreground=PRIMARY).pack(anchor="w", pady=(0, 4))
@@ -434,30 +525,34 @@ class MemberInfoDialog(tk.Toplevel):
             self._vars["수강 상태"].set(
                 f"{me.get('course_title') or '수강 중'} · 기기 연동됨"
                 if me.get("enrolled") else "-")
-            review_done = bool(me.get("review_bonus_granted") or me.get("has_review"))
-            self._vars["후기 보너스"].set(
-                "지급 완료 (+100코인)" if me.get("review_bonus_granted")
-                else ("후기 작성 완료" if review_done else "수강 후기 작성 시 +100코인"))
-            # 후기 미작성자에게는 바로가기 버튼 노출
-            try:
-                if self._review_btn is not None:
-                    self._review_btn.destroy()
-                    self._review_btn = None
-                if not review_done:
-                    self._review_btn = RoundedButton(
-                        self._btn_row, "후기 쓰고 +100코인",
-                        command=self._app.on_open_review,
-                        fill=SKY, hover=SKY_DARK, fg=TEXT_DARK)
-                    self._review_btn.pack(side="left", padx=(8, 0))
-            except tk.TclError:
-                pass
-            # 앱 전체 상태에도 최신 잔액 반영 (웹에서 받은 보너스 동기화)
+            review_done = bool(me.get("review_bonus_granted"))
+            pending = [c for c in (me.get("coin_courses") or []) if not c.get("review_bonus_granted")]
+            if review_done:
+                bonus_label = "모든 강의 후기 보너스를 받았어요"
+            elif pending:
+                amounts = [int(c.get("review_bonus_coins") or 50) for c in pending]
+                amount_txt = f"+{amounts[0]:,}코인" if len(set(amounts)) == 1 else "강의별 코인"
+                bonus_label = f"후기 작성 시 {amount_txt} ({len(pending)}건 남음)"
+            else:
+                bonus_label = "수강 후기 작성 시 +50코인"
+            smart = me.get("smartstore_review") or {}
+            smart_status = smart.get("status") or "none"
+            smart_bonus = int(smart.get("bonus_coins") or 150)
+            smart_label = {
+                "none": f"스마트스토어 후기 +{smart_bonus:,}코인 가능",
+                "pending": "스마트스토어 후기 관리자 확인 중",
+                "approved": "스마트스토어 후기도 받았어요",
+                "rejected": "스마트스토어 후기 재작성 요청",
+            }.get(smart_status, "")
+            if smart_label:
+                bonus_label = f"{bonus_label} · {smart_label}"
+            self._vars["후기 보너스"].set(bonus_label)
             app.apply_me_snapshot(me)
         elif me_err is not None:
             self._vars["후기 보너스"].set("-")
             status = getattr(me_err, "status", None)
             if status not in (401, 403):
-                toast(self, "서버에서 최신 정보를 불러오지 못했습니다. 저장된 정보로 표시합니다.",
+                toast(self, "서버에서 최신 정보를 불러오지 못했어요. 저장된 정보로 보여드릴게요.",
                       "warning")
 
         if history:
@@ -471,11 +566,11 @@ class MemberInfoDialog(tk.Toplevel):
             self._set_history_rows(rows)
         elif hist_err is not None:
             status = getattr(hist_err, "status", None)
-            msg = ("서버 업데이트 준비 중입니다." if status == 404
-                   else "내역을 불러오지 못했습니다.")
+            msg = ("서버 업데이트를 준비하고 있어요." if status == 404
+                   else "내역을 불러오지 못했어요.")
             self._set_history_rows([(msg, "", "", "")])
         else:
-            self._set_history_rows([("내역이 없습니다.", "", "", "")])
+            self._set_history_rows([("아직 코인 사용 내역이 없어요.", "", "", "")])
 
     def _set_history_rows(self, rows) -> None:
         try:

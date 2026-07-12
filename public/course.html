@@ -45,6 +45,7 @@
           <span id="anticipation-char-count">0 / 150자</span>
           <span>최소 20자</span>
         </div>
+        <div id="anticipation-notice-slot"></div>
         <button class="btn-anticipation-submit" id="btn-anticipation-submit" onclick="submitAnticipationReview()">기대평 작성하고 쿠폰 받기</button>
       </div>
     </div>
@@ -67,6 +68,7 @@
           <button type="button" class="rbr-star" data-val="5" onclick="setReviewStar(5)"><i class="ti ti-star"></i></button>
         </div>
         <textarea id="rbr-content" maxlength="500" placeholder="강의 내용, 강사님, 실습 등 자유롭게 작성해주세요. (선택)"></textarea>
+        <div id="rbr-notice-slot"></div>
         <div class="rbr-actions">
           <button type="button" class="rbr-btn-skip" onclick="skipReviewAndReplay()">건너뛰고 바로 보기</button>
           <button type="button" class="rbr-btn-submit" id="rbr-btn-submit" onclick="submitReviewAndReplay()">후기 제출하고 다시보기</button>
@@ -163,6 +165,7 @@
   </div>
 
   <script src="/js/api.js?v=3"></script>
+  <script src="/js/review-reward-notice.js?v=1"></script>
   <script src="/js/live-reminder.js?v=21"></script>
   <script src="/js/auth-redirect.js"></script>
   <script src="/js/site-layout.js"></script>
@@ -904,6 +907,10 @@
           ? '이 강의에 대한 기대평을 작성해 주세요. 작성 완료 시 할인 쿠폰이 발급되며, 수강 신청은 별도로 진행합니다. 강의 종료 전까지 작성할 수 있습니다.'
           : '이 강의에 대한 기대평을 작성해 주세요. 작성 완료 시 할인 쿠폰이 발급되며, 수강 신청은 별도로 진행합니다.')
       document.getElementById('btn-anticipation-submit').textContent = edit ? ANTICIPATION_SUBMIT_EDIT : ANTICIPATION_SUBMIT_CREATE
+      const consentWrap = document.getElementById('anticipation-consent-wrap')
+      if (consentWrap) consentWrap.style.display = edit ? 'none' : ''
+      const consentCb = document.getElementById('anticipation-consent')
+      if (consentCb && edit) consentCb.checked = false
     }
 
     function openAnticipationModal(edit = false) {
@@ -948,13 +955,21 @@
       }
       const overlay = document.getElementById('anticipation-modal-overlay')
       const isEdit = overlay.dataset.mode === 'edit'
+      if (typeof ReviewRewardNotice !== 'undefined' && !ReviewRewardNotice.validateAnticipationConsent(isEdit)) {
+        toast('기대평 혜택 안내에 동의해주세요.', 'error')
+        return
+      }
       const btn = document.getElementById('btn-anticipation-submit')
       btn.disabled = true
       btn.textContent = '처리 중...'
       try {
+        const body = { content }
+        if (typeof ReviewRewardNotice !== 'undefined') {
+          Object.assign(body, ReviewRewardNotice.anticipationConsentPayload(isEdit))
+        }
         const res = isEdit
-          ? await API.patch('/courses/' + slug + '/anticipation-reviews/mine', { content })
-          : await API.post('/courses/' + slug + '/anticipation-reviews', { content })
+          ? await API.patch('/courses/' + slug + '/anticipation-reviews/mine', body)
+          : await API.post('/courses/' + slug + '/anticipation-reviews', body)
         closeAnticipationModal()
         courseData.my_anticipation = res.review
         if (isEdit) {
@@ -1320,6 +1335,9 @@
     function setReviewStar(val) {
       _replayStarVal = val
       updateRbrStars(val)
+      if (typeof ReviewRewardNotice !== 'undefined') {
+        ReviewRewardNotice.updateReviewConsentVisibility('rbr', val)
+      }
     }
 
     function updateRbrStars(val) {
@@ -1342,15 +1360,23 @@
 
     async function submitReviewAndReplay() {
       if (!_replayStarVal) { toast('별점을 선택해주세요.', 'error'); return }
+      if (typeof ReviewRewardNotice !== 'undefined' && !ReviewRewardNotice.validateReviewConsent('rbr', _replayStarVal)) {
+        toast('별점 5점 후기 혜택 안내에 동의해주세요.', 'error')
+        return
+      }
       const content = document.getElementById('rbr-content').value.trim()
       const btn = document.getElementById('rbr-btn-submit')
       btn.disabled = true; btn.textContent = '제출 중...'
       try {
-        const res = await API.post('/my/reviews', {
+        const payload = {
           course_id: courseData.id,
           rating: _replayStarVal,
           content,
-        })
+        }
+        if (typeof ReviewRewardNotice !== 'undefined') {
+          Object.assign(payload, ReviewRewardNotice.reviewConsentPayload(_replayStarVal))
+        }
+        const res = await API.post('/my/reviews', payload)
         closeReviewBeforeReplay()
         // 쿠폰 안내
         const couponEl = document.getElementById('rbt-coupon')
@@ -1361,7 +1387,7 @@
         }
         document.getElementById('review-thanks-overlay').classList.remove('hidden')
         // courseData 갱신
-        courseData = { ...courseData, my_review: { rating: _replayStarVal, content } }
+        courseData = { ...courseData, my_review: { rating: _replayStarVal, content, reward_locked: !!res.reward_locked } }
         loadCourseReviews()
       } catch (err) {
         toast(err.message || '오류가 발생했습니다.', 'error')
@@ -1378,6 +1404,14 @@
       window._origOpenReplay(null, _replaySlug)
     }
 
+    function initReviewRewardNotices() {
+      if (typeof ReviewRewardNotice === 'undefined') return
+      const antiSlot = document.getElementById('anticipation-notice-slot')
+      if (antiSlot) antiSlot.innerHTML = ReviewRewardNotice.anticipationFormBlock()
+      const rbrSlot = document.getElementById('rbr-notice-slot')
+      if (rbrSlot) rbrSlot.innerHTML = ReviewRewardNotice.reviewFormBlock('rbr')
+    }
+    initReviewRewardNotices()
     load()
   </script>
 </body>

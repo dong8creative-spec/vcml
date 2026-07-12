@@ -180,6 +180,7 @@ router.get('/courses', authMiddleware, async (req, res) => {
         rating: myReview.rating,
         content: myReview.content || '',
         created_at: myReview.created_at || null,
+        reward_locked: await db.isCourseReviewRewardLocked(req.user.id, c.id, myReview),
       } : null,
     }
     if (db.courseSupportsLiveReplay(c)) {
@@ -344,6 +345,10 @@ router.get('/courses/:courseId/certificate', authMiddleware, async (req, res) =>
 router.post('/reviews', authMiddleware, async (req, res) => {
   const { course_id, rating, content } = req.body
   if (!course_id || !rating) return res.status(400).json({ error: '필수 항목 누락' })
+  const numRating = Math.max(1, Math.min(5, parseInt(rating, 10) || 0))
+  if (numRating === 5 && !req.body.consent_review_reward_terms) {
+    return res.status(400).json({ error: '별점 5점 후기 혜택 안내에 동의해주세요.' })
+  }
   if (!await db.isEnrolled(req.user.id, course_id)) return res.status(403).json({ error: '수강생만 후기를 작성할 수 있습니다.' })
   const course = await db.getCourseById(course_id)
   const replayReviewAllowed = course
@@ -353,12 +358,17 @@ router.post('/reviews', authMiddleware, async (req, res) => {
   if (course && !replayReviewAllowed && !db.isLiveReviewOpen(course)) {
     return res.status(403).json({ error: '후기 작성 기간이 종료되었습니다. (강의 종료 후 7일 이내에만 작성 가능)' })
   }
-  const result = await db.upsertReview(req.user.id, course_id, rating, content)
-  res.json({
-    success: true,
-    coupon: result.coupon ? db.enrichCoupon(result.coupon) : null,
-    rating: result.rating,
-  })
+  try {
+    const result = await db.upsertReview(req.user.id, course_id, rating, content)
+    res.json({
+      success: true,
+      coupon: result.coupon ? db.enrichCoupon(result.coupon) : null,
+      rating: result.rating,
+      reward_locked: !!result.reward_locked,
+    })
+  } catch (e) {
+    res.status(400).json({ error: e.message || '후기를 저장하지 못했습니다.' })
+  }
 })
 
 router.get('/coupons', authMiddleware, async (req, res) => {

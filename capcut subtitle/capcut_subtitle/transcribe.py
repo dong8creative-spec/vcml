@@ -72,13 +72,13 @@ class Transcriber:
 
         path = bundled_model_dir()
         if path:
-            progress("동봉된 Whisper 모델 로딩 중...")
+            progress("동봉된 Whisper 모델을 불러오고 있어요...")
         else:
             path = self._ensure_downloaded(model_size, progress)
-            progress(f"Whisper 모델({model_size}) 로딩 중...")
+            progress(f"Whisper 모델({model_size})을 불러오고 있어요...")
         self._model = WhisperModel(path, device="cpu", compute_type="int8")
         self._model_size = model_size
-        progress("모델 로딩 완료")
+        progress("모델을 불러왔어요")
 
     def _ensure_downloaded(self, model_size: str,
                            progress: Callable[[str], None]) -> str:
@@ -104,21 +104,21 @@ class Transcriber:
                         for d in cache.glob(f"models--*faster-whisper-{model_size}")
                         for f in d.rglob("*") if f.is_file())
                     pct = min(size / MODEL_BYTES * 100, 99)
-                    progress(f"Whisper 모델 다운로드 중... {pct:.0f}% "
-                             f"(약 3.1GB, 최초 1회만 받습니다)")
+                    progress(f"Whisper 모델을 다운로드하고 있어요... {pct:.0f}% "
+                             f"(약 3.1GB, 최초 1회만 받아요)")
                 except OSError:
                     pass
 
-        progress("Whisper 모델 다운로드 중... (약 3.1GB, 최초 1회만 받습니다)")
+        progress("Whisper 모델을 다운로드하고 있어요... (약 3.1GB, 최초 1회만 받아요)")
         t = threading.Thread(target=monitor, daemon=True)
         t.start()
         try:
             return download_model(model_size)
         except Exception as e:
             raise RuntimeError(
-                "Whisper 모델 다운로드에 실패했습니다. 인터넷 연결을 확인한 뒤 다시 시도하거나, "
+                "Whisper 모델 다운로드에 실패했어요. 인터넷 연결을 확인한 뒤 다시 시도하거나, "
                 "홈페이지에서 '음성인식 모델' zip을 받아 TadakSync.exe가 있는 "
-                "프로그램 폴더에 압축 해제해 주세요. (models 폴더가 생깁니다)"
+                "프로그램 폴더에 압축 해제해 주세요. (models 폴더가 생겨요)"
             ) from e
         finally:
             stop.set()
@@ -133,7 +133,7 @@ class Transcriber:
     ) -> list[SubtitleLine]:
         assert self._model is not None, "모델을 먼저 load() 하세요"
         total_sec = len(audio) / 16000
-        progress("음성 인식 중...")
+        progress("음성을 인식하고 있어요...")
         segments, info = self._model.transcribe(
             audio,
             language=language,
@@ -147,7 +147,7 @@ class Transcriber:
                 progress_ratio(min(seg.end / total_sec, 1.0))
         progress(f"인식 언어: {info.language} (확률 {info.language_probability:.0%})")
         lines = _split_lines_from_segments(all_segments, max_words_per_line)
-        progress("자막 타이밍 정밀 보정 중...")
+        progress("자막 타이밍을 정밀하게 보정하고 있어요...")
         return _close_gaps(_refine_speech_boundaries(lines, audio))
 
 

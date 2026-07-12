@@ -247,6 +247,9 @@ router.delete('/:slug/anticipation-reviews/mine', authMiddleware, async (req, re
 
 router.post('/:slug/anticipation-reviews', authMiddleware, async (req, res) => {
   try {
+    if (!req.body.consent_anticipation_coupon_terms) {
+      return res.status(400).json({ error: '기대평 혜택 안내에 동의해주세요.' })
+    }
     const course = await db.getCourseBySlug(req.params.slug)
     if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
 
@@ -297,6 +300,9 @@ router.post('/:slug/enroll', authMiddleware, async (req, res) => {
 /** @deprecated anticipation-reviews + enroll 분리 — 하위 호환 */
 router.post('/:slug/apply-with-anticipation', authMiddleware, async (req, res) => {
   try {
+    if (!req.body.consent_anticipation_coupon_terms) {
+      return res.status(400).json({ error: '기대평 혜택 안내에 동의해주세요.' })
+    }
     const course = await db.getCourseBySlug(req.params.slug)
     if (!course || !course.is_published) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
 
@@ -443,6 +449,9 @@ router.get('/:slug', async (req, res) => {
       created_at: myAnticipation.created_at,
       can_edit: anticipation_modify.can_modify,
     } : null
+    const myReviewRewardLocked = myCourseReview && u
+      ? await db.isCourseReviewRewardLocked(u.id, course.id, myCourseReview)
+      : false
 
     const payload = {
       ...(await db.enrichCourseEnrollment(stripCourseMediaFields(db.stripLiveResourceUrls(course)))),
@@ -457,6 +466,7 @@ router.get('/:slug', async (req, res) => {
         rating: myCourseReview.rating,
         content: myCourseReview.content || '',
         created_at: myCourseReview.created_at || null,
+        reward_locked: myReviewRewardLocked,
       } : null,
       anticipation_modify,
       live_ended: db.courseSupportsLiveReplay(course) ? db.isLiveCourseEnded(course) : false,

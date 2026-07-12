@@ -142,6 +142,7 @@
 </div>
 
 <script src="/js/api.js?v=3"></script>
+<script src="/js/review-reward-notice.js?v=1"></script>
 <script src="/js/live-reminder.js?v=24"></script>
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=10"></script>
@@ -715,6 +716,9 @@ function renderCourseReviewBlock(c) {
   const content = escapeHtml(c.my_review?.content || '')
   const reviewOpen = c.live_resources?.review_open !== false
     || (isLiveLikeCourse(c) && c.live_resources?.replay_available)
+  const noticeHtml = (typeof ReviewRewardNotice !== 'undefined')
+    ? ReviewRewardNotice.reviewFormBlock(c.id, { isEdit: !!c.my_review })
+    : ''
   const makeStars = (r, disabled) => [1,2,3,4,5].map(n =>
     disabled
       ? `<span class="lc-star ${n <= r ? 'on' : ''}">★</span>`
@@ -726,21 +730,25 @@ function renderCourseReviewBlock(c) {
       return `<div class="my-lc-review my-lc-review--material-only" id="review-course-${escapeHtml(c.id)}" hidden></div>`
     }
 
-    // 기간 만료 시 수정 버튼 숨김
-    const editBtn = reviewOpen
-      ? `<button type="button" class="lc-edit-btn" onclick="toggleReviewEdit('${c.id}')">수정</button>`
-      : `<span class="lc-review-closed-badge">수정 기간 종료</span>`
+    const rewardLocked = !!c.my_review.reward_locked
+    const editBtn = rewardLocked
+      ? `<span class="lc-review-locked-badge">혜택 수령 후 수정 불가</span>`
+      : (reviewOpen
+        ? `<button type="button" class="lc-edit-btn" onclick="toggleReviewEdit('${c.id}')">수정</button>`
+        : `<span class="lc-review-closed-badge">수정 기간 종료</span>`)
     return `<div class="my-lc-review" id="review-course-${escapeHtml(c.id)}">
       <div class="lc-review-done">
         <div class="lc-review-done-left">
           <div class="lc-stars-row">${makeStars(rating, true)}</div>
           <span class="lc-review-done-txt">후기를 남겨주셨어요</span>
+          ${rewardLocked ? '<span class="lc-review-reward-note">5점 후기 혜택 수령 후 수정·삭제가 제한됩니다.</span>' : ''}
         </div>
         ${editBtn}
       </div>
-      ${reviewOpen ? `<div class="lc-review-form" id="review-form-${escapeHtml(c.id)}" style="display:none">
+      ${reviewOpen && !rewardLocked ? `<div class="lc-review-form" id="review-form-${escapeHtml(c.id)}" style="display:none">
         <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(rating, false)}</div>
         <textarea class="lc-review-ta" id="review-content-${c.id}" placeholder="수강 후기를 남겨주세요.">${content}</textarea>
+        ${noticeHtml}
         <div class="lc-review-footer">
           <button type="button" class="lc-review-save" onclick="submitCourseReview('${c.id}')">후기 저장</button>
         </div>
@@ -762,6 +770,7 @@ function renderCourseReviewBlock(c) {
       </div>
       <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(0, false)}</div>
       <textarea class="lc-review-ta" id="review-content-${c.id}" placeholder="자유롭게 작성해주세요. (선택)"></textarea>
+      ${noticeHtml}
       <div class="lc-review-footer">
         <button type="button" class="lc-review-save" onclick="submitCourseReview('${c.id}')">저장하기</button>
       </div>
@@ -773,6 +782,12 @@ function toggleReviewEdit(courseId) {
   const form = document.getElementById('review-form-' + courseId)
   if (!form) return
   form.style.display = form.style.display === 'none' ? '' : 'none'
+  if (form.style.display !== 'none') {
+    const r = reviewRatings[courseId] || 0
+    if (typeof ReviewRewardNotice !== 'undefined') {
+      ReviewRewardNotice.updateReviewConsentVisibility(courseId, r)
+    }
+  }
 }
 
 const reviewRatings = {}
@@ -784,6 +799,9 @@ function setReviewStar(courseId, rating) {
   wrap.querySelectorAll('.lc-star').forEach(btn => {
     btn.classList.toggle('on', Number(btn.dataset.star) <= rating)
   })
+  if (typeof ReviewRewardNotice !== 'undefined') {
+    ReviewRewardNotice.updateReviewConsentVisibility(courseId, rating)
+  }
 }
 
 async function submitCourseReview(courseId) {
@@ -794,9 +812,17 @@ async function submitCourseReview(courseId) {
     toast('별점을 선택해주세요.', 'error')
     return
   }
+  if (typeof ReviewRewardNotice !== 'undefined' && !ReviewRewardNotice.validateReviewConsent(courseId, rating)) {
+    toast('별점 5점 후기 혜택 안내에 동의해주세요.', 'error')
+    return
+  }
   const content = document.getElementById('review-content-' + courseId)?.value?.trim() || ''
   try {
-    const res = await API.post('/my/reviews', { course_id: courseId, rating, content })
+    const payload = { course_id: courseId, rating, content }
+    if (typeof ReviewRewardNotice !== 'undefined') {
+      Object.assign(payload, ReviewRewardNotice.reviewConsentPayload(rating))
+    }
+    const res = await API.post('/my/reviews', payload)
     toast('후기가 저장되었습니다.', 'success')
     document.getElementById('my-courses').dataset.loaded = ''
     myCoursesPromise = null

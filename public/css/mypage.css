@@ -714,6 +714,13 @@ body { background:#f5f6fa; }
     }
     .lc-review-done-left { display: flex; align-items: center; gap: 8px; }
     .lc-review-done-txt { font-size: 13px; color: #555; }
+    .lc-review-reward-note {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      color: #888;
+      line-height: 1.45;
+    }
     .lc-edit-btn {
       font-size: 12px; font-weight: 600; color: #444;
       background: #fff; border: 1px solid #d1d5db; border-radius: 6px;
@@ -784,6 +791,12 @@ body { background:#f5f6fa; }
     .my-lc-review--closed { background: #f9f9f9; }
     .lc-review-closed-msg { font-size: 12px; color: #aaa; }
     .lc-review-closed-badge { font-size: 11px; color: #bbb; font-weight: 500; }
+    .lc-review-locked-badge {
+      font-size: 11px;
+      color: #b45309;
+      font-weight: 600;
+      white-space: nowrap;
+    }
     /* 기간 종료 후 별점은 클릭 불가 span으로 렌더링 */
     .lc-star:not(button) { cursor: default; }
 

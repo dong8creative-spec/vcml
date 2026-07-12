@@ -91,8 +91,9 @@
     <div style="margin-bottom: 18px;">
       <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 코인 안내</div>
       <ul class="st-list" style="margin-top: 0;">
-        <li>최초 이용 허가 시 <strong>100코인</strong> 지급</li>
-        <li>수강 후기 작성 시 <strong>100코인</strong> 추가 지급 (1회)</li>
+        <li>최초 이용 시 강의별 기본 코인 지급 (초신속 100코인 · 조회수 편집법 1,000코인)</li>
+        <li>수강 후기 작성 시 강의별 <strong>50코인</strong> 추가 지급</li>
+        <li>네이버 스마트스토어 후기 작성 후 앱에서 완료 신고 시, 관리자 확인 후 <strong>150코인</strong> 추가 지급</li>
         <li>자막 생성 시 타임라인 <strong>1분당 1코인</strong> 차감 (최소 1코인)</li>
       </ul>
     </div>
@@ -215,19 +216,29 @@ function renderDenied(data) {
 }
 
 function renderEntitled(data) {
-  const reviewLine = data.review_bonus_granted
-    ? '후기 보너스 100코인 지급 완료'
-    : '수강 후기 작성 시 100코인 추가 지급'
+  const courses = data.coin_courses || []
+  const courseMeta = courses.length
+    ? courses.map(c => {
+        const init = c.initial_granted
+          ? `기본 ${Number(c.initial_coins || 0).toLocaleString()}코인 지급`
+          : `기본 ${Number(c.initial_coins || 0).toLocaleString()}코인 대기`
+        const rev = c.review_bonus_granted
+          ? '후기 보너스 완료'
+          : `후기 시 +${Number(c.review_bonus_coins || 50).toLocaleString()}코인`
+        return `<div><strong>${c.course_title || '수강 강의'}</strong> · ${init} · ${rev}</div>`
+      }).join('')
+    : `<div><strong>${data.course_title || '수강 강의'}</strong> 수강 중</div>
+       <div>최초 지급 ${data.initial_granted ? '완료' : '대기'} · ${data.review_bonus_granted ? '후기 보너스 완료' : '후기 시 50코인'}</div>`
+  const reviewHref = data.course_id
+    ? `/mypage.html?tab=courses&review_course=${encodeURIComponent(data.course_id)}`
+    : '/mypage.html?tab=courses'
   bodyEl.innerHTML = `
     <h2>이용 가능</h2>
     <div class="st-balance"><span class="num">${data.balance ?? 0}</span><span class="unit">코인</span></div>
-    <div class="st-meta">
-      <div><strong>${data.course_title || '캡컷 초신속 스탠다드'}</strong> 수강 중</div>
-      <div>최초 지급 ${data.initial_granted ? '완료' : '대기'} · ${reviewLine}</div>
-    </div>
+    <div class="st-meta">${courseMeta}</div>
     <div class="st-actions">
       <button type="button" class="st-btn" id="btn-download" onclick="downloadZip()"><i class="ti ti-download"></i> 프로그램 다운로드</button>
-      <a class="st-btn secondary" href="/mypage.html">마이페이지에서 후기 작성</a>
+      <a class="st-btn secondary" href="${reviewHref}">마이페이지에서 후기 작성</a>
     </div>
     <p class="st-meta" style="margin-top:10px;font-size:0.85em">
       음성인식 모델(약 3GB)은 첫 자막 생성 시 자동으로 받아집니다.
@@ -237,7 +248,7 @@ function renderEntitled(data) {
     </p>
   `
   if (data.just_granted_initial) {
-    showMsg('최초 이용 코인 100개가 지급되었습니다.', 'ok')
+    showMsg('수강 강의에 맞는 기본 코인이 지급되었습니다.', 'ok')
   }
 }
 

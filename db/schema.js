@@ -76,8 +76,12 @@ const COURSE_REVIEW_FIVE_STAR_DISCOUNT_PERCENT = 10
 const STACKABLE_COURSE_COUPON_REASONS = [ANTICIPATION_COUPON_REASON, COURSE_REVIEW_FIVE_STAR_REASON]
 const TIMED_PERCENT_COUPON_REASONS = new Set(STACKABLE_COURSE_COUPON_REASONS)
 const SUBTITLE_COURSE_SLUG = 'capcut-pro-basic'
+const VIEWS_EDITING_COURSE_SLUG = '조회수-올리는-영상편집법-1783221046465'
 const SUBTITLE_INITIAL_COINS = 100
-const SUBTITLE_REVIEW_BONUS_COINS = 100
+const VIEWS_EDITING_INITIAL_COINS = 1000
+const SUBTITLE_REVIEW_BONUS_COINS = 50
+const SMARTSTORE_REVIEW_BONUS_COINS = 150
+const SMARTSTORE_REVIEW_URL = process.env.SMARTSTORE_REVIEW_URL || null
 const SUBTITLE_DEVICE_CODE_TTL_MS = 10 * 60 * 1000
 
 function addOneMonthFrom(iso) {
@@ -704,6 +708,27 @@ function normalizePersonName(name) {
 
 /** 수강 등록·회원 목록에 노출할 role (관리자 계정 포함) */
 const ENROLLABLE_USER_ROLES = ['student', 'admin']
+
+function isOrderRevenueExcluded(order, adminUserIds) {
+  if (!order) return true
+  if (order.exclude_from_revenue) return true
+  if (adminUserIds?.has(order.user_id)) return true
+  return false
+}
+
+function orderRevenueAmount(order, adminUserIds) {
+  if (isOrderRevenueExcluded(order, adminUserIds)) return 0
+  return Number(order.amount) || 0
+}
+
+async function getAdminUserIdSet() {
+  const cached = cacheGet('admin:userIds')
+  if (cached) return cached
+  const snap = await fs.collection('users').where('role', '==', 'admin').get()
+  const set = new Set(snap.docs.map(d => d.id))
+  cacheSet('admin:userIds', set, 60_000)
+  return set
+}
 
 async function getEnrollableUsersSnap() {
   if (ENROLLABLE_USER_ROLES.length === 1) {
@@ -1764,12 +1789,14 @@ const db = {
   },
   async getActiveEnrolleesByCourse(courseId) {
     const enrollments = await db.getEnrollmentsByCourse(courseId)
+    const adminUserIds = await getAdminUserIdSet()
     const rowsByUser = new Map()
     for (const e of enrollments) {
       const order = await db.getActiveOrderForCourse(e.user_id, courseId)
       if (!order) continue
       const user = await db.findUserById(e.user_id)
       if (!user) continue
+      const revenueExcluded = isOrderRevenueExcluded(order, adminUserIds)
       const enrolledAt = e.enrolled_at || order.paid_at || null
       const prev = rowsByUser.get(e.user_id)
       if (!prev || String(enrolledAt) > String(prev.enrolled_at)) {
@@ -1780,11 +1807,13 @@ const db = {
           phone: user.phone || null,
           member_type: user.member_type || 'student',
           enrolled_at: enrolledAt,
-          paid_amount: Number(order.amount || 0),
-          method: order.method || '-',
+          paid_amount: revenueExcluded ? 0 : Number(order.amount || 0),
+          method: revenueExcluded ? (order.method || '관리자(내부)') : (order.method || '-'),
           paid_at: order.paid_at || null,
           external_order_id: order.external_order_id || null,
           provider: order.provider || null,
+          exclude_from_revenue: revenueExcluded,
+          is_admin_enrollment: user.role === 'admin',
         })
       }
     }
@@ -1803,6 +1832,7 @@ const db = {
     if (!course) return { ok: false, code: 'course_not_found', error: '강의를 찾을 수 없습니다.' }
     const user = await db.findUserById(userId)
     if (!user) return { ok: false, code: 'user_not_found', error: '회원을 찾을 수 없습니다.' }
+    const isAdminSelf = user.role === 'admin'
 
     if (await db.isEnrolled(userId, courseId)) {
       const existingOrder = await db.getActiveOrderForCourse(userId, courseId)
@@ -1828,13 +1858,17 @@ const db = {
     let appliedCoupons = []
     let discount = Math.max(0, Number(opts.discount) || 0)
     let amount = opts.amount != null ? Math.max(0, Number(opts.amount) || 0) : salePrice
-    if (!isFree && opts.amount == null) {
+    if (isAdminSelf) {
+      appliedCoupons = []
+      discount = 0
+      amount = 0
+    } else if (!isFree && opts.amount == null) {
       const isFirstPurchase = !(await db.hasPaidCourseOrder(userId))
       const stack = await db.resolveStackableCourseDiscount(userId, salePrice, isFirstPurchase)
       appliedCoupons = stack.applied || []
       discount = stack.totalDiscount || 0
       amount = Math.max(0, salePrice - discount)
-    } else if (!isFree && opts.consume_coupons !== false) {
+    } else if (!isAdminSelf && !isFree && opts.consume_coupons !== false) {
       // 금액 지정 시에도 쿠폰은 최대 2장 소모 (스마트스토어 할인 반영)
       const isFirstPurchase = !(await db.hasPaidCourseOrder(userId))
       const stack = await db.resolveStackableCourseDiscount(userId, salePrice, isFirstPurchase)
@@ -1861,12 +1895,15 @@ const db = {
           course_id: courseId,
           amount,
           discount,
-          method,
+          method: isAdminSelf ? '관리자(내부)' : method,
           status: 'paid',
           paid_at: paidAt,
           note: opts.note || null,
           admin_enrolled: true,
-          provider: /스마트스토어/i.test(method) ? 'smartstore' : (opts.provider || 'admin'),
+          ...(isAdminSelf ? { exclude_from_revenue: true, admin_self_enrollment: true } : {}),
+          provider: isAdminSelf
+            ? 'admin'
+            : (/스마트스토어/i.test(method) ? 'smartstore' : (opts.provider || 'admin')),
           coupons_applied: appliedCoupons.length,
           ...(opts.external_order_id
             ? { external_order_id: String(opts.external_order_id).trim().slice(0, 120) }
@@ -2517,12 +2554,14 @@ const db = {
 
   // orders
   async createOrder(userId, courseId, amount, method, discount = 0, extra = {}) {
+    const user = await db.findUserById(userId)
+    const isAdminSelf = user?.role === 'admin'
     const data = {
       user_id: userId,
       course_id: courseId,
-      amount,
-      discount,
-      method,
+      amount: isAdminSelf ? 0 : amount,
+      discount: isAdminSelf ? 0 : discount,
+      method: isAdminSelf ? '관리자(내부)' : method,
       status: extra.status || 'paid',
       paid_at: extra.status && extra.status !== 'paid' ? null : (extra.paid_at || now()),
       created_at: now(),
@@ -2533,7 +2572,10 @@ const db = {
       ...(extra.coupon_holds ? { coupon_holds: extra.coupon_holds } : {}),
       ...(extra.admin_enrolled != null ? { admin_enrolled: extra.admin_enrolled } : {}),
       ...(extra.note ? { note: extra.note } : {}),
-      ...(extra.provider ? { provider: extra.provider } : {}),
+      ...(extra.provider ? { provider: isAdminSelf ? 'admin' : extra.provider } : {}),
+      ...(isAdminSelf || extra.exclude_from_revenue
+        ? { exclude_from_revenue: true, ...(isAdminSelf ? { admin_self_enrollment: true } : {}) }
+        : {}),
     }
     const ref = await fs.collection('orders').add(data)
     return { id: ref.id, ...data }
@@ -2647,6 +2689,16 @@ const db = {
       method: paymentMeta.method || order.method || '카드',
       provider: paymentMeta.provider || order.provider || 'site',
       approved_at: paymentMeta.approvedAt || now(),
+      ...((await db.findUserById(order.user_id))?.role === 'admin'
+        ? {
+          amount: 0,
+          discount: 0,
+          exclude_from_revenue: true,
+          admin_self_enrollment: true,
+          method: '관리자(내부)',
+          provider: 'admin',
+        }
+        : {}),
     })
 
     await db.consumeHeldCoupons(order, course)
@@ -3043,6 +3095,30 @@ const db = {
     if (snap.empty) return null
     return { id: snap.docs[0].id, ...snap.docs[0].data() }
   },
+  async hasCourseReviewFiveStarCoupon(userId, courseId) {
+    const coupons = await db.getCouponsByUser(userId)
+    return coupons.some(
+      c => c.reason === COURSE_REVIEW_FIVE_STAR_REASON && c.course_id === courseId
+    )
+  },
+  async isCourseReviewRewardLocked(userId, courseId, review) {
+    if (!review) return false
+    if (review.reward_locked_at) return true
+
+    const rating = Math.max(1, Math.min(5, parseInt(review.rating, 10) || 0))
+    if (rating !== 5) return false
+
+    if (await db.hasCourseReviewFiveStarCoupon(userId, courseId)) return true
+
+    const course = await db.getCourseById(courseId)
+    if (course?.slug === SUBTITLE_COURSE_SLUG || course?.slug === VIEWS_EDITING_COURSE_SLUG) {
+      const program = await db.getProgramForCourse(course)
+      if (program?.type === 'desktop_coin' && await db.hasSubtitleReviewBonusForCourse(userId, courseId)) {
+        return true
+      }
+    }
+    return false
+  },
   async syncCourseReviewStats(courseId) {
     const pub = await db.getReviews(courseId)
     const ratings = pub
@@ -3057,11 +3133,28 @@ const db = {
   },
   async upsertReview(userId, courseId, rating, content) {
     const snap = await fs.collection('reviews').where('user_id', '==', userId).where('course_id', '==', courseId).limit(1).get()
+    const existing = snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
     const numRating = Math.max(1, Math.min(5, parseInt(rating, 10) || 0))
-    if (!snap.empty) {
-      await fs.collection('reviews').doc(snap.docs[0].id).update({ rating: numRating, content })
+
+    if (existing && await db.isCourseReviewRewardLocked(userId, courseId, existing)) {
+      throw new Error('5점 후기 혜택을 받은 후기는 수정할 수 없습니다.')
+    }
+
+    const ts = now()
+    let reviewId
+    if (existing) {
+      reviewId = existing.id
+      await fs.collection('reviews').doc(reviewId).update({ rating: numRating, content, updated_at: ts })
     } else {
-      await fs.collection('reviews').add({ user_id: userId, course_id: courseId, rating: numRating, content, is_public: 1, created_at: now() })
+      const ref = await fs.collection('reviews').add({
+        user_id: userId,
+        course_id: courseId,
+        rating: numRating,
+        content,
+        is_public: 1,
+        created_at: ts,
+      })
+      reviewId = ref.id
     }
     await db.syncCourseReviewStats(courseId)
 
@@ -3099,14 +3192,37 @@ const db = {
       }
     }
     let subtitle_bonus = null
-    if (course?.slug === SUBTITLE_COURSE_SLUG) {
+    const reviewProgram = await db.getProgramForCourse(course)
+    if (reviewProgram?.type === 'desktop_coin') {
       subtitle_bonus = await db.grantSubtitleReviewBonus(userId, courseId)
     }
-    return { rating: numRating, coupon, subtitle_bonus }
+
+    const hasCouponBenefit = !!(coupon || await db.hasCourseReviewFiveStarCoupon(userId, courseId))
+    let hasSubtitleBenefit = !!subtitle_bonus?.granted
+    if (!hasSubtitleBenefit && reviewProgram?.type === 'desktop_coin') {
+      hasSubtitleBenefit = await db.hasSubtitleReviewBonusForCourse(userId, courseId)
+    }
+    const rewardLocked = numRating === 5 && (hasCouponBenefit || hasSubtitleBenefit)
+    if (rewardLocked && !existing?.reward_locked_at) {
+      await fs.collection('reviews').doc(reviewId).update({ reward_locked_at: ts })
+    }
+
+    return {
+      rating: numRating,
+      coupon,
+      subtitle_bonus,
+      reward_locked: rewardLocked || !!existing?.reward_locked_at,
+    }
   },
-  async deleteReview(id) {
+  async deleteReview(id, { bypassRewardLock = false } = {}) {
     const existing = await fs.collection('reviews').doc(id).get()
     const courseId = existing.exists ? existing.data().course_id : null
+    if (existing.exists && !bypassRewardLock) {
+      const data = existing.data()
+      if (await db.isCourseReviewRewardLocked(data.user_id, data.course_id, { id, ...data })) {
+        throw new Error('5점 후기 혜택을 받은 후기는 삭제할 수 없습니다.')
+      }
+    }
     await fs.collection('reviews').doc(id).delete()
     if (courseId) await db.syncCourseReviewStats(courseId)
     cacheInvalidate('homepage:data*', 'reviews:live:*')
@@ -4457,23 +4573,29 @@ const db = {
   },
 
   // admin stats
+  getAdminUserIdSet,
+  orderRevenueAmount,
+  isOrderRevenueExcluded,
   async getStats() {
     const cached = cacheGet('admin:stats')
     if (cached) return cached
-    const [orders, refunded, enrollments, users] = await Promise.all([
+    const [orders, refunded, enrollments, users, adminUserIds] = await Promise.all([
       fs.collection('orders').where('status', '==', 'paid').get(),
       fs.collection('orders').where('status', '==', 'refunded').get(),
       fs.collection('enrollments').get(),
       fs.collection('users').where('role', '==', 'student').get(),
+      getAdminUserIdSet(),
     ])
     const todayStr = now().slice(0, 10)
     const monthStr = now().slice(0, 7)
     let revenue = 0, todayRevenue = 0, monthRevenue = 0, todayOrders = 0, monthOrders = 0, refundCount = 0
     orders.docs.forEach(d => {
       const o = d.data()
-      revenue += o.amount || 0
-      if ((o.paid_at || '').startsWith(todayStr)) { todayRevenue += o.amount || 0; todayOrders++ }
-      if ((o.paid_at || '').startsWith(monthStr)) { monthRevenue += o.amount || 0; monthOrders++ }
+      const amount = orderRevenueAmount(o, adminUserIds)
+      if (amount <= 0) return
+      revenue += amount
+      if ((o.paid_at || '').startsWith(todayStr)) { todayRevenue += amount; todayOrders++ }
+      if ((o.paid_at || '').startsWith(monthStr)) { monthRevenue += amount; monthOrders++ }
     })
     refunded.docs.forEach(d => { const o = d.data(); if ((o.refunded_at || '').startsWith(monthStr)) refundCount++ })
     const result = {
@@ -4488,6 +4610,7 @@ const db = {
     }
     orders.docs.forEach(d => {
       const o = d.data()
+      if (isOrderRevenueExcluded(o, adminUserIds)) return
       const method = String(o.method || '')
       const provider = String(o.provider || '')
       if (o.admin_enrolled || method.includes('스마트스토어') || provider === 'smartstore') {
@@ -4500,10 +4623,11 @@ const db = {
     return result
   },
   async getAllStudents() {
-    const [usersSnap, enrollSnap, ordersSnap] = await Promise.all([
+    const [usersSnap, enrollSnap, ordersSnap, adminUserIds] = await Promise.all([
       getEnrollableUsersSnap(),
       fs.collection('enrollments').get(),
       fs.collection('orders').where('status', '==', 'paid').get(),
+      getAdminUserIdSet(),
     ])
     const enrollCount = {}
     enrollSnap.docs.forEach(d => {
@@ -4513,7 +4637,9 @@ const db = {
     const paidTotal = {}
     ordersSnap.docs.forEach(d => {
       const o = d.data()
-      paidTotal[o.user_id] = (paidTotal[o.user_id] || 0) + (o.amount || 0)
+      const amount = orderRevenueAmount(o, adminUserIds)
+      if (amount <= 0) return
+      paidTotal[o.user_id] = (paidTotal[o.user_id] || 0) + amount
     })
     return usersSnap.docs.map(d => {
       const u = { id: d.id, ...d.data() }
@@ -4523,15 +4649,18 @@ const db = {
   async getCourseStats() {
     const cached = cacheGet('admin:courseStats')
     if (cached) return cached
-    const [courses, ordersSnap, enrollSnap] = await Promise.all([
+    const [courses, ordersSnap, enrollSnap, adminUserIds] = await Promise.all([
       db.getCourses(false),
       fs.collection('orders').where('status', '==', 'paid').get(),
       fs.collection('enrollments').get(),
+      getAdminUserIdSet(),
     ])
     const revenueMap = {}
     ordersSnap.docs.forEach(d => {
       const o = d.data()
-      revenueMap[o.course_id] = (revenueMap[o.course_id] || 0) + (o.amount || 0)
+      const amount = orderRevenueAmount(o, adminUserIds)
+      if (amount <= 0) return
+      revenueMap[o.course_id] = (revenueMap[o.course_id] || 0) + amount
     })
     const countMap = {}
     enrollSnap.docs.forEach(d => {
@@ -4908,38 +5037,138 @@ const db = {
     return snap.exists ? { id: snap.id, ...snap.data() } : null
   },
 
+  async listUserDesktopCoinCourses(userId) {
+    const enrollments = await db.getEnrollmentsByUser(userId)
+    const out = []
+    const seen = new Set()
+    for (const e of enrollments) {
+      if (!e.course_id || seen.has(e.course_id)) continue
+      const course = await db.getCourseById(e.course_id)
+      if (!course) continue
+      const program = await db.getProgramForCourse(course)
+      if (!program || program.type !== 'desktop_coin') continue
+      seen.add(e.course_id)
+      out.push({ course, program })
+    }
+    const rank = (slug) => {
+      if (slug === SUBTITLE_COURSE_SLUG) return 0
+      if (slug === VIEWS_EDITING_COURSE_SLUG) return 1
+      return 2
+    }
+    out.sort((a, b) => rank(a.course.slug) - rank(b.course.slug))
+    return out
+  },
+
+  async hasSubtitleInitialGrant(userId, courseId, courseSlug) {
+    const ledgerDoc = await fs.collection('subtitle_coin_ledger').doc(`initial:${courseId}`).get()
+    if (ledgerDoc.exists) return true
+    if (courseSlug === SUBTITLE_COURSE_SLUG) {
+      const snap = await fs.collection('subtitle_coin_ledger')
+        .where('user_id', '==', userId)
+        .where('reason', '==', 'initial')
+        .get()
+      for (const d of snap.docs) {
+        const ref = d.data().ref
+        if (!ref || ref === courseId) return true
+      }
+      const wallet = await db.getSubtitleWallet(userId)
+      if (wallet?.initial_granted_at) return true
+    }
+    return false
+  },
+
+  async hasSubtitleReviewBonusForCourse(userId, courseId) {
+    const userLedgerDoc = await fs.collection('subtitle_coin_ledger').doc(`review_bonus:${userId}:${courseId}`).get()
+    if (userLedgerDoc.exists) return true
+    const legacyLedgerDoc = await fs.collection('subtitle_coin_ledger').doc(`review_bonus:${courseId}`).get()
+    if (legacyLedgerDoc.exists && legacyLedgerDoc.data().user_id === userId) return true
+    const course = await db.getCourseById(courseId)
+    if (course?.slug === SUBTITLE_COURSE_SLUG) {
+      const wallet = await db.getSubtitleWallet(userId)
+      if (wallet?.review_bonus_granted_at) return true
+    }
+    return false
+  },
+
+  async grantSubtitleInitialForCourse(userId, course, program) {
+    const amount = Math.max(0, parseInt(program.initial_coins, 10)
+      || (course.slug === VIEWS_EDITING_COURSE_SLUG ? VIEWS_EDITING_INITIAL_COINS : SUBTITLE_INITIAL_COINS))
+    if (amount <= 0) return { granted: false, amount: 0, reason: 'zero' }
+    if (await db.hasSubtitleInitialGrant(userId, course.id, course.slug)) {
+      return { granted: false, amount: 0, reason: 'already' }
+    }
+    await db.ensureSubtitleWallet(userId)
+    const ledgerRef = fs.collection('subtitle_coin_ledger').doc(`initial:${course.id}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
+    let out = { granted: false, amount: 0 }
+    await fs.runTransaction(async t => {
+      const ledgerSnap = await t.get(ledgerRef)
+      if (ledgerSnap.exists) {
+        out = { granted: false, amount: 0, reason: 'already' }
+        return
+      }
+      const walletSnap = await t.get(walletRef)
+      if (!walletSnap.exists) return
+      const data = walletSnap.data()
+      const balance = data.balance || 0
+      const newBal = balance + amount
+      const ts = now()
+      const walletPatch = { balance: newBal, updated_at: ts }
+      if (!data.initial_granted_at) walletPatch.initial_granted_at = ts
+      t.update(walletRef, walletPatch)
+      t.set(ledgerRef, {
+        user_id: userId,
+        delta: amount,
+        balance_after: newBal,
+        reason: 'initial',
+        ref: course.id,
+        course_slug: course.slug,
+        created_at: ts,
+      })
+      out = { granted: true, amount, balance: newBal, course_id: course.id }
+    })
+    return out
+  },
+
+  async syncSubtitleInitialGrants(userId) {
+    const eligible = await db.listUserDesktopCoinCourses(userId)
+    const grants = []
+    for (const { course, program } of eligible) {
+      const result = await db.grantSubtitleInitialForCourse(userId, course, program)
+      if (result.granted) grants.push(result)
+    }
+    return grants
+  },
+
   async ensureSubtitleWallet(userId) {
     const ref = fs.collection('subtitle_wallets').doc(userId)
     let result = null
-    let justGranted = false
     await fs.runTransaction(async t => {
       const snap = await t.get(ref)
       const ts = now()
       if (!snap.exists) {
         const data = {
-          balance: SUBTITLE_INITIAL_COINS,
-          initial_granted_at: ts,
+          balance: 0,
+          initial_granted_at: null,
           review_bonus_granted_at: null,
           updated_at: ts,
         }
         t.set(ref, data)
-        result = { id: userId, ...data }
-        justGranted = true
+        result = { id: userId, ...data, just_granted_initial: false }
         return
       }
-      result = { id: userId, ...snap.data() }
+      result = { id: userId, ...snap.data(), just_granted_initial: false }
     })
-    if (justGranted) {
-      await fs.collection('subtitle_coin_ledger').add({
-        user_id: userId,
-        delta: SUBTITLE_INITIAL_COINS,
-        balance_after: SUBTITLE_INITIAL_COINS,
-        reason: 'initial',
-        ref: null,
-        created_at: now(),
-      })
+    return result
+  },
+
+  async resolveSubtitleReviewTarget(userId, coinCourses) {
+    for (const { course } of coinCourses) {
+      if (!(await db.hasSubtitleReviewBonusForCourse(userId, course.id))) {
+        return course
+      }
     }
-    return { ...result, just_granted_initial: justGranted }
+    return coinCourses[0]?.course || null
   },
 
   async ensureSubtitleEntitlement(userId) {
@@ -4956,25 +5185,22 @@ const db = {
         enrolled: false,
       }
     }
-    const course = await db.getCourseBySlug(SUBTITLE_COURSE_SLUG)
-    if (!course) {
-      return { ok: false, code: 'course_missing', error: '대상 강의를 찾을 수 없습니다.', has_google: true }
-    }
-    const enrolled = await db.isEnrolled(userId, course.id)
-    if (!enrolled) {
+
+    const coinCourses = await db.listUserDesktopCoinCourses(userId)
+    if (!coinCourses.length) {
       return {
         ok: false,
         code: 'not_enrolled',
-        error: '캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다.',
+        error: '타닥싱크·조회수 편집법 등 코인 프로그램 강의를 수강 중인 분만 이용할 수 있습니다.',
         has_google: true,
         enrolled: false,
-        course_slug: course.slug,
-        course_title: course.title,
-        course_id: course.id,
       }
     }
-    const program = await db.getProgramForCourse(course)
-    if (!bypassesLectureTimeGate(user) && !isProgramAccessOpen(course, program)) {
+
+    const usable = coinCourses.filter(({ course, program }) =>
+      bypassesLectureTimeGate(user) || isProgramAccessOpen(course, program))
+    if (!usable.length) {
+      const { course, program } = coinCourses[0]
       const startsAt = getCourseLectureStartAt(course)
       const openAt = startsAt
         ? new Date(startsAt.getTime() - getProgramEarlyAccessMs(program))
@@ -4984,8 +5210,8 @@ const db = {
         ok: false,
         code: 'course_not_started',
         error: label
-          ? `${label}부터 ${program?.name || '타닥싱크'}를 이용할 수 있습니다. (강의 시작 2시간 전)`
-          : `강의 시작 2시간 전부터 ${program?.name || '타닥싱크'}를 이용할 수 있습니다.`,
+          ? `${label}부터 ${program?.name || '프로그램'}을 이용할 수 있습니다. (강의 시작 2시간 전)`
+          : `강의 시작 2시간 전부터 ${program?.name || '프로그램'}을 이용할 수 있습니다.`,
         has_google: true,
         enrolled: true,
         course_slug: course.slug,
@@ -4999,33 +5225,70 @@ const db = {
         program_name: program?.name || null,
       }
     }
-    const wallet = await db.ensureSubtitleWallet(userId)
-    const review = await db.getReviewByUserAndCourse(userId, course.id)
-    const community = {
-      community_instagram_url: program?.community_instagram_url || null,
-      community_chat_url: program?.community_chat_url || course.live_chat_url || null,
-      community_website_url: program?.community_website_url || 'https://vcml.kr',
+
+    await db.ensureSubtitleWallet(userId)
+    const initialGrants = await db.syncSubtitleInitialGrants(userId)
+    const wallet = await db.getSubtitleWallet(userId)
+    const primary = usable[0]
+    const reviewTarget = await db.resolveSubtitleReviewTarget(userId, coinCourses)
+    const targetCourse = reviewTarget || primary.course
+    const targetProgram = coinCourses.find(c => c.course.id === targetCourse.id)?.program || primary.program
+    const review = await db.getReviewByUserAndCourse(userId, targetCourse.id)
+
+    let pendingReviewBonus = false
+    for (const { course } of coinCourses) {
+      if (!(await db.hasSubtitleReviewBonusForCourse(userId, course.id))) {
+        pendingReviewBonus = true
+        break
+      }
     }
+
+    const initialGrantedFlags = await Promise.all(
+      coinCourses.map(({ course }) => db.hasSubtitleInitialGrant(userId, course.id, course.slug))
+    )
+
+    const community = {
+      community_instagram_url: targetProgram?.community_instagram_url || null,
+      community_chat_url: targetProgram?.community_chat_url || targetCourse.live_chat_url || null,
+      community_website_url: targetProgram?.community_website_url || 'https://vcml.kr',
+    }
+    const [smartstoreReview, pendingActions] = await Promise.all([
+      db.getSmartstoreReviewState(userId),
+      db.listSubtitleAppInbox(userId),
+    ])
     return {
       ok: true,
       has_google: true,
       enrolled: true,
-      course_slug: course.slug,
-      course_title: course.title,
-      course_id: course.id,
-      balance: wallet.balance || 0,
-      initial_granted: !!wallet.initial_granted_at,
-      review_bonus_granted: !!wallet.review_bonus_granted_at,
+      course_slug: targetCourse.slug,
+      course_title: targetCourse.title,
+      course_id: targetCourse.id,
+      balance: wallet?.balance || 0,
+      initial_granted: initialGrantedFlags.some(Boolean),
+      review_bonus_granted: !pendingReviewBonus,
       has_review: !!review,
-      just_granted_initial: !!wallet.just_granted_initial,
+      just_granted_initial: initialGrants.length > 0,
       download_available: true,
+      coin_courses: await Promise.all(coinCourses.map(async ({ course, program }) => ({
+        course_id: course.id,
+        course_slug: course.slug,
+        course_title: course.title,
+        initial_coins: program.initial_coins,
+        review_bonus_coins: program.review_bonus_coins,
+        initial_granted: await db.hasSubtitleInitialGrant(userId, course.id, course.slug),
+        review_bonus_granted: await db.hasSubtitleReviewBonusForCourse(userId, course.id),
+      }))),
+      smartstore_review: smartstoreReview,
+      pending_actions: pendingActions,
       ...community,
     }
   },
 
   async grantSubtitleReviewBonus(userId, courseId) {
     const course = courseId ? await db.getCourseById(courseId) : await db.getCourseBySlug(SUBTITLE_COURSE_SLUG)
-    if (!course || course.slug !== SUBTITLE_COURSE_SLUG) {
+    if (!course) return { granted: false, reason: 'wrong_course' }
+    const program = await db.getProgramForCourse(course)
+    if (!program || program.type !== 'desktop_coin') {
       return { granted: false, reason: 'wrong_course' }
     }
     const user = await db.findUserById(userId)
@@ -5033,36 +5296,256 @@ const db = {
     const enrolled = await db.isEnrolled(userId, course.id)
     if (!enrolled) return { granted: false, reason: 'not_enrolled' }
 
+    const bonusCoins = Math.max(0, parseInt(program.review_bonus_coins, 10) || SUBTITLE_REVIEW_BONUS_COINS)
+    if (bonusCoins <= 0) return { granted: false, reason: 'zero' }
+    if (await db.hasSubtitleReviewBonusForCourse(userId, course.id)) {
+      const wallet = await db.getSubtitleWallet(userId)
+      return { granted: false, reason: 'already', balance: wallet?.balance || 0 }
+    }
+
     await db.ensureSubtitleWallet(userId)
-    const ref = fs.collection('subtitle_wallets').doc(userId)
+    const ledgerRef = fs.collection('subtitle_coin_ledger').doc(`review_bonus:${userId}:${course.id}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
     let out = { granted: false, reason: 'already' }
     await fs.runTransaction(async t => {
-      const snap = await t.get(ref)
-      if (!snap.exists) return
-      const data = snap.data()
-      if (data.review_bonus_granted_at) {
-        out = { granted: false, reason: 'already', balance: data.balance || 0 }
+      const ledgerSnap = await t.get(ledgerRef)
+      if (ledgerSnap.exists) {
+        const walletSnap = await t.get(walletRef)
+        out = { granted: false, reason: 'already', balance: walletSnap.exists ? walletSnap.data().balance || 0 : 0 }
         return
       }
+      const walletSnap = await t.get(walletRef)
+      if (!walletSnap.exists) return
+      const data = walletSnap.data()
       const ts = now()
-      const newBal = (data.balance || 0) + SUBTITLE_REVIEW_BONUS_COINS
-      t.update(ref, {
-        balance: newBal,
-        review_bonus_granted_at: ts,
-        updated_at: ts,
-      })
-      const ledgerRef = fs.collection('subtitle_coin_ledger').doc()
+      const newBal = (data.balance || 0) + bonusCoins
+      const walletPatch = { balance: newBal, updated_at: ts }
+      if (!data.review_bonus_granted_at) walletPatch.review_bonus_granted_at = ts
+      t.update(walletRef, walletPatch)
       t.set(ledgerRef, {
         user_id: userId,
-        delta: SUBTITLE_REVIEW_BONUS_COINS,
+        delta: bonusCoins,
         balance_after: newBal,
         reason: 'review_bonus',
         ref: course.id,
+        course_slug: course.slug,
         created_at: ts,
       })
-      out = { granted: true, balance: newBal, amount: SUBTITLE_REVIEW_BONUS_COINS }
+      out = { granted: true, balance: newBal, amount: bonusCoins, course_id: course.id }
     })
     return out
+  },
+
+  async getSmartstoreReviewClaim(userId) {
+    if (!userId) return null
+    const snap = await fs.collection('smartstore_review_claims').doc(String(userId)).get()
+    return snap.exists ? { id: snap.id, ...snap.data() } : null
+  },
+
+  async getSmartstoreReviewState(userId) {
+    const claim = await db.getSmartstoreReviewClaim(userId)
+    return {
+      status: claim?.status || 'none',
+      bonus_coins: SMARTSTORE_REVIEW_BONUS_COINS,
+      reject_reason: claim?.reject_reason || null,
+      store_review_url: SMARTSTORE_REVIEW_URL,
+      claimed_at: claim?.claimed_at || null,
+      reviewed_at: claim?.reviewed_at || null,
+      claim_count: claim?.claim_count || 0,
+    }
+  },
+
+  async listSubtitleAppInbox(userId) {
+    if (!userId) return []
+    const snap = await fs.collection('subtitle_app_inbox')
+      .where('user_id', '==', userId)
+      .get()
+    const rows = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(m => !m.acked_at)
+      .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
+    return rows.map(m => ({
+      id: m.id,
+      type: m.type,
+      title: m.title,
+      body: m.body,
+      created_at: m.created_at || null,
+      payload: m.payload || {},
+    }))
+  },
+
+  async createSubtitleAppInboxMessage(userId, type, title, body, payload = {}) {
+    if (!userId) return null
+    const ts = now()
+    const ref = fs.collection('subtitle_app_inbox').doc()
+    const data = {
+      user_id: userId,
+      type,
+      title,
+      body,
+      payload,
+      created_at: ts,
+      acked_at: null,
+    }
+    await ref.set(data)
+    return { id: ref.id, ...data }
+  },
+
+  async ackSubtitleAppInbox(userId, messageIds = []) {
+    const ids = Array.isArray(messageIds) ? messageIds.map(v => String(v || '').trim()).filter(Boolean) : []
+    if (!userId || !ids.length) return { ok: true, acked: 0 }
+    const ts = now()
+    let acked = 0
+    for (const id of ids.slice(0, 20)) {
+      const ref = fs.collection('subtitle_app_inbox').doc(id)
+      const snap = await ref.get()
+      if (!snap.exists || snap.data().user_id !== userId) continue
+      await ref.update({ acked_at: ts })
+      acked++
+    }
+    return { ok: true, acked }
+  },
+
+  async claimSmartstoreReview(userId) {
+    const user = await db.findUserById(userId)
+    if (!user?.google_id) return { ok: false, code: 'google_required', error: '구글 로그인 계정만 신청할 수 있습니다.' }
+    const eligible = await db.listUserDesktopCoinCourses(userId)
+    if (!eligible.length) return { ok: false, code: 'not_enrolled', error: '코인 프로그램 강의 수강생만 신청할 수 있습니다.' }
+    const ref = fs.collection('smartstore_review_claims').doc(userId)
+    let out = null
+    await fs.runTransaction(async t => {
+      const snap = await t.get(ref)
+      const ts = now()
+      const prev = snap.exists ? snap.data() : null
+      if (prev?.status === 'approved') {
+        out = { ok: false, code: 'already_approved', error: '이미 스마트스토어 후기 보상이 지급되었습니다.' }
+        return
+      }
+      if (prev?.status === 'pending') {
+        out = { ok: false, code: 'already_pending', error: '이미 관리자 확인 대기 중입니다.' }
+        return
+      }
+      const count = Math.max(0, parseInt(prev?.claim_count, 10) || 0) + 1
+      const data = {
+        user_id: userId,
+        user_email: user.email || null,
+        user_name: user.name || null,
+        status: 'pending',
+        claimed_at: ts,
+        reviewed_at: null,
+        reviewed_by: null,
+        reject_reason: null,
+        admin_note: null,
+        claim_count: count,
+        granted_at: prev?.granted_at || null,
+        grant_ledger_id: prev?.grant_ledger_id || null,
+        updated_at: ts,
+        created_at: prev?.created_at || ts,
+      }
+      t.set(ref, data, { merge: true })
+      out = { ok: true, status: 'pending', claim_count: count }
+    })
+    return out
+  },
+
+  async grantSmartstoreReviewBonus(userId) {
+    await db.ensureSubtitleWallet(userId)
+    const ledgerRef = fs.collection('subtitle_coin_ledger').doc(`smartstore_review:${userId}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
+    let out = { granted: false, reason: 'already' }
+    await fs.runTransaction(async t => {
+      const [ledgerSnap, walletSnap] = await Promise.all([t.get(ledgerRef), t.get(walletRef)])
+      if (!walletSnap.exists) {
+        out = { granted: false, reason: 'no_wallet', balance: 0 }
+        return
+      }
+      const balance = walletSnap.data().balance || 0
+      if (ledgerSnap.exists) {
+        out = { granted: false, reason: 'already', balance }
+        return
+      }
+      const ts = now()
+      const newBal = balance + SMARTSTORE_REVIEW_BONUS_COINS
+      t.update(walletRef, { balance: newBal, updated_at: ts })
+      t.set(ledgerRef, {
+        user_id: userId,
+        delta: SMARTSTORE_REVIEW_BONUS_COINS,
+        balance_after: newBal,
+        reason: 'smartstore_review',
+        ref: userId,
+        created_at: ts,
+      })
+      out = { granted: true, amount: SMARTSTORE_REVIEW_BONUS_COINS, balance: newBal, ledger_id: ledgerRef.id }
+    })
+    return out
+  },
+
+  async listSmartstoreReviewClaims(status = 'pending') {
+    const normalized = String(status || 'pending').trim()
+    const snap = normalized === 'all'
+      ? await fs.collection('smartstore_review_claims').get()
+      : await fs.collection('smartstore_review_claims').where('status', '==', normalized).get()
+    const rows = snapToArr(snap).sort((a, b) => (b.claimed_at || '').localeCompare(a.claimed_at || ''))
+    const users = await db.batchGetUsers([...new Set(rows.map(r => r.user_id).filter(Boolean))])
+    return rows.map(r => ({
+      ...r,
+      user_name: r.user_name || users[r.user_id]?.name || null,
+      user_email: r.user_email || users[r.user_id]?.email || null,
+    }))
+  },
+
+  async approveSmartstoreReview(userId, adminId = null) {
+    const claim = await db.getSmartstoreReviewClaim(userId)
+    if (!claim) return { ok: false, code: 'not_found', error: '신고 내역을 찾을 수 없습니다.' }
+    if (claim.status === 'approved') {
+      return { ok: true, status: 'approved', already: true }
+    }
+    const grant = await db.grantSmartstoreReviewBonus(userId)
+    const ts = now()
+    await fs.collection('smartstore_review_claims').doc(userId).set({
+      status: 'approved',
+      reviewed_at: ts,
+      reviewed_by: adminId || null,
+      reject_reason: null,
+      admin_note: null,
+      granted_at: claim.granted_at || ts,
+      grant_ledger_id: claim.grant_ledger_id || grant.ledger_id || `smartstore_review:${userId}`,
+      updated_at: ts,
+    }, { merge: true })
+    await db.createSubtitleAppInboxMessage(
+      userId,
+      'smartstore_granted',
+      '스마트스토어 후기 보너스 지급 완료',
+      `네이버 스마트스토어 후기 확인이 끝나서 ${SMARTSTORE_REVIEW_BONUS_COINS}코인을 지급해 드렸어요!`,
+      { claim_status: 'approved', bonus_coins: SMARTSTORE_REVIEW_BONUS_COINS },
+    )
+    return { ok: true, status: 'approved', grant }
+  },
+
+  async rejectSmartstoreReview(userId, adminId = null, reason = '') {
+    const claim = await db.getSmartstoreReviewClaim(userId)
+    if (!claim) return { ok: false, code: 'not_found', error: '신고 내역을 찾을 수 없습니다.' }
+    if (claim.status === 'approved') {
+      return { ok: false, code: 'already_approved', error: '이미 지급 완료된 신고입니다.' }
+    }
+    const rejectReason = String(reason || '').trim().slice(0, 300)
+      || '스마트스토어에서 작성하신 후기를 아직 확인하지 못했어요. 후기를 작성해 주신 후 다시 「작성 완료」를 눌러 주세요.'
+    const ts = now()
+    await fs.collection('smartstore_review_claims').doc(userId).set({
+      status: 'rejected',
+      reviewed_at: ts,
+      reviewed_by: adminId || null,
+      reject_reason: rejectReason,
+      updated_at: ts,
+    }, { merge: true })
+    await db.createSubtitleAppInboxMessage(
+      userId,
+      'smartstore_rewrite',
+      '스마트스토어 후기를 다시 작성해 주세요',
+      rejectReason,
+      { claim_status: 'rejected', reject_reason: rejectReason },
+    )
+    return { ok: true, status: 'rejected', reject_reason: rejectReason }
   },
 
   async consumeSubtitleCoins(userId, minutes, jobId) {
@@ -5454,6 +5937,45 @@ const db = {
     })
   },
 
+  async ensureDefaultViewsEditingProgram() {
+    let existing = await db.getCourseProgramBySlug('views-editing-coin')
+    if (existing) {
+      const patch = {}
+      if (existing.name !== '조회수 편집법 코인') patch.name = '조회수 편집법 코인'
+      if (Number(existing.initial_coins) !== VIEWS_EDITING_INITIAL_COINS) {
+        patch.initial_coins = VIEWS_EDITING_INITIAL_COINS
+      }
+      if (Number(existing.review_bonus_coins) !== SUBTITLE_REVIEW_BONUS_COINS) {
+        patch.review_bonus_coins = SUBTITLE_REVIEW_BONUS_COINS
+      }
+      if (!existing.storage_path) patch.storage_path = 'subtitle-tool/TadakSync.zip'
+      if (!existing.page_path) patch.page_path = '/subtitle-tool.html'
+      if (!existing.community_website_url) patch.community_website_url = 'https://vcml.kr'
+      if (Object.keys(patch).length) {
+        await db.updateCourseProgram(existing.id, patch)
+        return { ...existing, ...patch }
+      }
+      return existing
+    }
+    return db.createCourseProgram({
+      name: '조회수 편집법 코인',
+      slug: 'views-editing-coin',
+      type: 'desktop_coin',
+      storage_path: 'subtitle-tool/TadakSync.zip',
+      page_path: '/subtitle-tool.html',
+      feature_label: '수강생 전용 타닥싱크(TadakSync) 제공',
+      requires_google: 1,
+      early_access_hours: 2,
+      initial_coins: VIEWS_EDITING_INITIAL_COINS,
+      review_bonus_coins: SUBTITLE_REVIEW_BONUS_COINS,
+      community_instagram_url: null,
+      community_chat_url: null,
+      community_website_url: 'https://vcml.kr',
+      coin_per_minute: 1,
+      is_published: 1,
+    })
+  },
+
   async getProgramForCourse(course) {
     if (!course) return null
     if (course.program_id) {
@@ -5462,6 +5984,9 @@ const db = {
     }
     if (course.slug === SUBTITLE_COURSE_SLUG) {
       return db.ensureDefaultSubtitleProgram()
+    }
+    if (course.slug === VIEWS_EDITING_COURSE_SLUG) {
+      return db.ensureDefaultViewsEditingProgram()
     }
     return null
   },
@@ -5493,8 +6018,11 @@ const db = {
   isPublicReview,
   normalizeReviewRating,
   SUBTITLE_COURSE_SLUG,
+  VIEWS_EDITING_COURSE_SLUG,
   SUBTITLE_INITIAL_COINS,
+  VIEWS_EDITING_INITIAL_COINS,
   SUBTITLE_REVIEW_BONUS_COINS,
+  SMARTSTORE_REVIEW_BONUS_COINS,
   MEET_OPEN_BEFORE_MS,
   PROGRAM_EARLY_ACCESS_MS,
   normalizeEmail,

@@ -58,15 +58,51 @@ router.get('/me', subtitleAppAuth, async (req, res) => {
       course_slug: result.course_slug,
       course_title: result.course_title,
       course_id: result.course_id || null,
+      coin_courses: result.coin_courses || [],
       enrolled: !!result.enrolled,
       has_google: !!result.has_google,
       community_instagram_url: result.community_instagram_url || null,
       community_chat_url: result.community_chat_url || null,
       community_website_url: result.community_website_url || SITE_ORIGIN,
+      smartstore_review: result.smartstore_review || null,
+      pending_actions: result.pending_actions || [],
     })
   } catch (e) {
     console.error('subtitle me:', e)
     res.status(500).json({ error: '잔액을 불러오지 못했습니다.' })
+  }
+})
+
+/** POST /api/subtitle/smartstore-review/claim — 앱에서 스마트스토어 후기 작성 완료 신고 */
+router.post('/smartstore-review/claim', subtitleAppAuth, async (req, res) => {
+  try {
+    const entitlement = await db.ensureSubtitleEntitlement(req.user.id)
+    if (!entitlement.ok) {
+      return res.status(403).json(entitlement)
+    }
+    const result = await db.claimSmartstoreReview(req.user.id)
+    if (!result.ok) {
+      const status = result.code === 'already_pending' || result.code === 'already_approved' ? 409 : 400
+      return res.status(status).json(result)
+    }
+    res.json({
+      ...result,
+      smartstore_review: await db.getSmartstoreReviewState(req.user.id),
+    })
+  } catch (e) {
+    console.error('subtitle smartstore review claim:', e)
+    res.status(500).json({ error: '스마트스토어 후기 신고를 접수하지 못했습니다.' })
+  }
+})
+
+/** POST /api/subtitle/inbox/ack — 앱 안내 메시지 확인 처리 */
+router.post('/inbox/ack', subtitleAppAuth, async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.message_ids) ? req.body.message_ids : []
+    res.json(await db.ackSubtitleAppInbox(req.user.id, ids))
+  } catch (e) {
+    console.error('subtitle inbox ack:', e)
+    res.status(500).json({ error: '알림 확인 처리에 실패했습니다.' })
   }
 })
 

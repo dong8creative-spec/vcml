@@ -55,6 +55,7 @@ router.get('/dashboard', async (req, res) => {
   ])
   const orderSlice = allOrders.slice(0, 5)
   const reviewSlice = allReviews.slice(0, 5)
+  const adminUserIds = await db.getAdminUserIdSet()
   const userIds = [...new Set([
     ...orderSlice.map(o => o.user_id),
     ...reviewSlice.map(r => r.user_id),
@@ -71,6 +72,8 @@ router.get('/dashboard', async (req, res) => {
     stats,
     orders: orderSlice.map(o => ({
       ...o,
+      amount: db.orderRevenueAmount(o, adminUserIds),
+      exclude_from_revenue: db.isOrderRevenueExcluded(o, adminUserIds),
       user_name: userMap[o.user_id]?.name,
       email: userMap[o.user_id]?.email,
       course_title: courseMap[o.course_id]?.title,
@@ -102,7 +105,10 @@ router.patch('/coupon-issuance', async (req, res) => {
 })
 
 router.get('/orders', async (req, res) => {
-  const orders = await db.getAllOrders()
+  const [orders, adminUserIds] = await Promise.all([
+    db.getAllOrders(),
+    db.getAdminUserIdSet(),
+  ])
   const userIds = [...new Set(orders.map(o => o.user_id).filter(Boolean))]
   const courseIds = [...new Set(orders.map(o => o.course_id).filter(Boolean))]
   const [userMap, courseMap] = await Promise.all([
@@ -111,6 +117,8 @@ router.get('/orders', async (req, res) => {
   ])
   res.json(orders.map(o => ({
     ...o,
+    amount: db.orderRevenueAmount(o, adminUserIds),
+    exclude_from_revenue: db.isOrderRevenueExcluded(o, adminUserIds),
     user_name: userMap[o.user_id]?.name,
     email: userMap[o.user_id]?.email,
     course_title: courseMap[o.course_id]?.title,
@@ -191,8 +199,52 @@ router.patch('/reviews/:id', async (req, res) => {
 })
 
 router.delete('/reviews/:id', async (req, res) => {
-  await db.deleteReview(req.params.id)
-  res.json({ success: true })
+  try {
+    await db.deleteReview(req.params.id, { bypassRewardLock: true })
+    res.json({ success: true })
+  } catch (e) {
+    res.status(400).json({ error: e.message || '후기를 삭제하지 못했습니다.' })
+  }
+})
+
+router.get('/smartstore-reviews', async (req, res) => {
+  try {
+    const status = String(req.query.status || 'pending')
+    res.json(await db.listSmartstoreReviewClaims(status))
+  } catch (e) {
+    console.error('admin smartstore reviews list:', e)
+    res.status(500).json({ error: '스마트스토어 후기 신고 목록을 불러오지 못했습니다.' })
+  }
+})
+
+router.post('/smartstore-reviews/:userId/approve', async (req, res) => {
+  try {
+    const result = await db.approveSmartstoreReview(req.params.userId, req.user?.id || null)
+    if (!result.ok) {
+      return res.status(result.code === 'not_found' ? 404 : 400).json(result)
+    }
+    res.json(result)
+  } catch (e) {
+    console.error('admin smartstore reviews approve:', e)
+    res.status(500).json({ error: '스마트스토어 후기 보상 지급에 실패했습니다.' })
+  }
+})
+
+router.post('/smartstore-reviews/:userId/reject', async (req, res) => {
+  try {
+    const result = await db.rejectSmartstoreReview(
+      req.params.userId,
+      req.user?.id || null,
+      req.body?.reason || '',
+    )
+    if (!result.ok) {
+      return res.status(result.code === 'not_found' ? 404 : 400).json(result)
+    }
+    res.json(result)
+  } catch (e) {
+    console.error('admin smartstore reviews reject:', e)
+    res.status(500).json({ error: '스마트스토어 후기 거절 처리에 실패했습니다.' })
+  }
 })
 
 router.get('/courses', async (req, res) => {

@@ -135,7 +135,7 @@ def _request(method: str, path: str, body: dict | None = None, token: str | None
         err.payload = payload  # type: ignore[attr-defined]
         raise err from None
     except urllib.error.URLError as e:
-        raise RuntimeError(f"서버에 연결하지 못했습니다: {e.reason}") from None
+        raise RuntimeError(f"서버에 연결하지 못했어요: {e.reason}") from None
 
 
 def minutes_from_audio(audio_len: int, sample_rate: int = 16000) -> int:
@@ -158,11 +158,11 @@ def start_device_login(on_status=None, on_code=None, cancel_event=None) -> dict:
     code = started.get("code")
     verify_url = started.get("verify_url")
     if not code or not verify_url:
-        raise RuntimeError("연동 코드를 받지 못했습니다.")
+        raise RuntimeError("연동 코드를 받지 못했어요. 다시 시도해 주세요.")
     if on_code:
         on_code(code, verify_url)
     if on_status:
-        on_status(f"브라우저에서 구글 로그인 후 연동하세요. 코드: {code}")
+        on_status(f"브라우저에서 구글 로그인 후 연동해 주세요. 코드: {code}")
     webbrowser.open(verify_url)
 
     deadline = time.time() + POLL_TIMEOUT_SEC
@@ -175,16 +175,16 @@ def start_device_login(on_status=None, on_code=None, cancel_event=None) -> dict:
         polled = _request("GET", "/api/subtitle/device/poll?" + urllib.parse.urlencode({"code": code}))
         status = polled.get("status")
         if status == "denied":
-            msg = polled.get("error") or "이용 권한이 없습니다."
+            msg = polled.get("error") or "이용 권한이 없어요."
             code = polled.get("code")
             if code == "not_enrolled":
                 msg = polled.get("error") or (
-                    "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다."
+                    "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있어요."
                 )
             elif code == "google_required":
-                msg = polled.get("error") or "구글 로그인 계정만 이용할 수 있습니다."
+                msg = polled.get("error") or "구글 로그인 계정만 이용할 수 있어요."
             elif code in ("session_revoked", "device_mismatch"):
-                msg = polled.get("error") or "다른 기기에서 로그인되어 연동이 해제되었습니다."
+                msg = polled.get("error") or "다른 기기에서 로그인되어 연동이 해제됐어요."
             clear_auth()
             raise RuntimeError(msg)
         if status == "approved" and polled.get("token"):
@@ -197,10 +197,10 @@ def start_device_login(on_status=None, on_code=None, cancel_event=None) -> dict:
                 raise
             return save_auth(token, user_name, me.get("balance"), me.get("email"))
         if status in ("expired", "invalid"):
-            raise RuntimeError("연동 코드가 만료되었습니다. 다시 로그인해 주세요.")
+            raise RuntimeError("연동 코드가 만료됐어요. 다시 로그인해 주세요.")
         if on_status:
             on_status(f"연동 대기 중… 코드 {code}")
-    raise RuntimeError("연동 시간이 초과되었습니다. 다시 시도해 주세요.")
+    raise RuntimeError("연동 시간이 초과됐어요. 다시 시도해 주세요.")
 
 
 def fetch_me(token: str) -> dict:
@@ -217,27 +217,27 @@ def verify_entitlement(token: str) -> dict:
         if code == "not_enrolled":
             err = RuntimeError(
                 payload.get("error")
-                or "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다.")
+                or "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있어요.")
             err.status = getattr(e, "status", 403)  # type: ignore[attr-defined]
         elif code == "google_required":
             err = RuntimeError(
                 payload.get("error")
-                or "구글 로그인 계정만 이용할 수 있습니다.")
+                or "구글 로그인 계정만 이용할 수 있어요.")
             err.status = getattr(e, "status", 403)  # type: ignore[attr-defined]
         elif code == "session_revoked":
             err = RuntimeError(
                 payload.get("error")
-                or "다른 기기에서 로그인되어 이 기기의 연동이 해제되었습니다.")
+                or "다른 기기에서 로그인되어 이 기기의 연동이 해제됐어요.")
             err.status = 401  # type: ignore[attr-defined]
         elif code == "device_mismatch":
             err = RuntimeError(
                 payload.get("error")
-                or "이 기기와 연동된 계정이 아닙니다. 다시 로그인해 주세요.")
+                or "이 기기와 연동된 계정이 아니에요. 다시 로그인해 주세요.")
             err.status = 401  # type: ignore[attr-defined]
         elif code in ("subtitle_login_required", "device_required", "token_expired"):
             err = RuntimeError(
                 payload.get("error")
-                or "기기 연동이 만료되었습니다. 다시 로그인해 주세요.")
+                or "기기 연동이 만료됐어요. 다시 로그인해 주세요.")
             err.status = 401  # type: ignore[attr-defined]
         else:
             raise
@@ -245,7 +245,7 @@ def verify_entitlement(token: str) -> dict:
         raise err from e
     if not me.get("enrolled"):
         err = RuntimeError(
-            "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있습니다.")
+            "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있어요.")
         err.status = 403  # type: ignore[attr-defined]
         raise err
     return me
@@ -272,3 +272,12 @@ def refund(token: str, job_id: str) -> dict:
 def fetch_history(token: str, limit: int = 30) -> list[dict]:
     result = _request("GET", f"/api/subtitle/history?limit={limit}", token=token)
     return result.get("history", [])
+
+
+def claim_smartstore_review(token: str) -> dict:
+    return _request("POST", "/api/subtitle/smartstore-review/claim", body={}, token=token)
+
+
+def ack_inbox(token: str, message_ids: list[str]) -> dict:
+    return _request("POST", "/api/subtitle/inbox/ack",
+                    body={"message_ids": message_ids}, token=token)
