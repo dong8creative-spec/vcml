@@ -353,6 +353,25 @@ class App(tk.Tk):
         self._session_epoch += 1
         return self._session_epoch
 
+    def _start_model_prewarm(self) -> None:
+        """로그인 직후 백그라운드에서 Whisper 모델을 미리 적재.
+
+        모델 다운로드는 최초 1회지만 RAM 적재는 매 실행마다 30초~1분 걸리므로,
+        사용자가 프로젝트를 고르는 동안 미리 준비해 생성 버튼의 대기를 없앤다.
+        (Transcriber.load는 내부 잠금으로 중복 적재를 막는다)
+        """
+        if getattr(self, "_prewarm_started", False):
+            return
+        self._prewarm_started = True
+
+        def worker() -> None:
+            try:
+                self.transcriber.load(MODEL, progress=self.set_status)
+            except Exception:
+                pass  # 실패해도 조용히 — 자막 생성 시 다시 시도하며 그때 안내
+
+        threading.Thread(target=worker, daemon=True).start()
+
     def _require_auth(self, action: str = "이 기능") -> bool:
         if self._is_logged_in():
             return True
@@ -411,6 +430,7 @@ class App(tk.Tk):
         if ok:
             self.refresh_projects()
             self.set_status("프로젝트를 선택하고 [① 자막 생성]을 눌러 주세요.")
+            self._start_model_prewarm()
         else:
             self.set_status("구글 로그인 후 이용할 수 있어요.")
 

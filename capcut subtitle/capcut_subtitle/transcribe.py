@@ -64,21 +64,25 @@ class Transcriber:
     def __init__(self) -> None:
         self._model = None
         self._model_size: Optional[str] = None
+        # 백그라운드 예열과 자막 생성이 동시에 load()를 불러도
+        # 모델이 이중으로 적재(RAM 6GB+)되지 않도록 직렬화한다
+        self._load_lock = threading.Lock()
 
     def load(self, model_size: str, progress: Callable[[str], None] = print) -> None:
-        if self._model is not None and self._model_size == model_size:
-            return
-        from faster_whisper import WhisperModel
+        with self._load_lock:
+            if self._model is not None and self._model_size == model_size:
+                return
+            from faster_whisper import WhisperModel
 
-        path = bundled_model_dir()
-        if path:
-            progress("동봉된 Whisper 모델을 불러오고 있어요...")
-        else:
-            path = self._ensure_downloaded(model_size, progress)
-            progress(f"Whisper 모델({model_size})을 불러오고 있어요...")
-        self._model = WhisperModel(path, device="cpu", compute_type="int8")
-        self._model_size = model_size
-        progress("모델을 불러왔어요")
+            path = bundled_model_dir()
+            if path:
+                progress("동봉된 Whisper 모델을 불러오고 있어요...")
+            else:
+                path = self._ensure_downloaded(model_size, progress)
+                progress("음성인식 모델을 준비하고 있어요... (매 실행 시 30초~1분, 다운로드 아님)")
+            self._model = WhisperModel(path, device="cpu", compute_type="int8")
+            self._model_size = model_size
+            progress("음성인식 준비 완료")
 
     def _ensure_downloaded(self, model_size: str,
                            progress: Callable[[str], None]) -> str:
