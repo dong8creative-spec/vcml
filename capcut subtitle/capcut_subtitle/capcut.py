@@ -24,14 +24,103 @@ _PLACEHOLDER_RE = re.compile(r"##_draftpath_placeholder_[^#]*_##")
 
 # ---------------------------------------------------------------- discovery
 
-def find_draft_roots() -> list[Path]:
-    """캡컷(및 剪映) 프로젝트 폴더 후보를 반환."""
+_APP_NAMES = ("CapCut", "JianyingPro")  # 국제판 / 중국판(剪映)
+
+
+def _custom_draft_paths() -> list[Path]:
+    """캡컷 설정(globalSetting)에 저장된 사용자 지정 초안 위치를 읽는다.
+
+    캡컷에서 '초안 위치'를 다른 드라이브 등으로 변경하면
+    User Data\\Config\\globalSetting 의 currentCustomDraftPath에 기록된다.
+    (값은 C:\\\\Users\\\\... 처럼 백슬래시가 이스케이프된 ini 형식)
+    """
     local = os.environ.get("LOCALAPPDATA", "")
-    candidates = [
-        Path(local) / "CapCut" / "User Data" / "Projects" / "com.lveditor.draft",
-        Path(local) / "JianyingPro" / "User Data" / "Projects" / "com.lveditor.draft",
-    ]
-    return [p for p in candidates if p.is_dir()]
+    paths: list[Path] = []
+    if not local:
+        return paths
+    for app in _APP_NAMES:
+        gs = Path(local) / app / "User Data" / "Config" / "globalSetting"
+        if not gs.is_file():
+            continue
+        try:
+            text = gs.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        for line in text.splitlines():
+            if line.startswith("currentCustomDraftPath="):
+                raw = line.split("=", 1)[1].strip().replace("\\\\", "\\")
+                if raw:
+                    paths.append(Path(raw))
+    return paths
+
+
+def _settings_path() -> Path:
+    from . import license as license_api
+    return license_api.app_data_dir() / "settings.json"
+
+
+def manual_draft_roots() -> list[Path]:
+    """사용자가 프로그램에서 직접 지정한 초안 폴더 목록."""
+    try:
+        data = json.loads(_settings_path().read_text(encoding="utf-8"))
+        return [Path(p) for p in data.get("draft_roots", []) if p]
+    except (OSError, json.JSONDecodeError, ValueError):
+        return []
+
+
+def add_manual_draft_root(path: Path) -> Path:
+    """초안 폴더를 수동 등록. 프로젝트 폴더를 고르면 그 부모를 등록한다."""
+    path = Path(path)
+    if (path / "draft_content.json").is_file():
+        path = path.parent
+    roots = [str(path)] + [str(p) for p in manual_draft_roots() if Path(p) != path]
+    settings = {}
+    try:
+        settings = json.loads(_settings_path().read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, ValueError):
+        pass
+    settings["draft_roots"] = roots[:5]  # 최근 5개만 유지
+    _settings_path().write_text(
+        json.dumps(settings, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
+def find_draft_roots() -> list[Path]:
+    """캡컷 초안 폴더 후보를 모든 방법으로 수집 (중복 제거, 존재하는 것만).
+
+    ① 캡컷 설정의 사용자 지정 초안 위치 (초안 위치를 옮긴 경우)
+    ② 기본 설치 경로 (국제판 CapCut / 중국판 JianyingPro)
+    ③ Microsoft Store 패키지 설치 경로
+    ④ 프로그램에서 직접 지정한 폴더
+    """
+    local = os.environ.get("LOCALAPPDATA", "")
+    candidates: list[Path] = []
+    candidates += _custom_draft_paths()
+    if local:
+        for app in _APP_NAMES:
+            candidates.append(
+                Path(local) / app / "User Data" / "Projects" / "com.lveditor.draft")
+        packages = Path(local) / "Packages"
+        if packages.is_dir():
+            for pattern in ("*CapCut*", "*Jianying*"):
+                for pkg in packages.glob(pattern):
+                    candidates += pkg.glob(
+                        "LocalCache/Local/*/User Data/Projects/com.lveditor.draft")
+    candidates += manual_draft_roots()
+
+    seen: set[str] = set()
+    roots: list[Path] = []
+    for p in candidates:
+        try:
+            key = str(p.resolve()).lower()
+        except OSError:
+            key = str(p).lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        if p.is_dir():
+            roots.append(p)
+    return roots
 
 
 @dataclass
@@ -71,13 +160,14 @@ def list_projects() -> list[Project]:
 
 
 def is_capcut_running() -> bool:
+    """캡컷(국제판) 또는 剪映(중국판) 편집기가 실행 중인지."""
     try:
         out = subprocess.run(
-            ["tasklist", "/FI", "IMAGENAME eq CapCut.exe", "/FO", "CSV", "/NH"],
+            ["tasklist", "/FO", "CSV", "/NH"],
             capture_output=True, text=True, timeout=10,
             creationflags=subprocess.CREATE_NO_WINDOW,
         ).stdout
-        return "CapCut.exe" in out
+        return "CapCut.exe" in out or "JianyingPro.exe" in out
     except OSError:
         return False
 

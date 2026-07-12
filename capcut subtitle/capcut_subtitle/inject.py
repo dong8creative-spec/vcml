@@ -78,12 +78,13 @@ def _system_font_path(data: dict) -> str:
 
     local = os.environ.get("LOCALAPPDATA", "")
     if local:
-        apps = Path(local) / "CapCut" / "Apps"
-        candidates = sorted(apps.glob("*/Resources/Font/SystemFont/en.ttf"))
-        if not candidates:
-            candidates = sorted(apps.glob("*/Resources/Font/SystemFont/*.ttf"))
-        if candidates:
-            return str(candidates[-1]).replace("\\", "/")
+        for app in ("CapCut", "JianyingPro"):  # 국제판 / 중국판(剪映)
+            apps = Path(local) / app / "Apps"
+            candidates = sorted(apps.glob("*/Resources/Font/SystemFont/en.ttf"))
+            if not candidates:
+                candidates = sorted(apps.glob("*/Resources/Font/SystemFont/*.ttf"))
+            if candidates:
+                return str(candidates[-1]).replace("\\", "/")
     return ""
 
 

@@ -168,6 +168,11 @@ class App(tk.Tk):
             proj_frame, "새로고침", command=self.refresh_projects,
             fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK)
         self.refresh_btn.pack(side="left", padx=6, anchor="n")
+        # 자동 탐색으로 못 찾는 설치(초안 위치 변경 등)를 위한 수동 지정
+        self.pick_folder_btn = theme.RoundedButton(
+            proj_frame, "폴더 지정", command=self.on_pick_draft_folder,
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK)
+        self.pick_folder_btn.pack(side="left", padx=(0, 6), anchor="n")
 
         # 옵션
         opt = ttk.LabelFrame(self.main_panel, text="2. 인식 옵션", padding=6)
@@ -289,7 +294,27 @@ class App(tk.Tk):
         if self.projects:
             self.proj_tree.selection_set("0")
         else:
-            self.set_status("캡컷 프로젝트를 찾지 못했어요. 캡컷에서 프로젝트를 한 번 열어봐 주세요.")
+            self.set_status(
+                "캡컷 프로젝트를 찾지 못했어요. 캡컷에서 프로젝트를 한 번 열어보시고, "
+                "그래도 안 보이면 [폴더 지정]으로 초안 폴더를 선택해 주세요.")
+
+    def on_pick_draft_folder(self) -> None:
+        """자동 탐색으로 못 찾는 초안 폴더를 직접 지정 (초안 위치 변경 등)."""
+        if not self._require_auth("폴더 지정"):
+            return
+        path = filedialog.askdirectory(title="캡컷 초안(프로젝트) 폴더 선택")
+        if not path:
+            return
+        root = capcut.add_manual_draft_root(path)
+        self.refresh_projects()
+        if self.projects:
+            toast(self, f"프로젝트 {len(self.projects)}개를 찾았습니다.", "success")
+        else:
+            toast(self,
+                  "선택한 폴더에서 캡컷 프로젝트를 찾지 못했습니다.\n"
+                  "draft_content.json이 들어있는 프로젝트 폴더나 그 상위 폴더를 선택해 주세요.",
+                  "warning")
+            self.set_status(f"등록된 폴더: {root}")
 
     def selected_project(self) -> capcut.Project | None:
         sel = self.proj_tree.selection()
@@ -310,9 +335,10 @@ class App(tk.Tk):
         state = "disabled" if busy else "normal"
         for b in (self.gen_btn, self.insert_btn, self.login_btn,
                   self.export_btn, self.import_btn, self.play_btn,
-                  self.add_row_btn, self.refresh_btn, self.logout_btn,
-                  self.myinfo_btn, self.coin_btn, self.review_guide_btn,
-                  self.instagram_btn, self.chat_btn, self.website_btn):
+                  self.add_row_btn, self.refresh_btn, self.pick_folder_btn,
+                  self.logout_btn, self.myinfo_btn, self.coin_btn,
+                  self.review_guide_btn, self.instagram_btn, self.chat_btn,
+                  self.website_btn):
             try:
                 b.configure(state=state)
             except tk.TclError:
