@@ -2813,7 +2813,7 @@ const db = {
       if (!canModifyAnticipationReview(course)) {
         return { allowed: false, error: getLiveEnrollmentCancelLockMessage(course) || '강의 시작 1시간 전부터는 환불할 수 없습니다.' }
       }
-      return { allowed: true, type: 'refund', refund_amount: paidAmount, label: '전액 환불', full: true }
+      return { allowed: true, type: 'refund', refund_amount: paidAmount, label: '수강 취소', full: true }
     }
 
     const total = chapters.length || 1
@@ -2823,7 +2823,7 @@ const db = {
     const daysSince = paidAt ? (Date.now() - paidAt.getTime()) / (1000 * 60 * 60 * 24) : 999
 
     if (daysSince <= 7 && watched === 0) {
-      return { allowed: true, type: 'refund', refund_amount: paidAmount, label: '전액 환불', full: true }
+      return { allowed: true, type: 'refund', refund_amount: paidAmount, label: '수강 취소', full: true }
     }
     if (ratio >= 0.5) {
       return { allowed: false, error: '전체 강의의 50% 이상 수강한 경우 환불할 수 없습니다.' }
