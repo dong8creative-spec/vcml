@@ -9,22 +9,46 @@ const app = express()
 app.use(cors())
 app.use(express.json({ limit: '12mb' }))
 
+// 실서비스 도메인은 여기 한 곳에서만 정한다 — routes/subtitle.js와 동일한 관례(SITE_ORIGIN).
+// 도메인이 바뀌어도 이 env var 하나만 바꾸면 사이트맵·canonical·OG·JSON-LD가 전부 따라간다.
+const SITE_ORIGIN = (process.env.SITE_ORIGIN || 'https://vcml.kr').replace(/\/$/, '')
+
+/** 강의 상세 페이지의 정식 URL. 지금은 쿼리스트링 방식이지만, 추후 클린 경로
+ * (/courses/:slug)로 바꿀 때 호출부를 건드리지 않고 이 함수만 고치면 되도록 분리해둔다. */
+function courseUrl(slug) {
+  return `${SITE_ORIGIN}/course.html?slug=${encodeURIComponent(slug)}`
+}
+
+// ── 레거시 경로 리다이렉트 인프라 ──
+// 경로 구조 개편 시, 예전 주소 → 새 주소 매핑을 여기 한 곳에 추가하면 된다.
+// 지금은 확정된 신규 경로가 없어 비어 있지만, 검색엔진 색인·외부 공유 링크 보호를 위해
+// 뼈대를 먼저 마련해둔다(구조만 있고 지금은 아무 요청 흐름도 바꾸지 않음).
+const LEGACY_REDIRECTS = {
+  // '/course.html?slug=example': '/courses/example', // 예시 — 실제 매핑은 확정 후 추가
+}
+app.use((req, res, next) => {
+  const key = req.originalUrl
+  const target = LEGACY_REDIRECTS[key] || LEGACY_REDIRECTS[req.path]
+  if (target) return res.redirect(301, target)
+  next()
+})
+
 // ── 동적 사이트맵 ──
 app.get('/sitemap.xml', async (req, res) => {
   try {
     const courses = await db.getCourses(false)
     const today = new Date().toISOString().slice(0, 10)
     const staticPages = [
-      { url: 'https://vcml.kr/', priority: '1.0', changefreq: 'weekly' },
-      { url: 'https://vcml.kr/free.html', priority: '0.9', changefreq: 'weekly' },
-      { url: 'https://vcml.kr/instructors.html', priority: '0.7', changefreq: 'monthly' },
-      { url: 'https://vcml.kr/refund.html', priority: '0.5', changefreq: 'monthly' },
-      { url: 'https://vcml.kr/privacy.html', priority: '0.5', changefreq: 'monthly' },
-      { url: 'https://vcml.kr/terms.html', priority: '0.5', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/`, priority: '1.0', changefreq: 'weekly' },
+      { url: `${SITE_ORIGIN}/free.html`, priority: '0.9', changefreq: 'weekly' },
+      { url: `${SITE_ORIGIN}/instructors.html`, priority: '0.7', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/refund.html`, priority: '0.5', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/privacy.html`, priority: '0.5', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/terms.html`, priority: '0.5', changefreq: 'monthly' },
     ]
     const coursePages = (courses || [])
       .filter(c => c.is_published)
-      .map(c => ({ url: `https://vcml.kr/course.html?slug=${encodeURIComponent(c.slug)}`, priority: '0.9', changefreq: 'weekly' }))
+      .map(c => ({ url: courseUrl(c.slug), priority: '0.9', changefreq: 'weekly' }))
     const all = [...staticPages, ...coursePages]
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${all.map(p =>
       `  <url>\n    <loc>${p.url}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>`
@@ -49,8 +73,8 @@ app.get('/course.html', async (req, res) => {
 
     const title = `${course.title} — 타닥클래스`
     const desc = (course.description || '').replace(/\n/g, ' ').slice(0, 160)
-    const url = `https://vcml.kr/course.html?slug=${encodeURIComponent(slug)}`
-    const image = course.thumbnail_url || 'https://vcml.kr/images/og-default.png'
+    const url = courseUrl(slug)
+    const image = course.thumbnail_url || `${SITE_ORIGIN}/images/og-default.png`
     const priceStr = course.sale_price > 0
       ? `${course.sale_price.toLocaleString()}원`
       : course.price > 0 ? `${course.price.toLocaleString()}원` : '무료'
@@ -76,7 +100,7 @@ app.get('/course.html', async (req, res) => {
     "name": course.title,
     "description": desc,
     "url": url,
-    "provider": { "@type": "Organization", "name": "타닥클래스", "url": "https://vcml.kr" },
+    "provider": { "@type": "Organization", "name": "타닥클래스", "url": SITE_ORIGIN },
     "offers": { "@type": "Offer", "price": course.sale_price || course.price || 0, "priceCurrency": "KRW", "availability": "https://schema.org/InStock" },
     "image": image,
     ...(course.review_count >= 1 ? {

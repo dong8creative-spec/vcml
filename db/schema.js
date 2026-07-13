@@ -1437,6 +1437,30 @@ function normalizeCheckoutWindowInput(startsAt, endsAt) {
   return courseAccess.normalizeCheckoutWindowInput(startsAt, endsAt)
 }
 
+/** 강의 제목 → URL-safe slug (한글 보존, course_programs 슬러그 규칙과 동일). */
+function buildCourseSlug(title) {
+  const base = String(title || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9가-힣_-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 60)
+  return base || `course-${Date.now().toString(36)}`
+}
+
+/** slug 중복 시 -2, -3 ... 을 붙여 고유한 값을 찾는다. */
+async function ensureUniqueCourseSlug(baseSlug) {
+  let candidate = baseSlug
+  let n = 2
+  while (await db.getCourseBySlug(candidate)) {
+    candidate = `${baseSlug}-${n}`
+    n += 1
+  }
+  return candidate
+}
+
 function pickCourseCardFields(course = {}) {
   const pub = db.getCourseEnrollmentPublic(course)
   return {
@@ -2231,7 +2255,7 @@ const db = {
     delivery_mode,
     course_type,
   }) {
-    const slug = buildCourseSlug(title)
+    const slug = await ensureUniqueCourseSlug(buildCourseSlug(title))
     const sale = Number(sale_price != null ? sale_price : price) || 0
     const listPrice = Number(price != null ? price : sale) || sale
     const mode = delivery_mode === 'vod_only' ? 'vod_only' : 'live_first'
