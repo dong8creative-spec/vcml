@@ -93,6 +93,9 @@
     '[data-no-readable-break]',
   ].join(',')
 
+  // 링크(<a>) 안 설명 문구 등 — 제외 규칙보다 우선 적용
+  const TEXT_FORCE_SELECTOR = '.sg-card-desc, [data-readable-break]'
+
   function shouldSplitAt(text, idx) {
     const ch = text[idx]
     const prev = text[idx - 1] || ''
@@ -123,8 +126,10 @@
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
         const parent = node.parentElement
-        if (!parent || parent.closest(TEXT_EXCLUDE_SELECTOR)) return NodeFilter.FILTER_REJECT
+        if (!parent) return NodeFilter.FILTER_REJECT
         if (parent.classList?.contains('readable-chunk')) return NodeFilter.FILTER_REJECT
+        const inForceZone = parent.closest(TEXT_FORCE_SELECTOR)
+        if (!inForceZone && parent.closest(TEXT_EXCLUDE_SELECTOR)) return NodeFilter.FILTER_REJECT
         const text = node.nodeValue || ''
         if (!/[,.，、。]/.test(text)) return NodeFilter.FILTER_REJECT
         if (!text.trim()) return NodeFilter.FILTER_REJECT
