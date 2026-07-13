@@ -1339,8 +1339,12 @@ router.delete('/programs/:id', async (req, res) => {
 
 router.post('/programs/ensure-subtitle', async (req, res) => {
   try {
-    const program = await db.ensureDefaultSubtitleProgram()
-    res.json({ success: true, program })
+    const [subtitle, views] = await Promise.all([
+      db.ensureDefaultSubtitleProgram(),
+      db.ensureDefaultViewsEditingProgram(),
+    ])
+    const linked = await db.linkDefaultProgramIdsForKnownCourses()
+    res.json({ success: true, program: subtitle, programs: [subtitle, views], linked })
   } catch (e) {
     console.error('admin ensure subtitle program:', e)
     res.status(500).json({ error: '기본 프로그램을 준비하지 못했습니다.' })

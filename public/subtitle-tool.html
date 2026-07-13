@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타닥싱크(TadakSync) — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=14" />
+  <link rel="stylesheet" href="/css/style.css?v=15" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
@@ -59,7 +59,7 @@
 <div class="st-wrap">
   <div class="st-hero">
     <h1>타닥싱크 <span style="font-weight:600;font-size:0.72em;color:#888">TadakSync</span></h1>
-    <p>캡컷 초신속 스탠다드 수강생 전용 PC 프로그램입니다. 구글 로그인 후 다운로드하고, 앱에서 기기 연동 후 분당 코인으로 자막을 생성할 수 있습니다.</p>
+    <p>타닥싱크 코인 프로그램이 연결된 강의 수강생 전용 PC 프로그램입니다. 구글 로그인 후 다운로드하고, 앱에서 기기 연동 후 분당 코인으로 자막을 생성할 수 있습니다.</p>
   </div>
 
   <div id="st-msg"></div>
@@ -113,7 +113,7 @@
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=10"></script>
 <script>
-const COURSE_HREF = '/course.html?slug=capcut-pro-basic'
+const DEFAULT_COURSE_HREF = '/course.html?slug=capcut-pro-basic'
 const params = new URLSearchParams(location.search)
 const deviceCode = (params.get('code') || '').trim().toLowerCase()
 const nextPath = deviceCode
@@ -125,6 +125,10 @@ const bodyEl = document.getElementById('st-body')
 const loadingEl = document.getElementById('st-loading')
 const deviceCard = document.getElementById('card-device')
 const approveBtn = document.getElementById('btn-approve')
+
+function courseHref(slug) {
+  return slug ? `/course.html?slug=${encodeURIComponent(slug)}` : DEFAULT_COURSE_HREF
+}
 
 function showMsg(html, kind = 'info') {
   msgEl.innerHTML = html ? `<div class="st-banner ${kind}">${html}</div>` : ''
@@ -201,16 +205,16 @@ function renderDenied(data) {
       <h2>강의 시작 전</h2>
       <p class="st-meta" style="margin-bottom:14px">${data.error || '강의가 시작된 뒤에 다운로드·이용할 수 있습니다.'}</p>
       <div class="st-actions">
-        <a class="st-btn" href="${COURSE_HREF}">강의 안내 보기</a>
+        <a class="st-btn" href="${courseHref(data.course_slug)}">강의 안내 보기</a>
       </div>
     `
     return
   }
   bodyEl.innerHTML = `
     <h2>수강 권한이 없습니다</h2>
-    <p class="st-meta" style="margin-bottom:14px">${data.error || '캡컷 초신속 스탠다드 강의를 수강 중인 분만 로그인·이용할 수 있습니다.'}</p>
+    <p class="st-meta" style="margin-bottom:14px">${data.error || '타닥싱크가 연결된 강의를 수강 중인 분만 이용할 수 있습니다.'}</p>
     <div class="st-actions">
-      <a class="st-btn" href="${COURSE_HREF}">강의 보러 가기</a>
+      <a class="st-btn" href="${courseHref(data.course_slug)}">강의 보러 가기</a>
     </div>
   `
 }

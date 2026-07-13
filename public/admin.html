@@ -3317,7 +3317,7 @@
         _programsCache = []
       }
       sel.innerHTML = '<option value="">없음</option>' + (_programsCache || []).map(p =>
-        `<option value="${p.id}" ${String(p.id) === String(selectedId) ? 'selected' : ''}>${esc(p.name || p.slug)}</option>`
+        `<option value="${p.id}" ${String(p.id) === String(selectedId) ? 'selected' : ''}>${esc(p.name || p.slug)}${p.initial_coins != null ? ` (${Number(p.initial_coins).toLocaleString()}코인)` : ''}</option>`
       ).join('')
     }
 
@@ -5831,7 +5831,7 @@
       }
       const list = Array.isArray(_programsCache) ? _programsCache : (_programsCache?.programs || [])
       sel.innerHTML = `<option value="">없음</option>` + list.map(p =>
-        `<option value="${escAttr(p.id)}"${String(p.id) === String(selectedId || '') ? ' selected' : ''}>${esc(p.name || p.slug)}</option>`
+        `<option value="${escAttr(p.id)}"${String(p.id) === String(selectedId || '') ? ' selected' : ''}>${esc(p.name || p.slug)}${p.initial_coins != null ? ` (${Number(p.initial_coins).toLocaleString()}코인)` : ''}</option>`
       ).join('')
     }
 

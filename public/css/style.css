@@ -44,7 +44,24 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 25.2px; scroll-behavior: smooth; }
-body { font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; background: #fff; color: var(--text-primary); line-height: 1.6; }
+body {
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  background: #fff;
+  color: var(--text-primary);
+  line-height: 1.6;
+  /* 한글: 어절·구두점(, .) 기준으로만 줄바꿈. 문장 중간에서 글자 단위로 끊지 않음 */
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: normal;
+}
+/* URL·이메일·코드 등 끊기지 않으면 레이아웃이 깨지는 문자열만 예외 */
+code, kbd, samp, pre,
+.break-all,
+[class*="word-break-all"] {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  line-break: auto;
+}
 a { text-decoration: none; color: inherit; }
 ul { list-style: none; }
 img { display: block; max-width: 100%; }

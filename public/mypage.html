@@ -20,7 +20,7 @@
     })
   </script>
   <title>마이페이지 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=14" />
+  <link rel="stylesheet" href="/css/style.css?v=15" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
   <link rel="stylesheet" href="/css/mypage.css?v=10" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -529,9 +529,8 @@ function formatLectureStartLabel(date) {
 }
 
 function renderSubtitleToolDownload(c) {
-  const hasProgram = c.program || c.program_id || c.slug === 'capcut-pro-basic'
-  if (!hasProgram) return ''
-  const programName = c.program?.name || '타닥싱크'
+  if (c.program?.type !== 'desktop_coin') return ''
+  const programName = '타닥싱크'
   const pagePath = c.program?.page_path || '/subtitle-tool.html'
   if (!API.isAdmin() && !isCourseLectureStarted(c)) {
     const openAt = getProgramOpenAt(c)

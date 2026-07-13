@@ -129,8 +129,10 @@ router.get('/download', authMiddleware, async (req, res) => {
     if (!result.ok) {
       return res.status(403).json(result)
     }
-    const url = await getSignedDownloadUrl(SUBTITLE_ZIP_PATH, 15 * 60 * 1000)
-    res.json({ url, filename: 'TadakSync.zip', expires_in: 900 })
+    const storagePath = String(result.storage_path || '').trim() || SUBTITLE_ZIP_PATH
+    const filename = storagePath.split('/').pop() || 'TadakSync.zip'
+    const url = await getSignedDownloadUrl(storagePath, 15 * 60 * 1000)
+    res.json({ url, filename, expires_in: 900 })
   } catch (e) {
     console.error('subtitle download:', e)
     const missing = /찾을 수 없습니다/.test(e.message || '')

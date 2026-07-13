@@ -11,7 +11,7 @@
   </script>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>채팅 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=14" />
+  <link rel="stylesheet" href="/css/style.css?v=15" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
   <style>
@@ -47,7 +47,7 @@
     .msg-bubble-wrap { max-width:60%; display:flex; flex-direction:column; gap:4px; }
     .msg-row.mine .msg-bubble-wrap { align-items:flex-end; }
     .msg-sender { font-size: 13.2px; color:#aaa; }
-    .msg-bubble { padding:10px 14px; border-radius:14px; font-size: 16.8px; line-height:1.6; word-break:break-all; }
+    .msg-bubble { padding:10px 14px; border-radius:14px; font-size: 16.8px; line-height:1.6; word-break:keep-all; line-break:strict; overflow-wrap:normal; }
     .msg-row:not(.mine) .msg-bubble { background:#f5f5f5; color:#1a1a1a; border-bottom-left-radius:4px; }
     .msg-row.mine .msg-bubble { background:#111111; color:#fff; border-bottom-right-radius:4px; }
     .msg-time { font-size: 13.2px; color:#ccc; }

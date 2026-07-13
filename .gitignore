@@ -5,6 +5,7 @@ db/tadak.db.json
 .DS_Store
 .claude/
 firebase-service-account.json
+공유할 것/
 .vercel
 
 # CapCut 자막 도구 로컬 빌드/가상환경 (소스만 커밋)

@@ -151,6 +151,9 @@
   line-height: 1.75;
   margin-bottom: 0;
   opacity: 0.85;
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: normal;
 }
 .ch-meta {
   display: flex;
@@ -391,7 +394,7 @@
   padding: var(--buy-gap) 0 0;
   border-top: 1px solid var(--border);
 }
-.buy-features li { font-size: 14px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; line-height: 1.45; }
+.buy-features li { font-size: 14px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; line-height: 1.45; word-break: keep-all; line-break: strict; overflow-wrap: normal; }
 .buy-features .feat-icon {
   display: inline-flex;
   align-items: center;
@@ -1347,7 +1350,9 @@ body.modal-open { overflow: hidden; }
   font-size: 15px;
   line-height: 1.75;
   color: var(--text-secondary);
-  word-break: break-word;
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: normal;
   white-space: pre-wrap;
   margin: 0;
 }

@@ -44,6 +44,9 @@ body {
   background: var(--adm-main-bg);
   display: flex;
   min-height: 100vh;
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: normal;
 }
 a { text-decoration: none; color: inherit; }
 button, input, select, textarea { font-family: inherit; }

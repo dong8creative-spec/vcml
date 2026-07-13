@@ -5191,7 +5191,7 @@ const db = {
       return {
         ok: false,
         code: 'not_enrolled',
-        error: '타닥싱크·조회수 편집법 등 코인 프로그램 강의를 수강 중인 분만 이용할 수 있습니다.',
+        error: '타닥싱크가 연결된 강의를 수강 중인 분만 이용할 수 있습니다.',
         has_google: true,
         enrolled: false,
       }
@@ -5210,8 +5210,8 @@ const db = {
         ok: false,
         code: 'course_not_started',
         error: label
-          ? `${label}부터 ${program?.name || '프로그램'}을 이용할 수 있습니다. (강의 시작 2시간 전)`
-          : `강의 시작 2시간 전부터 ${program?.name || '프로그램'}을 이용할 수 있습니다.`,
+          ? `${label}부터 ${db.getDesktopProgramDisplayName(program)}을 이용할 수 있습니다. (강의 시작 2시간 전)`
+          : `강의 시작 2시간 전부터 ${db.getDesktopProgramDisplayName(program)}을 이용할 수 있습니다.`,
         has_google: true,
         enrolled: true,
         course_slug: course.slug,
@@ -5222,7 +5222,7 @@ const db = {
         program_opens_at: openAt ? openAt.toISOString() : null,
         program_opens_label: label,
         program_id: program?.id || null,
-        program_name: program?.name || null,
+        program_name: db.getDesktopProgramDisplayName(program),
       }
     }
 
@@ -5256,6 +5256,8 @@ const db = {
       db.getSmartstoreReviewState(userId),
       db.listSubtitleAppInbox(userId),
     ])
+    const storagePath = String(primary.program?.storage_path || '').trim()
+      || 'subtitle-tool/TadakSync.zip'
     return {
       ok: true,
       has_google: true,
@@ -5269,6 +5271,9 @@ const db = {
       has_review: !!review,
       just_granted_initial: initialGrants.length > 0,
       download_available: true,
+      program_id: primary.program?.id || null,
+      program_name: db.getDesktopProgramDisplayName(primary.program),
+      storage_path: storagePath,
       coin_courses: await Promise.all(coinCourses.map(async ({ course, program }) => ({
         course_id: course.id,
         course_slug: course.slug,
@@ -5898,26 +5903,17 @@ const db = {
     return { success: true }
   },
 
+  /** 수강생 UI·앱 안내용 고정 브랜드명 (관리자용 program.name과 분리) */
+  getDesktopProgramDisplayName(program) {
+    if (program?.type === 'desktop_coin') return '타닥싱크'
+    return String(program?.name || '').trim() || '프로그램'
+  },
+
+  /** 없으면 생성만 하고, 기존 문서는 조회 시 덮어쓰지 않음 */
   async ensureDefaultSubtitleProgram() {
     let existing = await db.getCourseProgramBySlug('tadak-sync')
     if (!existing) existing = await db.getCourseProgramBySlug('dogak-subtitle')
-    if (existing) {
-      const patch = {}
-      if (existing.name !== '타닥싱크') patch.name = '타닥싱크'
-      if (existing.slug !== 'tadak-sync') patch.slug = 'tadak-sync'
-      if (String(existing.storage_path || '').includes('CapCutSubtitle') || !existing.storage_path) {
-        patch.storage_path = 'subtitle-tool/TadakSync.zip'
-      }
-      if (!existing.feature_label || String(existing.feature_label).includes('도각')) {
-        patch.feature_label = '수강생 전용 타닥싱크(TadakSync) 제공'
-      }
-      if (!existing.community_website_url) patch.community_website_url = 'https://vcml.kr'
-      if (Object.keys(patch).length) {
-        await db.updateCourseProgram(existing.id, patch)
-        return { ...existing, ...patch }
-      }
-      return existing
-    }
+    if (existing) return existing
     return db.createCourseProgram({
       name: '타닥싱크',
       slug: 'tadak-sync',
@@ -5938,27 +5934,10 @@ const db = {
   },
 
   async ensureDefaultViewsEditingProgram() {
-    let existing = await db.getCourseProgramBySlug('views-editing-coin')
-    if (existing) {
-      const patch = {}
-      if (existing.name !== '조회수 편집법 코인') patch.name = '조회수 편집법 코인'
-      if (Number(existing.initial_coins) !== VIEWS_EDITING_INITIAL_COINS) {
-        patch.initial_coins = VIEWS_EDITING_INITIAL_COINS
-      }
-      if (Number(existing.review_bonus_coins) !== SUBTITLE_REVIEW_BONUS_COINS) {
-        patch.review_bonus_coins = SUBTITLE_REVIEW_BONUS_COINS
-      }
-      if (!existing.storage_path) patch.storage_path = 'subtitle-tool/TadakSync.zip'
-      if (!existing.page_path) patch.page_path = '/subtitle-tool.html'
-      if (!existing.community_website_url) patch.community_website_url = 'https://vcml.kr'
-      if (Object.keys(patch).length) {
-        await db.updateCourseProgram(existing.id, patch)
-        return { ...existing, ...patch }
-      }
-      return existing
-    }
+    const existing = await db.getCourseProgramBySlug('views-editing-coin')
+    if (existing) return existing
     return db.createCourseProgram({
-      name: '조회수 편집법 코인',
+      name: '타닥싱크 · 조회수 편집법',
       slug: 'views-editing-coin',
       type: 'desktop_coin',
       storage_path: 'subtitle-tool/TadakSync.zip',
@@ -5976,12 +5955,32 @@ const db = {
     })
   },
 
+  /** slug 기반 레거시 강의에 program_id를 한 번 연결 (읽기 경로에서 강제 패치하지 않음) */
+  async linkDefaultProgramIdsForKnownCourses() {
+    const links = [
+      { slug: SUBTITLE_COURSE_SLUG, ensure: () => db.ensureDefaultSubtitleProgram() },
+      { slug: VIEWS_EDITING_COURSE_SLUG, ensure: () => db.ensureDefaultViewsEditingProgram() },
+    ]
+    const updated = []
+    for (const { slug, ensure } of links) {
+      const course = await db.getCourseBySlug(slug)
+      if (!course) continue
+      const program = await ensure()
+      if (!program?.id) continue
+      if (course.program_id === program.id) continue
+      await db.updateCourse(course.id, { program_id: program.id })
+      updated.push({ course_id: course.id, slug, program_id: program.id })
+    }
+    return updated
+  },
+
   async getProgramForCourse(course) {
     if (!course) return null
     if (course.program_id) {
       const byId = await db.getCourseProgram(course.program_id)
       if (byId) return byId
     }
+    // program_id 미설정·잘못된 ID 시 slug 폴백 (생성만, 기존 메타 덮어쓰기 없음)
     if (course.slug === SUBTITLE_COURSE_SLUG) {
       return db.ensureDefaultSubtitleProgram()
     }
