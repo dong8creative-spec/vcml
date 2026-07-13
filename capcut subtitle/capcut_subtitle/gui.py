@@ -540,7 +540,8 @@ class App(tk.Tk):
                 )
                 self._ack_inbox_async([msg_id])
             elif typ == "smartstore_granted":
-                toast(self, body or "스마트스토어 후기 보너스가 지급됐어요!", "success", duration=3600)
+                toast(self, body or "정성스러운 후기 감사합니다! 스마트스토어 보너스 코인이 지급됐어요.",
+                      "success", duration=3600)
                 self._ack_inbox_async([msg_id])
 
     def _ack_inbox_async(self, message_ids: list[str]) -> None:

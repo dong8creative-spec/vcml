@@ -193,8 +193,8 @@ class ReviewGuideDialog(tk.Toplevel):
                  fg=PRIMARY, bg=WHITE).pack(pady=(0, 8))
         self._intro = tk.Label(
             self._card,
-            text="수강 후기를 남기시면 강의별 코인을 더 받을 수 있어요.\n"
-                 "아래 버튼을 눌러 브라우저에서 작성해 주세요.",
+            text="별점 5점과 함께 남겨주시는 후기 하나하나가 저희에게 큰 힘이 돼요.\n"
+                 "감사한 마음을 담아, 후기를 작성해 주신 분께 강의별 보너스 코인을 드려요.",
             font=("맑은 고딕", 10), fg=TEXT_MUTED, bg=WHITE,
             justify="center", wraplength=320)
         self._intro.pack(pady=(0, 14))
@@ -261,13 +261,13 @@ class ReviewGuideDialog(tk.Toplevel):
         pending = [c for c in courses if not c.get("review_bonus_granted")]
 
         if not pending:
-            tk.Label(self._btn_area, text="강의 후기 보너스를 모두 받았어요",
+            tk.Label(self._btn_area, text="후기 보너스를 모두 받으셨어요. 소중한 후기 감사합니다!",
                      font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE).pack(anchor="w")
         for course in pending:
             title = (course.get("course_title") or "수강 강의").strip()
             bonus = int(course.get("review_bonus_coins") or 50)
             course_id = course.get("course_id")
-            label = f"{title} 후기 (+{bonus:,}코인)"
+            label = f"{title} 후기 작성하기 (+{bonus:,}코인)"
             btn = RoundedButton(
                 self._btn_area, label,
                 command=lambda cid=course_id: self._open_review(cid),
@@ -287,8 +287,10 @@ class ReviewGuideDialog(tk.Toplevel):
                  font=("맑은 고딕", 10, "bold"), fg=PRIMARY, bg=WHITE).pack(anchor="w")
 
         if status == "approved":
-            tk.Label(self._smartstore_area, text="스마트스토어 후기 보너스를 받았어요!",
-                     font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE).pack(anchor="w", pady=(4, 0))
+            tk.Label(self._smartstore_area,
+                     text="스마트스토어 후기 보너스까지 받으셨어요. 정성스러운 후기 감사합니다!",
+                     font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE,
+                     wraplength=320, justify="left").pack(anchor="w", pady=(4, 0))
             return
 
         if status == "pending":
@@ -359,8 +361,8 @@ class ReviewGuideDialog(tk.Toplevel):
         webbrowser.open(license_api.review_write_url(course_id))
         if hasattr(self._app, "_last_balance_sync"):
             self._app._last_balance_sync = 0.0
-        toast(self, "브라우저에서 수강 후기를 남겨 주세요.\n"
-              "작성 후 앱으로 돌아오면 코인이 반영돼요.",
+        toast(self, "브라우저에서 별점 5점과 함께 후기를 남겨 주세요.\n"
+              "감사의 뜻으로 보너스 코인이 지급되며, 작성 후 앱으로 돌아오면 바로 반영돼요.",
               "info", duration=3600)
 
 
@@ -388,6 +390,11 @@ class CoinPurchaseDialog(tk.Toplevel):
         tk.Label(card, text="코인 충전", font=("맑은 고딕", 13, "bold"),
                  fg=PRIMARY, bg=WHITE).pack(anchor="w", pady=(0, 2))
         tk.Label(card, text="카드 결제(KG이니시스)는 준비 중이에요.",
+                 font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE,
+                 wraplength=300, justify="left").pack(anchor="w", pady=(0, 6))
+        tk.Label(card,
+                 text="별점 5점 후기를 남겨주신 분께는 감사의 뜻으로 보너스 코인을 드리고 있어요.\n"
+                      "자세한 내용은 상단 「후기 안내」에서 확인해 주세요.",
                  font=("맑은 고딕", 9), fg=TEXT_MUTED, bg=WHITE,
                  wraplength=300, justify="left").pack(anchor="w", pady=(0, 10))
 
@@ -528,13 +535,13 @@ class MemberInfoDialog(tk.Toplevel):
             review_done = bool(me.get("review_bonus_granted"))
             pending = [c for c in (me.get("coin_courses") or []) if not c.get("review_bonus_granted")]
             if review_done:
-                bonus_label = "모든 강의 후기 보너스를 받았어요"
+                bonus_label = "지급 완료, 소중한 후기 감사합니다!"
             elif pending:
                 amounts = [int(c.get("review_bonus_coins") or 50) for c in pending]
                 amount_txt = f"+{amounts[0]:,}코인" if len(set(amounts)) == 1 else "강의별 코인"
-                bonus_label = f"후기 작성 시 {amount_txt} ({len(pending)}건 남음)"
+                bonus_label = f"별점 5점 후기 작성 시 {amount_txt} ({len(pending)}건 남음)"
             else:
-                bonus_label = "수강 후기 작성 시 +50코인"
+                bonus_label = "별점 5점 후기 작성 시 +50코인"
             smart = me.get("smartstore_review") or {}
             smart_status = smart.get("status") or "none"
             smart_bonus = int(smart.get("bonus_coins") or 150)
