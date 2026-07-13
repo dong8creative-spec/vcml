@@ -12,7 +12,7 @@
 
 ## 강의 페이지
 
-`/course.html?slug=capcut-pro-basic`
+`/courses/capcut-pro-basic`
 
 ## 참고
 

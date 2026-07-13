@@ -28,6 +28,17 @@ router.get('/faqs', async (req, res) => {
   res.json(faqs)
 })
 
+// 블로그 공개 API
+router.get('/blog', async (req, res) => {
+  const posts = await db.getBlogPosts({ publicOnly: true })
+  res.json(posts)
+})
+router.get('/blog/:slug', async (req, res) => {
+  const post = await db.getBlogPostBySlug(req.params.slug)
+  if (!post || !post.is_published) return res.status(404).json({ error: '글을 찾을 수 없습니다.' })
+  res.json(post)
+})
+
 // 1:1 문의 제출 API
 router.post('/support/tickets', async (req, res) => {
   const { name, email, type, subject, content, user_id } = req.body

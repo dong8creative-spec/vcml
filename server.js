@@ -13,10 +13,9 @@ app.use(express.json({ limit: '12mb' }))
 // 도메인이 바뀌어도 이 env var 하나만 바꾸면 사이트맵·canonical·OG·JSON-LD가 전부 따라간다.
 const SITE_ORIGIN = (process.env.SITE_ORIGIN || 'https://vcml.kr').replace(/\/$/, '')
 
-/** 강의 상세 페이지의 정식 URL. 지금은 쿼리스트링 방식이지만, 추후 클린 경로
- * (/courses/:slug)로 바꿀 때 호출부를 건드리지 않고 이 함수만 고치면 되도록 분리해둔다. */
+/** 강의 상세 페이지의 정식 URL(클린 경로). */
 function courseUrl(slug) {
-  return `${SITE_ORIGIN}/course.html?slug=${encodeURIComponent(slug)}`
+  return `${SITE_ORIGIN}/courses/${encodeURIComponent(slug)}`
 }
 
 // ── 레거시 경로 리다이렉트 인프라 ──
@@ -36,20 +35,29 @@ app.use((req, res, next) => {
 // ── 동적 사이트맵 ──
 app.get('/sitemap.xml', async (req, res) => {
   try {
-    const courses = await db.getCourses(false)
+    const [courses, blogPosts] = await Promise.all([
+      db.getCourses(false),
+      db.getBlogPosts({ publicOnly: true }),
+    ])
     const today = new Date().toISOString().slice(0, 10)
     const staticPages = [
       { url: `${SITE_ORIGIN}/`, priority: '1.0', changefreq: 'weekly' },
+      { url: `${SITE_ORIGIN}/courses`, priority: '0.9', changefreq: 'weekly' },
       { url: `${SITE_ORIGIN}/free.html`, priority: '0.9', changefreq: 'weekly' },
-      { url: `${SITE_ORIGIN}/instructors.html`, priority: '0.7', changefreq: 'monthly' },
-      { url: `${SITE_ORIGIN}/refund.html`, priority: '0.5', changefreq: 'monthly' },
-      { url: `${SITE_ORIGIN}/privacy.html`, priority: '0.5', changefreq: 'monthly' },
-      { url: `${SITE_ORIGIN}/terms.html`, priority: '0.5', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/instructor`, priority: '0.7', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/reviews`, priority: '0.7', changefreq: 'weekly' },
+      { url: `${SITE_ORIGIN}/blog`, priority: '0.7', changefreq: 'weekly' },
+      { url: `${SITE_ORIGIN}/faq`, priority: '0.5', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/policy/refund`, priority: '0.5', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/policy/privacy`, priority: '0.5', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/policy/terms`, priority: '0.5', changefreq: 'monthly' },
     ]
     const coursePages = (courses || [])
       .filter(c => c.is_published)
       .map(c => ({ url: courseUrl(c.slug), priority: '0.9', changefreq: 'weekly' }))
-    const all = [...staticPages, ...coursePages]
+    const blogPages = (blogPosts || [])
+      .map(p => ({ url: `${SITE_ORIGIN}/blog/${encodeURIComponent(p.slug)}`, priority: '0.6', changefreq: 'monthly' }))
+    const all = [...staticPages, ...coursePages, ...blogPages]
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${all.map(p =>
       `  <url>\n    <loc>${p.url}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>`
     ).join('\n')}\n</urlset>`
@@ -64,12 +72,11 @@ app.get('/sitemap.xml', async (req, res) => {
 // ── 강의 상세 페이지 SEO: slug별 메타태그 서버사이드 주입 ──
 const courseHtmlTemplate = fs.readFileSync(path.join(__dirname, 'public', 'course.html'), 'utf8')
 
-app.get('/course.html', async (req, res) => {
-  const slug = req.query.slug
+async function renderCoursePage(slug, res) {
   if (!slug) return res.send(courseHtmlTemplate)
   try {
     const course = await db.getCourseBySlug(slug)
-    if (!course) return res.send(courseHtmlTemplate)
+    if (!course) return res.status(404).send(courseHtmlTemplate)
 
     const title = `${course.title} — 타닥클래스`
     const desc = (course.description || '').replace(/\n/g, ' ').slice(0, 160)
@@ -132,7 +139,14 @@ app.get('/course.html', async (req, res) => {
   } catch (e) {
     res.send(courseHtmlTemplate)
   }
-})
+}
+
+// 클린 경로(정식 URL) — sitemap·canonical·공유 링크가 전부 이 형태를 가리킨다.
+app.get('/courses', (req, res) => res.sendFile(path.join(__dirname, 'public', 'courses.html')))
+app.get('/courses/:slug', async (req, res) => renderCoursePage(req.params.slug, res))
+
+// 예전 쿼리스트링 방식 — 이미 배포된 링크·캐시가 있을 수 있어 계속 지원한다(신규 링크 생성엔 사용 안 함).
+app.get('/course.html', async (req, res) => renderCoursePage(req.query.slug, res))
 
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -157,7 +171,7 @@ app.get('/', async (req, res) => {
     const ssrCards = published.map(c => {
       const price = c.sale_price > 0 ? `${c.sale_price.toLocaleString()}원` : c.price > 0 ? `${c.price.toLocaleString()}원` : '무료'
       const thumb = c.thumbnail_url ? `<img src="${esc(c.thumbnail_url)}" alt="${esc(c.title)}" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px 10px 0 0;">` : ''
-      return `<a href="/course.html?slug=${esc(c.slug)}" class="ssr-course-card" style="display:block;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;text-decoration:none;">
+      return `<a href="/courses/${esc(c.slug)}" class="ssr-course-card" style="display:block;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;text-decoration:none;">
   ${thumb}
   <div style="padding:16px;">
     <p style="font-size:12px;color:var(--text-hint);margin:0 0 6px;">${esc(c.category || '')}</p>
@@ -183,6 +197,78 @@ app.get('/', async (req, res) => {
     res.send(html)
   } catch (e) {
     res.sendFile(path.join(__dirname, 'public', 'index.html'))
+  }
+})
+
+// ── 그 외 클린 경로 ──
+app.get('/instructor', (req, res) => res.sendFile(path.join(__dirname, 'public', 'instructors.html')))
+app.get('/reviews', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reviews.html')))
+app.get('/faq', (req, res) => res.sendFile(path.join(__dirname, 'public', 'faq.html')))
+app.get('/policy/refund',  (req, res) => res.sendFile(path.join(__dirname, 'public', 'refund.html')))
+app.get('/policy/terms',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')))
+app.get('/policy/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')))
+
+// ── 블로그: 목록은 정적, 상세는 slug별 메타태그 서버사이드 주입(검색 유입 대응) ──
+const blogPostHtmlTemplate = fs.readFileSync(path.join(__dirname, 'public', 'blog-post.html'), 'utf8')
+
+app.get('/blog', (req, res) => res.sendFile(path.join(__dirname, 'public', 'blog.html')))
+app.get('/blog/:slug', async (req, res) => {
+  try {
+    const post = await db.getBlogPostBySlug(req.params.slug)
+    if (!post || !post.is_published) return res.status(404).send(blogPostHtmlTemplate)
+
+    const title = `${post.title} — 타닥클래스 블로그`
+    const desc = (post.excerpt || post.content || '').replace(/\n/g, ' ').slice(0, 160)
+    const url = `${SITE_ORIGIN}/blog/${encodeURIComponent(post.slug)}`
+    const image = post.cover_image || `${SITE_ORIGIN}/images/og-default.png`
+
+    const metaTags = `
+  <title>${esc(title)}</title>
+  <meta name="description" content="${esc(desc || title)}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="${esc(title)}" />
+  <meta property="og:description" content="${esc(desc || title)}" />
+  <meta property="og:url" content="${esc(url)}" />
+  <meta property="og:image" content="${esc(image)}" />
+  <meta property="og:site_name" content="타닥클래스" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${esc(title)}" />
+  <meta name="twitter:description" content="${esc(desc || title)}" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="${esc(url)}" />
+  <script type="application/ld+json">${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": post.title,
+    "description": desc,
+    "url": url,
+    "image": image,
+    "datePublished": post.created_at,
+    "dateModified": post.updated_at || post.created_at,
+    "publisher": { "@type": "Organization", "name": "타닥클래스", "url": SITE_ORIGIN },
+  })}</script>`
+
+    const d = post.created_at ? new Date(post.created_at) : null
+    const dateStr = d ? `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.` : ''
+    const ssrBody = `
+  <a href="/blog" class="post-back"><i class="ti ti-arrow-left"></i> 블로그 목록</a>
+  <h1 class="post-title">${esc(post.title)}</h1>
+  <div class="post-meta">타닥클래스 &nbsp;·&nbsp; ${esc(dateStr)}</div>
+  ${post.cover_image ? `<img class="post-cover" src="${esc(post.cover_image)}" alt="${esc(post.title)}">` : ''}
+  <div class="post-body">${esc(post.content)}</div>
+  <div class="post-nav"><a href="/blog"><i class="ti ti-list"></i> 목록으로</a></div>`
+
+    const html = blogPostHtmlTemplate
+      .replace(/<title>[^<]*<\/title>/, '')
+      .replace('</head>', metaTags + '\n</head>')
+      .replace('<div class="post-wrap" id="post-wrap"><div class="spinner"></div></div>',
+               '<div class="post-wrap" id="post-wrap">' + ssrBody + '</div>')
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    res.send(html)
+  } catch (e) {
+    res.send(blogPostHtmlTemplate)
   }
 })
 

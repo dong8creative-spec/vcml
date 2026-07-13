@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-13X3J2EYQ2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-13X3J2EYQ2');
+  </script>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>블로그 — 타닥클래스</title>
+  <meta name="description" content="타닥클래스가 정리하는 영상 편집·강의 관련 콘텐츠입니다." />
+  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+  <style>
+    .blog-wrap { max-width: 880px; margin: 0 auto; padding: 48px 24px 80px; }
+    .blog-hero { margin-bottom: 32px; }
+    .blog-hero h1 { font-size: 32px; font-weight: 900; color: var(--text-primary); }
+    .blog-hero p { font-size: 16px; color: var(--text-muted); margin-top: 6px; }
+
+    .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; list-style: none; }
+    .blog-card {
+      display: block; background: #fff; border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; text-decoration: none; color: inherit; transition: .12s;
+    }
+    .blog-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .blog-thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #f3f3f3; }
+    .blog-thumb-fallback { width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--primary), #6d8bff); }
+    .blog-card-body { padding: 16px; }
+    .blog-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; line-height: 1.4; }
+    .blog-excerpt { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 10px; }
+    .blog-date { font-size: 12.5px; color: var(--text-hint); }
+    .empty-blog { grid-column: 1/-1; padding: 60px 0; text-align: center; color: var(--text-muted); font-size: 15px; }
+  </style>
+</head>
+<body data-legal-page="blog">
+
+<div data-site-header></div>
+
+<div class="blog-wrap">
+  <div class="blog-hero">
+    <h1>블로그</h1>
+    <p>영상 편집과 강의에 도움이 되는 이야기를 정리합니다.</p>
+  </div>
+
+  <ul class="blog-grid" id="blog-list">
+    <li style="grid-column:1/-1;padding:60px 0;text-align:center;color:#aaa">불러오는 중...</li>
+  </ul>
+</div>
+
+<script src="/js/api.js?v=3"></script>
+<script>
+async function load() {
+  const list = document.getElementById('blog-list')
+  try {
+    const posts = await API.get('/blog')
+    if (!posts.length) {
+      list.innerHTML = '<li class="empty-blog">아직 등록된 글이 없습니다.</li>'
+      return
+    }
+    list.innerHTML = posts.map(p => `
+      <li>
+        <a class="blog-card" href="/blog/${encodeURIComponent(p.slug)}">
+          ${p.cover_image
+            ? `<img class="blog-thumb" src="${esc(p.cover_image)}" alt="${esc(p.title)}" loading="lazy">`
+            : `<div class="blog-thumb-fallback"></div>`}
+          <div class="blog-card-body">
+            <div class="blog-title">${esc(p.title)}</div>
+            ${p.excerpt ? `<div class="blog-excerpt">${esc(p.excerpt)}</div>` : ''}
+            <div class="blog-date">${fmtDate(p.created_at)}</div>
+          </div>
+        </a>
+      </li>`).join('')
+  } catch (e) {
+    list.innerHTML = `<li class="empty-blog">${e.message || '불러오기 실패'}</li>`
+  }
+}
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function fmtDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()}.`
+}
+load()
+</script>
+
+<div data-chrome="footer"></div>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=12"></script>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/legal-page.js"></script>
+</body>
+</html>

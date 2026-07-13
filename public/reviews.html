@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-13X3J2EYQ2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-13X3J2EYQ2');
+  </script>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>수강 후기 — 타닥클래스</title>
+  <meta name="description" content="타닥클래스 수강생·의뢰인·에디터즈가 남긴 실시간 후기입니다." />
+  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <link rel="stylesheet" href="/css/legal.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+  <style>
+    .reviews-wrap { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+    .reviews-hero { margin-bottom: 8px; }
+    .reviews-hero h1 { font-size: 32px; font-weight: 900; color: var(--text-primary); }
+    .reviews-sub { font-size: 15px; color: var(--text-muted); margin: 6px 0 32px; }
+
+    .reviews-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; list-style: none; }
+    .review-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .review-stars { font-size: 14px; margin-bottom: 10px; letter-spacing: 1px; }
+    .review-content { font-size: 14.5px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 14px; white-space: pre-line; }
+    .review-foot { display: flex; align-items: center; gap: 10px; }
+    .review-dot {
+      width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: #fff;
+      font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .review-who { font-size: 13px; color: var(--text-primary); }
+    .review-who .course { color: var(--text-hint); }
+    .review-type-tab {
+      display: inline-flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .review-type-tab button {
+      border: 1px solid var(--border); background: #fff; border-radius: 999px; padding: 7px 16px;
+      font-size: 13.5px; color: var(--text-secondary); cursor: pointer;
+    }
+    .review-type-tab button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .empty-review { grid-column: 1/-1; padding: 60px 0; text-align: center; color: var(--text-muted); font-size: 15px; }
+  </style>
+</head>
+<body data-legal-page="reviews">
+
+<div data-site-header></div>
+
+<div class="reviews-wrap">
+  <div class="reviews-hero"><h1>수강 후기</h1></div>
+  <p class="reviews-sub" id="reviews-sub">불러오는 중...</p>
+
+  <div class="review-type-tab" id="review-tabs" style="display:none"></div>
+
+  <ul class="reviews-grid" id="reviews-list">
+    <li style="grid-column:1/-1;padding:60px 0;text-align:center;color:#aaa">불러오는 중...</li>
+  </ul>
+</div>
+
+<script src="/js/api.js?v=3"></script>
+<script>
+let ALL_REVIEWS = []
+let ACTIVE_TYPE = 'all'
+
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function fmtDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()}.`
+}
+function maskName(name) {
+  const n = String(name || '').trim()
+  return n ? n[0] + '**' : '수강생'
+}
+function renderCard(r) {
+  const stars = '⭐'.repeat(r.rating || 5)
+  const initial = r.author_initial || (r.author_name && r.author_name.trim() ? r.author_name.trim()[0] : '수')
+  const courseLabel = r.course_title ? `<span class="course"> · ${esc(r.course_title)}</span>` : ''
+  return `<li class="review-card">
+    <div class="review-stars">${stars}</div>
+    <div class="review-content">${esc(r.content)}</div>
+    <div class="review-foot">
+      <div class="review-dot">${esc(initial)}</div>
+      <div class="review-who"><strong>${esc(maskName(r.author_name))}</strong>${courseLabel}<br>${fmtDate(r.created_at)}</div>
+    </div>
+  </li>`
+}
+function renderList() {
+  const list = document.getElementById('reviews-list')
+  const items = ACTIVE_TYPE === 'all' ? ALL_REVIEWS : ALL_REVIEWS.filter(r => r.review_type === ACTIVE_TYPE)
+  if (!items.length) {
+    list.innerHTML = '<li class="empty-review">표시할 후기가 없습니다.</li>'
+    return
+  }
+  list.innerHTML = items.map(renderCard).join('')
+}
+function renderTabs(visibleTypes) {
+  const wrap = document.getElementById('review-tabs')
+  if (!visibleTypes.length || visibleTypes.length < 2) { wrap.style.display = 'none'; return }
+  wrap.style.display = 'flex'
+  const tabs = [{ type: 'all', label: '전체' }, ...visibleTypes]
+  wrap.innerHTML = tabs.map(t =>
+    `<button data-type="${t.type}" class="${t.type === ACTIVE_TYPE ? 'active' : ''}">${esc(t.label)}</button>`
+  ).join('')
+  wrap.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      ACTIVE_TYPE = btn.dataset.type
+      wrap.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn))
+      renderList()
+    })
+  })
+}
+
+async function load() {
+  const sub = document.getElementById('reviews-sub')
+  try {
+    const data = await API.get('/reviews/live')
+    ALL_REVIEWS = data.reviews || []
+    const visibleTypes = data.visible_types || []
+    sub.textContent = visibleTypes.length >= 2
+      ? visibleTypes.map(t => t.label).join(' · ')
+      : '실제 수강생이 남긴 후기입니다'
+    renderTabs(visibleTypes)
+    renderList()
+  } catch (e) {
+    sub.textContent = ''
+    document.getElementById('reviews-list').innerHTML =
+      `<li class="empty-review">${e.message || '후기를 불러오지 못했습니다.'}</li>`
+  }
+}
+load()
+</script>
+
+<div data-chrome="footer"></div>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=12"></script>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/legal-page.js"></script>
+</body>
+</html>

@@ -607,7 +607,7 @@ function renderLiveCourseCard(c) {
   const hasActions = replayBtn || materialBtn || meetWrap
 
   return `<div class="my-lc-card">
-    <a href="/course.html?slug=${escapeHtml(c.slug)}" class="my-lc-main">
+    <a href="/courses/${escapeHtml(c.slug)}" class="my-lc-main">
       <div class="lc-thumb-wrap">
         <div class="mc-thumb ${c.thumb_style==='dark'?'thumb-dark':'thumb-light'}">
           ${renderCourseThumbBadge(c)}
@@ -837,7 +837,7 @@ function renderVodCourseCard(c) {
   const pct = c.total_chapters > 0 ? Math.round((c.completed_chapters / c.total_chapters) * 100) : 0
   const accessExpired = c.access?.access_expired
   const playerHref = accessExpired
-    ? `/course.html?slug=${escapeHtml(c.slug)}`
+    ? `/courses/${escapeHtml(c.slug)}`
     : `/player.html?slug=${escapeHtml(c.slug)}&chapter=${escapeHtml(c.last_chapter_id || 'first')}`
   return `<div class="my-vod-card${accessExpired ? ' my-vod-card--expired' : ''}">
     <a href="${playerHref}" class="my-vod-main">

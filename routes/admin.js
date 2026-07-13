@@ -1245,6 +1245,27 @@ router.delete('/notices/:id', async (req, res) => {
   res.json({ success: true })
 })
 
+// ── 블로그 ──
+router.get('/blog', async (req, res) => {
+  res.json(await db.getBlogPosts())
+})
+router.post('/blog', async (req, res) => {
+  const { title, excerpt, content, cover_image, is_published } = req.body
+  if (!title || !String(title).trim()) return res.status(400).json({ error: '제목을 입력하세요.' })
+  const post = await db.createBlogPost({ title, excerpt, content, cover_image, is_published: !!is_published })
+  if (post?.error) return res.status(400).json({ error: post.error })
+  res.json(post)
+})
+router.patch('/blog/:id', async (req, res) => {
+  const post = await db.updateBlogPost(req.params.id, req.body)
+  if (!post || post.error) return res.status(404).json({ error: '글을 찾을 수 없습니다.' })
+  res.json({ success: true, post })
+})
+router.delete('/blog/:id', async (req, res) => {
+  await db.deleteBlogPost(req.params.id)
+  res.json({ success: true })
+})
+
 // ── 고객지원 문의 ──
 router.get('/tickets', async (req, res) => {
   res.json(await db.getTickets({ status: req.query.status }))

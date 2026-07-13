@@ -82,6 +82,9 @@
       <a href="#faqs" class="nav-item" data-section="faqs">
         <i class="ti ti-help-circle"></i> FAQ 관리
       </a>
+      <a href="#blog" class="nav-item" data-section="blog">
+        <i class="ti ti-article"></i> 블로그
+      </a>
 
       <div class="nav-group-label">열람실</div>
       <a href="#institution" class="nav-item" data-section="institution">
@@ -961,7 +964,7 @@
       <div class="sec-header">
         <div>
           <div class="sec-title">강사 소개</div>
-          <div class="sec-sub">대표 강사 1인 기준 · 인사말·경력 연혁 페이지(/instructors.html)와 프로필을 관리합니다.</div>
+          <div class="sec-sub">대표 강사 1인 기준 · 인사말·경력 연혁 페이지(/instructor)와 프로필을 관리합니다.</div>
         </div>
         <div class="sec-actions">
           <button class="btn-primary-sm" id="instructor-create-btn"><i class="ti ti-plus"></i> 프로필 등록</button>
@@ -1149,6 +1152,49 @@
           <div style="padding:14px 20px 16px;display:flex;gap:8px;justify-content:flex-end">
             <button class="btn-sm" onclick="document.getElementById('notice-modal').style.display='none'">취소</button>
             <button class="btn-primary-sm" id="nm-save">저장</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: 블로그 ===== -->
+    <section class="section" id="sec-blog">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">블로그</div>
+          <div class="sec-sub">/blog 에 노출되는 검색 유입용 콘텐츠를 관리합니다.</div>
+        </div>
+        <div class="sec-actions">
+          <button class="btn-primary-sm" id="blog-create-btn"><i class="ti ti-plus"></i> 새 글 작성</button>
+        </div>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr><th>제목</th><th>공개</th><th>작성일</th><th>관리</th></tr>
+          </thead>
+          <tbody id="blog-tbody">
+            <tr class="empty-state-row"><td colspan="4">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-overlay" id="blog-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title" id="blog-modal-title">새 글 작성</div>
+            <button class="modal-close" onclick="document.getElementById('blog-modal').style.display='none'">✕</button>
+          </div>
+          <div class="form-group"><label>제목</label><input type="text" id="bm-title" /></div>
+          <div class="form-group"><label>요약 (목록에 표시, 200자 이내)</label><input type="text" id="bm-excerpt" maxlength="200" /></div>
+          <div class="form-group"><label>커버 이미지 URL (선택)</label><input type="text" id="bm-cover" placeholder="https://..." /></div>
+          <div class="form-group"><label>본문</label><textarea id="bm-content" rows="12" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea></div>
+          <div style="display:flex;gap:20px;padding:12px 20px;border-bottom:1px solid var(--bg-soft)">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="bm-public" /> 공개</label>
+          </div>
+          <div style="padding:14px 20px 16px;display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn-sm" onclick="document.getElementById('blog-modal').style.display='none'">취소</button>
+            <button class="btn-primary-sm" id="bm-save">저장</button>
           </div>
         </div>
       </div>
@@ -1542,7 +1588,7 @@
             </div>
             <div class="form-group" id="hero-primary-custom-wrap" style="display:none">
               <label>직접 URL (주요 버튼)</label>
-              <input type="text" id="hero-primary-href-custom" maxlength="300" placeholder="/course.html?slug=... 또는 https://..." />
+              <input type="text" id="hero-primary-href-custom" maxlength="300" placeholder="/courses/... 또는 https://..." />
             </div>
             <div class="layout-toggle-group-title">보조 버튼</div>
             <div class="two-col" style="gap:12px">
@@ -1557,7 +1603,7 @@
             </div>
             <div class="form-group" id="hero-secondary-custom-wrap" style="display:none">
               <label>직접 URL (보조 버튼)</label>
-              <input type="text" id="hero-secondary-href-custom" maxlength="300" placeholder="/course.html?slug=... 또는 https://..." />
+              <input type="text" id="hero-secondary-href-custom" maxlength="300" placeholder="/courses/... 또는 https://..." />
             </div>
             <label class="layout-toggle" style="max-width:280px">
               <input type="checkbox" id="hero-secondary-icon" checked />
@@ -2099,6 +2145,7 @@
   <script src="/js/admin/auth.js?v=1"></script>
   <script src="/js/admin/router.js?v=1"></script>
   <script src="/js/admin/modules/support.js?v=1"></script>
+  <script src="/js/admin/modules/blog.js?v=1"></script>
   <script src="/js/admin/modules/ops.js?v=1"></script>
   <script>
     // ── 헬퍼 (AdminUtils 위임) ──
@@ -3069,11 +3116,11 @@
         || (c.checkout_provider === 'smartstore' ? 'smartstore' : 'site')
       if (provider === 'smartstore') {
         el.innerHTML = `<strong>안내</strong><br>강의 상세에서 「스마트스토어에서 구매」 클릭 → 쿠폰 사용 여부 선택 → 보유 쿠폰에 맞는 링크로 자동 이동<br><br>`
-          + `<strong>강의 페이지</strong><br><code style="font-size:12px;word-break:break-all">${location.origin}/course.html?slug=${encodeURIComponent(slug)}</code>`
+          + `<strong>강의 페이지</strong><br><code style="font-size:12px;word-break:break-all">${location.origin}/courses/${encodeURIComponent(slug)}</code>`
         return
       }
-      const base = `${location.origin}/course.html?slug=${encodeURIComponent(slug)}`
-      const full = `${base}&coupon=0`
+      const base = `${location.origin}/courses/${encodeURIComponent(slug)}`
+      const full = `${base}?coupon=0`
       const couponAllowed = c.coupon_allowed !== false && c.coupon_allowed !== 0
       if (!couponAllowed) {
         el.innerHTML = `<strong>구매 링크 (쿠폰 불가)</strong><br><code style="font-size:12px;word-break:break-all">${base}</code>`

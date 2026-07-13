@@ -99,7 +99,7 @@ async function main() {
     await resetTest(course)
     const base = process.env.APP_URL || 'http://localhost:3300'
     console.log('\n열어볼 페이지:')
-    console.log(`  ${base}/course.html?slug=${SLUG}`)
+    console.log(`  ${base}/courses/${SLUG}`)
     console.log(`  ${base}/mypage.html#courses`)
     return
   }
@@ -130,7 +130,7 @@ async function main() {
   const base = process.env.APP_URL || 'http://localhost:3300'
   console.log('\n열어볼 페이지:')
   console.log(`  ${base}/live-ended-test.html`)
-  console.log(`  ${base}/course.html?slug=${SLUG}`)
+  console.log(`  ${base}/courses/${SLUG}`)
   console.log(`  ${base}/mypage.html#courses`)
 }
 

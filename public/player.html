@@ -90,7 +90,7 @@
           <p>이 강의는 Google Meet 라이브로 진행됩니다.<br>일정·입장 링크는 <strong>마이페이지 &gt; 내 강의</strong>에서 확인하세요.</p>
           ${courseData.live_schedule ? `<p class="player-live-schedule"><i class="ti ti-calendar"></i> ${esc(courseData.live_schedule)}</p>` : ''}
           <a href="/mypage.html" class="player-live-btn">내 강의에서 Meet 입장하기</a>
-          <a href="/course.html?slug=${encodeURIComponent(slug)}" class="player-live-link">강의 상세로 돌아가기</a>
+          <a href="/courses/${encodeURIComponent(slug)}" class="player-live-link">강의 상세로 돌아가기</a>
         </div>`
       document.getElementById('sidebar-title').textContent = '라이브 안내'
       document.getElementById('chapter-list').innerHTML = `<div class="chapter-item active"><span class="ch-num">01</span><span class="ch-title">라이브 세션</span></div>`
@@ -178,7 +178,7 @@
         // 영상이 있는 챕터만 수강 기록 — 미완료 상태일 때만
         if (ch.video_url && !ch.progress?.completed) scheduleProgressMark(id)
       } catch(e) {
-        document.getElementById('player-main').innerHTML = `<div class="empty-state"><i class="ti ti-lock"></i><p>${e.message}</p><a href="/course.html?slug=${slug}" class="btn-back">강의 페이지로 →</a></div>`
+        document.getElementById('player-main').innerHTML = `<div class="empty-state"><i class="ti ti-lock"></i><p>${e.message}</p><a href="/courses/${slug}" class="btn-back">강의 페이지로 →</a></div>`
       }
     }
 

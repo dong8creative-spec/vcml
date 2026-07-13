@@ -5,21 +5,24 @@
     tagline: '현업 전문가에게 배우는 실무 중심 영상 강의',
     columns: [
       { title: '강의', links: [
-        { label: '전체 강의', href: '/#all' },
+        { label: '전체 강의', href: '/courses' },
         { label: '캡컷 PRO', href: '/?cat=capcut#all' },
+        { label: '강사 소개', href: '/instructor' },
+        { label: '수강 후기', href: '/reviews' },
+        { label: '블로그', href: '/blog' },
       ]},
       { title: '고객지원', links: [
         { label: '강의 기대평 남기기', href: '/#all' },
         { label: '1:1 문의하기', href: '/inquiry.html' },
-        { label: '자주 묻는 질문', href: '/faq.html' },
-        { label: '환불 및 취소 정책', href: '/refund.html' },
+        { label: '자주 묻는 질문', href: '/faq' },
+        { label: '환불 및 취소 정책', href: '/policy/refund' },
       ]},
     ],
     policy_links: [
       { label: '공지사항', href: '/notices.html' },
-      { label: '이용약관', href: '/terms.html' },
-      { label: '환불정책', href: '/refund.html' },
-      { label: '개인정보처리방침', href: '/privacy.html', emphasis: true },
+      { label: '이용약관', href: '/policy/terms' },
+      { label: '환불정책', href: '/policy/refund' },
+      { label: '개인정보처리방침', href: '/policy/privacy', emphasis: true },
       { label: '청소년보호정책', href: '/youth.html' },
     ],
     biz_info: [

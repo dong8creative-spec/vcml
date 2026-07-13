@@ -175,8 +175,8 @@ function scroll_shelf(id, dir) {
       'item': {
         '@type': 'Course', 'name': c.title,
         'description': c.description || c.title,
-        'url': `https://vcml.kr/course.html?slug=${encodeURIComponent(c.slug)}`,
-        'provider': { '@type': 'Organization', 'name': '타닥클래스', 'url': 'https://vcml.kr' },
+        'url': `${location.origin}/courses/${encodeURIComponent(c.slug)}`,
+        'provider': { '@type': 'Organization', 'name': '타닥클래스', 'url': location.origin },
         'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'KRW' }
       }
     }))

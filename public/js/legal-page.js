@@ -11,9 +11,9 @@
   }
 
   const FOOTER_LINKS = [
-    { href: '/privacy.html', key: 'privacy', label: '개인정보처리방침' },
-    { href: '/terms.html', key: 'terms', label: '이용약관' },
-    { href: '/refund.html', key: 'refund', label: '환불정책' },
+    { href: '/policy/privacy', key: 'privacy', label: '개인정보처리방침' },
+    { href: '/policy/terms', key: 'terms', label: '이용약관' },
+    { href: '/policy/refund', key: 'refund', label: '환불정책' },
     { href: '/youth.html', key: 'youth', label: '청소년보호정책' },
     { href: '/support.html', key: 'support', label: '고객지원' },
   ]
