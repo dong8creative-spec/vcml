@@ -33,11 +33,17 @@
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }
 
+  function userIdLabel(user) {
+    const email = String(user?.email || '').trim()
+    if (email) return email.split('@')[0]
+    return user?.name || '마이페이지'
+  }
+
   function getApi() {
     return window.API || (typeof API !== 'undefined' ? API : null)
   }
 
-  function renderHeaderAuth() {
+  function renderHeaderAuth(wallet) {
     const hr = document.getElementById('header-right')
     if (!hr) return
     const api = getApi()
@@ -48,11 +54,108 @@
     const next = encodeURIComponent(location.pathname + location.search)
     if (api.isLoggedIn()) {
       const user = api.user()
-      const name = user?.name ? esc(user.name) : '마이페이지'
-      hr.innerHTML = `<a href="/mypage.html" class="nav-btn">${name}</a><a href="#" class="nav-btn nav-btn-outline" onclick="API.logout();return false">로그아웃</a>`
+      const id = esc(userIdLabel(user))
+      const coinText = wallet && Number.isFinite(Number(wallet.balance))
+        ? Number(wallet.balance).toLocaleString()
+        : '-'
+      hr.innerHTML = `
+        <a href="/mypage.html" class="nav-btn nav-user-id">${id}</a>
+        <a href="/coins.html" class="nav-btn nav-coin" title="코인 관리">🪙 ${coinText}</a>
+        <a href="#" class="nav-btn nav-btn-outline" onclick="API.logout();return false">로그아웃</a>`
     } else {
       hr.innerHTML = guestAuthHtml(next)
     }
+  }
+
+  async function renderHeaderAuthWithWallet() {
+    const api = getApi()
+    if (!api || !api.isLoggedIn()) {
+      renderHeaderAuth()
+      return
+    }
+    renderHeaderAuth()
+    try {
+      const wallet = await api.get('/subtitle/wallet?limit=1')
+      renderHeaderAuth(wallet)
+    } catch (_) {
+      renderHeaderAuth({ balance: 0 })
+    }
+  }
+
+  const TEXT_EXCLUDE_SELECTOR = [
+    'script', 'style', 'noscript', 'template',
+    'code', 'pre', 'kbd', 'samp',
+    'textarea', 'input', 'select', 'button',
+    'svg', 'canvas', 'table',
+    'header', 'nav',
+    'a',
+    '.no-readable-break',
+    '[data-no-readable-break]',
+  ].join(',')
+
+  function shouldSplitAt(text, idx) {
+    const ch = text[idx]
+    const prev = text[idx - 1] || ''
+    const next = text[idx + 1] || ''
+    if ((ch === '.' || ch === ',') && /\d/.test(prev) && /\d/.test(next)) return false
+    return ch === ',' || ch === '，' || ch === '、' || ch === '.' || ch === '。'
+  }
+
+  function splitReadableText(text) {
+    const chunks = []
+    let buf = ''
+    for (let i = 0; i < text.length; i++) {
+      if (shouldSplitAt(text, i)) {
+        const part = buf.trim()
+        if (part) chunks.push(part)
+        buf = ''
+      } else {
+        buf += text[i]
+      }
+    }
+    const tail = buf.trim()
+    if (tail) chunks.push(tail)
+    return chunks
+  }
+
+  function formatReadableText(root = document.body) {
+    if (!root || root.nodeType !== 1) return
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement
+        if (!parent || parent.closest(TEXT_EXCLUDE_SELECTOR)) return NodeFilter.FILTER_REJECT
+        if (parent.classList?.contains('readable-chunk')) return NodeFilter.FILTER_REJECT
+        const text = node.nodeValue || ''
+        if (!/[,.，、。]/.test(text)) return NodeFilter.FILTER_REJECT
+        if (!text.trim()) return NodeFilter.FILTER_REJECT
+        return NodeFilter.FILTER_ACCEPT
+      }
+    })
+    const nodes = []
+    while (walker.nextNode()) nodes.push(walker.currentNode)
+    nodes.forEach(node => {
+      const chunks = splitReadableText(node.nodeValue || '')
+      if (chunks.length <= 1) return
+      const frag = document.createDocumentFragment()
+      chunks.forEach((chunk, idx) => {
+        if (idx > 0) frag.appendChild(document.createElement('br'))
+        const span = document.createElement('span')
+        span.className = 'readable-chunk'
+        span.textContent = chunk
+        frag.appendChild(span)
+      })
+      node.parentNode?.replaceChild(frag, node)
+    })
+  }
+
+  function initReadableTextFormatter() {
+    formatReadableText(document.body)
+    let timer = null
+    const observer = new MutationObserver(() => {
+      clearTimeout(timer)
+      timer = setTimeout(() => formatReadableText(document.body), 80)
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
   }
 
   function mountHeaderMarkup() {
@@ -92,15 +195,16 @@
     if (!isHome && typeof applyHomepageLayout === 'function') {
       try { await applyHomepageLayout() } catch (_) {}
     }
-    renderHeaderAuth()
+    await renderHeaderAuthWithWallet()
     initGnbCatLinks()
+    initReadableTextFormatter()
     document.dispatchEvent(new Event('site-header-ready'))
   }
 
-  window.renderHeaderAuth = renderHeaderAuth
+  window.renderHeaderAuth = () => renderHeaderAuthWithWallet()
 
   function scheduleBoot() {
-    boot().catch(() => renderHeaderAuth())
+    boot().catch(() => renderHeaderAuthWithWallet())
   }
 
   if (document.readyState === 'loading') {
@@ -108,5 +212,5 @@
   } else {
     scheduleBoot()
   }
-  window.addEventListener('load', renderHeaderAuth)
+  window.addEventListener('load', () => renderHeaderAuthWithWallet())
 })()

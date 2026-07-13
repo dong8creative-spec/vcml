@@ -41,6 +41,23 @@ router.get('/entitlement', authMiddleware, async (req, res) => {
   }
 })
 
+/** GET /api/subtitle/wallet — 웹용 잔액/사용 내역 */
+router.get('/wallet', authMiddleware, async (req, res) => {
+  try {
+    const wallet = await db.ensureSubtitleWallet(req.user.id)
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50))
+    const history = await db.getSubtitleCoinHistory(req.user.id, limit)
+    res.json({
+      balance: wallet?.balance || 0,
+      updated_at: wallet?.updated_at || null,
+      history,
+    })
+  } catch (e) {
+    console.error('subtitle wallet:', e)
+    res.status(500).json({ error: '코인 정보를 불러오지 못했습니다.' })
+  }
+})
+
 /** GET /api/subtitle/me — 잔액 조회 (앱 전용, 1계정 1기기) */
 router.get('/me', subtitleAppAuth, async (req, res) => {
   try {

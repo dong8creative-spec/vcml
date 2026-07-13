@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>코인 관리 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <link rel="stylesheet" href="/css/common.css?v=3" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+  <style>
+    .coin-wrap { max-width: 960px; margin: 36px auto 80px; padding: 0 24px; }
+    .coin-hero { margin-bottom: 22px; }
+    .coin-hero h1 { margin: 0 0 8px; font-size: 30px; font-weight: 900; letter-spacing: -0.03em; }
+    .coin-hero p { margin: 0; color: #666; font-size: 15px; line-height: 1.7; }
+    .coin-grid { display: grid; grid-template-columns: 1fr 1.35fr; gap: 18px; align-items: start; }
+    .coin-card { background: #fff; border: 1px solid #eee; border-radius: 18px; padding: 24px; box-shadow: 0 8px 28px rgba(17,17,17,.04); }
+    .coin-card h2 { margin: 0 0 14px; font-size: 17px; font-weight: 800; }
+    .coin-balance { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 8px; }
+    .coin-balance .num { font-size: 46px; line-height: 1; font-weight: 900; color: #111; }
+    .coin-balance .unit { font-size: 15px; color: #888; font-weight: 700; }
+    .coin-meta { color: #888; font-size: 13px; line-height: 1.6; }
+    .coin-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .coin-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 12px; padding: 12px 16px; background: #111; color: #fff; font-size: 14px; font-weight: 800; border: 0; text-decoration: none; cursor: pointer; }
+    .coin-btn.secondary { background: #f3f3f3; color: #111; }
+    .coin-packages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .coin-package { border: 1px solid #eee; border-radius: 14px; padding: 16px; background: #fafafa; }
+    .coin-package strong { display: block; font-size: 20px; font-weight: 900; color: #111; }
+    .coin-package span { display: block; color: #777; font-size: 13px; margin-top: 4px; }
+    .coin-log { margin-top: 18px; }
+    .coin-log-table { width: 100%; border-collapse: collapse; }
+    .coin-log-table th { text-align: left; color: #999; font-size: 13px; font-weight: 700; border-bottom: 1px solid #eee; padding: 10px 8px; }
+    .coin-log-table td { font-size: 14px; color: #333; border-bottom: 1px solid #f5f5f5; padding: 13px 8px; vertical-align: middle; }
+    .coin-delta { font-weight: 900; }
+    .coin-delta.plus { color: #111; }
+    .coin-delta.minus { color: #e03131; }
+    .coin-empty { color: #999; text-align: center; padding: 34px 12px; border: 1px dashed #ddd; border-radius: 14px; }
+    @media (max-width: 760px) {
+      .coin-grid { grid-template-columns: 1fr; }
+      .coin-packages { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div data-site-header></div>
+
+<main class="coin-wrap">
+  <section class="coin-hero">
+    <h1>코인 관리</h1>
+    <p>타닥싱크 자막 생성에 사용하는 코인 잔액과 사용 로그를 확인할 수 있습니다.</p>
+  </section>
+
+  <section class="coin-grid">
+    <div class="coin-card">
+      <h2>잔여 코인</h2>
+      <div class="coin-balance"><span class="num" id="coin-balance">-</span><span class="unit">코인</span></div>
+      <div class="coin-meta" id="coin-updated">정보를 불러오는 중입니다.</div>
+      <div class="coin-actions">
+        <a class="coin-btn" href="/subtitle-tool.html"><i class="ti ti-download"></i> 타닥싱크 열기</a>
+        <a class="coin-btn secondary" href="/mypage.html"><i class="ti ti-book"></i> 내 강의</a>
+      </div>
+    </div>
+
+    <div class="coin-card">
+      <h2>코인 충전</h2>
+      <div class="coin-packages" id="coin-packages">
+        <div class="coin-package"><strong>100코인</strong><span>5,000원 예정</span></div>
+        <div class="coin-package"><strong>300코인</strong><span>13,000원 예정</span></div>
+        <div class="coin-package"><strong>1,000코인</strong><span>40,000원 예정</span></div>
+      </div>
+      <p class="coin-meta" style="margin-top:14px">
+        카드 결제와 자동 충전은 준비 중입니다. 긴급 충전이 필요하면 문의하기로 요청해 주세요.
+      </p>
+      <div class="coin-actions">
+        <a class="coin-btn secondary" href="/inquiry.html?type=coin"><i class="ti ti-message-circle"></i> 충전 문의하기</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="coin-card coin-log">
+    <h2>사용 로그</h2>
+    <div id="coin-history"><div class="spinner"></div></div>
+  </section>
+</main>
+
+<script src="/js/api.js?v=3"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=11"></script>
+<script>
+  if (!API.isLoggedIn()) {
+    location.href = '/login.html?next=' + encodeURIComponent('/coins.html')
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  function formatDate(v) {
+    if (!v) return '-'
+    const d = new Date(v)
+    if (Number.isNaN(d.getTime())) return String(v).slice(0, 10)
+    return d.toLocaleString('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  function reasonLabel(reason) {
+    const map = {
+      initial: '수강 기본 지급',
+      review_bonus: '수강 후기 보너스',
+      smartstore_review: '스마트스토어 후기 보너스',
+      consume: '자막 생성 사용',
+      refund: '작업 실패 환불',
+      purchase: '코인 충전',
+    }
+    return map[reason] || reason || '-'
+  }
+
+  function renderHistory(history) {
+    const wrap = document.getElementById('coin-history')
+    if (!history.length) {
+      wrap.innerHTML = '<div class="coin-empty">아직 코인 사용 로그가 없습니다.</div>'
+      return
+    }
+    wrap.innerHTML = `<table class="coin-log-table">
+      <thead><tr><th>일시</th><th>내용</th><th>변동</th><th>잔액</th></tr></thead>
+      <tbody>${history.map(row => {
+        const delta = Number(row.delta || 0)
+        const cls = delta < 0 ? 'minus' : 'plus'
+        const sign = delta > 0 ? '+' : ''
+        return `<tr>
+          <td>${esc(formatDate(row.created_at))}</td>
+          <td>${esc(reasonLabel(row.reason))}${row.minutes ? ` (${Number(row.minutes).toLocaleString()}분)` : ''}</td>
+          <td><span class="coin-delta ${cls}">${sign}${delta.toLocaleString()}</span></td>
+          <td>${Number(row.balance_after || 0).toLocaleString()}</td>
+        </tr>`
+      }).join('')}</tbody>
+    </table>`
+  }
+
+  async function loadCoins() {
+    try {
+      const data = await API.get('/subtitle/wallet?limit=100')
+      document.getElementById('coin-balance').textContent = Number(data.balance || 0).toLocaleString()
+      document.getElementById('coin-updated').textContent = data.updated_at
+        ? `마지막 갱신: ${formatDate(data.updated_at)}`
+        : '아직 코인 지갑 갱신 내역이 없습니다.'
+      renderHistory(Array.isArray(data.history) ? data.history : [])
+      if (typeof renderHeaderAuth === 'function') renderHeaderAuth()
+    } catch (e) {
+      document.getElementById('coin-history').innerHTML = '<div class="coin-empty">코인 정보를 불러오지 못했습니다.</div>'
+      document.getElementById('coin-updated').textContent = e.message || '코인 정보를 불러오지 못했습니다.'
+    }
+  }
+
+  loadCoins()
+</script>
+</body>
+</html>

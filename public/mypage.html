@@ -20,7 +20,7 @@
     })
   </script>
   <title>마이페이지 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=15" />
+  <link rel="stylesheet" href="/css/style.css?v=16" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
   <link rel="stylesheet" href="/css/mypage.css?v=10" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -145,7 +145,7 @@
 <script src="/js/review-reward-notice.js?v=1"></script>
 <script src="/js/live-reminder.js?v=24"></script>
 <script src="/js/site-layout.js"></script>
-<script src="/js/site-header.js?v=10"></script>
+<script src="/js/site-header.js?v=11"></script>
 <script>
 if (!API.isLoggedIn()) { location.href = '/login.html?next=/mypage.html' }
 const user = API.user()
@@ -222,6 +222,7 @@ renderSidebar(user)
 
 const tabs = [
   { id:'courses',  icon:'ti-book',         label:'내 강의',       always:true },
+  { id:'coins',    icon:'ti-coin',         label:'코인 관리',     always:true, href:'/coins.html' },
   { id:'projects', icon:'ti-clipboard',    label:'내 클라이언츠', memberTypes:['client'], roles:['admin'] },
   { id:'quotes',   icon:'ti-file-invoice', label:'내 견적',       roles:['editor','admin'] },
   { id:'editor-profile', icon:'ti-rosette', label:'에디터즈 프로필', roles:['editor','admin'] },
@@ -237,7 +238,7 @@ const visibleTabs = tabs.filter(t => {
 })
 
 document.getElementById('my-nav').innerHTML = visibleTabs.map(t => `
-  <a class="my-nav-item" data-sec="${t.id}" href="#" onclick="showSection('${t.id}');return false">
+  <a class="my-nav-item" ${t.href ? '' : `data-sec="${t.id}"`} href="${t.href || '#'}" ${t.href ? '' : `onclick="showSection('${t.id}');return false"`}>
     <i class="ti ${t.icon}"></i><span>${t.label}</span>
   </a>`).join('')
 

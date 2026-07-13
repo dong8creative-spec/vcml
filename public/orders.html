@@ -11,7 +11,7 @@
   </script>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>결제 내역 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=15" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/mypage.css" />
+  <link rel="stylesheet" href="/css/style.css?v=16" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/mypage.css" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
   <style>
@@ -44,6 +44,7 @@
       <div class="my-profile" id="my-profile"></div>
       <nav class="my-nav">
         <a class="my-nav-item" href="/mypage.html"><i class="ti ti-book"></i> 내 강의</a>
+        <a class="my-nav-item" href="/coins.html"><i class="ti ti-coin"></i> 코인 관리</a>
         <a class="my-nav-item active" href="/orders.html"><i class="ti ti-receipt"></i> 결제 내역</a>
         <a class="my-nav-item" href="/mypage.html?tab=settings"><i class="ti ti-user-circle"></i> 프로필 · 설정</a>
         <a class="my-nav-item" href="#" onclick="API.logout()"><i class="ti ti-logout"></i> 로그아웃</a>
@@ -58,7 +59,7 @@
 
   <script src="/js/api.js?v=3"></script>
   <script src="/js/site-layout.js"></script>
-  <script src="/js/site-header.js?v=10"></script>
+  <script src="/js/site-header.js?v=11"></script>
   <script>
     if (!API.isLoggedIn()) { location.href = '/login.html?next=/orders.html'; }
 

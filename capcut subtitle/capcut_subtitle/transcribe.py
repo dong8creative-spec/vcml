@@ -35,6 +35,14 @@ class SubtitleLine:
     words: list[Word] = field(default_factory=list)  # 정밀 분할에 사용, 없어도 동작
 
 
+@dataclass
+class FullScript:
+    text: str
+    words: list[Word]
+    language: str = ""
+    language_probability: float = 0.0
+
+
 def bundled_model_dir() -> Optional[str]:
     """프로그램 폴더에 동봉된 Whisper 모델 경로를 찾는다.
 
@@ -153,6 +161,52 @@ class Transcriber:
         lines = _split_lines_from_segments(all_segments, max_words_per_line)
         progress("자막 타이밍을 정밀하게 보정하고 있어요...")
         return _close_gaps(_refine_speech_boundaries(lines, audio))
+
+    def transcribe_full_script(
+        self,
+        audio: np.ndarray,
+        language: Optional[str] = None,
+        progress: Callable[[str], None] = print,
+        progress_ratio: Callable[[float], None] = lambda r: None,
+    ) -> FullScript:
+        """자막 블록으로 자르지 않고 전문과 단어 타임스탬프만 반환."""
+        assert self._model is not None, "모델을 먼저 load() 하세요"
+        total_sec = len(audio) / 16000
+        progress("전문을 인식하고 있어요...")
+        segments, info = self._model.transcribe(
+            audio,
+            language=language,
+            word_timestamps=True,
+            vad_filter=False,
+            condition_on_previous_text=False,
+        )
+        words: list[Word] = []
+        fallback_parts: list[str] = []
+        for seg in segments:
+            if total_sec > 0:
+                progress_ratio(min(seg.end / total_sec, 1.0))
+            if (getattr(seg, "no_speech_prob", 0.0) > 0.6
+                    and getattr(seg, "avg_logprob", 0.0) < -1.0):
+                continue
+            seg_words = [w for w in (seg.words or []) if (w.word or "").strip()]
+            if seg_words:
+                for w in seg_words:
+                    words.append((w.word, int(w.start * US), int(w.end * US)))
+            else:
+                text = (seg.text or "").strip()
+                if text:
+                    fallback_parts.append(text)
+
+        text = "".join(w[0] for w in words).strip()
+        if not text:
+            text = " ".join(fallback_parts).strip()
+        progress(f"인식 언어: {info.language} (확률 {info.language_probability:.0%})")
+        return FullScript(
+            text=text,
+            words=words,
+            language=info.language or "",
+            language_probability=float(info.language_probability or 0.0),
+        )
 
 
 def _close_gaps(lines: list[SubtitleLine]) -> list[SubtitleLine]:

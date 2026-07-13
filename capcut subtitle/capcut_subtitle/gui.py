@@ -18,6 +18,7 @@ from . import srt as srt_io
 from .account_ui import (CoinPurchaseDialog, LoginDialog, MemberInfoDialog,
                          ReviewGuideDialog)
 from .playback import Player
+from .pro_ui import ProTestDialog
 from .transcribe import (LANGUAGE_CHOICES, MODEL, SubtitleLine,
                          Transcriber, merge_lines, split_line)
 from .theme import toast, confirm
@@ -210,6 +211,10 @@ class App(tk.Tk):
         self.insert_btn = theme.RoundedButton(btns, "② 캡컷 프로젝트에 삽입",
                                              command=self.on_insert)
         self.insert_btn.pack(side="left", padx=6)
+        self.pro_test_btn = theme.RoundedButton(
+            btns, "타닥싱크 프로 테스트", command=self.on_open_pro_test,
+            fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK)
+        self.pro_test_btn.pack(side="left", padx=(6, 0))
         self.export_btn = theme.RoundedButton(
             btns, "SRT 내보내기", command=self.on_export_srt,
             fill=theme.SKY, hover=theme.SKY_DARK, fg=theme.TEXT_DARK)
@@ -333,7 +338,7 @@ class App(tk.Tk):
     def _set_busy(self, busy: bool) -> None:
         self._busy = busy
         state = "disabled" if busy else "normal"
-        for b in (self.gen_btn, self.insert_btn, self.login_btn,
+        for b in (self.gen_btn, self.insert_btn, self.pro_test_btn, self.login_btn,
                   self.export_btn, self.import_btn, self.play_btn,
                   self.add_row_btn, self.refresh_btn, self.pick_folder_btn,
                   self.logout_btn, self.myinfo_btn, self.coin_btn,
@@ -690,6 +695,108 @@ class App(tk.Tk):
         if not self._require_auth("후기 안내"):
             return
         ReviewGuideDialog(self, self)
+
+    def on_open_pro_test(self) -> None:
+        if self._busy:
+            return
+        if not self._require_auth("타닥싱크 프로 테스트"):
+            return
+        project = self.selected_project()
+        if project is None:
+            return
+        self._stop_playback()
+        ProTestDialog(
+            self,
+            project_name=project.name,
+            transcribe_func=lambda status, ratio: self._pro_transcribe_full(
+                project, status, ratio),
+            on_apply=self._apply_pro_test_lines,
+        )
+
+    def _pro_transcribe_full(self, project: capcut.Project, status, ratio):
+        """프로 테스트 모달에서 쓰는 전문 인식. 기존 코인 차감/환불 정책을 재사용."""
+        job_id = None
+        token = self._auth["token"] if self._auth else None
+        consumed = False
+        self.after(0, lambda: self._set_busy(True))
+        try:
+            status(f"[{project.name}] 타임라인 오디오를 분석하고 있어요...")
+            res = capcut.build_timeline_audio(project)
+            if res.missing_files:
+                n = len(res.missing_files)
+                self.after(0, lambda n=n: toast(
+                    self, f"원본 파일 {n}개를 찾지 못해 해당 구간은 제외했어요.", "warning"))
+            if not res.used_files:
+                raise RuntimeError("인식할 오디오를 찾지 못했어요. 프로젝트의 음성 파일을 확인해 주세요.")
+
+            minutes = license_api.minutes_from_audio(len(res.audio), SR)
+            job_id = license_api.new_job_id()
+            status(f"코인 {minutes}개를 차감하고 있어요… (약 {minutes}분)")
+            try:
+                consumed_res = license_api.consume(token, minutes, job_id)
+            except Exception as e:
+                payload = getattr(e, "payload", {}) or {}
+                if payload.get("code") == "insufficient":
+                    bal = payload.get("balance", 0)
+                    need = payload.get("needed", minutes)
+                    self.after(0, lambda: toast(
+                        self, f"코인이 조금 부족해요. (보유 {bal}개 / 필요 {need}개) 충전 후 다시 시도해 주세요.", "error"))
+                    self.after(600, self.on_open_coin_purchase)
+                    raise RuntimeError("코인이 부족해요") from e
+                if self._is_auth_denied(e):
+                    license_api.clear_auth()
+                    self.after(0, lambda: self._set_authenticated(False))
+                    self.after(0, lambda m=str(e): toast(self, m, "warning"))
+                    self.after(400, self._prompt_login_on_start)
+                    raise RuntimeError("로그인이 필요해요") from e
+                raise
+            consumed = True
+            self._balance = consumed_res.get("balance", self._balance)
+            if self._auth:
+                self._auth = license_api.save_auth(token, self._auth.get("user_name"), self._balance)
+            self.after(0, self._refresh_auth_ui)
+
+            self.transcriber.load(MODEL, progress=status)
+            lang = LANGUAGE_CHOICES.get(self.lang_var.get())
+            script = self.transcriber.transcribe_full_script(
+                res.audio,
+                language=lang,
+                progress=status,
+                progress_ratio=ratio,
+            )
+            self._audio = res.audio
+            bal_txt = f" · 잔액 {self._balance}" if self._balance is not None else ""
+            status(f"전문 인식 완료 (코인 {minutes}개 사용{bal_txt})")
+            return script
+        except Exception as e:
+            traceback.print_exc()
+            if consumed and job_id and token:
+                try:
+                    refunded = license_api.refund(token, job_id)
+                    self._balance = refunded.get("balance", self._balance)
+                    if self._auth:
+                        self._auth = license_api.save_auth(
+                            token, self._auth.get("user_name"), self._balance)
+                    self.after(0, self._refresh_auth_ui)
+                except Exception:
+                    traceback.print_exc()
+            if self._is_auth_denied(e):
+                license_api.clear_auth()
+                self.after(0, lambda: self._set_authenticated(False))
+                msg = str(e) if str(e) else "기기 연동이 만료됐어요. 다시 로그인해 주세요."
+                self.after(0, lambda m=msg: toast(self, m, "warning"))
+                self.after(400, self._prompt_login_on_start)
+            raise
+        finally:
+            self.after(0, lambda: self._set_busy(False))
+
+    def _apply_pro_test_lines(self, lines: list[SubtitleLine]) -> None:
+        self.lines = lines
+        self._render_document()
+        self.set_ratio(1.0)
+        self.set_status(
+            f"프로 테스트 자막 {len(lines)}개를 적용했어요 — 확인 후 [② 캡컷 프로젝트에 삽입]을 눌러 주세요"
+        )
 
     # ------------------------------------------------------------- 생성
     def on_generate(self) -> None:
