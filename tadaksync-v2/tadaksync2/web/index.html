@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>타닥싱크 2</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- ───────────────── 로그인 게이트 ───────────────── -->
+<div id="login-gate" class="gate hidden">
+  <div class="gate-card">
+    <div class="brand-mark">
+      <span class="brand-dot"></span>
+      <span class="brand-name">TADAKSYNC<em>2</em></span>
+    </div>
+    <h1>캡컷 자동 자막,<br>이제 <span class="accent">문서처럼</span> 나눕니다</h1>
+    <p class="gate-desc">전문을 먼저 뽑고, 엔터로 줄을 나누면 그대로 자막이 됩니다.<br>
+    구글 로그인 후 이용할 수 있어요. (캡컷 초신속 스탠다드 수강생 전용)</p>
+
+    <div id="login-idle">
+      <button class="btn btn-primary btn-lg" id="btn-login">구글 계정으로 시작하기</button>
+    </div>
+    <div id="login-pending" class="hidden">
+      <div class="login-code-box">
+        <div class="login-code-label">연동 코드</div>
+        <div class="login-code" id="login-code">·····</div>
+      </div>
+      <p class="gate-status" id="login-status">브라우저에서 구글 로그인 후 연동해 주세요…</p>
+      <button class="btn btn-ghost" id="btn-login-cancel">취소</button>
+    </div>
+    <p class="gate-error hidden" id="login-error"></p>
+  </div>
+</div>
+
+<!-- ───────────────── 메인 레이아웃 ───────────────── -->
+<div id="shell" class="shell hidden">
+  <aside class="sidebar">
+    <div class="brand-mark">
+      <span class="brand-dot"></span>
+      <span class="brand-name">TADAKSYNC<em>2</em></span>
+    </div>
+
+    <nav class="steps" id="step-nav">
+      <div class="step" data-step="1"><span class="step-num">1</span><span class="step-label">프로젝트 선택</span></div>
+      <div class="step" data-step="2"><span class="step-num">2</span><span class="step-label">전문 인식</span></div>
+      <div class="step" data-step="3"><span class="step-num">3</span><span class="step-label">엔터로 줄 나누기</span></div>
+      <div class="step" data-step="4"><span class="step-num">4</span><span class="step-label">자막 블록 확인</span></div>
+      <div class="step" data-step="5"><span class="step-num">5</span><span class="step-label">스타일 · 삽입</span></div>
+    </nav>
+
+    <div class="account-card" id="account-card">
+      <div class="account-row">
+        <div class="account-name" id="acc-name">—</div>
+        <button class="icon-btn" id="btn-acc-menu" title="계정 메뉴">⋯</button>
+      </div>
+      <div class="coin-chip"><span class="coin-dot"></span><span id="acc-balance">—</span> 코인</div>
+      <div class="account-menu hidden" id="account-menu">
+        <button id="btn-history">코인 사용 내역</button>
+        <button id="btn-refresh-me">잔액 새로고침</button>
+        <button id="btn-logout" class="danger">로그아웃</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ── STEP 1: 프로젝트 선택 ── -->
+    <section class="view" id="view-1">
+      <header class="view-head">
+        <div>
+          <h2>캡컷 프로젝트를 선택하세요</h2>
+          <p class="sub">자막을 넣을 프로젝트를 고르면 시작할 수 있어요. <b>캡컷에서 해당 프로젝트는 닫아두세요.</b></p>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-ghost" id="btn-add-root">폴더 지정</button>
+          <button class="btn btn-ghost" id="btn-reload-projects">새로고침</button>
+        </div>
+      </header>
+      <div class="banner warn hidden" id="capcut-warn">
+        캡컷이 실행 중이에요. 프로그램은 켜져 있어도 되지만, <b>작업할 프로젝트는 캡컷에서 닫아야</b> 해요.
+      </div>
+      <div class="project-grid" id="project-grid"></div>
+      <div class="empty hidden" id="project-empty">
+        <p>캡컷 프로젝트를 찾지 못했어요.</p>
+        <p class="sub">캡컷 초안 위치를 옮겼다면 [폴더 지정]으로 직접 알려주세요.</p>
+      </div>
+      <footer class="action-bar hidden" id="start-bar">
+        <div class="selected-info">선택: <b id="sel-project-name">—</b></div>
+        <div class="bar-right">
+          <label class="field-label">언어
+            <select id="sel-language"></select>
+          </label>
+          <button class="btn btn-ghost" id="btn-import-srt">SRT 불러오기</button>
+          <button class="btn btn-primary" id="btn-start-transcribe">① 전문 인식 시작</button>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ── STEP 2: 전문 인식 진행 ── -->
+    <section class="view hidden" id="view-2">
+      <div class="progress-stage">
+        <div class="pulse-ring"><div class="pulse-core"></div></div>
+        <h2 id="progress-title">전문을 인식하고 있어요</h2>
+        <p class="sub" id="progress-msg">준비 중…</p>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <p class="progress-note">타임라인 1분당 1코인이 차감돼요. 실패하면 자동으로 환불됩니다.</p>
+      </div>
+    </section>
+
+    <!-- ── STEP 3: 전문 편집 (엔터로 나누기) ── -->
+    <section class="view hidden" id="view-3">
+      <header class="view-head">
+        <div>
+          <h2>엔터로 자막을 나누세요</h2>
+          <p class="sub"><b class="accent">Enter 한 번 = 자막 블록 하나</b>. 잘못 들은 단어는 그냥 고쳐 쓰면 돼요. 빈 줄은 무시됩니다.</p>
+        </div>
+        <div class="head-actions">
+          <span class="line-count"><b id="line-count">0</b>개 블록</span>
+          <button class="btn btn-primary" id="btn-build-blocks">② 자막 블록 만들기</button>
+        </div>
+      </header>
+      <textarea id="script-editor" class="script-editor" spellcheck="false"
+        placeholder="인식된 전문이 여기에 표시됩니다."></textarea>
+    </section>
+
+    <!-- ── STEP 4: 블록 확인 ── -->
+    <section class="view hidden" id="view-4">
+      <header class="view-head">
+        <div>
+          <h2>자막 블록을 확인하세요</h2>
+          <p class="sub">시간과 내용을 직접 고칠 수 있어요. ▶ 로 그 구간만 들어볼 수 있습니다.</p>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-ghost" id="btn-back-script">← 줄 나누기로</button>
+          <button class="btn btn-ghost" id="btn-export-srt">SRT 내보내기</button>
+          <button class="btn btn-primary" id="btn-go-style">③ 스타일 선택 →</button>
+        </div>
+      </header>
+      <div class="block-list" id="block-list"></div>
+    </section>
+
+    <!-- ── STEP 5: 스타일 선택 · 삽입 ── -->
+    <section class="view hidden" id="view-5">
+      <header class="view-head">
+        <div>
+          <h2>자막 스타일을 고르세요</h2>
+          <p class="sub">선택한 스타일이 적용된 자막이 캡컷의 <b>캡션 트랙</b>으로 들어가요. 캡컷에서도 언제든 다시 바꿀 수 있어요.</p>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-ghost" id="btn-back-blocks">← 블록 확인으로</button>
+        </div>
+      </header>
+
+      <div class="style-grid" id="style-grid"></div>
+
+      <div class="style-options">
+        <div class="opt-group">
+          <span class="field-label">글자 크기</span>
+          <div class="segmented" id="seg-size">
+            <button data-v="small">작게</button>
+            <button data-v="medium" class="on">보통</button>
+            <button data-v="large">크게</button>
+          </div>
+        </div>
+        <div class="opt-group">
+          <span class="field-label">위치</span>
+          <div class="segmented" id="seg-position">
+            <button data-v="bottom" class="on">하단</button>
+            <button data-v="middle">중앙</button>
+            <button data-v="top">상단</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="action-bar">
+        <div class="selected-info"><b id="inject-summary">—</b></div>
+        <button class="btn btn-primary btn-lg" id="btn-inject">④ 캡컷 프로젝트에 삽입</button>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<!-- ───────────────── 완료 오버레이 ───────────────── -->
+<div id="done-overlay" class="overlay hidden">
+  <div class="overlay-card">
+    <div class="done-check">✓</div>
+    <h2>삽입 완료!</h2>
+    <p id="done-msg">자막이 캡컷 프로젝트에 들어갔어요.</p>
+    <p class="sub">캡컷에서 프로젝트를 열면 <b>「AI 자막」 캡션 트랙</b>이 추가되어 있어요.<br>
+    삽입 전 상태는 자동 백업되어 언제든 되돌릴 수 있습니다.</p>
+    <div class="done-actions">
+      <button class="btn btn-primary btn-lg" id="btn-new-job">새 작업 시작</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────── 삽입 확인 모달 ───────────────── -->
+<div id="confirm-overlay" class="overlay hidden">
+  <div class="overlay-card">
+    <h2>캡컷이 실행 중이에요</h2>
+    <p class="sub">프로그램은 켜져 있어도 되지만, <b>작업할 프로젝트가 캡컷에서 열려 있으면</b><br>
+    삽입한 자막이 저장 시점에 사라질 수 있어요. 프로젝트를 닫았는지 확인해 주세요.</p>
+    <div class="done-actions">
+      <button class="btn btn-ghost" id="btn-confirm-cancel">돌아가기</button>
+      <button class="btn btn-primary" id="btn-confirm-inject">프로젝트를 닫았어요, 삽입</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────── 사용 내역 모달 ───────────────── -->
+<div id="history-overlay" class="overlay hidden">
+  <div class="overlay-card wide">
+    <div class="overlay-head">
+      <h2>코인 사용 내역</h2>
+      <button class="icon-btn" id="btn-history-close">✕</button>
+    </div>
+    <div class="history-list" id="history-list"><p class="sub">불러오는 중…</p></div>
+  </div>
+</div>
+
+<div id="toast-root"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
