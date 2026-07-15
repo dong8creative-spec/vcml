@@ -9,7 +9,7 @@
     orders: '결제 내역',
     coupons: '쿠폰 관리',
     refunds: '환불 요청',
-    instructors: '강사 소개',
+    instructors: '강사 관리',
     reviews: '수강 후기',
     notices: '공지사항',
     'editor-apps': '에디터즈 신청',

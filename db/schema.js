@@ -625,6 +625,15 @@ async function seedInstructorPortfolioQuoteDefaults() {
   })
 }
 
+async function seedInstructorPortfolioWorksDefaults() {
+  const doc = await fs.collection('site_settings').doc('instructor_portfolio_works').get()
+  if (doc.exists) return
+  await fs.collection('site_settings').doc('instructor_portfolio_works').set({
+    ...normalizePortfolioWorks({}),
+    updated_at: now(),
+  })
+}
+
 async function seedEditorWorkbooks() {
   for (const wb of EDITOR_WORKBOOK_SEED) {
     const snap = await fs.collection('editor_workbooks').where('slug', '==', wb.slug).limit(1).get()
@@ -1156,6 +1165,213 @@ function normalizePortfolioQuote(data = {}) {
   if (data.summary_note != null) base.summary_note = String(data.summary_note).trim().slice(0, 300)
   if (data.disclaimer != null) base.disclaimer = String(data.disclaimer).trim().slice(0, 1000)
   if (data.groups !== undefined) base.groups = normalizePortfolioQuoteGroups(data.groups)
+  return base
+}
+
+const DEFAULT_INSTRUCTOR_PORTFOLIO_WORKS = {
+  youtube: {
+    intro: '유튜브 채널 기획·편집·운영을 맡아 성장시킨 채널입니다. 담당 기간과 성과를 확인해 보세요.',
+    channels: [
+      {
+        id: 'yt-ch-1',
+        name: 'Cloud Hospital',
+        handle: '@CloudHospital',
+        accountUrl: 'https://www.youtube.com/',
+        role: '채널 편집 · 더빙 · 업로드 운영',
+        startDate: '2022-01',
+        endDate: '2023-06',
+        ongoing: false,
+        metrics: [
+          { label: '구독자', before: '1.2만', after: '3.8만', growth: '약 3.2배' },
+          { label: '쇼츠 평균 조회', before: '5,000', after: '2.1만', growth: '약 4.2배' },
+        ],
+        summary: '의료 정보 콘텐츠를 쇼츠 중심으로 재구성해 구독 전환율을 높인 사례입니다.',
+        highlights: ['쇼츠·롱폼 병행 업로드', '더빙·자막 워크플로 정립'],
+      },
+      {
+        id: 'yt-ch-2',
+        name: '1분닥터',
+        handle: '@1minDoctor',
+        accountUrl: 'https://www.youtube.com/',
+        role: '영상 편집 · 썸네일 · 채널 운영 보조',
+        startDate: '2022-03',
+        endDate: '2023-12',
+        ongoing: false,
+        metrics: [
+          { label: '구독자', before: '8,500', after: '2.4만', growth: '약 2.8배' },
+          { label: '월 업로드', before: '4편', after: '12편', growth: '3배' },
+        ],
+        summary: '정기 업로드 루틴과 쇼츠 큐레이션으로 채널 활성도를 끌어올린 사례입니다.',
+        highlights: ['주 3회 업로드 체계', '썸네일·제목 패턴 표준화'],
+      },
+      {
+        id: 'yt-ch-3',
+        name: '가로세로연구소',
+        handle: '@가로세로연구소',
+        accountUrl: 'https://www.youtube.com/',
+        role: '채널 편집 · 콘텐츠 기획',
+        startDate: '2022-06',
+        endDate: '',
+        ongoing: true,
+        metrics: [
+          { label: '구독자', before: '5,200', after: '1.9만', growth: '약 3.7배' },
+          { label: '평균 조회', before: '1.1만', after: '4.5만', growth: '약 4.1배' },
+        ],
+        summary: '정보형 콘텐츠 포맷을 고정해 꾸준한 조회수 성장을 만든 진행 중 프로젝트입니다.',
+        highlights: ['에피소드형 시리즈 기획', '편집 템플릿 공유로 제작 속도 향상'],
+      },
+    ],
+    shorts: [
+      { id: 'yt-1', title: '캡컷 3초 훅 편집', description: '첫 3초에 시선을 잡는 숏폼 훅 예시', url: 'https://www.youtube.com/shorts/sample-hook' },
+      { id: 'yt-2', title: '제품 언박싱 쇼츠', description: '제품 디테일을 빠르게 보여주는 편집', url: 'https://www.youtube.com/shorts/sample-unboxing' },
+      { id: 'yt-3', title: '브이로그 하이라이트', description: '하루 일상을 15초로 압축한 쇼츠', url: 'https://www.youtube.com/shorts/sample-vlog' },
+    ],
+  },
+  instagram: {
+    intro: '릴스 기획·편집·운영을 맡아 성장시킨 인스타그램 계정입니다. 담당 기간과 성과를 확인해 보세요.',
+    accounts: [
+      {
+        id: 'ig-1',
+        name: '자영업자학교',
+        handle: '@자영업자학교',
+        accountUrl: 'https://www.instagram.com/',
+        role: '릴스 기획 · 편집 · 업로드 운영',
+        startDate: '2024-03',
+        endDate: '2024-11',
+        ongoing: false,
+        metrics: [
+          { label: '팔로워', before: '1,200', after: '8,500', growth: '약 7배' },
+          { label: '릴스 평균 조회', before: '800', after: '1.2만', growth: '약 15배' },
+        ],
+        summary: '정보형 릴스 중심으로 콘텐츠 톤을 재정비하고, 업로드 주기를 고정해 계정 성장세를 만든 사례입니다.',
+        highlights: ['월 8~12개 릴스 업로드', '저장·공유율 높은 정보형 포맷 정착'],
+      },
+      {
+        id: 'ig-2',
+        name: '안리고택',
+        handle: '@안리고택',
+        accountUrl: 'https://www.instagram.com/',
+        role: '브랜드 톤 정립 · 숏폼 편집',
+        startDate: '2024-05',
+        endDate: '2025-02',
+        ongoing: false,
+        metrics: [
+          { label: '팔로워', before: '2,400', after: '6,800', growth: '약 2.8배' },
+          { label: '릴스 최고 조회', before: '3,500', after: '4.8만', growth: '약 14배' },
+        ],
+        summary: '공간·체험 중심 브랜드 스토리를 9:16 숏폼으로 풀어내 관심 전환율을 높인 사례입니다.',
+        highlights: ['공간 하이라이트 시리즈 기획', '예약 문의 연결 콘텐츠 강화'],
+      },
+      {
+        id: 'ig-3',
+        name: '최선장',
+        handle: '@최선장',
+        accountUrl: 'https://www.instagram.com/',
+        role: '릴스 편집 · 계정 운영 보조',
+        startDate: '2024-08',
+        endDate: '',
+        ongoing: true,
+        metrics: [
+          { label: '팔로워', before: '900', after: '3,200', growth: '약 3.6배' },
+          { label: '릴스 평균 조회', before: '1,100', after: '9,500', growth: '약 8.6배' },
+        ],
+        summary: '현장감 있는 촬영 소스를 빠른 편집 템플릿으로 정리해 꾸준한 업로드 체계를 만든 진행 중 프로젝트입니다.',
+        highlights: ['주 2회 업로드 루틴 구축', '현장 촬영 → 당일 편집 워크플로'],
+      },
+    ],
+  },
+  rednote: [
+    { id: 'rn-1', title: '샤오홍슈 제품 리뷰', description: '중국 숏폼 톤에 맞춘 제품 예시', url: 'https://www.xiaohongshu.com/explore/sample-review' },
+    { id: 'rn-2', title: '생활 팁 숏폼', description: '정보형 콘텐츠 템플릿 작업', url: 'https://www.xiaohongshu.com/explore/sample-tips' },
+  ],
+}
+
+function normalizePortfolioMetrics(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map(m => ({
+      label: String(m?.label || '').trim().slice(0, 40),
+      before: String(m?.before || '').trim().slice(0, 40),
+      after: String(m?.after || '').trim().slice(0, 40),
+      growth: String(m?.growth || '').trim().slice(0, 40),
+    }))
+    .filter(m => m.label || m.before || m.after)
+    .slice(0, 6)
+}
+
+function normalizePortfolioHighlights(list) {
+  if (!Array.isArray(list)) {
+    if (typeof list === 'string') {
+      return list.split(/[,·\n]/).map(s => s.trim()).filter(Boolean).slice(0, 8)
+    }
+    return []
+  }
+  return list.map(h => String(h || '').trim().slice(0, 80)).filter(Boolean).slice(0, 8)
+}
+
+function normalizePortfolioAccount(item, i, prefix) {
+  const name = String(item?.name || '').trim().slice(0, 80)
+  const handle = String(item?.handle || '').trim().slice(0, 60)
+  if (!name && !handle) return null
+  return {
+    id: String(item?.id || slugifyQuoteId(name || handle, `${prefix}-${i + 1}`)).trim().slice(0, 60),
+    name: name || handle,
+    handle,
+    accountUrl: String(item?.accountUrl || item?.account_url || '').trim().slice(0, 400),
+    role: String(item?.role || '').trim().slice(0, 120),
+    startDate: String(item?.startDate || item?.start_date || '').trim().slice(0, 20),
+    endDate: String(item?.endDate || item?.end_date || '').trim().slice(0, 20),
+    ongoing: item?.ongoing === true || item?.ongoing === 'true' || item?.ongoing === 1,
+    metrics: normalizePortfolioMetrics(item?.metrics),
+    summary: String(item?.summary || '').trim().slice(0, 500),
+    highlights: normalizePortfolioHighlights(item?.highlights),
+  }
+}
+
+function normalizePortfolioAccounts(list, prefix) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((item, i) => normalizePortfolioAccount(item, i, prefix))
+    .filter(Boolean)
+    .slice(0, 30)
+}
+
+function normalizePortfolioMediaItems(list, prefix) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((item, i) => {
+      const title = String(item?.title || '').trim().slice(0, 120)
+      const url = String(item?.url || '').trim().slice(0, 400)
+      if (!title && !url) return null
+      return {
+        id: String(item?.id || slugifyQuoteId(title, `${prefix}-${i + 1}`)).trim().slice(0, 60),
+        title: title || `항목 ${i + 1}`,
+        description: String(item?.description || '').trim().slice(0, 300),
+        url,
+      }
+    })
+    .filter(Boolean)
+    .slice(0, 40)
+}
+
+function clonePortfolioWorksDefault() {
+  return JSON.parse(JSON.stringify(DEFAULT_INSTRUCTOR_PORTFOLIO_WORKS))
+}
+
+function normalizePortfolioWorks(data = {}) {
+  const base = clonePortfolioWorksDefault()
+  if (data.youtube) {
+    if (data.youtube.intro != null) base.youtube.intro = String(data.youtube.intro).trim().slice(0, 500)
+    if (data.youtube.channels !== undefined) base.youtube.channels = normalizePortfolioAccounts(data.youtube.channels, 'yt-ch')
+    if (data.youtube.shorts !== undefined) base.youtube.shorts = normalizePortfolioMediaItems(data.youtube.shorts, 'yt')
+  }
+  if (data.instagram) {
+    if (data.instagram.intro != null) base.instagram.intro = String(data.instagram.intro).trim().slice(0, 500)
+    if (data.instagram.accounts !== undefined) base.instagram.accounts = normalizePortfolioAccounts(data.instagram.accounts, 'ig')
+  }
+  if (data.rednote !== undefined) {
+    base.rednote = normalizePortfolioMediaItems(data.rednote, 'rn')
+  }
   return base
 }
 
@@ -5215,6 +5431,29 @@ const db = {
     return db.getInstructorPortfolioQuote()
   },
 
+  async getInstructorPortfolioWorks() {
+    const doc = await fs.collection('site_settings').doc('instructor_portfolio_works').get()
+    if (!doc.exists) return { ...normalizePortfolioWorks({}), updated_at: null }
+    const data = doc.data()
+    return { ...normalizePortfolioWorks(data), updated_at: data.updated_at || null }
+  },
+
+  async updateInstructorPortfolioWorks(data) {
+    const existing = await db.getInstructorPortfolioWorks()
+    const { updated_at, ...rest } = existing || {}
+    const merged = {
+      youtube: { ...(rest.youtube || {}), ...(data?.youtube || {}) },
+      instagram: { ...(rest.instagram || {}), ...(data?.instagram || {}) },
+      rednote: data?.rednote !== undefined ? data.rednote : rest.rednote,
+    }
+    if (data?.youtube?.channels !== undefined) merged.youtube.channels = data.youtube.channels
+    if (data?.youtube?.shorts !== undefined) merged.youtube.shorts = data.youtube.shorts
+    if (data?.instagram?.accounts !== undefined) merged.instagram.accounts = data.instagram.accounts
+    const next = normalizePortfolioWorks(merged)
+    await fs.collection('site_settings').doc('instructor_portfolio_works').set({ ...next, updated_at: now() })
+    return db.getInstructorPortfolioWorks()
+  },
+
   async getInstructors({ publicOnly = false } = {}) {
     const key = publicOnly ? 'instructors:public' : 'instructors:all'
     const cached = cacheGet(key)
@@ -6280,6 +6519,7 @@ seedEditorWorkbooks().catch(console.error)
 seedClientCouponFaq().catch(console.error)
 seedInstructorsIntroDefaults().catch(console.error)
 seedInstructorPortfolioQuoteDefaults().catch(console.error)
+seedInstructorPortfolioWorksDefaults().catch(console.error)
 
 module.exports = db
 module.exports.courseAccess = courseAccess

@@ -963,121 +963,176 @@
     <section class="section" id="sec-instructors">
       <div class="sec-header">
         <div>
-          <div class="sec-title">강사 소개</div>
-          <div class="sec-sub">대표 강사 1인 기준 · 인사말·경력 연혁 페이지(/instructor)와 프로필을 관리합니다.</div>
+          <div class="sec-title">강사 관리</div>
+          <div class="sec-sub">대표 강사(이동헌) · 업력 · 포트폴리오 · 견적서를 탭별로 관리합니다.</div>
         </div>
         <div class="sec-actions">
+          <a href="/instructor-portfolio.html" target="_blank" class="btn-sm"><i class="ti ti-external-link"></i> 포트폴리오 보기</a>
           <button class="btn-primary-sm" id="instructor-create-btn"><i class="ti ti-plus"></i> 프로필 등록</button>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">강사 소개 페이지</div>
-          <p class="sec-sub">페이지 상단 · 인사말 · 경력 연혁(타임라인) 문구를 편집합니다.</p>
-        </div>
-        <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:16px">
-          <div class="two-col" style="gap:12px">
-            <div class="form-group">
-              <label>페이지 제목</label>
-              <input type="text" id="instructors-intro-title" placeholder="강사 소개" />
-            </div>
-            <div class="form-group">
-              <label>페이지 부제</label>
-              <input type="text" id="instructors-intro-subtitle" placeholder="타닥클래스를 이끌어가는 대표 강사를 소개합니다." />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>상단 소개 문구</label>
-            <textarea id="instructors-intro-page" rows="2" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="페이지 히어로 아래에 표시되는 한 줄 소개"></textarea>
-          </div>
-          <hr style="border:none;border-top:1px solid var(--border);margin:4px 0" />
-          <div class="two-col" style="gap:12px">
-            <div class="form-group">
-              <label>인사말 라벨 (영문 등)</label>
-              <input type="text" id="instructors-greeting-eyebrow" placeholder="Message" maxlength="40" />
-            </div>
-            <div class="form-group">
-              <label>인사말 제목</label>
-              <input type="text" id="instructors-greeting-heading" placeholder="인사말" maxlength="80" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>인사말 본문</label>
-            <textarea id="instructors-greeting-body" rows="10" maxlength="5000" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="이사장 인사말 형식의 본문 (줄바꿈 유지)"></textarea>
-          </div>
-          <hr style="border:none;border-top:1px solid var(--border);margin:4px 0" />
-          <div class="form-group">
-            <label>경력 · 연혁 섹션 제목</label>
-            <input type="text" id="instructors-timeline-heading" placeholder="주요 경력" maxlength="80" />
-          </div>
-          <div class="form-group">
-            <label>경력 · 연혁 항목</label>
-            <p class="sec-sub">왼쪽 ⋮⋮ 핸들을 드래그하면 항목 사이에 <strong>−</strong> 표시가 나타납니다. 표시된 위치에 놓으면 순서가 바뀝니다. 세부 업적 추가·수정 후 <strong>페이지 저장</strong>을 눌러주세요.</p>
-            <div id="instructors-timeline-list" class="instructors-timeline-editor"></div>
-            <button type="button" class="btn-sm" id="instructors-timeline-add" style="margin-top:8px;width:fit-content">+ 연혁 추가</button>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <button type="button" class="btn-save" id="instructors-intro-save">페이지 저장</button>
-            <span id="instructors-intro-status" style="font-size:14px;color:#888"></span>
+        <div class="card-header" style="padding-bottom:0;border-bottom:none">
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <button type="button" class="ep-tab-btn active" data-instructor-tab="career" id="inst-tab-career">업력 · 소개</button>
+            <button type="button" class="ep-tab-btn" data-instructor-tab="portfolio" id="inst-tab-portfolio">포트폴리오</button>
+            <button type="button" class="ep-tab-btn" data-instructor-tab="quote" id="inst-tab-quote">견적서</button>
+            <button type="button" class="ep-tab-btn" data-instructor-tab="profile" id="inst-tab-profile">프로필</button>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">포트폴리오 선택형 견적서</div>
-          <p class="sec-sub">/instructor-portfolio.html 하단 견적서 · 기획·촬영·편집 분류와 항목·단가를 관리합니다.</p>
-        </div>
-        <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:16px">
-          <div class="two-col" style="gap:12px">
-            <div class="form-group">
-              <label>섹션 제목</label>
-              <input type="text" id="portfolio-quote-title" placeholder="선택형 견적서" />
+        <div class="ep-tab-panel active" id="inst-panel-career" data-instructor-panel="career">
+          <p class="sec-sub" style="margin-bottom:16px">/instructors.html 페이지의 인사말 · 경력 연혁을 편집합니다.</p>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>페이지 제목</label>
+                <input type="text" id="instructors-intro-title" placeholder="강사 소개" />
+              </div>
+              <div class="form-group">
+                <label>페이지 부제</label>
+                <input type="text" id="instructors-intro-subtitle" placeholder="타닥클래스를 이끌어가는 대표 강사를 소개합니다." />
+              </div>
             </div>
             <div class="form-group">
-              <label>섹션 설명</label>
-              <input type="text" id="portfolio-quote-desc" placeholder="기획 · 촬영 · 편집 중 필요한 범위를 선택하면..." />
+              <label>상단 소개 문구</label>
+              <textarea id="instructors-intro-page" rows="2" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="페이지 히어로 아래에 표시되는 한 줄 소개"></textarea>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:4px 0" />
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>인사말 라벨 (영문 등)</label>
+                <input type="text" id="instructors-greeting-eyebrow" placeholder="Message" maxlength="40" />
+              </div>
+              <div class="form-group">
+                <label>인사말 제목</label>
+                <input type="text" id="instructors-greeting-heading" placeholder="인사말" maxlength="80" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>인사말 본문</label>
+              <textarea id="instructors-greeting-body" rows="10" maxlength="5000" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="이사장 인사말 형식의 본문 (줄바꿈 유지)"></textarea>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:4px 0" />
+            <div class="form-group">
+              <label>경력 · 연혁 섹션 제목</label>
+              <input type="text" id="instructors-timeline-heading" placeholder="주요 경력" maxlength="80" />
+            </div>
+            <div class="form-group">
+              <label>경력 · 연혁 항목</label>
+              <p class="sec-sub">왼쪽 ⋮⋮ 핸들을 드래그하면 순서를 바꿀 수 있습니다. 수정 후 <strong>업력 저장</strong>을 눌러주세요.</p>
+              <div id="instructors-timeline-list" class="instructors-timeline-editor"></div>
+              <button type="button" class="btn-sm" id="instructors-timeline-add" style="margin-top:8px;width:fit-content">+ 연혁 추가</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <button type="button" class="btn-save" id="instructors-intro-save">업력 · 소개 저장</button>
+              <span id="instructors-intro-status" style="font-size:14px;color:#888"></span>
             </div>
           </div>
-          <div class="form-group">
-            <label>범위 안내 문구</label>
-            <textarea id="portfolio-quote-scope-note" rows="2" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="기획·촬영·편집 선택에 따라 견적이 달라진다는 안내"></textarea>
-          </div>
-          <div class="form-group">
-            <label>합계 안내 문구</label>
-            <input type="text" id="portfolio-quote-summary-note" placeholder="부가세·출장비·수정 횟수에 따라 달라질 수 있습니다" />
-          </div>
-          <div class="form-group">
-            <label>하단 면책 문구</label>
-            <textarea id="portfolio-quote-disclaimer" rows="3" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
-          </div>
-          <div class="form-group">
-            <label>견적 분류 · 항목</label>
-            <p class="sec-sub">기획 / 촬영 / 편집 등 분류별로 항목과 단가를 입력하세요. 분류마다 최소 1개 항목이 필요합니다.</p>
-            <div id="portfolio-quote-groups-editor"></div>
-            <button type="button" class="btn-sm" id="portfolio-quote-group-add" style="margin-top:8px;width:fit-content">+ 분류 추가</button>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <button type="button" class="btn-save" id="portfolio-quote-save">견적서 저장</button>
-            <span id="portfolio-quote-status" style="font-size:14px;color:#888"></span>
-          </div>
         </div>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">대표 강사 프로필</div>
-          <p class="sec-sub">사진·이름·한줄 소개·태그가 페이지 상단 프로필 영역에 표시됩니다.</p>
+        <div class="ep-tab-panel" id="inst-panel-portfolio" data-instructor-panel="portfolio">
+          <p class="sec-sub" style="margin-bottom:16px">/instructor-portfolio.html 의 유튜브 · 인스타그램 · 샤오홍슈 작업물을 관리합니다.</p>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:18px">
+            <button type="button" class="btn-sm pf-subtab active" data-pf-subtab="youtube">유튜브</button>
+            <button type="button" class="btn-sm pf-subtab" data-pf-subtab="instagram">인스타그램</button>
+            <button type="button" class="btn-sm pf-subtab" data-pf-subtab="rednote">샤오홍슈</button>
+          </div>
+
+          <div class="pf-subpanel" data-pf-panel="youtube">
+            <div class="form-group">
+              <label>유튜브 채널 관리 안내</label>
+              <textarea id="pf-yt-intro" rows="2" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
+            </div>
+            <div class="form-group">
+              <label>채널 관리 목록</label>
+              <p class="sec-sub">담당 기간 · 성과 지표 · 하이라이트를 입력하세요. 하이라이트·지표는 쉼표로 구분합니다.</p>
+              <div id="pf-yt-channels"></div>
+              <button type="button" class="btn-sm" id="pf-yt-channel-add" style="margin-top:8px">+ 채널 추가</button>
+            </div>
+            <div class="form-group" style="margin-top:20px">
+              <label>쇼츠 작업물</label>
+              <div id="pf-yt-shorts"></div>
+              <button type="button" class="btn-sm" id="pf-yt-short-add" style="margin-top:8px">+ 쇼츠 추가</button>
+            </div>
+          </div>
+
+          <div class="pf-subpanel" data-pf-panel="instagram" hidden>
+            <div class="form-group">
+              <label>인스타그램 안내</label>
+              <textarea id="pf-ig-intro" rows="2" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
+            </div>
+            <div class="form-group">
+              <label>성장 계정 목록</label>
+              <div id="pf-ig-accounts"></div>
+              <button type="button" class="btn-sm" id="pf-ig-account-add" style="margin-top:8px">+ 계정 추가</button>
+            </div>
+          </div>
+
+          <div class="pf-subpanel" data-pf-panel="rednote" hidden>
+            <div class="form-group">
+              <label>샤오홍슈 작업물</label>
+              <div id="pf-rn-items"></div>
+              <button type="button" class="btn-sm" id="pf-rn-item-add" style="margin-top:8px">+ 항목 추가</button>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+            <button type="button" class="btn-save" id="portfolio-works-save">포트폴리오 저장</button>
+            <span id="portfolio-works-status" style="font-size:14px;color:#888"></span>
+          </div>
         </div>
-        <table class="data-table">
-          <thead>
-            <tr><th>순서</th><th>프로필</th><th>이름</th><th>한줄 소개</th><th>태그</th><th>공개</th><th>관리</th></tr>
-          </thead>
-          <tbody id="instructors-tbody">
-            <tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>
-          </tbody>
-        </table>
+
+        <div class="ep-tab-panel" id="inst-panel-quote" data-instructor-panel="quote">
+          <p class="sec-sub" style="margin-bottom:16px">선택형 견적서의 기획·촬영·편집 분류와 단가를 관리합니다.</p>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="two-col" style="gap:12px">
+              <div class="form-group">
+                <label>섹션 제목</label>
+                <input type="text" id="portfolio-quote-title" placeholder="선택형 견적서" />
+              </div>
+              <div class="form-group">
+                <label>섹션 설명</label>
+                <input type="text" id="portfolio-quote-desc" placeholder="기획 · 촬영 · 편집 중 필요한 범위를 선택하면..." />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>범위 안내 문구</label>
+              <textarea id="portfolio-quote-scope-note" rows="2" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="기획·촬영·편집 선택에 따라 견적이 달라진다는 안내"></textarea>
+            </div>
+            <div class="form-group">
+              <label>합계 안내 문구</label>
+              <input type="text" id="portfolio-quote-summary-note" placeholder="부가세·출장비·수정 횟수에 따라 달라질 수 있습니다" />
+            </div>
+            <div class="form-group">
+              <label>하단 면책 문구</label>
+              <textarea id="portfolio-quote-disclaimer" rows="3" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
+            </div>
+            <div class="form-group">
+              <label>견적 분류 · 항목</label>
+              <p class="sec-sub">기획 / 촬영 / 편집 등 분류별로 항목과 단가를 입력하세요. 분류마다 최소 1개 항목이 필요합니다.</p>
+              <div id="portfolio-quote-groups-editor"></div>
+              <button type="button" class="btn-sm" id="portfolio-quote-group-add" style="margin-top:8px;width:fit-content">+ 분류 추가</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <button type="button" class="btn-save" id="portfolio-quote-save">견적서 저장</button>
+              <span id="portfolio-quote-status" style="font-size:14px;color:#888"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ep-tab-panel" id="inst-panel-profile" data-instructor-panel="profile">
+          <p class="sec-sub" style="margin-bottom:16px">사진·이름·한줄 소개·태그가 강사 소개·포트폴리오 상단에 표시됩니다.</p>
+          <table class="data-table">
+            <thead>
+              <tr><th>순서</th><th>프로필</th><th>이름</th><th>한줄 소개</th><th>태그</th><th>공개</th><th>관리</th></tr>
+            </thead>
+            <tbody id="instructors-tbody">
+              <tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="modal-overlay" id="instructor-modal">
@@ -2188,6 +2243,7 @@
   <script src="/js/admin/modules/support.js?v=1"></script>
   <script src="/js/admin/modules/blog.js?v=1"></script>
   <script src="/js/admin/modules/ops.js?v=1"></script>
+  <script src="/js/admin/modules/instructor-portfolio.js?v=1"></script>
   <script>
     // ── 헬퍼 (AdminUtils 위임) ──
     const esc = (...a) => AdminUtils.esc(...a)
@@ -5315,6 +5371,9 @@
         await loadInstructorsIntroSettings(true)
       }
       await loadPortfolioQuoteSettings(true)
+      if (window.AdminInstructorPortfolio?.load) {
+        await AdminInstructorPortfolio.load(true)
+      }
       await loadInstructorTable()
     }
 

@@ -1,12 +1,12 @@
 /**
  * 강사 포트폴리오 — 플랫폼 탭 · 공유 · 선택형 견적
- * 링크/단가는 PORTFOLIO_DATA / QUOTE_DATA 만 교체하면 됩니다.
+ * Admin에서 업력·포트폴리오·견적서를 수정할 수 있습니다.
  */
 ;(function () {
   'use strict'
 
-  // ── 교체용 정적 데이터 (샘플) ──────────────────────────
-  const PORTFOLIO_DATA = {
+  // ── 폴백 정적 데이터 (API 실패 시) ─────────────────────
+  let PORTFOLIO_DATA = {
     youtube: {
       intro: '유튜브 채널 기획·편집·운영을 맡아 성장시킨 채널입니다. 담당 기간과 성과를 확인해 보세요.',
       channels: [
@@ -618,6 +618,23 @@
     })
   }
 
+  async function loadWorksConfig() {
+    try {
+      const api = window.API || (typeof API !== 'undefined' ? API : null)
+      if (api?.get) {
+        const data = await api.get('/instructor-portfolio/works')
+        if (data && (data.youtube || data.instagram || data.rednote)) {
+          PORTFOLIO_DATA = {
+            youtube: data.youtube || PORTFOLIO_DATA.youtube,
+            instagram: data.instagram || PORTFOLIO_DATA.instagram,
+            rednote: data.rednote || PORTFOLIO_DATA.rednote,
+          }
+        }
+      }
+    } catch (_) {}
+    return PORTFOLIO_DATA
+  }
+
   async function loadQuoteConfig() {
     try {
       const api = window.API || (typeof API !== 'undefined' ? API : null)
@@ -758,6 +775,8 @@
     const ig = document.getElementById('panel-instagram')
     const rn = document.getElementById('panel-rednote')
     const quoteGroups = document.getElementById('quote-groups')
+
+    await loadWorksConfig()
 
     if (yt) renderYoutube(yt)
     if (ig) renderInstagram(ig)

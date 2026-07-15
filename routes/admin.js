@@ -1133,6 +1133,19 @@ router.patch('/instructor-portfolio-quote', async (req, res) => {
   }
 })
 
+router.get('/instructor-portfolio-works', async (req, res) => {
+  res.json(await db.getInstructorPortfolioWorks())
+})
+
+router.patch('/instructor-portfolio-works', async (req, res) => {
+  try {
+    const works = await db.updateInstructorPortfolioWorks(req.body)
+    res.json({ success: true, ...works })
+  } catch (e) {
+    res.status(400).json({ error: e.message || '저장에 실패했습니다.' })
+  }
+})
+
 router.get('/instructors', async (req, res) => {
   res.json(await db.getInstructors({ publicOnly: false }))
 })

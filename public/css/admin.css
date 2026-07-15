@@ -996,6 +996,68 @@ button { cursor: pointer; }
   background: #fff;
 }
 
+.pf-subtab.active {
+  background: var(--adm-primary, #111);
+  color: #fff;
+  border-color: var(--adm-primary, #111);
+}
+.pf-account-card {
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 14px;
+  background: var(--bg-soft);
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pf-account-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+.pf-account-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 120px 120px;
+  gap: 8px;
+}
+.pf-ongoing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.pf-metric-row,
+.pf-media-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+.pf-media-row {
+  grid-template-columns: 1fr 1.2fr 1.4fr auto;
+  margin-bottom: 8px;
+}
+.pf-account-card input[type="text"],
+.pf-account-card input[type="month"],
+.pf-media-row input[type="text"] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--adm-border);
+  border-radius: 7px;
+  font-size: 13px;
+  background: #fff;
+}
+@media (max-width: 900px) {
+  .pf-account-head,
+  .pf-account-grid,
+  .pf-metric-row,
+  .pf-media-row { grid-template-columns: 1fr; }
+}
+
 /* ===== INSTRUCTOR TIMELINE EDITOR ===== */
 .instructors-timeline-editor {
   display: flex;
