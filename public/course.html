@@ -263,7 +263,7 @@
             <li><span class="feat-icon feat-icon--meet"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.23 5.45-4.76 7.12l7.73 6c4.51-4.16 7.12-10.27 7.12-17.59z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span> Google Meet 참여</li>
             ${c.live_ended || c.live_resources?.live_ended ? `<li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 강의 종료 후 다음 날 오후 1시 다시보기</li>` : (c.enrolled ? `<li><span class="feat-icon feat-icon--replay"><i class="ti ti-player-play"></i></span> 강의 종료 후 다음 날 오후 1시 다시보기 (수강생 전용)</li>` : '')}
             <li><span class="feat-icon feat-icon--material"><i class="ti ti-download"></i></span> 강의 시작 1시간 전 ~ 종료 후 1주일간 자료 다운로드</li>
-            ${c.program?.type === 'desktop_coin' ? `<li><span class="feat-icon feat-icon--material"><i class="ti ti-subtitles"></i></span> ${esc(c.program?.feature_label || '수강생 전용 타닥싱크(TadakSync) 제공')}</li>` : ''}
+            ${c.program?.type === 'desktop_coin' ? `<li><span class="feat-icon feat-icon--material"><i class="ti ti-subtitles"></i></span> ${esc(c.program?.feature_label || '수강생 전용 타닥싱크 2(TadakSync 2) 제공')}</li>` : ''}
           </ul>`
     }
 
@@ -539,7 +539,7 @@
             <li><span class="feat-icon feat-icon--lifetime"><i class="ti ${isPaidCourse(c) ? 'ti-calendar-time' : 'ti-infinity'}"></i></span> ${isPaidCourse(c) ? '결제일로부터 3개월 수강' : '평생 소장'}</li>
             <li><span class="feat-icon feat-icon--mobile"><i class="ti ti-device-mobile"></i></span> 모바일 수강 가능</li>
             <li><span class="feat-icon feat-icon--cert"><i class="ti ti-certificate"></i></span> 수료증 발급</li>
-            ${c.program?.type === 'desktop_coin' ? `<li><span class="feat-icon feat-icon--material"><i class="ti ti-subtitles"></i></span> ${esc(c.program?.feature_label || '수강생 전용 타닥싱크(TadakSync) 제공')}</li>` : ''}
+            ${c.program?.type === 'desktop_coin' ? `<li><span class="feat-icon feat-icon--material"><i class="ti ti-subtitles"></i></span> ${esc(c.program?.feature_label || '수강생 전용 타닥싱크 2(TadakSync 2) 제공')}</li>` : ''}
             ${isRefundGuaranteeActive(c) ? `<li><span class="feat-icon feat-icon--refund"><i class="ti ti-rotate-clockwise"></i></span> 강의 시작 1시간 전까지 환불 보장</li>` : ''}
           </ul>`}
         </div>
@@ -622,7 +622,7 @@
     function renderSubtitleToolBtn(c) {
       if (!c?.enrolled) return ''
       if (c.program?.type !== 'desktop_coin') return ''
-      const programName = '타닥싱크'
+      const programName = '타닥싱크 2'
       const pagePath = c.program?.page_path || '/subtitle-tool.html'
       if (!API.isAdmin() && !isCourseLectureStarted(c)) {
         const openAt = getProgramOpenAt(c)

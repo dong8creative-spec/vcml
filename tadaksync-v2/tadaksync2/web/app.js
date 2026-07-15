@@ -13,6 +13,8 @@ const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const state = {
   api: null,
   step: 1,
+  maxStep: 1,              // 방문·해금된 최고 단계 (2는 진행 화면이라 내비 제외)
+  unlocked: { 1: true },   // 클릭으로 갈 수 있는 단계
   auth: { logged_in: false },
   languages: [],
   styles: [],
@@ -25,6 +27,9 @@ const state = {
   position: "bottom",
   playingIdx: null,
   busy: false,
+  coinCourses: [],
+  smartstoreReview: {},
+  shownInboxIds: new Set(),
 };
 
 /* ───────────────────────── 유틸 ───────────────────────── */
@@ -63,18 +68,57 @@ function esc(s) {
 
 /* ───────────────────────── 스텝 전환 ───────────────────────── */
 
-function gotoStep(n) {
-  state.step = n;
-  $$(".view").forEach((v) => v.classList.add("hidden"));
-  $(`#view-${n}`).classList.remove("hidden");
+/** 사이드바에서 갈 수 있는 단계만 해금. 2(인식 중)는 내비 대상이 아님. */
+function unlockStep(n) {
+  if (n === 2) return;
+  state.unlocked[n] = true;
+  if (n > state.maxStep) state.maxStep = n;
+}
+
+function renderStepNav() {
   $$("#step-nav .step").forEach((el) => {
     const s = parseInt(el.dataset.step, 10);
-    el.classList.toggle("active", s === n);
-    el.classList.toggle("done", s < n);
+    const isActive = s === state.step;
+    const canGo = canGoToStep(s);
+    el.classList.toggle("active", isActive);
+    el.classList.toggle("done", !!state.unlocked[s] && !isActive && s !== 2);
+    el.classList.toggle("navable", canGo);
+    el.classList.toggle("locked", !canGo && !isActive);
+    el.setAttribute("role", "button");
+    el.tabIndex = canGo ? 0 : -1;
+    const label = el.querySelector(".step-label")?.textContent || String(s);
+    el.title = canGo
+      ? `${label}(으)로 이동`
+      : (s === 2
+        ? "인식이 끝나면 다음 단계로 이동합니다"
+        : (isActive ? "현재 단계" : "아직 진행하지 않은 단계예요"));
   });
+}
+
+function canGoToStep(n) {
+  if (state.busy || state.step === 2) return false;
+  if (n === 2) return false;
+  if (n === state.step) return false;
+  if (!state.unlocked[n]) return false;
+  if (n === 3 && state.fromSrt) return false;
+  return true;
+}
+
+function gotoStep(n, opts = {}) {
+  const { unlock = true } = opts;
+  state.step = n;
+  if (unlock) unlockStep(n);
+  $$(".view").forEach((v) => v.classList.add("hidden"));
+  $(`#view-${n}`).classList.remove("hidden");
+  renderStepNav();
   if (n === 3) updateLineCount();
   if (n === 4) renderBlocks();
   if (n === 5) renderInjectSummary();
+}
+
+function onStepNavClick(n) {
+  if (!canGoToStep(n)) return;
+  gotoStep(n, { unlock: false });
 }
 
 /* ───────────────────────── 인증 ───────────────────────── */
@@ -106,7 +150,13 @@ async function startLogin() {
 /* ───────────────────────── 프로젝트 ───────────────────────── */
 
 async function loadProjects() {
-  const res = await state.api.list_projects();
+  let res;
+  try {
+    res = await state.api.list_projects();
+  } catch (e) {
+    toast("프로젝트 탐색 중 오류가 발생했어요: " + (e?.message || e), "error");
+    return;
+  }
   if (!res.ok) { toast(res.error, "error"); return; }
   state.projects = res.projects;
   $("#capcut-warn").classList.toggle("hidden", !res.capcut_running);
@@ -139,17 +189,20 @@ function renderProjects() {
 async function startTranscribe() {
   if (!state.selectedProject) { toast("프로젝트를 먼저 선택해 주세요.", "warn"); return; }
   const lang = $("#sel-language").value;
-  gotoStep(2);
+  state.busy = true;
+  gotoStep(2, { unlock: false });
   $("#progress-fill").style.width = "0%";
   $("#progress-msg").textContent = "준비 중…";
   const res = await state.api.start_transcribe(state.selectedProject.index, lang);
   if (!res.ok) {
+    state.busy = false;
     toast(res.error, "error");
-    gotoStep(1);
+    gotoStep(1, { unlock: false });
   }
 }
 
 function onScriptReady(data) {
+  state.busy = false;
   $("#script-editor").value = data.text;
   state.fromSrt = false;
   if (data.missing_files && data.missing_files.length) {
@@ -320,6 +373,9 @@ function resetJob() {
   state.blocks = [];
   state.playingIdx = null;
   state.fromSrt = false;
+  state.busy = false;
+  state.unlocked = { 1: true };
+  state.maxStep = 1;
   $("#script-editor").value = "";
   $("#start-bar").classList.add("hidden");
   state.selectedProject = null;
@@ -348,6 +404,117 @@ async function openHistory() {
   }).join("");
 }
 
+function applyMeExtras(r) {
+  if (!r) return;
+  if (r.coin_courses) state.coinCourses = r.coin_courses;
+  if (r.smartstore_review) state.smartstoreReview = r.smartstore_review;
+  if (r.pending_actions) handlePendingActions(r.pending_actions);
+}
+
+function handlePendingActions(actions) {
+  const ids = [];
+  for (const action of actions || []) {
+    const id = String(action.id || "");
+    if (!id || state.shownInboxIds.has(id)) continue;
+    state.shownInboxIds.add(id);
+    const typ = action.type;
+    const body = action.body || "";
+    if (typ === "smartstore_rewrite") {
+      toast(body || "스마트스토어 후기를 아직 확인하지 못했어요. 작성 후 다시 「작성 완료」를 눌러 주세요.", "warn");
+      ids.push(id);
+    } else if (typ === "smartstore_granted") {
+      toast(body || "스마트스토어 후기 보너스 코인이 지급됐어요!", "success");
+      ids.push(id);
+    }
+  }
+  if (ids.length) state.api.ack_inbox(ids).catch(() => {});
+}
+
+async function openReviewGuide() {
+  $("#account-menu").classList.add("hidden");
+  $("#review-overlay").classList.remove("hidden");
+  $("#review-courses").innerHTML = '<p class="sub">불러오는 중…</p>';
+  $("#review-smartstore").innerHTML = "";
+  const r = await state.api.refresh_me();
+  if (!r.ok) {
+    $("#review-courses").innerHTML = `<p class="sub">${esc(r.error || "불러오지 못했어요.")}</p>`;
+    return;
+  }
+  applyMeExtras(r);
+  state.auth = r.auth;
+  renderAuth();
+  renderReviewGuide();
+}
+
+function renderReviewGuide() {
+  const pending = (state.coinCourses || []).filter((c) => !c.review_bonus_granted);
+  const coursesEl = $("#review-courses");
+  if (!pending.length) {
+    coursesEl.innerHTML = '<p class="sub">수강 후기 보너스를 모두 받으셨어요. 감사합니다!</p>';
+  } else {
+    coursesEl.innerHTML = pending.map((c) => {
+      const title = esc(c.course_title || "수강 강의");
+      const bonus = Number(c.review_bonus_coins || 50).toLocaleString();
+      const cid = esc(c.course_id || "");
+      return `<button class="btn btn-ghost review-course-btn" data-course-id="${cid}" style="width:100%;margin-bottom:8px;justify-content:flex-start">
+        ${title} 후기 작성하기 (+${bonus}코인)
+      </button>`;
+    }).join("");
+    $$(".review-course-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const r = await state.api.review_write_url(btn.dataset.courseId || null);
+        if (r.ok && r.url) state.api.open_url(r.url);
+        else toast(r.error || "후기 작성 페이지를 열지 못했어요.", "warn");
+      });
+    });
+  }
+
+  const smart = state.smartstoreReview || {};
+  const status = smart.status || "none";
+  const bonus = Number(smart.bonus_coins || 150).toLocaleString();
+  const storeUrl = (smart.store_review_url || "").trim();
+  const smartEl = $("#review-smartstore");
+  let html = `<h3 class="review-h3">네이버 스마트스토어 후기</h3>`;
+  if (status === "approved") {
+    html += `<p class="sub">스마트스토어 후기 보너스까지 받으셨어요. 감사합니다!</p>`;
+  } else if (status === "pending") {
+    html += `<p class="sub">작성 완료 신고를 접수했어요. 관리자가 확인하는 중이에요.</p>`;
+  } else {
+    let guide = `스마트스토어에 후기를 작성한 뒤 완료를 눌러 주시면, 관리자 확인 후 +${bonus}코인을 드려요.`;
+    if (status === "rejected" && smart.reject_reason) {
+      guide = `${esc(smart.reject_reason)}\n\n${guide}`;
+    }
+    html += `<p class="sub" style="white-space:pre-wrap;margin-bottom:12px">${guide}</p>
+      <div class="done-actions" style="justify-content:flex-start">
+        <button class="btn btn-ghost" id="btn-open-store">스토어 후기 작성</button>
+        <button class="btn btn-primary" id="btn-claim-smartstore">작성 완료했어요 (+${bonus})</button>
+      </div>`;
+  }
+  smartEl.innerHTML = html;
+  const openBtn = $("#btn-open-store");
+  if (openBtn) {
+    openBtn.addEventListener("click", () => {
+      if (!storeUrl) { toast("스마트스토어 링크가 아직 준비되지 않았어요.", "warn"); return; }
+      state.api.open_url(storeUrl);
+    });
+  }
+  const claimBtn = $("#btn-claim-smartstore");
+  if (claimBtn) {
+    claimBtn.addEventListener("click", async () => {
+      if (!confirm("네이버 스마트스토어에 후기를 정말 작성하셨나요?\n관리자가 확인한 뒤 보너스 지급 여부를 알려드릴게요.")) return;
+      claimBtn.disabled = true;
+      const r = await state.api.claim_smartstore_review();
+      claimBtn.disabled = false;
+      if (!r.ok) { toast(r.error || "신고에 실패했어요.", "warn"); return; }
+      applyMeExtras(r);
+      state.auth = r.auth;
+      renderAuth();
+      renderReviewGuide();
+      toast("작성 완료 신고를 접수했어요! 확인 후 코인이 지급돼요.", "success");
+    });
+  }
+}
+
 /* ───────────────────────── Python 이벤트 ───────────────────────── */
 
 window.__pyEvent = (msg) => {
@@ -356,7 +523,16 @@ window.__pyEvent = (msg) => {
     case "auth":
       state.auth = data;
       renderAuth();
-      if (data.logged_in && state.step === 1) loadProjects();
+      if (data.logged_in) {
+        if (state.step === 1) loadProjects();
+        state.api.refresh_me().then((r) => {
+          if (r.ok) {
+            applyMeExtras(r);
+            state.auth = r.auth;
+            renderAuth();
+          }
+        });
+      }
       break;
     case "login_code":
       $("#login-code").textContent = data.code;
@@ -382,8 +558,12 @@ window.__pyEvent = (msg) => {
       onScriptReady(data);
       break;
     case "transcribe_error":
+      state.busy = false;
       toast(data.message, "error");
-      gotoStep(1);
+      gotoStep(1, { unlock: false });
+      break;
+    case "pending_actions":
+      handlePendingActions(data || []);
       break;
   }
 };
@@ -407,9 +587,7 @@ function makeMockApi() {
       styles: [
         { key: "classic", name: "클래식 화이트", desc: "흰 글자 + 검은 외곽선 — 어떤 영상에도 어울리는 기본" },
         { key: "variety", name: "예능 옐로", desc: "노란 볼드 + 검은 외곽선 — 예능·리액션 하이라이트" },
-        { key: "box", name: "블랙 박스", desc: "흰 글자 + 반투명 검은 박스 — 인터뷰·뉴스·강의" },
         { key: "lime", name: "네온 라임", desc: "라임 볼드 + 검은 외곽선 — 쇼츠·트렌디한 영상" },
-        { key: "soft", name: "소프트 섀도", desc: "흰 글자 + 부드러운 그림자 — 브이로그·감성 영상" },
       ],
       capcut_running: false,
     }),
@@ -422,7 +600,21 @@ function makeMockApi() {
     },
     cancel_login: async () => ({ ok: true }),
     logout: async () => { mockAuth = { logged_in: false }; return { ok: true, auth: mockAuth }; },
-    refresh_me: async () => ({ ok: true, auth: mockAuth }),
+    refresh_me: async () => ({
+      ok: true,
+      auth: mockAuth,
+      coin_courses: [{ course_id: "c1", course_title: "캡컷 초신속", review_bonus_coins: 50, review_bonus_granted: false }],
+      smartstore_review: { status: "none", bonus_coins: 150, store_review_url: "#" },
+      pending_actions: [],
+    }),
+    claim_smartstore_review: async () => ({
+      ok: true,
+      auth: mockAuth,
+      coin_courses: [],
+      smartstore_review: { status: "pending", bonus_coins: 150 },
+    }),
+    ack_inbox: async () => ({ ok: true }),
+    review_write_url: async (cid) => ({ ok: true, url: `https://vcml.kr/mypage.html?tab=courses&review_course=${cid || ""}` }),
     fetch_history: async () => ({
       ok: true,
       history: [
@@ -497,13 +689,28 @@ async function init() {
   if (state.auth.logged_in) {
     loadProjects();
     state.api.refresh_me().then((r) => {
-      if (r.ok) { state.auth = r.auth; renderAuth(); }
-      else if (r.logged_out) toast(r.error, "warn");
+      if (r.ok) {
+        applyMeExtras(r);
+        state.auth = r.auth;
+        renderAuth();
+      } else if (r.logged_out) toast(r.error, "warn");
     });
   }
 }
 
 function bindEvents() {
+  $$("#step-nav .step").forEach((el) => {
+    el.addEventListener("click", () => {
+      const n = parseInt(el.dataset.step, 10);
+      onStepNavClick(n);
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      onStepNavClick(parseInt(el.dataset.step, 10));
+    });
+  });
+
   $("#btn-login").addEventListener("click", startLogin);
   $("#btn-login-cancel").addEventListener("click", async () => {
     await state.api.cancel_login();
@@ -524,10 +731,17 @@ function bindEvents() {
   $("#btn-history").addEventListener("click", openHistory);
   $("#btn-history-close").addEventListener("click", () =>
     $("#history-overlay").classList.add("hidden"));
+  $("#btn-review-guide").addEventListener("click", openReviewGuide);
+  $("#btn-review-close").addEventListener("click", () =>
+    $("#review-overlay").classList.add("hidden"));
   $("#btn-refresh-me").addEventListener("click", async () => {
     const r = await state.api.refresh_me();
-    if (r.ok) { state.auth = r.auth; renderAuth(); toast("잔액을 새로고침했어요.", "success"); }
-    else toast(r.error, "warn");
+    if (r.ok) {
+      applyMeExtras(r);
+      state.auth = r.auth;
+      renderAuth();
+      toast("잔액을 새로고침했어요.", "success");
+    } else toast(r.error, "warn");
   });
 
   $("#btn-reload-projects").addEventListener("click", loadProjects);
@@ -568,21 +782,38 @@ function boot() {
     init();
     return;
   }
+
   let booted = false;
-  window.addEventListener("pywebviewready", () => {
+  const bootReal = () => {
     if (booted) return;
     booted = true;
     state.api = window.pywebview.api;
     init();
-  });
-  // pywebview가 아닌 순수 브라우저(개발 미리보기)에서는 mock으로 동작
-  setTimeout(() => {
-    if (booted || (window.pywebview && window.pywebview.api)) return;
-    booted = true;
-    state.api = makeMockApi();
-    document.title += " (mock)";
-    init();
-  }, 600);
+  };
+  window.addEventListener("pywebviewready", bootReal);
+
+  // pywebview API 주입은 창 초기화(디스크 I/O, 백신 스캔 등)에 따라
+  // 수 초 걸릴 수 있어 짧은 타임아웃으로 mock과 경합시키면 안 된다.
+  // 최대 15초(150ms x 100회) 동안 실제 브릿지가 나타나는지 폴링하고,
+  // 그래도 없을 때만(=pywebview가 아예 아닌 순수 브라우저 미리보기) mock으로 전환한다.
+  let tries = 0;
+  const poll = setInterval(() => {
+    if (booted) { clearInterval(poll); return; }
+    if (window.pywebview && window.pywebview.api) {
+      clearInterval(poll);
+      bootReal();
+      return;
+    }
+    tries += 1;
+    if (tries >= 100) {
+      clearInterval(poll);
+      if (booted) return;
+      booted = true;
+      state.api = makeMockApi();
+      document.title += " (mock)";
+      init();
+    }
+  }, 150);
 }
 
 boot();

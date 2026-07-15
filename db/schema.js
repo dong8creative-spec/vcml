@@ -6387,7 +6387,7 @@ const db = {
 
   /** 수강생 UI·앱 안내용 고정 브랜드명 (관리자용 program.name과 분리) */
   getDesktopProgramDisplayName(program) {
-    if (program?.type === 'desktop_coin') return '타닥싱크'
+    if (program?.type === 'desktop_coin') return '타닥싱크 2'
     return String(program?.name || '').trim() || '프로그램'
   },
 
@@ -6397,12 +6397,12 @@ const db = {
     if (!existing) existing = await db.getCourseProgramBySlug('dogak-subtitle')
     if (existing) return existing
     return db.createCourseProgram({
-      name: '타닥싱크',
+      name: '타닥싱크 2',
       slug: 'tadak-sync',
       type: 'desktop_coin',
       storage_path: 'subtitle-tool/TadakSync.zip',
       page_path: '/subtitle-tool.html',
-      feature_label: '수강생 전용 타닥싱크(TadakSync) 제공',
+      feature_label: '수강생 전용 타닥싱크 2(TadakSync 2) 제공',
       requires_google: 1,
       early_access_hours: 2,
       initial_coins: SUBTITLE_INITIAL_COINS,
@@ -6424,7 +6424,7 @@ const db = {
       type: 'desktop_coin',
       storage_path: 'subtitle-tool/TadakSync.zip',
       page_path: '/subtitle-tool.html',
-      feature_label: '수강생 전용 타닥싱크(TadakSync) 제공',
+      feature_label: '수강생 전용 타닥싱크 2(TadakSync 2) 제공',
       requires_google: 1,
       early_access_hours: 2,
       initial_coins: VIEWS_EDITING_INITIAL_COINS,

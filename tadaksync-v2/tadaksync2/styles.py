@@ -1,8 +1,13 @@
-"""자막 스타일 프리셋 5종.
+"""자막 스타일 프리셋.
 
 각 프리셋은 inject.SubtitleStyle로 변환된다. UI(web/app.js)의 미리보기
-카드와 key가 1:1로 대응한다. 색·외곽선·볼드는 실측 검증된 필드이고,
-그림자·배경 박스는 실측 템플릿의 소재 필드를 채우는 방식이다.
+카드와 key가 1:1로 대응한다. 색·외곽선·볼드는 실제 캡컷 프로젝트의 캡션
+소재와 필드 단위로 대조해 검증된 값만 쓴다.
+
+배경 박스(bg)·그림자(shadow) 프리셋은 실측 템플릿에 필드는 있지만
+실제 캡컷(9.0.0.3851)에서 렌더링되지 않는 것으로 실기기 테스트에서
+확인돼(2026-07-15) 제외했다. inject.SubtitleStyle의 bg/shadow 필드
+자체는 남겨뒀으니, 나중에 올바른 값 조합을 찾으면 다시 추가한다.
 """
 
 from __future__ import annotations
@@ -26,26 +31,11 @@ PRESETS: list[dict] = [
                       border_color=(0.0, 0.0, 0.0), bold=True),
     },
     {
-        "key": "box",
-        "name": "블랙 박스",
-        "desc": "흰 글자 + 반투명 검은 박스 — 인터뷰·뉴스·강의",
-        "style": dict(color=(1.0, 1.0, 1.0), border=False,
-                      bg=True, bg_color=(0.0, 0.0, 0.0), bg_alpha=0.75),
-    },
-    {
         "key": "lime",
         "name": "네온 라임",
         "desc": "라임 볼드 + 검은 외곽선 — 쇼츠·트렌디한 영상",
         "style": dict(color=(0.78, 1.0, 0.0), border=True,
                       border_color=(0.0, 0.0, 0.0), bold=True),
-    },
-    {
-        "key": "soft",
-        "name": "소프트 섀도",
-        "desc": "흰 글자 + 부드러운 그림자 — 브이로그·감성 영상",
-        "style": dict(color=(1.0, 1.0, 1.0), border=False,
-                      shadow=True, shadow_color=(0.0, 0.0, 0.0),
-                      shadow_alpha=0.8),
     },
 ]
 

@@ -135,6 +135,23 @@ b { font-weight: 700; }
 }
 .step.done { color: var(--text); }
 .step.done .step-num { color: var(--lime); border-color: var(--lime); background: var(--lime-dim); }
+.step.navable {
+  cursor: pointer;
+}
+.step.navable:hover {
+  color: var(--text);
+  background: var(--panel);
+}
+.step.navable:hover .step-num {
+  border-color: var(--lime);
+}
+.step.locked {
+  cursor: default;
+  opacity: 0.55;
+}
+.step.locked.active {
+  opacity: 1;
+}
 
 /* ─────────── 계정 카드 ─────────── */
 .account-card {
@@ -327,9 +344,7 @@ select:focus { border-color: var(--lime); }
 }
 .cap-classic { color: #fff; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
 .cap-variety { color: #FFE000; font-weight: 900; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 3px rgba(0,0,0,.6); }
-.cap-box     { color: #fff; background: rgba(0,0,0,.75); }
 .cap-lime    { color: #C7FF00; font-weight: 900; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
-.cap-soft    { color: #fff; text-shadow: 0 3px 10px rgba(0,0,0,.95), 0 1px 3px rgba(0,0,0,.9); }
 .style-info { padding: 13px 15px; }
 .style-info .s-name { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
 .style-info .s-desc { color: var(--muted); font-size: 12px; margin-top: 3px; line-height: 1.5; }
@@ -387,6 +402,13 @@ select:focus { border-color: var(--lime); }
 .history-row .h-delta { font-weight: 800; flex: none; }
 .history-row .h-delta.plus { color: var(--lime); }
 .history-row .h-delta.minus { color: var(--danger); }
+
+.review-sep {
+  border: none; border-top: 1px solid var(--border-soft); margin: 16px 0;
+}
+.review-h3 {
+  margin: 0 0 8px; font-size: 14px; font-weight: 800; color: var(--text);
+}
 
 /* ─────────── 토스트 ─────────── */
 #toast-root {

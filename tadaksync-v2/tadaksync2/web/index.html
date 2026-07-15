@@ -57,6 +57,7 @@
       </div>
       <div class="coin-chip"><span class="coin-dot"></span><span id="acc-balance">—</span> 코인</div>
       <div class="account-menu hidden" id="account-menu">
+        <button id="btn-review-guide">후기 안내</button>
         <button id="btn-history">코인 사용 내역</button>
         <button id="btn-refresh-me">잔액 새로고침</button>
         <button id="btn-logout" class="danger">로그아웃</button>
@@ -104,7 +105,7 @@
         <h2 id="progress-title">전문을 인식하고 있어요</h2>
         <p class="sub" id="progress-msg">준비 중…</p>
         <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-        <p class="progress-note">타임라인 1분당 1코인이 차감돼요. 실패하면 자동으로 환불됩니다.</p>
+        <p class="progress-note">말이 인식되면 타임라인 1분당 1코인이 차감돼요. 무음·미인식이면 코인 없이 자동 취소됩니다.</p>
       </div>
     </section>
 
@@ -216,6 +217,20 @@
       <button class="icon-btn" id="btn-history-close">✕</button>
     </div>
     <div class="history-list" id="history-list"><p class="sub">불러오는 중…</p></div>
+  </div>
+</div>
+
+<!-- ───────────────── 후기 안내 모달 ───────────────── -->
+<div id="review-overlay" class="overlay hidden">
+  <div class="overlay-card">
+    <div class="overlay-head">
+      <h2>수강 후기 안내</h2>
+      <button class="icon-btn" id="btn-review-close">✕</button>
+    </div>
+    <p class="sub" style="margin-bottom:14px">별점 5점 후기와 스마트스토어 후기로 보너스 코인을 받을 수 있어요.</p>
+    <div id="review-courses"></div>
+    <hr class="review-sep">
+    <div id="review-smartstore"></div>
   </div>
 </div>
 

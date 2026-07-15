@@ -26,16 +26,6 @@ async function main() {
     console.log('[rename] views program name → 타닥싱크 · 조회수 편집법')
   }
 
-  // CapCutSubtitle 레거시 경로만 1회 교정
-  for (const p of [subtitle, views]) {
-    if (String(p.storage_path || '').includes('CapCutSubtitle')) {
-      console.log(`[storage] ${p.slug}: CapCutSubtitle → TadakSync.zip`)
-      if (!dryRun) {
-        await db.updateCourseProgram(p.id, { storage_path: 'subtitle-tool/TadakSync.zip' })
-      }
-    }
-  }
-
   if (dryRun) {
     for (const slug of [db.SUBTITLE_COURSE_SLUG, db.VIEWS_EDITING_COURSE_SLUG]) {
       const course = await db.getCourseBySlug(slug)

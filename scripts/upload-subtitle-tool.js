@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * TadakSync.zip → Firebase Storage 업로드
+ * TadakSync2.zip → Firebase Storage 업로드
+ * (기본 Storage 경로는 기존과 동일: subtitle-tool/TadakSync.zip)
  *
  * 사용:
  *   npm run upload:subtitle-tool
  *   npm run redeploy:subtitle-tool   ← 사용법 수정 후 zip 재생성 + 업로드
  *
- * node scripts/upload-subtitle-tool.js [path/to/TadakSync.zip]
+ * node scripts/upload-subtitle-tool.js [path/to/TadakSync2.zip]
  * node scripts/upload-subtitle-tool.js --model   ← 음성인식 모델 zip 업로드
- *   (먼저 node scripts/package-subtitle-tool.js --model-zip 으로 zip 생성)
  */
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') })
 
@@ -16,7 +16,6 @@ const fs = require('fs')
 const path = require('path')
 const { resolveBucket } = require('../utils/storage')
 
-// schema 로드로 Firebase Admin 초기화
 require('../db/schema')
 
 const STORAGE_PATH = process.env.SUBTITLE_TOOL_STORAGE_PATH || 'subtitle-tool/TadakSync.zip'
@@ -28,8 +27,8 @@ async function main() {
   const pathArg = args.find(a => !a.startsWith('--'))
 
   const defaultZip = isModel
-    ? path.join(__dirname, '../capcut subtitle/dist/whisper-model-large-v3.zip')
-    : path.join(__dirname, '../capcut subtitle/dist/TadakSync.zip')
+    ? path.join(__dirname, '../tadaksync-v2/dist/whisper-model-large-v3.zip')
+    : path.join(__dirname, '../tadaksync-v2/dist/TadakSync2.zip')
   const zipPath = path.resolve(pathArg || defaultZip)
   const storagePath = isModel ? MODEL_STORAGE_PATH : STORAGE_PATH
   const filename = path.basename(storagePath)
@@ -38,14 +37,13 @@ async function main() {
     console.error('ZIP 파일이 없습니다:', zipPath)
     console.error(isModel
       ? '먼저 node scripts/package-subtitle-tool.js --model-zip 으로 zip을 만드세요.'
-      : '먼저 dist/TadakSync 폴더를 zip으로 만든 뒤 다시 실행하세요.')
+      : '먼저 dist/TadakSync2 폴더를 zip으로 만든 뒤 다시 실행하세요. (npm run package:subtitle-tool)')
     process.exit(1)
   }
   const bucket = await resolveBucket()
   const file = bucket.file(storagePath)
   const mb = (fs.statSync(zipPath).size / 1024 / 1024).toFixed(1)
   console.log(`업로드 중 → gs://${bucket.name}/${storagePath} (${mb} MB)`)
-  // 대용량(모델 3GB+) 대응: 버퍼 대신 스트림 업로드
   await new Promise((resolve, reject) => {
     fs.createReadStream(zipPath)
       .pipe(file.createWriteStream({

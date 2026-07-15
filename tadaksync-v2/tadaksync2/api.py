@@ -5,7 +5,8 @@ pywebview의 js_api로 노출된다. JS에서 window.pywebview.api.<메서드>(.
 오래 걸리는 작업(로그인 폴링, 전문 인식)은 내부 스레드로 돌리고
 진행 상황을 window.__pyEvent({event, data}) 이벤트로 push한다.
 
-코인 정책은 v1과 동일: 인식 시작 전에 차감(consume), 실패 시 환불(refund).
+코인 정책: 전문 인식에 성공(비어 있지 않은 전문)한 뒤에만 분당 1코인 차감.
+무음·미인식이면 차감하지 않는다. 전문이 확정된 뒤에는 환불하지 않는다.
 """
 
 from __future__ import annotations
@@ -25,7 +26,8 @@ from .inject import inject_subtitles
 from .playback import Player
 from .pro_plan import build_lines_from_script
 from .transcribe import (LANGUAGE_CHOICES, MODEL, SR, FullScript,
-                         SubtitleLine, Transcriber)
+                         SubtitleLine, Transcriber, _close_gaps,
+                         _refine_speech_boundaries, audio_has_speech)
 
 
 def _ok(**kw) -> dict:
@@ -112,22 +114,34 @@ class Api:
 
     # ----------------------------------------------------------------- 상태
     def get_state(self) -> dict:
+        try:
+            running = capcut.is_capcut_running()
+        except Exception:
+            running = False
         return _ok(
             app={"name": APP_NAME, "version": VERSION},
             auth=self._auth_state(),
             languages=list(LANGUAGE_CHOICES.keys()),
             styles=styles.list_presets(),
-            capcut_running=capcut.is_capcut_running(),
+            capcut_running=running,
         )
 
     def refresh_me(self) -> dict:
-        """서버에서 잔액/권한 재확인. 401/403이면 로그아웃 처리(v1 정책)."""
+        """서버에서 잔액/권한 재확인. 401/403이면 로그아웃 처리."""
         if not self._auth:
             return _err("로그인이 필요해요.", logged_in=False)
         try:
             me = license_api.verify_entitlement(self._auth["token"])
             self._save_balance(me.get("balance"))
-            return _ok(auth=self._auth_state())
+            pending = me.get("pending_actions") or []
+            if pending:
+                self._emit("pending_actions", pending)
+            return _ok(
+                auth=self._auth_state(),
+                coin_courses=me.get("coin_courses") or [],
+                smartstore_review=me.get("smartstore_review") or {},
+                pending_actions=pending,
+            )
         except RuntimeError as e:
             status = getattr(e, "status", None)
             if status in (401, 403):
@@ -137,6 +151,37 @@ class Api:
                 self._emit("auth", self._auth_state())
                 return _err(str(e), logged_out=True)
             return _err(str(e))
+
+    def claim_smartstore_review(self) -> dict:
+        if not self._auth:
+            return _err("로그인이 필요해요.")
+        try:
+            result = license_api.claim_smartstore_review(self._auth["token"])
+            me = license_api.fetch_me(self._auth["token"])
+            self._save_balance(me.get("balance"))
+            return _ok(
+                result=result,
+                auth=self._auth_state(),
+                coin_courses=me.get("coin_courses") or [],
+                smartstore_review=me.get("smartstore_review") or {},
+            )
+        except RuntimeError as e:
+            return _err(str(e))
+
+    def ack_inbox(self, message_ids: list) -> dict:
+        if not self._auth:
+            return _err("로그인이 필요해요.")
+        ids = [str(x) for x in (message_ids or []) if x]
+        if not ids:
+            return _ok()
+        try:
+            license_api.ack_inbox(self._auth["token"], ids)
+            return _ok()
+        except RuntimeError as e:
+            return _err(str(e))
+
+    def review_write_url(self, course_id: str | None = None) -> dict:
+        return _ok(url=license_api.review_write_url(course_id))
 
     # --------------------------------------------------------------- 로그인
     def start_login(self) -> dict:
@@ -189,11 +234,12 @@ class Api:
     def list_projects(self) -> dict:
         try:
             self._projects = capcut.list_projects()
+            running = capcut.is_capcut_running()
         except Exception as e:
             return _err(f"프로젝트 탐색에 실패했어요: {e}")
         return _ok(
             projects=[_project_dict(p, i) for i, p in enumerate(self._projects)],
-            capcut_running=capcut.is_capcut_running(),
+            capcut_running=running,
         )
 
     def add_draft_root(self) -> dict:
@@ -214,7 +260,8 @@ class Api:
     def start_transcribe(self, project_index: int, language_label: str) -> dict:
         """전문 인식 시작 (백그라운드). 진행/완료는 이벤트로 push.
 
-        코인 정책은 v1과 동일: 오디오 분석 후 분당 1코인 차감, 실패 시 환불.
+        코인: 비어 있지 않은 전문이 나온 뒤에만 차감. 무음·미인식은 미차감.
+        전문 확정 후에는 환불하지 않음.
         """
         if self._busy:
             return _err("이미 작업이 진행 중이에요.")
@@ -239,6 +286,7 @@ class Api:
         job_id = None
         token = self._auth["token"] if self._auth else None
         consumed = False
+        script_committed = False  # 전문 확정 후에는 환불 불가
         try:
             status(f"[{project.name}] 타임라인 오디오를 분석하고 있어요...")
             res = capcut.build_timeline_audio(project)
@@ -246,7 +294,21 @@ class Api:
                 raise RuntimeError(
                     "인식할 오디오를 찾지 못했어요. 프로젝트의 음성 파일을 확인해 주세요.")
 
+            status("발화(말)가 있는지 확인하고 있어요…")
+            if not audio_has_speech(res.audio):
+                raise RuntimeError(
+                    "오디오에서 말을 찾지 못했어요. 작업이 취소되었고 코인은 차감되지 않았어요.")
+
             minutes = license_api.minutes_from_audio(len(res.audio), SR)
+            self._transcriber.load(MODEL, progress=status)
+            script = self._transcriber.transcribe_full_script(
+                res.audio, language=language,
+                progress=status, progress_ratio=ratio)
+            if not (script.text or "").strip():
+                raise RuntimeError(
+                    "자막으로 인식된 내용이 없어요. 작업이 취소되었고 코인은 차감되지 않았어요.")
+
+            # 전문이 확보된 뒤에만 차감 — 이후에는 환불하지 않음
             job_id = license_api.new_job_id()
             status(f"코인 {minutes}개를 차감하고 있어요… (타임라인 약 {minutes}분)")
             try:
@@ -265,14 +327,8 @@ class Api:
                     raise RuntimeError("로그인이 만료됐어요. 다시 로그인해 주세요.") from e
                 raise
             consumed = True
+            script_committed = True
             self._save_balance(consumed_res.get("balance"))
-
-            self._transcriber.load(MODEL, progress=status)
-            script = self._transcriber.transcribe_full_script(
-                res.audio, language=language,
-                progress=status, progress_ratio=ratio)
-            if not script.text.strip():
-                raise RuntimeError("인식된 음성이 없어요. 프로젝트의 소리를 확인해 주세요.")
 
             self._audio = res.audio
             self._script = script
@@ -284,7 +340,8 @@ class Api:
             })
         except Exception as e:
             traceback.print_exc()
-            if consumed and job_id and token:
+            # 전문 확정(차감 완료) 이후에는 어떤 경우에도 환불하지 않음
+            if consumed and (not script_committed) and job_id and token:
                 try:
                     refunded = license_api.refund(token, job_id)
                     self._save_balance(refunded.get("balance"))
@@ -297,12 +354,20 @@ class Api:
 
     # ------------------------------------------------------------- 자막 블록
     def build_blocks(self, script_text: str) -> dict:
-        """엔터로 나눈 전문 → 타임코드 자막 블록 (v1 프로 테스트 로직)."""
+        """엔터로 나눈 전문 → 타임코드 자막 블록.
+
+        build_lines_from_script()가 주는 시각은 Whisper 원시 단어 타임스탬프라
+        ±0.3~1초 오차(특히 자막이 실제보다 일찍 나오는 경향)가 흔하다.
+        v1의 세그먼트 분할 경로가 쓰던 VAD 기반 발화 경계 스냅을 여기서도
+        동일하게 적용해 실제 발화 시작/끝에 맞춘다.
+        """
         if not self._script:
             return _err("먼저 전문을 인식해 주세요.")
         lines = build_lines_from_script(script_text or "", self._script.words)
         if not lines:
             return _err("타임코드를 만들 수 있는 자막 줄이 없어요.")
+        if self._audio is not None and len(self._audio) > 0:
+            lines = _close_gaps(_refine_speech_boundaries(lines, self._audio))
         return _ok(blocks=_lines_to_dicts(lines))
 
     def import_srt(self) -> dict:

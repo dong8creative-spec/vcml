@@ -129,7 +129,7 @@ class Transcriber:
         except Exception as e:
             raise RuntimeError(
                 "Whisper 모델 다운로드에 실패했어요. 인터넷 연결을 확인한 뒤 다시 시도하거나, "
-                "홈페이지에서 '음성인식 모델' zip을 받아 TadakSync.exe가 있는 "
+                "홈페이지에서 '음성인식 모델' zip을 받아 TadakSync2.exe가 있는 "
                 "프로그램 폴더에 압축 해제해 주세요. (models 폴더가 생겨요)"
             ) from e
         finally:
@@ -439,6 +439,20 @@ def _detect_speech_regions(audio: np.ndarray) -> list[tuple[float, float]]:
     )
     regions = get_speech_timestamps(audio, vad_options=opts)
     return [(r["start"] / SR, r["end"] / SR) for r in regions]
+
+
+def audio_has_speech(audio: np.ndarray) -> bool:
+    """타임라인에 발화(말)가 있는지 빠르게 판별. 없으면 인식·코인 차감을 생략한다."""
+    if audio is None or len(audio) == 0:
+        return False
+    try:
+        if _detect_speech_regions(audio):
+            return True
+    except Exception:
+        pass
+    env = _rms_envelope(audio)
+    audio_dur = len(audio) / SR
+    return bool(_regions_from_energy(audio, env, audio_dur))
 
 
 def _refine_speech_boundaries(lines: list[SubtitleLine],

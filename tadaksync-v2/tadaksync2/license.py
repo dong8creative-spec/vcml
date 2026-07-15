@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import math
 import os
-import shutil
 import time
 import urllib.error
 import urllib.parse
@@ -16,7 +15,6 @@ from pathlib import Path
 
 DEFAULT_API_BASE = os.environ.get("CAPCUT_SUBTITLE_API", "https://vcml.kr")
 APP_DIR_NAME = "TadakSync"
-LEGACY_APP_DIR_NAME = "CapCutSubtitle"
 AUTH_FILE = "auth.json"
 DEVICE_ID_FILE = "device_id.txt"
 POLL_INTERVAL_SEC = 2.0
@@ -27,14 +25,6 @@ def app_data_dir() -> Path:
     base = os.environ.get("APPDATA") or str(Path.home() / ".config")
     path = Path(base) / APP_DIR_NAME
     path.mkdir(parents=True, exist_ok=True)
-    # 구버전(CapCutSubtitle) 로그인 정보 이전
-    legacy = Path(base) / LEGACY_APP_DIR_NAME / AUTH_FILE
-    current = path / AUTH_FILE
-    if legacy.exists() and not current.exists():
-        try:
-            shutil.copy2(legacy, current)
-        except OSError:
-            pass
     return path
 
 

@@ -168,7 +168,9 @@ def is_capcut_running() -> bool:
             creationflags=subprocess.CREATE_NO_WINDOW,
         ).stdout
         return "CapCut.exe" in out or "JianyingPro.exe" in out
-    except OSError:
+    except Exception:
+        # tasklist가 없거나(OSError), 타임아웃(TimeoutExpired) 등 어떤 이유로든
+        # 확인에 실패하면 목록 자체는 계속 보여줘야 하므로 조용히 False 처리.
         return False
 
 

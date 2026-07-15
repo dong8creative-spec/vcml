@@ -1,6 +1,9 @@
 #!/usr/bin/env python
-"""개발용 실행: .venv\\Scripts\\python run.py"""
+"""실행 진입점 (개발용 `.venv\\Scripts\\python run.py` / PyInstaller 빌드 대상)."""
 
-from tadaksync2.app import main
+import multiprocessing
 
-main()
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    from tadaksync2.app import main
+    main()
