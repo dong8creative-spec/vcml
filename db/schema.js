@@ -1101,9 +1101,48 @@ const DEFAULT_INSTRUCTORS_INTRO = {
 앞으로도 현장의 변화에 맞춘 강의와 콘텐츠로 여러분의 성장을 돕겠습니다. 감사합니다.`,
   timeline_heading: '주요 경력',
   timeline: [
-    { year: '2024', title: '타닥클래스 런칭', description: '실무 중심 영상·콘텐츠 교육 플랫폼 설립' },
-    { year: '2020', title: '방송·광고 현장 활동', description: '캡컷·다빈치 리졸브 기반 상업 영상 제작' },
-    { year: '2010', title: '영상 제작 경력 시작', description: '편집·모션그래픽 분야 현장 경험 축적' },
+    {
+      year: '2024',
+      title: '타닥클래스 런칭',
+      scope: '교육·플랫폼',
+      description: '실무 중심 영상·콘텐츠 교육 플랫폼 설립 및 강의 운영',
+      achievements: ['캡컷·다빈치 리졸브 실무 강의', '숏폼·릴스 워크플로 교육'],
+    },
+    {
+      year: '2024',
+      title: '인스타그램 릴스 채널 운영',
+      scope: '인스타그램',
+      description: '릴스 기획·편집·업로드 운영을 맡은 브랜드·크리에이터 계정 다수',
+      achievements: ['자영업자학교 팔로워 1,200→8,500', '안리고택 브랜드 릴스 시리즈', '최선장 주 2회 업로드 루틴 (진행 중)'],
+    },
+    {
+      year: '2024',
+      title: '샤오홍슈 숏폼 제작',
+      scope: '샤오홍슈',
+      description: '중국 숏폼 톤에 맞춘 제품·정보형 콘텐츠 편집',
+      achievements: ['제품 리뷰·정보형 템플릿 작업'],
+    },
+    {
+      year: '2022',
+      title: '유튜브 채널 편집·운영',
+      scope: '유튜브',
+      description: '의료·정보 채널의 쇼츠·롱폼 편집과 채널 운영 지원',
+      achievements: ['Cloud Hospital 구독 3.2배', '1분닥터 업로드 3배 체계화', '가로세로연구소 채널 운영 (진행 중)'],
+    },
+    {
+      year: '2020',
+      title: '방송·광고 현장 활동',
+      scope: '방송·광고',
+      description: '캡컷·다빈치 리졸브 기반 상업 영상 제작',
+      achievements: ['방송·광고 편집 현장', '모션·자막 워크플로 정립'],
+    },
+    {
+      year: '2010',
+      title: '영상 제작 경력 시작',
+      scope: '영상 제작',
+      description: '편집·모션그래픽 분야 현장 경험 축적',
+      achievements: [],
+    },
   ],
 }
 
@@ -1666,11 +1705,12 @@ function normalizeInstructorTimeline(items) {
     .map((item, i) => ({
       year: String(item?.year || '').trim().slice(0, 20),
       title: String(item?.title || '').trim().slice(0, 120),
+      scope: String(item?.scope || '').trim().slice(0, 40),
       description: String(item?.description || '').trim().slice(0, 500),
       achievements: normalizeTimelineAchievements(item?.achievements),
       sort_order: Number(item?.sort_order) || i + 1,
     }))
-    .filter(item => item.year || item.title || item.description || item.achievements.length)
+    .filter(item => item.year || item.title || item.scope || item.description || item.achievements.length)
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
     .slice(0, 30)
     .map((item, i) => ({ ...item, sort_order: i + 1 }))

@@ -259,7 +259,7 @@
       ? `<iframe src="${esc(embed)}" title="${esc(item.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>`
       : `<div class="portfolio-media-card__placeholder">
            <i class="ti ti-brand-youtube" aria-hidden="true"></i>
-           <span>${item.sample ? '샘플 링크<br>실제 Shorts URL로 교체' : '미리보기 준비 중'}</span>
+           <span>${item.sample ? '샘플 링크 · 실제 Shorts URL로 교체' : '미리보기 준비 중'}</span>
          </div>`
     return `<article class="portfolio-media-card">
       <div class="portfolio-media-card__thumb">
@@ -277,6 +277,42 @@
     </article>`
   }
 
+  function buildRednoteRowCard(item) {
+    return `<article class="rednote-row-card">
+      <div class="rednote-row-card__brand" aria-hidden="true">
+        <div class="rednote-row-card__symbol">
+          <i class="ti ti-book-2" aria-hidden="true"></i>
+        </div>
+        <span class="rednote-row-card__brand-label">小红书</span>
+      </div>
+      <div class="rednote-row-card__main">
+        <div class="rednote-row-card__head">
+          <span class="rednote-row-card__badge">샤오홍슈</span>
+          <h3 class="rednote-row-card__title">${esc(item.title)}</h3>
+        </div>
+        ${item.description ? `<p class="rednote-row-card__desc">${esc(item.description)}</p>` : ''}
+      </div>
+      <div class="rednote-row-card__actions">
+        <a class="rednote-row-card__link" href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">
+          <span>게시물 보기</span>
+          <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+        </a>
+      </div>
+    </article>`
+  }
+
+  function renderRednoteSection(items, emptyMessage) {
+    if (!items.length) {
+      return `<p class="portfolio-empty">${emptyMessage}</p>`
+    }
+    return `
+      <section class="platform-section platform-section--rednote">
+        <h3 class="platform-section__title">영상 포트폴리오</h3>
+        <p class="platform-section__desc">샤오홍슈 게시물 링크와 작업 요약입니다. 썸네일 미제공으로 브랜드 심볼로 표시합니다.</p>
+        <div class="rednote-row-list">${items.map(buildRednoteRowCard).join('')}</div>
+      </section>`
+  }
+
   function buildRednoteCard(item) {
     const thumbUrl = String(item.thumbnailUrl || item.thumbnail_url || '').trim()
     const thumbHtml = thumbUrl
@@ -284,7 +320,7 @@
       : ''
     const placeholderHtml = `<div class="portfolio-media-card__placeholder">
           <i class="ti ti-notebook" aria-hidden="true"></i>
-          <span>${item.sample ? '샘플 링크<br>실제 게시물 URL로 교체' : thumbUrl ? '썸네일을 불러오지 못했습니다' : '썸네일 URL을 추가하세요'}</span>
+          <span>${item.sample ? '샘플 링크 · 실제 게시물 URL로 교체' : thumbUrl ? '썸네일을 불러오지 못했습니다' : '썸네일 URL을 추가하세요'}</span>
         </div>`
     return `<article class="portfolio-media-card">
       <div class="portfolio-media-card__thumb${thumbUrl ? '' : ' is-thumb-missing'}">
@@ -828,12 +864,8 @@
   }
 
   function renderRednote(container) {
-    renderScrollingMediaList(
-      container,
-      PORTFOLIO_DATA.rednote || [],
-      buildRednoteCard,
-      '등록된 샤오홍슈 포트폴리오가 없습니다.'
-    )
+    const items = PORTFOLIO_DATA.rednote || []
+    container.innerHTML = renderRednoteSection(items, '등록된 샤오홍슈 포트폴리오가 없습니다.')
   }
 
   function setPlatform(platform) {

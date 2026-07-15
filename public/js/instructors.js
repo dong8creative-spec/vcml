@@ -79,6 +79,12 @@
     </section>`
   }
 
+  function renderTimelineScope(scope) {
+    const label = String(scope || '').trim()
+    if (!label) return ''
+    return `<span class="instructor-timeline__scope">${esc(label)}</span>`
+  }
+
   function renderTimelineItem(item, index, prevYear) {
     const year = String(item?.year || '').trim()
     const showYear = year && year !== prevYear
@@ -94,7 +100,10 @@
       <div class="instructor-timeline__track" aria-hidden="true"><span class="instructor-timeline__dot"></span></div>
       <article class="instructor-timeline__card">
         ${showYear ? `<time class="instructor-timeline__year-mobile">${esc(year)}</time>` : ''}
-        ${item?.title ? `<h3 class="instructor-timeline__title">${esc(item.title)}</h3>` : ''}
+        <div class="instructor-timeline__card-head">
+          ${item?.title ? `<h3 class="instructor-timeline__title">${esc(item.title)}</h3>` : ''}
+          ${renderTimelineScope(item?.scope)}
+        </div>
         ${item?.description ? `<p class="instructor-timeline__desc">${esc(item.description)}</p>` : ''}
         ${achievements}
       </article>
@@ -117,6 +126,13 @@
         <h2 class="instructor-section-title instructor-section-title--flush">${esc(intro?.timeline_heading || '주요 경력')}</h2>
       </div>
       <ol class="instructor-timeline">${items}</ol>
+      <div class="instructor-history__footer">
+        <a href="/instructor-portfolio.html" class="instructor-history__portfolio-link">
+          <i class="ti ti-briefcase" aria-hidden="true"></i>
+          <span>포트폴리오에서 상세 사례 보기</span>
+          <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+        </a>
+      </div>
     </section>`
   }
 

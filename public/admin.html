@@ -1073,7 +1073,7 @@
           <div class="pf-subpanel" data-pf-panel="rednote" hidden>
             <div class="form-group">
               <label>샤오홍슈 포트폴리오</label>
-              <p class="sec-sub">게시물 URL을 저장하면 썸네일 자동 추출을 시도합니다. 실패 시 썸네일 URL을 직접 입력하세요. (9:16 세로 이미지 권장, 공유 링크·xsec_token 포함 URL이 더 잘 됩니다)</p>
+              <p class="sec-sub">게시물 URL·제목·설명만 입력하세요. 공개 페이지에는 샤오홍슈 브랜드 심볼 가로 카드로 표시됩니다.</p>
               <div id="pf-rn-items"></div>
               <button type="button" class="btn-sm" id="pf-rn-item-add" style="margin-top:8px">+ 항목 추가</button>
             </div>
@@ -4959,6 +4959,7 @@
             </span>
             <input type="text" class="it-year${!(row.year || '').trim() ? ' it-year--empty' : ''}" placeholder="연도" maxlength="20" value="${escAttr(row.year)}" inputmode="numeric" autocomplete="off" />
             <input type="text" class="it-title" placeholder="대표 제목" maxlength="120" value="${escAttr(row.title)}" autocomplete="off" />
+            <input type="text" class="it-scope" placeholder="분야 (예: 유튜브·인스타)" maxlength="40" value="${escAttr(row.scope || '')}" autocomplete="off" />
             <button type="button" class="btn-sm it-remove" data-idx="${i}">연혁 삭제</button>
           </div>
           <div class="instructor-timeline-row__body">
@@ -4976,7 +4977,7 @@
     function flushTimelineInputs() {
       const list = document.getElementById('instructors-timeline-list')
       if (!list) return
-      list.querySelectorAll('.it-year, .it-title, .it-desc, .it-achievement').forEach(el => {
+      list.querySelectorAll('.it-year, .it-title, .it-scope, .it-desc, .it-achievement').forEach(el => {
         if (typeof el.blur === 'function') el.blur()
       })
       syncTimelineFromDom()
@@ -4994,6 +4995,7 @@
       _introTimeline = [...list.querySelectorAll('.instructor-timeline-row')].map((row, i) => ({
         year: row.querySelector('.it-year')?.value.trim() || '',
         title: row.querySelector('.it-title')?.value.trim() || '',
+        scope: row.querySelector('.it-scope')?.value.trim() || '',
         description: row.querySelector('.it-desc')?.value.trim() || '',
         achievements: [...row.querySelectorAll('.it-achievement')].map(el => el.value.trim()),
         sort_order: i + 1,
@@ -5001,7 +5003,7 @@
     }
 
     function timelineRowHasContent(row) {
-      return !!(row.year || row.title || row.description || (row.achievements || []).some(a => String(a || '').trim()))
+      return !!(row.year || row.title || row.scope || row.description || (row.achievements || []).some(a => String(a || '').trim()))
     }
 
     function readIntroTimelineForSave() {
@@ -5010,6 +5012,7 @@
         .map((r, i) => ({
           year: String(r.year || '').trim(),
           title: String(r.title || '').trim(),
+          scope: String(r.scope || '').trim(),
           description: String(r.description || '').trim(),
           achievements: (r.achievements || []).map(a => String(a || '').trim()).filter(Boolean).slice(0, 12),
           sort_order: i + 1,
@@ -5195,6 +5198,7 @@
       _introTimeline = Array.isArray(cfg.timeline) ? cfg.timeline.map(r => ({
         year: r.year || '',
         title: r.title || '',
+        scope: r.scope || '',
         description: r.description || '',
         achievements: Array.isArray(r.achievements) ? [...r.achievements] : [],
         sort_order: r.sort_order,
