@@ -405,6 +405,31 @@
   line-height: 1.65;
 }
 
+.platform-section + .platform-section {
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(0, 0, 0, .08);
+}
+
+.platform-section__title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #1d1d1f;
+  letter-spacing: -.02em;
+}
+
+.platform-section__desc {
+  margin: 0 0 16px;
+  font-size: 15px;
+  color: #6e6e73;
+  line-height: 1.65;
+}
+
+.platform-section__media {
+  min-width: 0;
+}
+
 .ig-account-list {
   display: flex;
   flex-direction: column;

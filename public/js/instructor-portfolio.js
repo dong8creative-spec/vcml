@@ -7,7 +7,62 @@
 
   // ── 교체용 정적 데이터 (샘플) ──────────────────────────
   const PORTFOLIO_DATA = {
-    youtube: [
+    youtube: {
+      intro: '유튜브 채널 기획·편집·운영을 맡아 성장시킨 채널입니다. 담당 기간과 성과를 확인해 보세요.',
+      channels: [
+        {
+          id: 'yt-ch-1',
+          name: 'Cloud Hospital',
+          handle: '@CloudHospital',
+          accountUrl: 'https://www.youtube.com/',
+          role: '채널 편집 · 더빙 · 업로드 운영',
+          startDate: '2022-01',
+          endDate: '2023-06',
+          ongoing: false,
+          metrics: [
+            { label: '구독자', before: '1.2만', after: '3.8만', growth: '약 3.2배' },
+            { label: '쇼츠 평균 조회', before: '5,000', after: '2.1만', growth: '약 4.2배' },
+          ],
+          summary: '의료 정보 콘텐츠를 쇼츠 중심으로 재구성해 구독 전환율을 높인 사례입니다.',
+          highlights: ['쇼츠·롱폼 병행 업로드', '더빙·자막 워크플로 정립'],
+          sample: true,
+        },
+        {
+          id: 'yt-ch-2',
+          name: '1분닥터',
+          handle: '@1minDoctor',
+          accountUrl: 'https://www.youtube.com/',
+          role: '영상 편집 · 썸네일 · 채널 운영 보조',
+          startDate: '2022-03',
+          endDate: '2023-12',
+          ongoing: false,
+          metrics: [
+            { label: '구독자', before: '8,500', after: '2.4만', growth: '약 2.8배' },
+            { label: '월 업로드', before: '4편', after: '12편', growth: '3배' },
+          ],
+          summary: '정기 업로드 루틴과 쇼츠 큐레이션으로 채널 활성도를 끌어올린 사례입니다.',
+          highlights: ['주 3회 업로드 체계', '썸네일·제목 패턴 표준화'],
+          sample: true,
+        },
+        {
+          id: 'yt-ch-3',
+          name: '가로세로연구소',
+          handle: '@가로세로연구소',
+          accountUrl: 'https://www.youtube.com/',
+          role: '채널 편집 · 콘텐츠 기획',
+          startDate: '2022-06',
+          endDate: null,
+          ongoing: true,
+          metrics: [
+            { label: '구독자', before: '5,200', after: '1.9만', growth: '약 3.7배' },
+            { label: '평균 조회', before: '1.1만', after: '4.5만', growth: '약 4.1배' },
+          ],
+          summary: '정보형 콘텐츠 포맷을 고정해 꾸준한 조회수 성장을 만든 진행 중 프로젝트입니다.',
+          highlights: ['에피소드형 시리즈 기획', '편집 템플릿 공유로 제작 속도 향상'],
+          sample: true,
+        },
+      ],
+      shorts: [
       {
         id: 'yt-1',
         title: '캡컷 3초 훅 편집',
@@ -29,7 +84,8 @@
         url: 'https://www.youtube.com/shorts/sample-vlog',
         sample: true,
       },
-    ],
+      ],
+    },
     instagram: {
       intro: '릴스 기획·편집·운영을 맡아 성장시킨 인스타그램 계정입니다. 담당 기간과 성과를 확인해 보세요.',
       accounts: [
@@ -307,13 +363,145 @@
     }
   }
 
+  function normalizeYoutubeData(youtube) {
+    if (Array.isArray(youtube)) {
+      return { intro: '', channels: [], shorts: youtube }
+    }
+    return {
+      intro: youtube?.intro || '',
+      channels: youtube?.channels || [],
+      shorts: youtube?.shorts || [],
+    }
+  }
+
+  function renderChannelAccountCard(account, { iconClass, visitLabel, shareLabel, sampleNote }) {
+    const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
+    const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
+    const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
+    const highlights = Array.isArray(account.highlights) && account.highlights.length
+      ? `<ul class="ig-account-card__highlights">${account.highlights.map((item) => `<li>${esc(item)}</li>`).join('')}</ul>`
+      : ''
+
+    return `<article class="ig-account-card">
+      <div class="ig-account-card__head">
+        <div class="ig-account-card__identity">
+          <div class="ig-account-card__icon" aria-hidden="true"><i class="${iconClass}"></i></div>
+          <div>
+            <h3 class="ig-account-card__name">${esc(account.name)}</h3>
+            <p class="ig-account-card__handle">${esc(account.handle)}</p>
+          </div>
+        </div>
+        <span class="ig-account-card__status ${statusClass}">${statusLabel}</span>
+      </div>
+
+      <dl class="ig-account-card__meta">
+        <div class="ig-account-card__meta-row">
+          <dt>담당 기간</dt>
+          <dd>${esc(period)}</dd>
+        </div>
+        ${account.role ? `
+        <div class="ig-account-card__meta-row">
+          <dt>담당 업무</dt>
+          <dd>${esc(account.role)}</dd>
+        </div>` : ''}
+      </dl>
+
+      ${renderMetricCards(account.metrics)}
+
+      ${account.summary ? `<p class="ig-account-card__summary">${esc(account.summary)}</p>` : ''}
+      ${highlights}
+
+      ${account.sample ? `<p class="ig-account-card__sample">${esc(sampleNote)}</p>` : ''}
+
+      <div class="ig-account-card__actions">
+        <a class="portfolio-btn portfolio-btn--primary portfolio-btn--sm" href="${esc(account.accountUrl)}" target="_blank" rel="noopener noreferrer">${esc(visitLabel)}</a>
+        <button type="button" class="portfolio-btn portfolio-btn--ghost portfolio-btn--sm" data-share-url="${esc(account.accountUrl)}" data-share-title="${esc(account.name)}">${esc(shareLabel)}</button>
+      </div>
+    </article>`
+  }
+
+  function renderChannelAccountsSection(intro, accounts, options) {
+    if (!accounts.length) return ''
+    const {
+      sectionTitle = '채널 관리',
+      iconClass = 'ti ti-brand-youtube',
+      visitLabel = '채널 방문',
+      shareLabel = '채널 링크 공유',
+      sampleNote = '샘플 데이터 · 실제 채널 URL과 수치로 교체하세요',
+    } = options
+    return `
+      <section class="platform-section">
+        <h3 class="platform-section__title">${esc(sectionTitle)}</h3>
+        ${intro ? `<p class="platform-section__desc">${esc(intro)}</p>` : ''}
+        <div class="ig-account-list">
+          ${accounts.map((account) => renderChannelAccountCard(account, {
+            iconClass, visitLabel, shareLabel, sampleNote,
+          })).join('')}
+        </div>
+      </section>
+    `
+  }
+
+  function renderShortsSection(items, buildCard, emptyMessage) {
+    const sectionOpen = `<section class="platform-section"><h3 class="platform-section__title">쇼츠 작업물</h3><div class="platform-section__media" data-shorts-list>`
+    const sectionClose = `</div></section>`
+
+    if (!items.length) {
+      return `${sectionOpen}<p class="portfolio-empty">${emptyMessage}</p>${sectionClose}`
+    }
+
+    const cardsHtml = items.map(buildCard).join('')
+    return `${sectionOpen}
+      <div class="portfolio-grid portfolio-grid--probe">${cardsHtml}</div>
+    ${sectionClose}`
+  }
+
+  function finalizeShortsSection(container) {
+    const mediaWrap = container.querySelector('[data-shorts-list]')
+    if (!mediaWrap) return
+
+    const probe = mediaWrap.querySelector('.portfolio-grid--probe')
+    if (!probe) return
+
+    const items = probe.querySelectorAll('.portfolio-media-card')
+    const useMarquee = shouldUseMarquee(Array.from(items), probe)
+
+    if (!useMarquee) {
+      probe.classList.remove('portfolio-grid--probe')
+      return
+    }
+
+    const cardsHtml = probe.innerHTML
+    mediaWrap.innerHTML = buildMarqueeHtml(cardsHtml)
+    if (container.offsetParent !== null) {
+      initMarqueesIn(mediaWrap)
+    } else {
+      container.dataset.marqueePending = '1'
+    }
+  }
+
   function renderYoutube(container) {
-    renderScrollingMediaList(
-      container,
-      PORTFOLIO_DATA.youtube || [],
-      buildYoutubeCard,
-      '등록된 유튜브 쇼츠가 없습니다.'
-    )
+    const yt = normalizeYoutubeData(PORTFOLIO_DATA.youtube)
+    const hasChannels = yt.channels.length > 0
+    const hasShorts = yt.shorts.length > 0
+
+    if (!hasChannels && !hasShorts) {
+      container.innerHTML = '<p class="portfolio-empty">등록된 유튜브 콘텐츠가 없습니다.</p>'
+      return
+    }
+
+    container.innerHTML = [
+      hasChannels ? renderChannelAccountsSection(yt.intro, yt.channels, {
+        sectionTitle: '채널 관리',
+        iconClass: 'ti ti-brand-youtube',
+        visitLabel: '채널 방문',
+        shareLabel: '채널 링크 공유',
+        sampleNote: '샘플 데이터 · 실제 채널 URL과 수치로 교체하세요',
+      }) : '',
+      hasShorts ? renderShortsSection(yt.shorts, buildYoutubeCard, '등록된 유튜브 쇼츠가 없습니다.') : '',
+    ].join('')
+
+    finalizeShortsSection(container)
   }
 
   function formatPeriod(startDate, endDate, ongoing) {
@@ -349,56 +537,13 @@
       return
     }
 
-    container.innerHTML = `
-      ${ig.intro ? `<p class="ig-intro">${esc(ig.intro)}</p>` : ''}
-      <div class="ig-account-list">
-        ${accounts.map((account) => {
-          const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
-          const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
-          const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
-          const highlights = Array.isArray(account.highlights) && account.highlights.length
-            ? `<ul class="ig-account-card__highlights">${account.highlights.map((item) => `<li>${esc(item)}</li>`).join('')}</ul>`
-            : ''
-
-          return `<article class="ig-account-card">
-            <div class="ig-account-card__head">
-              <div class="ig-account-card__identity">
-                <div class="ig-account-card__icon" aria-hidden="true"><i class="ti ti-brand-instagram"></i></div>
-                <div>
-                  <h3 class="ig-account-card__name">${esc(account.name)}</h3>
-                  <p class="ig-account-card__handle">${esc(account.handle)}</p>
-                </div>
-              </div>
-              <span class="ig-account-card__status ${statusClass}">${statusLabel}</span>
-            </div>
-
-            <dl class="ig-account-card__meta">
-              <div class="ig-account-card__meta-row">
-                <dt>담당 기간</dt>
-                <dd>${esc(period)}</dd>
-              </div>
-              ${account.role ? `
-              <div class="ig-account-card__meta-row">
-                <dt>담당 업무</dt>
-                <dd>${esc(account.role)}</dd>
-              </div>` : ''}
-            </dl>
-
-            ${renderMetricCards(account.metrics)}
-
-            ${account.summary ? `<p class="ig-account-card__summary">${esc(account.summary)}</p>` : ''}
-            ${highlights}
-
-            ${account.sample ? '<p class="ig-account-card__sample">샘플 데이터 · 실제 계정 URL과 수치로 교체하세요</p>' : ''}
-
-            <div class="ig-account-card__actions">
-              <a class="portfolio-btn portfolio-btn--primary portfolio-btn--sm" href="${esc(account.accountUrl)}" target="_blank" rel="noopener noreferrer">계정 방문</a>
-              <button type="button" class="portfolio-btn portfolio-btn--ghost portfolio-btn--sm" data-share-url="${esc(account.accountUrl)}" data-share-title="${esc(account.name)}">계정 링크 공유</button>
-            </div>
-          </article>`
-        }).join('')}
-      </div>
-    `
+    container.innerHTML = renderChannelAccountsSection(ig.intro, accounts, {
+      sectionTitle: '계정 관리',
+      iconClass: 'ti ti-brand-instagram',
+      visitLabel: '계정 방문',
+      shareLabel: '계정 링크 공유',
+      sampleNote: '샘플 데이터 · 실제 계정 URL과 수치로 교체하세요',
+    })
   }
 
   function renderRednote(container) {
