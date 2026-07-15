@@ -59,7 +59,7 @@
 <div class="st-wrap">
   <div class="st-hero">
     <h1>타닥싱크 2 <span style="font-weight:600;font-size:0.72em;color:#888">TadakSync 2</span></h1>
-    <p>캡컷 프로젝트의 음성을 인식해 자막을 만들고, 스타일·강조 색을 골라 캡컷 캡션 트랙에 바로 넣는 PC 프로그램입니다. 구글 로그인 후 다운로드하고, 앱에서 기기 연동 뒤 분당 코인으로 이용할 수 있습니다.</p>
+    <p>캡컷 프로젝트의 음성을 인식해 자막을 만들고, 스타일·강조 색을 골라 캡컷 캡션 트랙에 바로 넣는 PC 프로그램입니다. 타닥클래스 구글 로그인 후 다운로드하고, 앱에서 기기 연동 뒤 코인으로 이용할 수 있습니다.</p>
   </div>
 
   <div id="st-msg"></div>
@@ -84,17 +84,18 @@
     <div style="margin-bottom: 18px;">
       <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 이용 대상</div>
       <ul class="st-list" style="margin-top: 0;">
-        <li><strong>캡컷 초신속 수강생만</strong> 이용 가능합니다.</li>
-        <li><strong>강의 시작 2시간 전</strong>부터 다운로드·이용이 가능합니다.</li>
+        <li>타닥클래스에 <strong>구글 로그인한 회원</strong>이라면 누구나 이용할 수 있습니다.</li>
+        <li>계정당 <strong>PC 1대</strong>만 기기 연동됩니다.</li>
+        <li><strong>7일 동안 사용하지 않으면</strong> 기기 연동이 자동 해제됩니다. 다시 로그인해 주세요.</li>
       </ul>
     </div>
     <div style="margin-bottom: 18px;">
       <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 코인 안내</div>
       <ul class="st-list" style="margin-top: 0;">
-        <li>일반(초신속 등) 최초 이용 시 <strong>10코인</strong> 지급 · 조회수 편집법 등 별도 강의는 강의별 안내 코인</li>
-        <li>별점 5점과 함께 수강 후기를 남겨주신 분께는 감사의 뜻으로 강의별 <strong>50코인</strong>을 추가 지급해 드려요</li>
-        <li>네이버 스마트스토어 후기 작성 후 앱에서 완료 신고 시, 관리자 확인을 거쳐 <strong>150코인</strong>을 추가 지급해 드려요</li>
+        <li>최초 이용 시 기본 <strong>10코인</strong> 지급</li>
+        <li>이후 <strong>매일 1회</strong> 로그인(웹·앱) 시 <strong>+1코인</strong> 추가 지급 (KST 기준)</li>
         <li>전문 인식 성공 시 타임라인 <strong>1분당 1코인</strong> 차감 (최소 1코인). 무음·미인식이면 차감 없음</li>
+        <li>SRT만 불러와 삽입하는 경로는 <strong>코인 차감 없음</strong></li>
       </ul>
     </div>
     <div>
@@ -188,7 +189,7 @@ async function approveDevice() {
 function renderLoggedOut() {
   bodyEl.innerHTML = `
     <h2>구글 로그인 필요</h2>
-    <p class="st-meta" style="margin-bottom:14px">타닥싱크는 구글 계정으로 로그인한 수강생만 이용할 수 있습니다.</p>
+    <p class="st-meta" style="margin-bottom:14px">타닥싱크는 타닥클래스 구글 계정으로 로그인한 회원만 이용할 수 있습니다.</p>
     <div class="st-actions">${googleLoginBtn('구글로 로그인')}</div>
   `
 }
@@ -202,49 +203,23 @@ function renderDenied(data) {
     `
     return
   }
-  if (data.code === 'course_not_started') {
-    bodyEl.innerHTML = `
-      <h2>강의 시작 전</h2>
-      <p class="st-meta" style="margin-bottom:14px">${data.error || '강의가 시작된 뒤에 다운로드·이용할 수 있습니다.'}</p>
-      <div class="st-actions">
-        <a class="st-btn" href="${courseHref(data.course_slug)}">강의 안내 보기</a>
-      </div>
-    `
-    return
-  }
   bodyEl.innerHTML = `
-    <h2>수강 권한이 없습니다</h2>
-    <p class="st-meta" style="margin-bottom:14px">${data.error || '타닥싱크가 연결된 강의를 수강 중인 분만 이용할 수 있습니다.'}</p>
-    <div class="st-actions">
-      <a class="st-btn" href="${courseHref(data.course_slug)}">강의 보러 가기</a>
-    </div>
+    <h2>이용할 수 없습니다</h2>
+    <p class="st-meta" style="margin-bottom:14px">${data.error || '이용 권한을 확인하지 못했습니다.'}</p>
   `
 }
 
 function renderEntitled(data) {
-  const courses = data.coin_courses || []
-  const courseMeta = courses.length
-    ? courses.map(c => {
-        const init = c.initial_granted
-          ? `기본 ${Number(c.initial_coins || 0).toLocaleString()}코인 지급`
-          : `기본 ${Number(c.initial_coins || 0).toLocaleString()}코인 대기`
-        const rev = c.review_bonus_granted
-          ? '후기 보너스 완료, 감사합니다!'
-          : `별점 5점 후기 시 +${Number(c.review_bonus_coins || 50).toLocaleString()}코인`
-        return `<div><strong>${c.course_title || '수강 강의'}</strong> · ${init} · ${rev}</div>`
-      }).join('')
-    : `<div><strong>${data.course_title || '수강 강의'}</strong> 수강 중</div>
-       <div>최초 지급 ${data.initial_granted ? '완료' : '대기'} · ${data.review_bonus_granted ? '후기 보너스 완료, 감사합니다!' : '별점 5점 후기 시 +50코인'}</div>`
-  const reviewHref = data.course_id
-    ? `/mypage.html?tab=courses&review_course=${encodeURIComponent(data.course_id)}`
-    : '/mypage.html?tab=courses'
   bodyEl.innerHTML = `
     <h2>이용 가능</h2>
     <div class="st-balance"><span class="num">${data.balance ?? 0}</span><span class="unit">코인</span></div>
-    <div class="st-meta">${courseMeta}</div>
+    <div class="st-meta">
+      <div>기본 <strong>10코인</strong> · 매일 로그인 <strong>+1코인</strong></div>
+      <div>전문 인식 <strong>1분당 1코인</strong> · SRT 삽입 무료</div>
+    </div>
     <div class="st-actions">
       <button type="button" class="st-btn" id="btn-download" onclick="downloadZip()"><i class="ti ti-download"></i> 프로그램 다운로드</button>
-      <a class="st-btn secondary" href="${reviewHref}">마이페이지에서 후기 작성</a>
+      <a class="st-btn secondary" href="/coins.html">코인 관리</a>
     </div>
     <p class="st-meta" style="margin-top:10px;font-size:0.85em">
       음성인식 모델(약 3GB)은 첫 자막 생성 시 자동으로 받아집니다.
@@ -254,7 +229,9 @@ function renderEntitled(data) {
     </p>
   `
   if (data.just_granted_initial) {
-    showMsg('수강 강의에 맞는 기본 코인이 지급되었습니다.', 'ok')
+    showMsg('환영합니다! 기본 10코인이 지급되었습니다.', 'ok')
+  } else if (data.just_granted_daily) {
+    showMsg('오늘 출석 보너스 1코인이 지급되었습니다.', 'ok')
   }
 }
 

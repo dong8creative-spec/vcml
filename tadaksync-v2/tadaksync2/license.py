@@ -167,11 +167,7 @@ def start_device_login(on_status=None, on_code=None, cancel_event=None) -> dict:
         if status == "denied":
             msg = polled.get("error") or "이용 권한이 없어요."
             code = polled.get("code")
-            if code == "not_enrolled":
-                msg = polled.get("error") or (
-                    "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있어요."
-                )
-            elif code == "google_required":
+            if code == "google_required":
                 msg = polled.get("error") or "구글 로그인 계정만 이용할 수 있어요."
             elif code in ("session_revoked", "device_mismatch"):
                 msg = polled.get("error") or "다른 기기에서 로그인되어 연동이 해제됐어요."
@@ -198,18 +194,13 @@ def fetch_me(token: str) -> dict:
 
 
 def verify_entitlement(token: str) -> dict:
-    """수강·구글 권한 확인. 실패 시 RuntimeError (payload.code / status 포함)."""
+    """구글 로그인·코인 권한 확인. 실패 시 RuntimeError (payload.code / status 포함)."""
     try:
         me = fetch_me(token)
     except RuntimeError as e:
         payload = getattr(e, "payload", None) or {}
         code = payload.get("code")
-        if code == "not_enrolled":
-            err = RuntimeError(
-                payload.get("error")
-                or "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있어요.")
-            err.status = getattr(e, "status", 403)  # type: ignore[attr-defined]
-        elif code == "google_required":
+        if code == "google_required":
             err = RuntimeError(
                 payload.get("error")
                 or "구글 로그인 계정만 이용할 수 있어요.")
@@ -217,7 +208,7 @@ def verify_entitlement(token: str) -> dict:
         elif code == "session_revoked":
             err = RuntimeError(
                 payload.get("error")
-                or "다른 기기에서 로그인되어 이 기기의 연동이 해제됐어요.")
+                or "7일 동안 사용하지 않아 기기 연동이 만료됐어요. 다시 로그인해 주세요.")
             err.status = 401  # type: ignore[attr-defined]
         elif code == "device_mismatch":
             err = RuntimeError(
@@ -233,11 +224,6 @@ def verify_entitlement(token: str) -> dict:
             raise
         err.payload = payload  # type: ignore[attr-defined]
         raise err from e
-    if not me.get("enrolled"):
-        err = RuntimeError(
-            "캡컷 초신속 스탠다드 강의를 수강 중인 분만 이용할 수 있어요.")
-        err.status = 403  # type: ignore[attr-defined]
-        raise err
     return me
 
 

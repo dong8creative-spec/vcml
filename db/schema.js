@@ -78,6 +78,7 @@ const TIMED_PERCENT_COUPON_REASONS = new Set(STACKABLE_COURSE_COUPON_REASONS)
 const SUBTITLE_COURSE_SLUG = 'capcut-pro-basic'
 const VIEWS_EDITING_COURSE_SLUG = '조회수-올리는-영상편집법-1783221046465'
 const SUBTITLE_INITIAL_COINS = 10
+const SUBTITLE_DAILY_LOGIN_COINS = 1
 const VIEWS_EDITING_INITIAL_COINS = 1000
 const SUBTITLE_REVIEW_BONUS_COINS = 50
 const SMARTSTORE_REVIEW_BONUS_COINS = 150
@@ -5623,6 +5624,103 @@ const db = {
     return grants
   },
 
+  /** 회원 공통 최초 10코인 — 강의 수강 여부와 무관 */
+  async hasSubtitleMemberWelcome(userId) {
+    const memberDoc = await fs.collection('subtitle_coin_ledger').doc(`initial:member:${userId}`).get()
+    if (memberDoc.exists) return true
+    const snap = await fs.collection('subtitle_coin_ledger')
+      .where('user_id', '==', userId)
+      .where('reason', '==', 'initial')
+      .limit(1)
+      .get()
+    if (!snap.empty) return true
+    const wallet = await db.getSubtitleWallet(userId)
+    return !!wallet?.initial_granted_at
+  },
+
+  async grantSubtitleMemberWelcome(userId) {
+    const amount = SUBTITLE_INITIAL_COINS
+    if (amount <= 0) return { granted: false, amount: 0, reason: 'zero' }
+    if (await db.hasSubtitleMemberWelcome(userId)) {
+      return { granted: false, amount: 0, reason: 'already' }
+    }
+    await db.ensureSubtitleWallet(userId)
+    const ledgerRef = fs.collection('subtitle_coin_ledger').doc(`initial:member:${userId}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
+    let out = { granted: false, amount: 0 }
+    await fs.runTransaction(async t => {
+      const ledgerSnap = await t.get(ledgerRef)
+      if (ledgerSnap.exists) {
+        out = { granted: false, amount: 0, reason: 'already' }
+        return
+      }
+      const walletSnap = await t.get(walletRef)
+      if (!walletSnap.exists) return
+      const data = walletSnap.data()
+      const balance = data.balance || 0
+      const newBal = balance + amount
+      const ts = now()
+      const walletPatch = { balance: newBal, updated_at: ts }
+      if (!data.initial_granted_at) walletPatch.initial_granted_at = ts
+      t.update(walletRef, walletPatch)
+      t.set(ledgerRef, {
+        user_id: userId,
+        delta: amount,
+        balance_after: newBal,
+        reason: 'initial',
+        ref: 'member',
+        created_at: ts,
+      })
+      out = { granted: true, amount, balance: newBal }
+    })
+    return out
+  },
+
+  /** KST 기준 하루 1회 로그인 보너스 */
+  async hasSubtitleDailyLoginToday(userId, at = new Date()) {
+    const dateKey = kstDateKey(at)
+    const ledgerDoc = await fs.collection('subtitle_coin_ledger')
+      .doc(`daily_login:${userId}:${dateKey}`)
+      .get()
+    return ledgerDoc.exists
+  },
+
+  async grantSubtitleDailyLoginBonus(userId) {
+    const amount = SUBTITLE_DAILY_LOGIN_COINS
+    if (amount <= 0) return { granted: false, amount: 0, reason: 'zero' }
+    const dateKey = kstDateKey(new Date())
+    if (await db.hasSubtitleDailyLoginToday(userId)) {
+      return { granted: false, amount: 0, reason: 'already', date_key: dateKey }
+    }
+    await db.ensureSubtitleWallet(userId)
+    const ledgerRef = fs.collection('subtitle_coin_ledger').doc(`daily_login:${userId}:${dateKey}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
+    let out = { granted: false, amount: 0, date_key: dateKey }
+    await fs.runTransaction(async t => {
+      const ledgerSnap = await t.get(ledgerRef)
+      if (ledgerSnap.exists) {
+        out = { granted: false, amount: 0, reason: 'already', date_key: dateKey }
+        return
+      }
+      const walletSnap = await t.get(walletRef)
+      if (!walletSnap.exists) return
+      const balance = walletSnap.data().balance || 0
+      const newBal = balance + amount
+      const ts = now()
+      t.update(walletRef, { balance: newBal, updated_at: ts })
+      t.set(ledgerRef, {
+        user_id: userId,
+        delta: amount,
+        balance_after: newBal,
+        reason: 'daily_login',
+        ref: dateKey,
+        created_at: ts,
+      })
+      out = { granted: true, amount, balance: newBal, date_key: dateKey }
+    })
+    return out
+  },
+
   async ensureSubtitleWallet(userId) {
     const ref = fs.collection('subtitle_wallets').doc(userId)
     let result = null
@@ -5663,60 +5761,29 @@ const db = {
       return {
         ok: false,
         code: 'google_required',
-        error: '캡컷 자막 도구는 구글 로그인 계정만 이용할 수 있습니다.',
+        error: '타닥싱크는 구글 로그인 계정만 이용할 수 있습니다.',
         has_google: false,
         enrolled: false,
       }
     }
 
-    const coinCourses = await db.listUserDesktopCoinCourses(userId)
-    if (!coinCourses.length) {
-      return {
-        ok: false,
-        code: 'not_enrolled',
-        error: '타닥싱크가 연결된 강의를 수강 중인 분만 이용할 수 있습니다.',
-        has_google: true,
-        enrolled: false,
-      }
-    }
-
-    const usable = coinCourses.filter(({ course, program }) =>
-      bypassesLectureTimeGate(user) || isProgramAccessOpen(course, program))
-    if (!usable.length) {
-      const { course, program } = coinCourses[0]
-      const startsAt = getCourseLectureStartAt(course)
-      const openAt = startsAt
-        ? new Date(startsAt.getTime() - getProgramEarlyAccessMs(program))
-        : null
-      const label = formatCheckoutLabel(openAt)
-      return {
-        ok: false,
-        code: 'course_not_started',
-        error: label
-          ? `${label}부터 ${db.getDesktopProgramDisplayName(program)}을 이용할 수 있습니다. (강의 시작 2시간 전)`
-          : `강의 시작 2시간 전부터 ${db.getDesktopProgramDisplayName(program)}을 이용할 수 있습니다.`,
-        has_google: true,
-        enrolled: true,
-        course_slug: course.slug,
-        course_title: course.title,
-        course_id: course.id,
-        lecture_starts_at: startsAt ? startsAt.toISOString() : null,
-        lecture_starts_label: formatCheckoutLabel(startsAt),
-        program_opens_at: openAt ? openAt.toISOString() : null,
-        program_opens_label: label,
-        program_id: program?.id || null,
-        program_name: db.getDesktopProgramDisplayName(program),
-      }
-    }
-
     await db.ensureSubtitleWallet(userId)
-    const initialGrants = await db.syncSubtitleInitialGrants(userId)
+    const welcomeGrant = await db.grantSubtitleMemberWelcome(userId)
+    const dailyGrant = await db.grantSubtitleDailyLoginBonus(userId)
     const wallet = await db.getSubtitleWallet(userId)
-    const primary = usable[0]
-    const reviewTarget = await db.resolveSubtitleReviewTarget(userId, coinCourses)
-    const targetCourse = reviewTarget || primary.course
-    const targetProgram = coinCourses.find(c => c.course.id === targetCourse.id)?.program || primary.program
-    const review = await db.getReviewByUserAndCourse(userId, targetCourse.id)
+    const program = await db.ensureDefaultSubtitleProgram()
+    const coinCourses = await db.listUserDesktopCoinCourses(userId)
+
+    const reviewTarget = coinCourses.length
+      ? await db.resolveSubtitleReviewTarget(userId, coinCourses)
+      : null
+    const targetCourse = reviewTarget || coinCourses[0]?.course || null
+    const targetProgram = targetCourse
+      ? coinCourses.find(c => c.course.id === targetCourse.id)?.program || program
+      : program
+    const review = targetCourse
+      ? await db.getReviewByUserAndCourse(userId, targetCourse.id)
+      : null
 
     let pendingReviewBonus = false
     for (const { course } of coinCourses) {
@@ -5726,43 +5793,41 @@ const db = {
       }
     }
 
-    const initialGrantedFlags = await Promise.all(
-      coinCourses.map(({ course }) => db.hasSubtitleInitialGrant(userId, course.id, course.slug))
-    )
-
     const community = {
       community_instagram_url: targetProgram?.community_instagram_url || null,
-      community_chat_url: targetProgram?.community_chat_url || targetCourse.live_chat_url || null,
+      community_chat_url: targetProgram?.community_chat_url || targetCourse?.live_chat_url || null,
       community_website_url: targetProgram?.community_website_url || 'https://vcml.kr',
     }
     const [smartstoreReview, pendingActions] = await Promise.all([
       db.getSmartstoreReviewState(userId),
       db.listSubtitleAppInbox(userId),
     ])
-    const storagePath = String(primary.program?.storage_path || '').trim()
+    const storagePath = String(program?.storage_path || '').trim()
       || 'subtitle-tool/TadakSync.zip'
     return {
       ok: true,
       has_google: true,
-      enrolled: true,
-      course_slug: targetCourse.slug,
-      course_title: targetCourse.title,
-      course_id: targetCourse.id,
+      enrolled: coinCourses.length > 0,
+      course_slug: targetCourse?.slug || null,
+      course_title: targetCourse?.title || null,
+      course_id: targetCourse?.id || null,
       balance: wallet?.balance || 0,
-      initial_granted: initialGrantedFlags.some(Boolean),
-      review_bonus_granted: !pendingReviewBonus,
+      initial_granted: await db.hasSubtitleMemberWelcome(userId),
+      daily_login_granted_today: dailyGrant.granted || await db.hasSubtitleDailyLoginToday(userId),
+      review_bonus_granted: coinCourses.length ? !pendingReviewBonus : true,
       has_review: !!review,
-      just_granted_initial: initialGrants.length > 0,
+      just_granted_initial: welcomeGrant.granted,
+      just_granted_daily: dailyGrant.granted,
       download_available: true,
-      program_id: primary.program?.id || null,
-      program_name: db.getDesktopProgramDisplayName(primary.program),
+      program_id: program?.id || null,
+      program_name: db.getDesktopProgramDisplayName(program),
       storage_path: storagePath,
-      coin_courses: await Promise.all(coinCourses.map(async ({ course, program }) => ({
+      coin_courses: await Promise.all(coinCourses.map(async ({ course, program: courseProgram }) => ({
         course_id: course.id,
         course_slug: course.slug,
         course_title: course.title,
-        initial_coins: program.initial_coins,
-        review_bonus_coins: program.review_bonus_coins,
+        initial_coins: courseProgram.initial_coins,
+        review_bonus_coins: courseProgram.review_bonus_coins,
         initial_granted: await db.hasSubtitleInitialGrant(userId, course.id, course.slug),
         review_bonus_granted: await db.hasSubtitleReviewBonusForCourse(userId, course.id),
       }))),

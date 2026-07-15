@@ -27,7 +27,7 @@ function signSubtitleToken(user, deviceId, sessionId) {
   )
 }
 
-/** GET /api/subtitle/entitlement — 수강·구글·잔액 확인 (일반 프로그램 최초 10코인 등) */
+/** GET /api/subtitle/entitlement — 구글 로그인·잔액 확인 (회원 기본 10코인 + 일일 로그인 1코인) */
 router.get('/entitlement', authMiddleware, async (req, res) => {
   try {
     const result = await db.ensureSubtitleEntitlement(req.user.id)
@@ -41,16 +41,21 @@ router.get('/entitlement', authMiddleware, async (req, res) => {
   }
 })
 
-/** GET /api/subtitle/wallet — 웹용 잔액/사용 내역 */
+/** GET /api/subtitle/wallet — 웹용 잔액/사용 내역 (일일 로그인 보너스 포함) */
 router.get('/wallet', authMiddleware, async (req, res) => {
   try {
-    const wallet = await db.ensureSubtitleWallet(req.user.id)
+    const entitlement = await db.ensureSubtitleEntitlement(req.user.id)
+    if (!entitlement.ok) {
+      return res.status(403).json(entitlement)
+    }
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50))
     const history = await db.getSubtitleCoinHistory(req.user.id, limit)
     res.json({
-      balance: wallet?.balance || 0,
-      updated_at: wallet?.updated_at || null,
+      balance: entitlement.balance ?? 0,
+      updated_at: (await db.getSubtitleWallet(req.user.id))?.updated_at || null,
       history,
+      just_granted_initial: entitlement.just_granted_initial,
+      just_granted_daily: entitlement.just_granted_daily,
     })
   } catch (e) {
     console.error('subtitle wallet:', e)
@@ -77,6 +82,8 @@ router.get('/me', subtitleAppAuth, async (req, res) => {
       token: refreshedToken,
       balance: result.balance,
       initial_granted: result.initial_granted,
+      daily_login_granted_today: result.daily_login_granted_today,
+      just_granted_daily: result.just_granted_daily,
       review_bonus_granted: result.review_bonus_granted,
       has_review: !!result.has_review,
       course_slug: result.course_slug,
