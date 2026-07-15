@@ -422,7 +422,7 @@
   function renderYoutubeChannelCard(account, options) {
     const {
       visitLabel = '유튜브 채널 열기',
-      playlistLabel = '편집 작업물 재생목록',
+      playlistLabel = '편집 포트폴리오 재생목록',
       sampleNote,
     } = options
     const visitUrl = normalizeVisitUrl(account.accountUrl, 'youtube')
@@ -465,11 +465,11 @@
             <span class="yt-channel-card__stat-unit">회</span>
           </div>
         </div>`
-      : `<p class="yt-channel-card__stats-empty">재생목록을 연결하면 편집 작업물의 평균·총 조회수가 표시됩니다.</p>`
+      : `<p class="yt-channel-card__stats-empty">재생목록을 연결하면 편집 포트폴리오의 평균·총 조회수가 표시됩니다.</p>`
 
     const playlistActions = playlists.map((pl, index) => {
       const url = normalizePlaylistUrl(pl.url || pl.playlistUrl)
-      const label = String(pl.label || pl.playlistLabel || '').trim() || (playlists.length > 1 ? `편집 작업물 ${index + 1}` : playlistLabel)
+      const label = String(pl.label || pl.playlistLabel || '').trim() || (playlists.length > 1 ? `편집 포트폴리오 ${index + 1}` : playlistLabel)
       return `<a class="ig-account-card__playlist-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
         <i class="ti ti-list-details" aria-hidden="true"></i>
         <span>${esc(label)}</span>
@@ -547,7 +547,7 @@
     const {
       iconClass,
       visitLabel,
-      playlistLabel = '편집 작업물 재생목록',
+      playlistLabel = '편집 포트폴리오 재생목록',
       shareLabel,
       sampleNote,
       platform = 'youtube',
@@ -628,7 +628,7 @@
       sectionTitle = '채널 관리',
       iconClass = 'ti ti-brand-youtube',
       visitLabel = '유튜브 채널 열기',
-      playlistLabel = '편집 작업물 재생목록',
+      playlistLabel = '편집 포트폴리오 재생목록',
       shareLabel = '링크 복사',
       sampleNote = '샘플 데이터 · 실제 채널 URL과 수치로 교체하세요',
       platform = 'youtube',
@@ -647,7 +647,7 @@
   }
 
   function renderShortsSection(items, buildCard, emptyMessage) {
-    const sectionOpen = `<section class="platform-section"><h3 class="platform-section__title">쇼츠 작업물</h3><div class="platform-section__media" data-shorts-list>`
+    const sectionOpen = `<section class="platform-section"><h3 class="platform-section__title">쇼츠 포트폴리오</h3><div class="platform-section__media" data-shorts-list>`
     const sectionClose = `</div></section>`
 
     if (!items.length) {
@@ -690,7 +690,7 @@
     const hasShorts = yt.shorts.length > 0
 
     if (!hasChannels && !hasShorts) {
-      container.innerHTML = '<p class="portfolio-empty">등록된 유튜브 콘텐츠가 없습니다.</p>'
+      container.innerHTML = '<p class="portfolio-empty">등록된 유튜브 포트폴리오가 없습니다.</p>'
       return
     }
 
@@ -699,12 +699,12 @@
         sectionTitle: '채널 관리',
         iconClass: 'ti ti-brand-youtube',
         visitLabel: '유튜브 채널 열기',
-        playlistLabel: '편집 작업물 재생목록',
+        playlistLabel: '편집 포트폴리오 재생목록',
         shareLabel: '링크 복사',
         sampleNote: '샘플 데이터 · 실제 채널 URL과 수치로 교체하세요',
         platform: 'youtube',
       }) : '',
-      hasShorts ? renderShortsSection(yt.shorts, buildYoutubeCard, '등록된 유튜브 쇼츠가 없습니다.') : '',
+      hasShorts ? renderShortsSection(yt.shorts, buildYoutubeCard, '등록된 쇼츠 포트폴리오가 없습니다.') : '',
     ].join('')
 
     finalizeShortsSection(container)
@@ -739,7 +739,7 @@
     const ig = PORTFOLIO_DATA.instagram
     const accounts = ig?.accounts || []
     if (!accounts.length) {
-      container.innerHTML = '<p class="portfolio-empty">등록된 인스타그램 계정 정보가 없습니다.</p>'
+      container.innerHTML = '<p class="portfolio-empty">등록된 인스타그램 포트폴리오가 없습니다.</p>'
       return
     }
 
@@ -758,7 +758,7 @@
       container,
       PORTFOLIO_DATA.rednote || [],
       buildRednoteCard,
-      '등록된 샤오홍슈 영상이 없습니다.'
+      '등록된 샤오홍슈 포트폴리오가 없습니다.'
     )
   }
 
@@ -999,7 +999,7 @@
       btn.addEventListener('click', () => setPlatform(btn.dataset.platform))
     })
 
-    const worksCard = document.querySelector('.portfolio-card[aria-labelledby="works-title"]')
+    const worksCard = document.querySelector('.portfolio-card[aria-labelledby="portfolio-works-title"]')
     if (worksCard) bindShareButtons(worksCard)
 
     document.getElementById('share-page-btn')?.addEventListener('click', () => {

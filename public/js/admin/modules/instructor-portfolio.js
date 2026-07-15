@@ -101,7 +101,7 @@
       ${isChannel ? `<input type="url" data-a-banner placeholder="채널 배너 URL (비우면 자동)" value="${esc(account.bannerUrl || '')}" />
       <div class="pf-playlists" data-a-playlists>
         <div class="pf-playlists__head">
-          <strong>편집 작업 재생목록</strong>
+          <strong>편집 포트폴리오 재생목록</strong>
           <button type="button" class="btn-sm" data-add-playlist>+ 재생목록</button>
         </div>
         ${playlistRowsHtml(account.playlists || [])}
