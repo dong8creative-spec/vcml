@@ -14,3 +14,9 @@ capcut subtitle/build/
 capcut subtitle/dist/
 capcut subtitle/**/__pycache__/
 *.zip
+
+# 타닥싱크 2 로컬 빌드/가상환경 (소스만 커밋)
+tadaksync-v2/.venv/
+tadaksync-v2/build/
+tadaksync-v2/dist/
+tadaksync-v2/**/__pycache__/

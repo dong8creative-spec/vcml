@@ -113,7 +113,7 @@
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=12"></script>
 <script>
-const DEFAULT_COURSE_HREF = '/course.html?slug=capcut-pro-basic'
+const DEFAULT_COURSE_HREF = '/courses/capcut-pro-basic'
 const params = new URLSearchParams(location.search)
 const deviceCode = (params.get('code') || '').trim().toLowerCase()
 const nextPath = deviceCode
@@ -127,7 +127,7 @@ const deviceCard = document.getElementById('card-device')
 const approveBtn = document.getElementById('btn-approve')
 
 function courseHref(slug) {
-  return slug ? `/course.html?slug=${encodeURIComponent(slug)}` : DEFAULT_COURSE_HREF
+  return slug ? `/courses/${encodeURIComponent(slug)}` : DEFAULT_COURSE_HREF
 }
 
 function showMsg(html, kind = 'info') {

@@ -5,7 +5,7 @@
   const BOTTOM_TABS = [
     { href: '/', label: '홈', icon: 'ti-home', match: p => p === '/' || p === '/index.html' },
     { href: '/#all', label: '강의', icon: 'ti-book', match: p => p === '/course.html' },
-    { href: '/instructors.html', label: '강사', icon: 'ti-users', match: p => p === '/instructors.html' },
+    { href: '/instructor', label: '강사', icon: 'ti-users', match: p => p === '/instructor' },
     { href: '/notices.html', label: '공지', icon: 'ti-speakerphone', match: p => p.includes('notice') },
     { href: '/mypage.html', label: '마이', icon: 'ti-user', match: p => p === '/mypage.html' || p === '/orders.html' || p === '/player.html', auth: true },
   ]
@@ -14,11 +14,13 @@
     { section: '강의', items: [
       { href: '/#all', label: '전체강의' },
       { href: '/?cat=capcut#all', label: '캡컷 PRO' },
-      { href: '/instructors.html', label: '강사 소개' },
+      { href: '/instructor', label: '강사 소개' },
+      { href: '/reviews', label: '수강 후기' },
+      { href: '/blog', label: '블로그' },
       { href: '/notices.html', label: '공지사항' },
     ]},
     { section: '고객지원', items: [
-      { href: '/faq.html', label: 'FAQ' },
+      { href: '/faq', label: 'FAQ' },
       { href: '/inquiry.html', label: '1:1 문의' },
       { href: '/support.html', label: '고객지원' },
     ]},

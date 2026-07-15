@@ -899,8 +899,8 @@ const DEFAULT_FOOTER_CONFIG = {
       title: '고객지원',
       links: [
         { label: '1:1 문의하기', href: '/inquiry.html' },
-        { label: '자주 묻는 질문', href: '/faq.html' },
-        { label: '환불 및 취소 정책', href: '/refund.html' },
+        { label: '자주 묻는 질문', href: '/faq' },
+        { label: '환불 및 취소 정책', href: '/policy/refund' },
       ],
     },
     {
@@ -917,10 +917,10 @@ const DEFAULT_FOOTER_CONFIG = {
   ],
   copyright: '© 2025 타닥클래스. All rights reserved.',
   policy_links: [
-    { label: '개인정보처리방침', href: '/privacy.html', emphasis: true },
-    { label: '이용약관', href: '/terms.html' },
+    { label: '개인정보처리방침', href: '/policy/privacy', emphasis: true },
+    { label: '이용약관', href: '/policy/terms' },
     { label: '청소년보호정책', href: '/youth.html' },
-    { label: '환불정책', href: '/refund.html' },
+    { label: '환불정책', href: '/policy/refund' },
   ],
 }
 
@@ -996,7 +996,7 @@ const DEFAULT_HERO_CONFIG = {
   title_emphasis: '타닥타닥 완성되는 강의',
   subtitle: '도각쌤이 현장에서 쓰는 방식 그대로\n숏폼·납품 결과물을 직접 만듭니다',
   primary_btn: { label: '전체 강의 보기', href: '#all', action: 'all_courses' },
-  secondary_btn: { label: '무료강의 신청하기', href: '/course.html?slug=capcut-beginner-free', show_icon: true, action: 'custom' },
+  secondary_btn: { label: '무료강의 신청하기', href: '/courses/capcut-beginner-free', show_icon: true, action: 'custom' },
   image: null,
   image_alt: '',
 }
@@ -1574,6 +1574,38 @@ function normalizeLiveWindowInput(startsAt, endsAt) {
 
 function normalizeCheckoutWindowInput(startsAt, endsAt) {
   return courseAccess.normalizeCheckoutWindowInput(startsAt, endsAt)
+}
+
+/** 제목 → URL-safe slug (한글 보존, course_programs 슬러그 규칙과 동일). */
+function buildSlug(title, fallbackPrefix = 'item') {
+  const base = String(title || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9가-힣_-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 60)
+  return base || `${fallbackPrefix}-${Date.now().toString(36)}`
+}
+
+function buildCourseSlug(title) {
+  return buildSlug(title, 'course')
+}
+
+/** slug 중복 시 -2, -3 ... 을 붙여 고유한 값을 찾는다. lookup(slug)는 존재하면 truthy를 반환해야 한다. */
+async function ensureUniqueSlug(baseSlug, lookup) {
+  let candidate = baseSlug
+  let n = 2
+  while (await lookup(candidate)) {
+    candidate = `${baseSlug}-${n}`
+    n += 1
+  }
+  return candidate
+}
+
+async function ensureUniqueCourseSlug(baseSlug) {
+  return ensureUniqueSlug(baseSlug, (slug) => db.getCourseBySlug(slug))
 }
 
 function pickCourseCardFields(course = {}) {
@@ -2370,7 +2402,7 @@ const db = {
     delivery_mode,
     course_type,
   }) {
-    const slug = buildCourseSlug(title)
+    const slug = await ensureUniqueCourseSlug(buildCourseSlug(title))
     const sale = Number(sale_price != null ? sale_price : price) || 0
     const listPrice = Number(price != null ? price : sale) || sale
     const mode = delivery_mode === 'vod_only' ? 'vod_only' : 'live_first'
@@ -4909,6 +4941,56 @@ const db = {
   },
   async deleteNotice(id) {
     await fs.collection('notices').doc(id).delete()
+  },
+
+  // ── 블로그 (검색 유입 콘텐츠) ──
+  async getBlogPosts({ publicOnly = false } = {}) {
+    const snap = await fs.collection('blog_posts').orderBy('created_at', 'desc').get()
+    const items = snapToArr(snap)
+    return publicOnly ? items.filter(p => p.is_published) : items
+  },
+  async getBlogPostById(id) {
+    const doc = await fs.collection('blog_posts').doc(id).get()
+    return docToObj(doc)
+  },
+  async getBlogPostBySlug(slug) {
+    const snap = await fs.collection('blog_posts').where('slug', '==', slug).limit(1).get()
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+  },
+  async createBlogPost({ title, excerpt, content, cover_image, is_published = false }) {
+    if (!title || !String(title).trim()) return { error: '제목을 입력하세요.' }
+    const slug = await ensureUniqueSlug(
+      buildSlug(title, 'post'),
+      (s) => db.getBlogPostBySlug(s)
+    )
+    const data = {
+      slug,
+      title: String(title).trim(),
+      excerpt: (excerpt || '').trim().slice(0, 200),
+      content: content || '',
+      cover_image: cover_image || null,
+      is_published: !!is_published,
+      created_at: now(),
+      updated_at: now(),
+    }
+    const ref = await fs.collection('blog_posts').add(data)
+    return { id: ref.id, ...data }
+  },
+  async updateBlogPost(id, { title, excerpt, content, cover_image, is_published }) {
+    const current = await db.getBlogPostById(id)
+    if (!current) return { error: 'not_found' }
+    const update = { updated_at: now() }
+    if (title !== undefined && String(title).trim()) update.title = String(title).trim()
+    if (excerpt !== undefined) update.excerpt = (excerpt || '').trim().slice(0, 200)
+    if (content !== undefined) update.content = content || ''
+    if (cover_image !== undefined) update.cover_image = cover_image || null
+    if (is_published !== undefined) update.is_published = !!is_published
+    // 제목이 바뀌어도 이미 공유된 링크가 깨지지 않도록 slug는 최초 생성 시 값으로 고정 유지.
+    await fs.collection('blog_posts').doc(id).update(update)
+    return db.getBlogPostById(id)
+  },
+  async deleteBlogPost(id) {
+    await fs.collection('blog_posts').doc(id).delete()
   },
 
   // ── 고객지원 문의 ──

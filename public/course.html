@@ -176,7 +176,9 @@
   <script src="/js/course/checkout-helpers.js?v=1"></script>
   <script src="/js/course-enrollment-ui.js?v=3"></script>
   <script>
-    const slug = new URLSearchParams(location.search).get('slug')
+    // 클린 경로(/courses/<slug>)를 우선 읽고, 옛 쿼리스트링(?slug=)도 계속 지원한다.
+    const pathSlugMatch = location.pathname.match(/^\/courses\/([^/]+)\/?$/)
+    const slug = (pathSlugMatch && decodeURIComponent(pathSlugMatch[1])) || new URLSearchParams(location.search).get('slug')
     const checkoutNoCoupon = new URLSearchParams(location.search).get('coupon') === '0'
     let courseData = null
     let anticipationReviews = []
@@ -200,7 +202,7 @@
         if (course.auth_expired) {
           localStorage.removeItem('tc_token')
           localStorage.removeItem('tc_user')
-          location.href = loginUrl('/course.html?slug=' + encodeURIComponent(slug))
+          location.href = loginUrl('/courses/' + encodeURIComponent(slug))
           return
         }
         courseData = course
@@ -913,7 +915,7 @@
     }
 
     function openAnticipationModal(edit = false) {
-      if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
+      if (!API.isLoggedIn()) { location.href = loginUrl('/courses/' + slug); return }
       if (!canWriteAnticipation(courseData)) {
         toast(courseData?.anticipation_modify?.message || '강의 종료 후에는 기대평을 작성·수정·삭제할 수 없습니다.', 'error')
         return
@@ -989,7 +991,7 @@
     }
 
     async function deleteAnticipationReview() {
-      if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
+      if (!API.isLoggedIn()) { location.href = loginUrl('/courses/' + slug); return }
       if (!canWriteAnticipation(courseData)) {
         toast(courseData?.anticipation_modify?.message || '강의 종료 후에는 기대평을 작성·수정·삭제할 수 없습니다.', 'error')
         return
@@ -1005,7 +1007,7 @@
     }
 
     async function submitCourseEnroll() {
-      if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug); return }
+      if (!API.isLoggedIn()) { location.href = loginUrl('/courses/' + slug); return }
       if (isLiveLikeCourse(courseData) && isCourseEnded(courseData) && !courseData?.live_resources?.replay_configured) {
         toast('종료된 강의입니다.', 'error')
         return
@@ -1097,7 +1099,7 @@
 
     async function openStoreCheckout() {
       if (!API.isLoggedIn()) {
-        location.href = loginUrl('/course.html?slug=' + slug)
+        location.href = loginUrl('/courses/' + slug)
         return
       }
       if (!assertCheckoutOpen(courseData)) return
@@ -1208,7 +1210,7 @@
     }
 
     async function openModal() {
-      if (!API.isLoggedIn()) { location.href = loginUrl('/course.html?slug=' + slug + (checkoutNoCoupon ? '&coupon=0' : '')); return }
+      if (!API.isLoggedIn()) { location.href = loginUrl('/courses/' + slug + (checkoutNoCoupon ? '?coupon=0' : '')); return }
       if (!assertCheckoutOpen(courseData)) return
       if (CourseEnrollmentUI.isClosedForApply(courseData)) {
         toast('모집 정원이 마감되었습니다.', 'error')
@@ -1270,7 +1272,7 @@
           toast(msg, 'success')
           closeModal()
           const dest = isLiveLikeCourse(courseData)
-            ? '/course.html?slug=' + encodeURIComponent(slug)
+            ? '/courses/' + encodeURIComponent(slug)
             : '/player.html?slug=' + slug + '&chapter=first'
           setTimeout(() => location.href = dest, 1200)
           return
@@ -1307,12 +1309,12 @@
       LiveSession.openReplay = (courseId, slugArg) => {
         _replaySlug = slugArg || slug
         if (!API.isLoggedIn()) {
-          location.href = loginUrl('/course.html?slug=' + encodeURIComponent(_replaySlug || slug))
+          location.href = loginUrl('/courses/' + encodeURIComponent(_replaySlug || slug))
           return
         }
         if (!courseData?.enrolled) {
           if (courseData?.auth_expired || !API.isLoggedIn()) {
-            location.href = loginUrl('/course.html?slug=' + encodeURIComponent(_replaySlug || slug))
+            location.href = loginUrl('/courses/' + encodeURIComponent(_replaySlug || slug))
             return
           }
           toast('다시보기는 수강 신청 후 이용할 수 있습니다.', 'error')

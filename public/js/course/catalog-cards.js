@@ -21,7 +21,7 @@
       ? global.googleMeetBadgeHtml('badge-live')
       : '<span class="badge-live">LIVE</span>'
     return `
-  <a href="/course.html?slug=${c.slug}" class="ccard${UI?.catalogCardPanelClass?.(uiCourse) || ''}">
+  <a href="/courses/${c.slug}" class="ccard${UI?.catalogCardPanelClass?.(uiCourse) || ''}">
     ${UI?.catalogCardPanelOpen?.(uiCourse) || ''}
     <div class="ccard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
       ${isLive ? meetBadge : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}
@@ -69,7 +69,7 @@
       ? global.googleMeetBadgeHtml('badge-live')
       : '<span class="badge-live">LIVE</span>'
     return `
-  <a href="/course.html?slug=${c.slug}" class="fcard${UI?.catalogCardPanelClass?.(uiCourse) || ''}">
+  <a href="/courses/${c.slug}" class="fcard${UI?.catalogCardPanelClass?.(uiCourse) || ''}">
     ${UI?.catalogCardPanelOpen?.(uiCourse) || ''}
     <div class="fcard-thumb ${c.thumb_style === 'dark' ? 'td' : 'tl'}">
       ${isLive ? meetBadge : (c.badge ? `<span class="badge-${String(c.badge).toLowerCase()}">${c.badge}</span>` : '')}

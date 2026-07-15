@@ -2,14 +2,16 @@
 ;(function (global) {
   const HERO_BUTTON_ACTIONS = [
     { id: 'all_courses', label: '전체 강의 보기', href: '#all' },
-    { id: 'instructors', label: '강사 소개', href: '/instructors.html' },
+    { id: 'instructors', label: '강사 소개', href: '/instructor' },
+    { id: 'reviews', label: '수강 후기', href: '/reviews' },
+    { id: 'blog', label: '블로그', href: '/blog' },
     { id: 'capcut', label: '캡컷 PRO 강의', href: '/?cat=capcut#all' },
     { id: 'editors', label: '에디터즈', href: '/editors.html' },
     { id: 'editor_apply', label: '에디터즈 신청', href: '/editor-program.html' },
     { id: 'projects', label: '클라이언츠', href: '/projects.html' },
     { id: 'mypage', label: '마이페이지', href: '/mypage.html' },
     { id: 'login', label: '로그인', href: '/login.html' },
-    { id: 'faq', label: 'FAQ', href: '/faq.html' },
+    { id: 'faq', label: 'FAQ', href: '/faq' },
     { id: 'support', label: '고객지원', href: '/support.html' },
     { id: 'custom', label: '직접 입력 (URL)', href: '', custom: true },
   ]
@@ -21,7 +23,7 @@
       .map(c => ({
         id: `course:${c.slug}`,
         label: `강의 · ${c.title}`,
-        href: `/course.html?slug=${encodeURIComponent(c.slug)}`,
+        href: `/courses/${encodeURIComponent(c.slug)}`,
         group: 'course',
       }))
   }

@@ -1,10 +1,10 @@
 /**
  * 기대평·수강 후기 혜택 안내 및 동의 UI
- * @see /terms.html 제8조의2, /faq.html
+ * @see /policy/terms 제8조의2, /faq
  */
 (function (global) {
-  const TERMS_LINK = '/terms.html#review-rewards'
-  const FAQ_LINK = '/faq.html'
+  const TERMS_LINK = '/policy/terms#review-rewards'
+  const FAQ_LINK = '/faq'
 
   const REVIEW_INFO_LINES = [
     '별점 <strong>5점</strong> 후기를 해당 강의에 <strong>최초</strong> 작성하면 10% 할인 쿠폰이 발급됩니다. (강의당 1회, 유효기간 1개월)',

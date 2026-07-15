@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-13X3J2EYQ2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-13X3J2EYQ2');
+  </script>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>전체 강의 — 타닥클래스</title>
+  <meta name="description" content="타닥클래스의 모든 강의를 한눈에 확인하세요." />
+  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+</head>
+<body>
+
+<div data-site-header></div>
+
+<section class="shelf-section" id="all">
+  <div class="container">
+    <div class="shelf-header">
+      <div>
+        <h1 class="shelf-title">전체 강의</h1>
+        <p class="shelf-sub" id="courses-sub">불러오는 중...</p>
+      </div>
+    </div>
+    <div class="course-grid-332" id="course-grid-332">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</section>
+
+<div data-chrome="footer"></div>
+
+<script src="/js/api.js?v=3"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=12"></script>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/utils/dom.js?v=1"></script>
+<script src="/js/course/live-helpers.js?v=1"></script>
+<script src="/js/course-enrollment-ui.js?v=3"></script>
+<script src="/js/course/catalog-cards.js?v=1"></script>
+<script>
+async function load() {
+  const grid = document.getElementById('course-grid-332')
+  const sub = document.getElementById('courses-sub')
+  try {
+    const courses = await API.get('/courses')
+    const published = courses.filter(c => c.is_published !== false)
+    sub.textContent = `${published.length}개 강의`
+    grid.innerHTML = window.CatalogCards.renderCourseGrid332(published)
+  } catch (e) {
+    sub.textContent = ''
+    grid.innerHTML = `<p class="empty">${e.message || '강의를 불러오지 못했습니다.'}</p>`
+  }
+}
+load()
+</script>
+</body>
+</html>
