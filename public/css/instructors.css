@@ -54,6 +54,17 @@
   padding: 0 22px 72px;
 }
 
+.instructor-loading {
+  text-align: center;
+  padding: 48px 20px;
+  color: #86868b;
+  font-size: 15px;
+}
+
+.instructor-loading--error {
+  color: #c62828;
+}
+
 .instructor-profile {
   display: flex;
   gap: 32px;

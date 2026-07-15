@@ -1146,6 +1146,15 @@ router.patch('/instructor-portfolio-works', async (req, res) => {
   }
 })
 
+router.post('/instructor-portfolio-works/refresh-youtube-stats', async (req, res) => {
+  try {
+    const works = await db.refreshInstructorPortfolioYoutubeStats()
+    res.json({ success: true, ...works })
+  } catch (e) {
+    res.status(400).json({ error: e.message || '조회수 갱신에 실패했습니다.' })
+  }
+})
+
 router.get('/instructors', async (req, res) => {
   res.json(await db.getInstructors({ publicOnly: false }))
 })

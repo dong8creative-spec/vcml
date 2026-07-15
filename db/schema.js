@@ -3,6 +3,12 @@ const courseAccess = require('../lib/course-access')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
 const { bypassesLectureTimeGate } = require('../utils/adminAccess')
+const {
+  normalizePlaylistUrl,
+  fetchPlaylistStats,
+  fetchChannelVisuals,
+  aggregateViewStats,
+} = require('../lib/youtube-portfolio')
 
 // ── Firebase Admin 초기화 ──
 if (!admin.apps.length) {
@@ -1364,22 +1370,84 @@ function normalizePortfolioMetrics(list) {
 function normalizePortfolioHighlights(list) {
   if (!Array.isArray(list)) {
     if (typeof list === 'string') {
-      return list.split(/[,·\n]/).map(s => s.trim()).filter(Boolean).slice(0, 8)
+      const raw = list.trim()
+      if (!raw) return []
+      const lines = raw.split(/\n/).map(s => s.trim()).filter(Boolean)
+      return (lines.length ? lines : [raw]).slice(0, 8)
     }
     return []
   }
   return list.map(h => String(h || '').trim().slice(0, 80)).filter(Boolean).slice(0, 8)
 }
 
+function normalizePortfolioPlaylists(item) {
+  const fromList = Array.isArray(item?.playlists) ? item.playlists : []
+  const normalized = fromList
+    .map((pl, i) => {
+      const url = normalizePlaylistUrl(pl?.url || pl?.playlistUrl || '')
+      if (!url) return null
+      return {
+        id: String(pl?.id || slugifyQuoteId(url, `pl-${i + 1}`)).trim().slice(0, 60),
+        url,
+        label: String(pl?.label || pl?.playlistLabel || '').trim().slice(0, 60),
+        videoCount: Math.max(0, Number(pl?.videoCount) || 0),
+        totalViews: Math.max(0, Number(pl?.totalViews) || 0),
+        averageViews: Math.max(0, Number(pl?.averageViews) || 0),
+        statsUpdatedAt: String(pl?.statsUpdatedAt || '').trim().slice(0, 30),
+      }
+    })
+    .filter(Boolean)
+    .slice(0, 10)
+
+  if (normalized.length) return normalized
+
+  const legacyUrl = normalizePlaylistUrl(item?.playlistUrl || item?.playlist_url || '')
+  if (!legacyUrl) return []
+  return [{
+    id: 'pl-1',
+    url: legacyUrl,
+    label: String(item?.playlistLabel || item?.playlist_label || '').trim().slice(0, 60),
+    videoCount: Math.max(0, Number(item?.playlistVideoCount) || 0),
+    totalViews: Math.max(0, Number(item?.playlistTotalViews) || 0),
+    averageViews: Math.max(0, Number(item?.playlistAverageViews) || 0),
+    statsUpdatedAt: String(item?.playlistStatsUpdatedAt || '').trim().slice(0, 30),
+  }]
+}
+
+function normalizePortfolioViewStats(raw, playlists) {
+  const agg = aggregateViewStats(playlists)
+  const stored = raw && typeof raw === 'object' ? raw : {}
+  const videoCount = Math.max(agg.videoCount, Number(stored.videoCount) || 0)
+  const totalViews = Math.max(agg.totalViews, Number(stored.totalViews) || 0)
+  const averageViews = videoCount
+    ? Math.round(totalViews / videoCount)
+    : Math.max(0, Number(stored.averageViews) || 0)
+  return {
+    videoCount,
+    totalViews,
+    averageViews,
+    updatedAt: String(stored.updatedAt || stored.updated_at || '').trim().slice(0, 30),
+  }
+}
+
 function normalizePortfolioAccount(item, i, prefix) {
   const name = String(item?.name || '').trim().slice(0, 80)
   const handle = String(item?.handle || '').trim().slice(0, 60)
   if (!name && !handle) return null
+  const playlists = normalizePortfolioPlaylists(item)
+  const legacyPlaylistUrl = playlists[0]?.url || ''
+  const legacyPlaylistLabel = playlists[0]?.label || ''
   return {
     id: String(item?.id || slugifyQuoteId(name || handle, `${prefix}-${i + 1}`)).trim().slice(0, 60),
     name: name || handle,
     handle,
     accountUrl: String(item?.accountUrl || item?.account_url || '').trim().slice(0, 400),
+    avatarUrl: String(item?.avatarUrl || item?.avatar_url || item?.profileImage || item?.profile_image || '').trim().slice(0, 400),
+    bannerUrl: String(item?.bannerUrl || item?.banner_url || '').trim().slice(0, 400),
+    playlistUrl: legacyPlaylistUrl,
+    playlistLabel: legacyPlaylistLabel,
+    playlists,
+    viewStats: normalizePortfolioViewStats(item?.viewStats || item?.view_stats, playlists),
     role: String(item?.role || '').trim().slice(0, 120),
     startDate: String(item?.startDate || item?.start_date || '').trim().slice(0, 20),
     endDate: String(item?.endDate || item?.end_date || '').trim().slice(0, 20),
@@ -1398,6 +1466,160 @@ function normalizePortfolioAccounts(list, prefix) {
     .slice(0, 30)
 }
 
+function normalizeSocialProfileFetchUrl(accountUrl) {
+  const raw = String(accountUrl || '').trim()
+  if (!raw) return ''
+  let parsed
+  try {
+    parsed = new URL(raw)
+  } catch {
+    return ''
+  }
+  const host = parsed.hostname.replace(/^www\./, '')
+  if (host === 'youtube.com' || host === 'youtu.be') {
+    const handle = raw.match(/youtube\.com\/(@[^/?#]+)/i)
+    if (handle) return `https://www.youtube.com/${handle[1]}`
+    const channel = raw.match(/youtube\.com\/channel\/([^/?#]+)/i)
+    if (channel) return `https://www.youtube.com/channel/${channel[1]}`
+    return raw.split(/[?#]/)[0]
+  }
+  if (host === 'instagram.com') {
+    const user = raw.match(/instagram\.com\/([^/?#]+)/i)
+    if (user && !['p', 'reel', 'reels', 'stories', 'explore'].includes(user[1].toLowerCase())) {
+      return `https://www.instagram.com/${user[1]}/`
+    }
+  }
+  return raw.split(/[?#]/)[0]
+}
+
+function extractSocialAvatarFromHtml(html) {
+  const patterns = [
+    /<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image(?::secure_url)?["']/i,
+    /"avatar":\s*\{\s*"thumbnails":\s*\[\s*\{\s*"url":\s*"([^"]+)"/,
+    /"profile_pic_url(?:_hd)?":"([^"]+)"/,
+  ]
+  for (const pattern of patterns) {
+    const match = String(html || '').match(pattern)
+    if (match?.[1]) {
+      return match[1]
+        .replace(/\\u0026/g, '&')
+        .replace(/\\u003d/g, '=')
+        .replace(/\\\//g, '/')
+        .trim()
+    }
+  }
+  return ''
+}
+
+async function resolveSocialAvatarUrl(accountUrl) {
+  const fetchUrl = normalizeSocialProfileFetchUrl(accountUrl)
+  if (!fetchUrl) return ''
+  try {
+    const res = await fetch(fetchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; VCMLBot/1.0; +https://vcml.kr)',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!res.ok) return ''
+    const html = await res.text()
+    return extractSocialAvatarFromHtml(html).slice(0, 400)
+  } catch {
+    return ''
+  }
+}
+
+async function enrichYoutubeChannel(account, { refreshStats = false } = {}) {
+  if (!account?.accountUrl) return false
+  let changed = false
+
+  if (!account.bannerUrl || !account.avatarUrl) {
+    const visuals = await fetchChannelVisuals(account.accountUrl)
+    if (!account.avatarUrl && visuals.avatarUrl) {
+      account.avatarUrl = visuals.avatarUrl
+      changed = true
+    }
+    if (!account.bannerUrl && visuals.bannerUrl) {
+      account.bannerUrl = visuals.bannerUrl
+      changed = true
+    }
+  }
+
+  if (!account.avatarUrl) {
+    const resolved = await resolveSocialAvatarUrl(account.accountUrl)
+    if (resolved) {
+      account.avatarUrl = resolved
+      changed = true
+    }
+  }
+
+  if (!refreshStats || !Array.isArray(account.playlists) || !account.playlists.length) {
+    return changed
+  }
+
+  for (const playlist of account.playlists) {
+    if (!playlist?.url) continue
+    try {
+      const stats = await fetchPlaylistStats(playlist.url)
+      playlist.videoCount = stats.videoCount
+      playlist.totalViews = stats.totalViews
+      playlist.averageViews = stats.averageViews
+      playlist.statsUpdatedAt = stats.statsUpdatedAt
+      changed = true
+    } catch {
+      // 개별 재생목록 실패 시 나머지는 계속 처리
+    }
+  }
+
+  account.viewStats = {
+    ...aggregateViewStats(account.playlists),
+    updatedAt: now(),
+  }
+  account.playlistUrl = account.playlists[0]?.url || ''
+  account.playlistLabel = account.playlists[0]?.label || ''
+  return changed
+}
+
+async function enrichPortfolioWorksAvatars(works) {
+  if (!works) return false
+  let changed = false
+
+  const instagramAccounts = works.instagram?.accounts
+  if (Array.isArray(instagramAccounts)) {
+    for (const account of instagramAccounts) {
+      if (account.avatarUrl || !account.accountUrl) continue
+      const resolved = await resolveSocialAvatarUrl(account.accountUrl)
+      if (resolved) {
+        account.avatarUrl = resolved
+        changed = true
+      }
+    }
+  }
+
+  const youtubeChannels = works.youtube?.channels
+  if (Array.isArray(youtubeChannels)) {
+    for (const account of youtubeChannels) {
+      const updated = await enrichYoutubeChannel(account, { refreshStats: false })
+      if (updated) changed = true
+    }
+  }
+
+  return changed
+}
+
+async function enrichPortfolioWorksYoutubeStats(works) {
+  if (!works?.youtube?.channels?.length) return false
+  let changed = false
+  for (const account of works.youtube.channels) {
+    const updated = await enrichYoutubeChannel(account, { refreshStats: true })
+    if (updated) changed = true
+  }
+  return changed
+}
+
 function normalizePortfolioMediaItems(list, prefix) {
   if (!Array.isArray(list)) return []
   return list
@@ -1410,6 +1632,7 @@ function normalizePortfolioMediaItems(list, prefix) {
         title: title || `항목 ${i + 1}`,
         description: String(item?.description || '').trim().slice(0, 300),
         url,
+        thumbnailUrl: String(item?.thumbnailUrl || item?.thumbnail_url || '').trim().slice(0, 400),
       }
     })
     .filter(Boolean)
@@ -5484,11 +5707,6 @@ const db = {
     const merged = { ...rest, ...data }
     if (Array.isArray(data?.groups)) merged.groups = data.groups
     const next = normalizePortfolioQuote(merged)
-    for (const group of next.groups || []) {
-      if (!group.items.length) {
-        throw new Error(`"${group.title}" 분류에 최소 1개 이상의 항목이 필요합니다.`)
-      }
-    }
     await fs.collection('site_settings').doc('instructor_portfolio_quote').set({ ...next, updated_at: now() })
     return db.getInstructorPortfolioQuote()
   },
@@ -5497,12 +5715,17 @@ const db = {
     const doc = await fs.collection('site_settings').doc('instructor_portfolio_works').get()
     if (!doc.exists) return { ...normalizePortfolioWorks({}), updated_at: null }
     const data = doc.data()
-    return { ...normalizePortfolioWorks(data), updated_at: data.updated_at || null }
+    const works = { ...normalizePortfolioWorks(data), updated_at: data.updated_at || null }
+    const enriched = await enrichPortfolioWorksAvatars(works)
+    if (enriched) {
+      await fs.collection('site_settings').doc('instructor_portfolio_works').set({ ...works, updated_at: now() })
+    }
+    return works
   },
 
   async updateInstructorPortfolioWorks(data) {
-    const existing = await db.getInstructorPortfolioWorks()
-    const { updated_at, ...rest } = existing || {}
+    const doc = await fs.collection('site_settings').doc('instructor_portfolio_works').get()
+    const rest = doc.exists ? normalizePortfolioWorks(doc.data()) : normalizePortfolioWorks({})
     const merged = {
       youtube: { ...(rest.youtube || {}), ...(data?.youtube || {}) },
       instagram: { ...(rest.instagram || {}), ...(data?.instagram || {}) },
@@ -5512,8 +5735,20 @@ const db = {
     if (data?.youtube?.shorts !== undefined) merged.youtube.shorts = data.youtube.shorts
     if (data?.instagram?.accounts !== undefined) merged.instagram.accounts = data.instagram.accounts
     const next = normalizePortfolioWorks(merged)
+    await enrichPortfolioWorksAvatars(next)
+    await enrichPortfolioWorksYoutubeStats(next)
     await fs.collection('site_settings').doc('instructor_portfolio_works').set({ ...next, updated_at: now() })
-    return db.getInstructorPortfolioWorks()
+    return { ...next, updated_at: now() }
+  },
+
+  async refreshInstructorPortfolioYoutubeStats() {
+    const doc = await fs.collection('site_settings').doc('instructor_portfolio_works').get()
+    if (!doc.exists) return { ...normalizePortfolioWorks({}), updated_at: null }
+    const works = { ...normalizePortfolioWorks(doc.data()), updated_at: doc.data().updated_at || null }
+    await enrichPortfolioWorksYoutubeStats(works)
+    const updatedAt = now()
+    await fs.collection('site_settings').doc('instructor_portfolio_works').set({ ...works, updated_at: updatedAt })
+    return { ...works, updated_at: updatedAt }
   },
 
   async getInstructors({ publicOnly = false } = {}) {

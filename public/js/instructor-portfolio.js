@@ -270,13 +270,19 @@
   }
 
   function buildRednoteCard(item) {
-    return `<article class="portfolio-media-card">
-      <div class="portfolio-media-card__thumb">
-        <span class="portfolio-media-card__badge">Rednote</span>
-        <div class="portfolio-media-card__placeholder">
+    const thumbUrl = String(item.thumbnailUrl || item.thumbnail_url || '').trim()
+    const thumbHtml = thumbUrl
+      ? `<img class="portfolio-media-card__cover" src="${esc(thumbUrl)}" alt="${esc(item.title)}" loading="lazy" decoding="async" onerror="this.remove();this.parentElement.classList.add('is-thumb-missing')" />`
+      : ''
+    const placeholderHtml = `<div class="portfolio-media-card__placeholder">
           <i class="ti ti-notebook" aria-hidden="true"></i>
-          <span>${item.sample ? '샘플 링크<br>실제 게시물 URL로 교체' : '외부에서 보기'}</span>
-        </div>
+          <span>${item.sample ? '샘플 링크<br>실제 게시물 URL로 교체' : thumbUrl ? '썸네일을 불러오지 못했습니다' : '썸네일 URL을 추가하세요'}</span>
+        </div>`
+    return `<article class="portfolio-media-card">
+      <div class="portfolio-media-card__thumb${thumbUrl ? '' : ' is-thumb-missing'}">
+        <span class="portfolio-media-card__badge">Rednote</span>
+        ${thumbHtml}
+        ${placeholderHtml}
       </div>
       <div class="portfolio-media-card__body">
         <h3 class="portfolio-media-card__title">${esc(item.title)}</h3>
@@ -374,7 +380,57 @@
     }
   }
 
-  function renderChannelAccountCard(account, { iconClass, visitLabel, shareLabel, sampleNote }) {
+  function normalizeVisitUrl(url, platform) {
+    let raw = String(url || '').trim()
+    if (!raw) return ''
+    if (platform === 'youtube') {
+      raw = raw
+        .replace(/\/(shorts|videos|streams|playlists|community|about|featured|channels)(\/.*)?$/i, '')
+        .replace(/[?&]list=[^&#]+/i, '')
+        .replace(/\/+$/, '')
+      if (/youtube\.com\/@[^/?#]+/i.test(raw)) {
+        const handle = raw.match(/youtube\.com\/(@[^/?#]+)/i)
+        if (handle) return `https://www.youtube.com/${handle[1]}`
+      }
+    }
+    if (platform === 'instagram') {
+      const user = raw.match(/instagram\.com\/([^/?#]+)/i)
+      if (user && !['p', 'reel', 'reels', 'stories', 'explore'].includes(user[1].toLowerCase())) {
+        return `https://www.instagram.com/${user[1]}/`
+      }
+    }
+    return raw
+  }
+
+  function normalizePlaylistUrl(url) {
+    const raw = String(url || '').trim()
+    if (!raw) return ''
+    const listMatch = raw.match(/[?&]list=([^&#]+)/i)
+    if (listMatch) return `https://www.youtube.com/playlist?list=${listMatch[1]}`
+    if (/youtube\.com\/playlist/i.test(raw)) return raw.split('#')[0]
+    return ''
+  }
+
+  function formatViewCount(n) {
+    const num = Number(n || 0)
+    if (!Number.isFinite(num) || num <= 0) return '0'
+    if (num >= 100000000) return `${(num / 100000000).toFixed(1).replace(/\.0$/, '')}억`
+    if (num >= 10000) return `${(num / 10000).toFixed(1).replace(/\.0$/, '')}만`
+    return num.toLocaleString('ko-KR')
+  }
+
+  function renderYoutubeChannelCard(account, options) {
+    const {
+      visitLabel = '유튜브 채널 열기',
+      playlistLabel = '편집 작업물 재생목록',
+      sampleNote,
+    } = options
+    const visitUrl = normalizeVisitUrl(account.accountUrl, 'youtube')
+    const bannerUrl = String(account.bannerUrl || account.banner_url || '').trim()
+    const avatarUrl = String(account.avatarUrl || account.avatar_url || '').trim()
+    const playlists = (Array.isArray(account.playlists) ? account.playlists : [])
+      .filter((pl) => normalizePlaylistUrl(pl?.url || pl?.playlistUrl))
+    const stats = account.viewStats || {}
     const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
     const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
     const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
@@ -382,11 +438,153 @@
       ? `<ul class="ig-account-card__highlights">${account.highlights.map((item) => `<li>${esc(item)}</li>`).join('')}</ul>`
       : ''
 
-    return `<article class="ig-account-card">
+    const bannerHtml = bannerUrl
+      ? `<img class="yt-channel-card__banner" src="${esc(bannerUrl)}" alt="" loading="lazy" decoding="async" />`
+      : `<div class="yt-channel-card__banner yt-channel-card__banner--empty" aria-hidden="true"><i class="ti ti-brand-youtube"></i></div>`
+
+    const avatarHtml = avatarUrl
+      ? `<img class="yt-channel-card__avatar" src="${esc(avatarUrl)}" alt="" loading="lazy" decoding="async" onerror="this.classList.add('is-hidden')" />
+         <div class="yt-channel-card__avatar yt-channel-card__avatar--fallback" aria-hidden="true"><i class="ti ti-brand-youtube"></i></div>`
+      : `<div class="yt-channel-card__avatar yt-channel-card__avatar--fallback" aria-hidden="true"><i class="ti ti-brand-youtube"></i></div>`
+
+    const statsHtml = (stats.videoCount || stats.totalViews)
+      ? `<div class="yt-channel-card__stats">
+          <div class="yt-channel-card__stat">
+            <span class="yt-channel-card__stat-label">평균 조회수</span>
+            <strong class="yt-channel-card__stat-value">${formatViewCount(stats.averageViews)}</strong>
+            <span class="yt-channel-card__stat-unit">회</span>
+          </div>
+          <div class="yt-channel-card__stat">
+            <span class="yt-channel-card__stat-label">편집 영상</span>
+            <strong class="yt-channel-card__stat-value">${formatViewCount(stats.videoCount)}</strong>
+            <span class="yt-channel-card__stat-unit">개</span>
+          </div>
+          <div class="yt-channel-card__stat">
+            <span class="yt-channel-card__stat-label">총 조회수</span>
+            <strong class="yt-channel-card__stat-value">${formatViewCount(stats.totalViews)}</strong>
+            <span class="yt-channel-card__stat-unit">회</span>
+          </div>
+        </div>`
+      : `<p class="yt-channel-card__stats-empty">재생목록을 연결하면 편집 작업물의 평균·총 조회수가 표시됩니다.</p>`
+
+    const playlistActions = playlists.map((pl, index) => {
+      const url = normalizePlaylistUrl(pl.url || pl.playlistUrl)
+      const label = String(pl.label || pl.playlistLabel || '').trim() || (playlists.length > 1 ? `편집 작업물 ${index + 1}` : playlistLabel)
+      return `<a class="ig-account-card__playlist-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
+        <i class="ti ti-list-details" aria-hidden="true"></i>
+        <span>${esc(label)}</span>
+        <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+      </a>`
+    }).join('')
+
+    const visitAction = visitUrl
+      ? `<a class="ig-account-card__visit-btn" href="${esc(visitUrl)}" target="_blank" rel="noopener noreferrer">
+          <i class="ti ti-brand-youtube" aria-hidden="true"></i>
+          <span>${esc(visitLabel)}</span>
+          <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+        </a>`
+      : ''
+
+    const hasActions = visitUrl || playlistActions
+
+    return `<article class="yt-channel-card ig-account-card ig-account-card--youtube">
+      <div class="yt-channel-card__hero">
+        ${bannerHtml}
+      </div>
+      <div class="yt-channel-card__main">
+        <header class="yt-channel-card__header">
+          <div class="yt-channel-card__avatar-wrap">${avatarHtml}</div>
+          <div class="yt-channel-card__identity">
+            <h3 class="yt-channel-card__name">${esc(account.name)}</h3>
+            <p class="yt-channel-card__handle">${esc(account.handle)}</p>
+          </div>
+          <span class="ig-account-card__status ${statusClass}">${statusLabel}</span>
+        </header>
+        <div class="yt-channel-card__body">
+        <dl class="ig-account-card__meta">
+          <div class="ig-account-card__meta-row">
+            <dt>담당 기간</dt>
+            <dd>${esc(period)}</dd>
+          </div>
+          ${account.role ? `
+          <div class="ig-account-card__meta-row">
+            <dt>담당 업무</dt>
+            <dd>${esc(account.role)}</dd>
+          </div>` : ''}
+        </dl>
+
+        ${statsHtml}
+
+        ${account.summary ? `<p class="ig-account-card__summary">${esc(account.summary)}</p>` : ''}
+        ${highlights}
+        ${account.sample ? `<p class="ig-account-card__sample">${esc(sampleNote)}</p>` : ''}
+
+        ${hasActions ? `<div class="ig-account-card__actions${playlistActions ? ' ig-account-card__actions--split' : ''}">
+          ${visitAction}
+          ${playlistActions}
+        </div>` : ''}
+        </div>
+      </div>
+    </article>`
+  }
+
+  function renderAccountAvatar(account, iconClass) {
+    const avatarUrl = String(account?.avatarUrl || account?.avatar_url || account?.profileImage || '').trim()
+    if (!avatarUrl) {
+      return `<div class="ig-account-card__icon" aria-hidden="true"><i class="${iconClass}"></i></div>`
+    }
+    return `<div class="ig-account-card__avatar-wrap">
+      <img class="ig-account-card__avatar" src="${esc(avatarUrl)}" alt="" loading="lazy" decoding="async" onerror="this.remove()" />
+      <div class="ig-account-card__icon ig-account-card__icon--fallback" aria-hidden="true"><i class="${iconClass}"></i></div>
+    </div>`
+  }
+
+  function renderChannelAccountCard(account, options) {
+    if (options.platform === 'youtube') {
+      return renderYoutubeChannelCard(account, options)
+    }
+
+    const {
+      iconClass,
+      visitLabel,
+      playlistLabel = '편집 작업물 재생목록',
+      shareLabel,
+      sampleNote,
+      platform = 'youtube',
+    } = options
+    const visitUrl = normalizeVisitUrl(account.accountUrl, platform)
+    const playlistUrl = ''
+    const playlistBtnLabel = playlistLabel
+    const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
+    const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
+    const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
+    const highlights = Array.isArray(account.highlights) && account.highlights.length
+      ? `<ul class="ig-account-card__highlights">${account.highlights.map((item) => `<li>${esc(item)}</li>`).join('')}</ul>`
+      : ''
+
+    const visitAction = visitUrl
+      ? `<a class="ig-account-card__visit-btn" href="${esc(visitUrl)}" target="_blank" rel="noopener noreferrer">
+          <i class="${iconClass}" aria-hidden="true"></i>
+          <span>${esc(visitLabel)}</span>
+          <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+        </a>`
+      : ''
+
+    const playlistAction = playlistUrl
+      ? `<a class="ig-account-card__playlist-btn" href="${esc(playlistUrl)}" target="_blank" rel="noopener noreferrer">
+          <i class="ti ti-list-details" aria-hidden="true"></i>
+          <span>${esc(playlistBtnLabel)}</span>
+          <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+        </a>`
+      : ''
+
+    const hasActions = visitUrl || playlistUrl
+
+    return `<article class="ig-account-card ig-account-card--${platform}">
       <div class="ig-account-card__head">
         <div class="ig-account-card__identity">
-          <div class="ig-account-card__icon" aria-hidden="true"><i class="${iconClass}"></i></div>
-          <div>
+          ${renderAccountAvatar(account, iconClass)}
+          <div class="ig-account-card__identity-text">
             <h3 class="ig-account-card__name">${esc(account.name)}</h3>
             <p class="ig-account-card__handle">${esc(account.handle)}</p>
           </div>
@@ -413,10 +611,14 @@
 
       ${account.sample ? `<p class="ig-account-card__sample">${esc(sampleNote)}</p>` : ''}
 
-      <div class="ig-account-card__actions">
-        <a class="portfolio-btn portfolio-btn--primary portfolio-btn--sm" href="${esc(account.accountUrl)}" target="_blank" rel="noopener noreferrer">${esc(visitLabel)}</a>
-        <button type="button" class="portfolio-btn portfolio-btn--ghost portfolio-btn--sm" data-share-url="${esc(account.accountUrl)}" data-share-title="${esc(account.name)}">${esc(shareLabel)}</button>
-      </div>
+      ${hasActions ? `<div class="ig-account-card__actions${playlistUrl ? ' ig-account-card__actions--split' : ''}">
+        ${visitAction}
+        ${playlistAction}
+        ${visitUrl ? `<button type="button" class="ig-account-card__share-btn" data-share-url="${esc(visitUrl)}" data-share-title="${esc(account.name)}" aria-label="${esc(shareLabel)}">
+          <i class="ti ti-share-2" aria-hidden="true"></i>
+          <span>${esc(shareLabel)}</span>
+        </button>` : ''}
+      </div>` : ''}
     </article>`
   }
 
@@ -425,17 +627,19 @@
     const {
       sectionTitle = '채널 관리',
       iconClass = 'ti ti-brand-youtube',
-      visitLabel = '채널 방문',
-      shareLabel = '채널 링크 공유',
+      visitLabel = '유튜브 채널 열기',
+      playlistLabel = '편집 작업물 재생목록',
+      shareLabel = '링크 복사',
       sampleNote = '샘플 데이터 · 실제 채널 URL과 수치로 교체하세요',
+      platform = 'youtube',
     } = options
     return `
       <section class="platform-section">
         <h3 class="platform-section__title">${esc(sectionTitle)}</h3>
         ${intro ? `<p class="platform-section__desc">${esc(intro)}</p>` : ''}
-        <div class="ig-account-list">
+        <div class="ig-account-list${platform === 'youtube' ? ' yt-channel-list' : ''}">
           ${accounts.map((account) => renderChannelAccountCard(account, {
-            iconClass, visitLabel, shareLabel, sampleNote,
+            iconClass, visitLabel, playlistLabel, shareLabel, sampleNote, platform,
           })).join('')}
         </div>
       </section>
@@ -494,9 +698,11 @@
       hasChannels ? renderChannelAccountsSection(yt.intro, yt.channels, {
         sectionTitle: '채널 관리',
         iconClass: 'ti ti-brand-youtube',
-        visitLabel: '채널 방문',
-        shareLabel: '채널 링크 공유',
+        visitLabel: '유튜브 채널 열기',
+        playlistLabel: '편집 작업물 재생목록',
+        shareLabel: '링크 복사',
         sampleNote: '샘플 데이터 · 실제 채널 URL과 수치로 교체하세요',
+        platform: 'youtube',
       }) : '',
       hasShorts ? renderShortsSection(yt.shorts, buildYoutubeCard, '등록된 유튜브 쇼츠가 없습니다.') : '',
     ].join('')
@@ -540,9 +746,10 @@
     container.innerHTML = renderChannelAccountsSection(ig.intro, accounts, {
       sectionTitle: '계정 관리',
       iconClass: 'ti ti-brand-instagram',
-      visitLabel: '계정 방문',
-      shareLabel: '계정 링크 공유',
+      visitLabel: '인스타그램 열기',
+      shareLabel: '링크 복사',
       sampleNote: '샘플 데이터 · 실제 계정 URL과 수치로 교체하세요',
+      platform: 'instagram',
     })
   }
 
@@ -651,11 +858,12 @@
   }
 
   function renderQuoteGroups(container, groups) {
-    if (!groups.length) {
+    const visibleGroups = (groups || []).filter((group) => group.items?.length)
+    if (!visibleGroups.length) {
       container.innerHTML = '<p class="portfolio-empty">등록된 견적 항목이 없습니다.</p>'
       return
     }
-    container.innerHTML = groups.map((group) => `
+    container.innerHTML = visibleGroups.map((group) => `
       <div class="quote-group" data-group="${esc(group.id)}">
         <h3 class="quote-group__title">${esc(group.title)}</h3>
         ${group.description ? `<p class="quote-group__desc">${esc(group.description)}</p>` : ''}

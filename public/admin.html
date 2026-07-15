@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타닥클래스 관리자</title>
   <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/admin.css?v=4" />
+  <link rel="stylesheet" href="css/admin.css?v=8" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -1047,7 +1047,7 @@
             </div>
             <div class="form-group">
               <label>채널 관리 목록</label>
-              <p class="sec-sub">담당 기간 · 성과 지표 · 하이라이트를 입력하세요. 하이라이트·지표는 쉼표로 구분합니다.</p>
+              <p class="sec-sub">담당 기간 · 성과 지표 · 하이라이트를 입력하세요. 하이라이트는 줄바꿈으로 항목을 구분합니다.</p>
               <div id="pf-yt-channels"></div>
               <button type="button" class="btn-sm" id="pf-yt-channel-add" style="margin-top:8px">+ 채널 추가</button>
             </div>
@@ -1073,6 +1073,7 @@
           <div class="pf-subpanel" data-pf-panel="rednote" hidden>
             <div class="form-group">
               <label>샤오홍슈 작업물</label>
+              <p class="sec-sub">게시물 URL과 함께 썸네일 이미지 URL을 넣으면 포트폴리오에 미리보기가 표시됩니다. (9:16 세로 이미지 권장)</p>
               <div id="pf-rn-items"></div>
               <button type="button" class="btn-sm" id="pf-rn-item-add" style="margin-top:8px">+ 항목 추가</button>
             </div>
@@ -1080,6 +1081,7 @@
 
           <div style="display:flex;align-items:center;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
             <button type="button" class="btn-save" id="portfolio-works-save">포트폴리오 저장</button>
+            <button type="button" class="btn-sm" id="portfolio-works-refresh-stats">유튜브 조회수 갱신</button>
             <span id="portfolio-works-status" style="font-size:14px;color:#888"></span>
           </div>
         </div>
@@ -1111,7 +1113,7 @@
             </div>
             <div class="form-group">
               <label>견적 분류 · 항목</label>
-              <p class="sec-sub">기획 / 촬영 / 편집 등 분류별로 항목과 단가를 입력하세요. 분류마다 최소 1개 항목이 필요합니다.</p>
+              <p class="sec-sub">기획 / 촬영 / 편집 등 분류별로 항목과 단가를 입력하세요. 분류·항목은 비워 둘 수 있습니다.</p>
               <div id="portfolio-quote-groups-editor"></div>
               <button type="button" class="btn-sm" id="portfolio-quote-group-add" style="margin-top:8px;width:fit-content">+ 분류 추가</button>
             </div>
@@ -2244,7 +2246,7 @@
   <script src="/js/admin/modules/support.js?v=1"></script>
   <script src="/js/admin/modules/blog.js?v=1"></script>
   <script src="/js/admin/modules/ops.js?v=1"></script>
-  <script src="/js/admin/modules/instructor-portfolio.js?v=1"></script>
+  <script src="/js/admin/modules/instructor-portfolio.js?v=7"></script>
   <script>
     // ── 헬퍼 (AdminUtils 위임) ──
     const esc = (...a) => AdminUtils.esc(...a)
@@ -5495,8 +5497,7 @@
     }
 
     function renderQuoteGroupCard(group = { title: '', description: '', items: [] }) {
-      const items = (group.items && group.items.length ? group.items : [{ label: '', desc: '', price: 0 }])
-        .map(item => quoteItemRowHtml(item)).join('')
+      const items = (group.items || []).map(item => quoteItemRowHtml(item)).join('')
       return `<div class="quote-group-card" data-quote-group>
         <div class="quote-group-card-head">
           <input type="text" data-group-title placeholder="분류명 (예: 기획)" value="${esc(group.title || '')}" />
@@ -5515,7 +5516,7 @@
       document.getElementById('portfolio-quote-summary-note').value = cfg.summary_note || ''
       document.getElementById('portfolio-quote-disclaimer').value = cfg.disclaimer || ''
       const groupsEl = document.getElementById('portfolio-quote-groups-editor')
-      const groups = cfg.groups?.length ? cfg.groups : [{ title: '', description: '', items: [{ label: '', desc: '', price: 0 }] }]
+      const groups = cfg.groups || []
       groupsEl.innerHTML = groups.map(renderQuoteGroupCard).join('')
     }
 
@@ -5552,7 +5553,7 @@
 
     document.getElementById('portfolio-quote-group-add')?.addEventListener('click', () => {
       const editor = document.getElementById('portfolio-quote-groups-editor')
-      editor.insertAdjacentHTML('beforeend', renderQuoteGroupCard({ title: '', description: '', items: [{ label: '', desc: '', price: 0 }] }))
+      editor.insertAdjacentHTML('beforeend', renderQuoteGroupCard({ title: '', description: '', items: [] }))
     })
 
     document.getElementById('portfolio-quote-groups-editor')?.addEventListener('click', e => {
@@ -5564,23 +5565,12 @@
       }
       const removeItemBtn = e.target.closest('[data-remove-item]')
       if (removeItemBtn) {
-        const rows = removeItemBtn.closest('[data-group-items]')
-        const row = removeItemBtn.closest('.quote-item-row')
-        if (rows.querySelectorAll('.quote-item-row').length <= 1) {
-          alert('분류마다 최소 1개 항목이 필요합니다.')
-          return
-        }
-        row.remove()
+        removeItemBtn.closest('.quote-item-row')?.remove()
         return
       }
       const removeGroupBtn = e.target.closest('[data-remove-group]')
       if (removeGroupBtn) {
-        const editor = document.getElementById('portfolio-quote-groups-editor')
-        if (editor.querySelectorAll('[data-quote-group]').length <= 1) {
-          alert('최소 1개 분류가 필요합니다.')
-          return
-        }
-        removeGroupBtn.closest('[data-quote-group]').remove()
+        removeGroupBtn.closest('[data-quote-group]')?.remove()
       }
     })
 
@@ -5590,15 +5580,6 @@
       try {
         btn.disabled = true
         const payload = readPortfolioQuoteForm()
-        if (!payload.groups.length) {
-          alert('최소 1개 분류를 입력해주세요.')
-          return
-        }
-        const emptyGroup = payload.groups.find(group => !group.items.length)
-        if (emptyGroup) {
-          alert(`"${emptyGroup.title}" 분류에 최소 1개 항목을 입력해주세요.`)
-          return
-        }
         const result = await API.patch('/admin/instructor-portfolio-quote', payload)
         fillPortfolioQuoteEditor(result)
         _portfolioQuoteLoaded = true

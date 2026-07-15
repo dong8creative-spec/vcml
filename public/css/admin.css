@@ -1022,6 +1022,87 @@ button { cursor: pointer; }
   grid-template-columns: 1.4fr 1fr 120px 120px;
   gap: 8px;
 }
+.pf-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pf-avatar-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--adm-border);
+  background: #fff;
+  flex-shrink: 0;
+}
+.pf-playlist-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 8px;
+}
+.pf-avatar-row input[type="url"],
+.pf-playlist-row input[type="url"],
+.pf-playlist-row input[type="text"] {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--adm-border);
+  border-radius: 7px;
+  font-size: 13px;
+}
+.pf-playlists {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  background: #fff;
+}
+.pf-playlists__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.pf-playlist-item {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+.pf-playlist-stat {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+}
+.pf-view-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(65, 105, 225, .08);
+  font-size: 13px;
+}
+.pf-view-stats--empty {
+  margin: 0;
+  color: #666;
+  background: #f5f5f5;
+}
+.pf-view-stats__updated {
+  color: #888;
+  font-size: 12px;
+}
+.pf-account-card--channel input[data-a-banner] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--adm-border);
+  border-radius: 7px;
+  font-size: 13px;
+}
 .pf-ongoing {
   display: flex;
   align-items: center;
@@ -1041,6 +1122,47 @@ button { cursor: pointer; }
   grid-template-columns: 1fr 1.2fr 1.4fr auto;
   margin-bottom: 8px;
 }
+.pf-media-row--rednote {
+  display: block;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--adm-border, #e8e8e8);
+}
+.pf-media-row--rednote:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.pf-media-row__fields {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1.4fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.pf-media-thumb-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+.pf-media-thumb-preview {
+  width: 54px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--adm-border);
+  background: #f5f5f5;
+  flex-shrink: 0;
+}
+.pf-media-thumb-row input[type="url"] {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--adm-border);
+  border-radius: 7px;
+  font-size: 13px;
+  background: #fff;
+}
 .pf-account-card input[type="text"],
 .pf-account-card input[type="month"],
 .pf-media-row input[type="text"] {
@@ -1055,7 +1177,8 @@ button { cursor: pointer; }
   .pf-account-head,
   .pf-account-grid,
   .pf-metric-row,
-  .pf-media-row { grid-template-columns: 1fr; }
+  .pf-media-row,
+  .pf-media-row__fields { grid-template-columns: 1fr; }
 }
 
 /* ===== INSTRUCTOR TIMELINE EDITOR ===== */
