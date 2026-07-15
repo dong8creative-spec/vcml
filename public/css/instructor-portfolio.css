@@ -815,6 +815,115 @@ body.portfolio-page *:not(code):not(kbd):not(samp):not(pre) {
   color: #606060;
 }
 
+.account-card__context {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #606060;
+  line-height: 1.55;
+}
+
+.account-hero-metric {
+  margin: 0 0 14px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fafafa 0%, #f1f1f1 100%);
+  border: 1px solid rgba(0, 0, 0, .06);
+}
+
+.account-hero-metric__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #606060;
+}
+
+.account-hero-metric__value {
+  display: block;
+  font-size: clamp(28px, 3.2vw, 36px);
+  font-weight: 800;
+  color: #0f0f0f;
+  letter-spacing: -.03em;
+  line-height: 1.15;
+}
+
+.account-hero-metric__sub {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4169e1;
+  line-height: 1.45;
+}
+
+.account-card__details,
+.account-card__playlist-more {
+  margin: 0 0 14px;
+}
+
+.account-card__details summary,
+.account-card__playlist-more summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: #606060;
+  list-style: none;
+}
+
+.account-card__details summary::-webkit-details-marker,
+.account-card__playlist-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-card__details[open] summary,
+.account-card__playlist-more[open] summary {
+  color: #1d1d1f;
+  margin-bottom: 8px;
+}
+
+.account-card__details-list {
+  margin: 0;
+  padding: 12px 14px;
+  list-style: none;
+  border-radius: 12px;
+  background: #f9f9f9;
+  border: 1px solid rgba(0, 0, 0, .06);
+}
+
+.account-card__details-list li {
+  font-size: 13px;
+  color: #424245;
+  line-height: 1.55;
+}
+
+.account-card__details-list li + li {
+  margin-top: 6px;
+}
+
+.account-card__playlist-more-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0 4px;
+}
+
+.account-card__playlist-more-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d1d1f;
+}
+
+.yt-channel-card__body .account-card__context,
+.yt-channel-card__body .account-hero-metric,
+.yt-channel-card__body .account-card__details,
+.yt-channel-card__body .account-card__playlist-more {
+  margin-top: 0;
+}
+
 .ig-account-card {
   padding: 24px;
   background: linear-gradient(145deg, #fbfbfd 0%, #f5f5f7 100%);

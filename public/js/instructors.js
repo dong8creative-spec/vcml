@@ -57,7 +57,8 @@
         ${tags}
         ${instructor.bio ? `<p class="instructor-profile__bio">${esc(instructor.bio)}</p>` : ''}
         <div class="instructor-profile__actions">
-          <a href="/instructor-portfolio.html" class="instructor-profile__cta">포트폴리오 보기</a>
+          <a href="/instructor-portfolio.html" class="instructor-profile__cta instructor-profile__cta--ghost">포트폴리오</a>
+          <a href="/instructor-portfolio-quote.html" class="instructor-profile__cta">선택형 견적서</a>
         </div>
       </div>
     </section>`

@@ -160,17 +160,6 @@
     ],
   }
 
-  const QUOTE_FALLBACK = {
-    section_title: '선택형 견적서',
-    section_desc: '기획 · 촬영 · 편집 중 필요한 범위를 선택하면 예상 금액이 달라집니다.',
-    scope_note: '견적은 선택하신 기획·촬영·편집 범위와 항목에 따라 달라집니다. 필요한 분류와 옵션만 골라 확인하세요.',
-    summary_note: '부가세·출장비·수정 횟수에 따라 달라질 수 있습니다',
-    disclaimer: '이 견적서는 참고용 초안입니다. 실제 금액은 작업 범위·분량·일정에 따라 달라지며, 문의·결제 기능은 포함되어 있지 않습니다.',
-    groups: [],
-  }
-
-  let quoteConfig = { ...QUOTE_FALLBACK, groups: [] }
-
   // ── 유틸 ──────────────────────────────────────────────
   function esc(s) {
     return String(s ?? '')
@@ -186,10 +175,6 @@
     const text = list.length === 1 ? list[0] : list.join(' ')
     if (!String(text).trim()) return ''
     return `<p class="ig-account-card__highlights-text">${esc(text)}</p>`
-  }
-
-  function formatWon(n) {
-    return '₩' + Number(n || 0).toLocaleString('ko-KR')
   }
 
   function notify(msg, type) {
@@ -463,17 +448,155 @@
     return num.toLocaleString('ko-KR')
   }
 
-  function renderChannelMetricStats(metrics) {
-    if (!Array.isArray(metrics) || !metrics.length) {
-      return '<p class="yt-channel-card__stats-empty">성과 지표를 입력하면 계정 운영 성과가 표시됩니다.</p>'
+  function mergeAccountSummary(account) {
+    const chunks = []
+    const summary = String(account?.summary || '').trim()
+    if (summary) chunks.push(summary)
+    const highlights = Array.isArray(account?.highlights) ? account.highlights : []
+    const hlText = highlights.map((item) => String(item || '').trim()).filter(Boolean).join(' ')
+    if (hlText && !summary.includes(hlText)) chunks.push(hlText)
+    const text = chunks.join(' ').trim()
+    if (!text) return ''
+    return `<p class="ig-account-card__summary">${esc(text)}</p>`
+  }
+
+  function renderAccountContextLine(period, role) {
+    const parts = [period, role].map((value) => String(value || '').trim()).filter(Boolean)
+    if (!parts.length) return ''
+    return `<p class="account-card__context">${esc(parts.join(' · '))}</p>`
+  }
+
+  function formatMetricSubline(metric) {
+    if (!metric) return ''
+    const label = String(metric.label || '').trim()
+    const growth = String(metric.growth || '').trim()
+    const after = String(metric.after || '').trim()
+    if (growth) return label ? `${label} ${growth}` : growth
+    if (after) return label ? `${label} ${after}` : after
+    return label
+  }
+
+  function renderMetricDetails(metrics, extraLines = []) {
+    const lines = []
+    for (const metric of metrics || []) {
+      const label = String(metric.label || '').trim()
+      const before = String(metric.before || '').trim()
+      const after = String(metric.after || '').trim()
+      const growth = String(metric.growth || '').trim()
+      if (!label && !before && !after && !growth) continue
+      const main = before && after ? `${before} → ${after}` : (after || before || '')
+      const tail = growth && !main.includes(growth) ? ` · ${growth}` : ''
+      lines.push(label ? `${label} ${main}${tail}`.trim() : `${main}${tail}`.trim())
     }
-    return `<div class="yt-channel-card__stats yt-channel-card__stats--metrics">${metrics.map((metric) => `
-      <div class="yt-channel-card__stat">
-        <span class="yt-channel-card__stat-label">${esc(metric.label)}</span>
-        <strong class="yt-channel-card__stat-value">${esc(metric.before)} → ${esc(metric.after)}</strong>
-        ${metric.growth ? `<span class="yt-channel-card__stat-growth">${esc(metric.growth)}</span>` : ''}
-      </div>
-    `).join('')}</div>`
+    for (const line of extraLines) {
+      const text = String(line || '').trim()
+      if (text) lines.push(text)
+    }
+    if (!lines.length) return ''
+    return `<details class="account-card__details">
+      <summary>상세 지표 보기</summary>
+      <ul class="account-card__details-list">${lines.map((line) => `<li>${esc(line)}</li>`).join('')}</ul>
+    </details>`
+  }
+
+  function renderSimplifiedMetricsBlock(metrics, viewStats = null) {
+    const list = Array.isArray(metrics)
+      ? metrics.filter((metric) => String(metric?.label || metric?.before || metric?.after || metric?.growth || '').trim())
+      : []
+    const primary = list[0]
+    const secondary = list[1]
+    let heroLabel = ''
+    let heroValue = ''
+    let heroSub = ''
+
+    if (primary) {
+      const label = String(primary.label || '').trim()
+      const growth = String(primary.growth || '').trim()
+      const after = String(primary.after || '').trim()
+      if (growth) {
+        heroLabel = label
+        heroValue = growth
+        if (after) heroSub = `결과 ${after}`
+      } else if (after) {
+        heroLabel = label
+        heroValue = after
+        if (String(primary.before || '').trim()) heroSub = `${primary.before}에서 시작`
+      }
+    }
+
+    const stats = viewStats || {}
+    if (!heroValue && stats.averageViews) {
+      heroLabel = '평균 조회수'
+      heroValue = `${formatViewCount(stats.averageViews)}회`
+      if (stats.videoCount) heroSub = `편집 영상 ${formatViewCount(stats.videoCount)}개`
+    }
+
+    if (!heroValue && !heroSub && !list.length && !stats.videoCount && !stats.totalViews) {
+      return '<p class="yt-channel-card__stats-empty">성과 지표를 입력하면 핵심 성과가 표시됩니다.</p>'
+    }
+
+    if (!heroSub && secondary) heroSub = formatMetricSubline(secondary)
+    if (!heroSub && stats.totalViews && heroLabel !== '평균 조회수') {
+      heroSub = `총 조회 ${formatViewCount(stats.totalViews)}회`
+    }
+
+    const extraLines = []
+    if (stats.averageViews && heroLabel !== '평균 조회수') {
+      extraLines.push(`평균 조회수: ${formatViewCount(stats.averageViews)}회`)
+    }
+    if (stats.videoCount && !(heroSub || '').includes('편집 영상')) {
+      extraLines.push(`편집 영상: ${formatViewCount(stats.videoCount)}개`)
+    }
+    if (stats.totalViews && !(heroSub || '').includes('총 조회')) {
+      extraLines.push(`총 조회수: ${formatViewCount(stats.totalViews)}회`)
+    }
+
+    const hasMetricDetails = list.some((metric) => String(metric.before || '').trim() || String(metric.after || '').trim())
+    const detailsHtml = (list.length > 1 || hasMetricDetails || extraLines.length)
+      ? renderMetricDetails(list, extraLines)
+      : ''
+
+    if (!heroValue) return detailsHtml || '<p class="yt-channel-card__stats-empty">성과 지표를 입력하면 핵심 성과가 표시됩니다.</p>'
+
+    return `<div class="account-hero-metric">
+      ${heroLabel ? `<span class="account-hero-metric__label">${esc(heroLabel)}</span>` : ''}
+      <strong class="account-hero-metric__value">${esc(heroValue)}</strong>
+      ${heroSub ? `<span class="account-hero-metric__sub">${esc(heroSub)}</span>` : ''}
+    </div>${detailsHtml}`
+  }
+
+  function renderPlaylistActions(playlists, defaultLabel = '작업 영상 보기') {
+    const items = (Array.isArray(playlists) ? playlists : [])
+      .map((pl, index) => {
+        const url = normalizePlaylistUrl(pl?.url || pl?.playlistUrl)
+        if (!url) return null
+        const label = String(pl?.label || pl?.playlistLabel || '').trim()
+          || (playlists.length > 1 ? `재생목록 ${index + 1}` : defaultLabel)
+        return { url, label }
+      })
+      .filter(Boolean)
+    if (!items.length) return { primary: '', more: '' }
+
+    const primary = items[0]
+    const primaryHtml = `<a class="ig-account-card__playlist-btn" href="${esc(primary.url)}" target="_blank" rel="noopener noreferrer">
+      <i class="ti ti-player-play" aria-hidden="true"></i>
+      <span>${esc(items.length > 1 ? defaultLabel : primary.label)}</span>
+      <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+    </a>`
+
+    if (items.length === 1) return { primary: primaryHtml, more: '' }
+
+    const moreHtml = `<details class="account-card__playlist-more">
+      <summary>재생목록 ${items.length}개</summary>
+      <div class="account-card__playlist-more-list">${items.slice(1).map((item) => `
+        <a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.label)}</a>
+      `).join('')}</div>
+    </details>`
+    return { primary: primaryHtml, more: moreHtml }
+  }
+
+  function renderChannelMetricStats(metrics, viewStats = null) {
+    return renderSimplifiedMetricsBlock(metrics, viewStats)
   }
 
   function renderInstagramAccountCard(account, options) {
@@ -486,8 +609,8 @@
     const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
     const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
     const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
-    const highlights = renderHighlightsHtml(account)
-    const metricsHtml = renderChannelMetricStats(account.metrics)
+    const metricsHtml = renderSimplifiedMetricsBlock(account.metrics)
+    const summaryHtml = mergeAccountSummary(account)
 
     const avatarHtml = avatarUrl
       ? `<img class="yt-channel-card__avatar" src="${esc(avatarUrl)}" alt="" loading="lazy" decoding="async" onerror="this.classList.add('is-hidden')" />
@@ -513,22 +636,9 @@
           <span class="ig-account-card__status ${statusClass}">${statusLabel}</span>
         </header>
         <div class="yt-channel-card__body">
-          <dl class="ig-account-card__meta">
-            <div class="ig-account-card__meta-row">
-              <dt>담당 기간</dt>
-              <dd>${esc(period)}</dd>
-            </div>
-            ${account.role ? `
-            <div class="ig-account-card__meta-row">
-              <dt>담당 업무</dt>
-              <dd>${esc(account.role)}</dd>
-            </div>` : ''}
-          </dl>
-
+          ${renderAccountContextLine(period, account.role)}
           ${metricsHtml}
-
-          ${account.summary ? `<p class="ig-account-card__summary">${esc(account.summary)}</p>` : ''}
-          ${highlights}
+          ${summaryHtml}
           ${account.sample ? `<p class="ig-account-card__sample">${esc(sampleNote)}</p>` : ''}
 
           ${visitAction ? `<div class="ig-account-card__actions">${visitAction}</div>` : ''}
@@ -540,7 +650,7 @@
   function renderYoutubeChannelCard(account, options) {
     const {
       visitLabel = '유튜브 채널 열기',
-      playlistLabel = '편집 포트폴리오 재생목록',
+      playlistLabel = '작업 영상 보기',
       sampleNote,
     } = options
     const visitUrl = normalizeVisitUrl(account.accountUrl, 'youtube')
@@ -552,7 +662,7 @@
     const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
     const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
     const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
-    const highlights = renderHighlightsHtml(account)
+    const summaryHtml = mergeAccountSummary(account)
 
     const bannerHtml = bannerUrl
       ? `<img class="yt-channel-card__banner" src="${esc(bannerUrl)}" alt="" loading="lazy" decoding="async" />`
@@ -563,35 +673,9 @@
          <div class="yt-channel-card__avatar yt-channel-card__avatar--fallback" aria-hidden="true"><i class="ti ti-brand-youtube"></i></div>`
       : `<div class="yt-channel-card__avatar yt-channel-card__avatar--fallback" aria-hidden="true"><i class="ti ti-brand-youtube"></i></div>`
 
-    const statsHtml = (stats.videoCount || stats.totalViews)
-      ? `<div class="yt-channel-card__stats">
-          <div class="yt-channel-card__stat">
-            <span class="yt-channel-card__stat-label">평균 조회수</span>
-            <strong class="yt-channel-card__stat-value">${formatViewCount(stats.averageViews)}</strong>
-            <span class="yt-channel-card__stat-unit">회</span>
-          </div>
-          <div class="yt-channel-card__stat">
-            <span class="yt-channel-card__stat-label">편집 영상</span>
-            <strong class="yt-channel-card__stat-value">${formatViewCount(stats.videoCount)}</strong>
-            <span class="yt-channel-card__stat-unit">개</span>
-          </div>
-          <div class="yt-channel-card__stat">
-            <span class="yt-channel-card__stat-label">총 조회수</span>
-            <strong class="yt-channel-card__stat-value">${formatViewCount(stats.totalViews)}</strong>
-            <span class="yt-channel-card__stat-unit">회</span>
-          </div>
-        </div>`
-      : `<p class="yt-channel-card__stats-empty">재생목록을 연결하면 편집 포트폴리오의 평균·총 조회수가 표시됩니다.</p>`
+    const statsHtml = renderSimplifiedMetricsBlock(account.metrics, stats)
 
-    const playlistActions = playlists.map((pl, index) => {
-      const url = normalizePlaylistUrl(pl.url || pl.playlistUrl)
-      const label = String(pl.label || pl.playlistLabel || '').trim() || (playlists.length > 1 ? `편집 포트폴리오 ${index + 1}` : playlistLabel)
-      return `<a class="ig-account-card__playlist-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
-        <i class="ti ti-list-details" aria-hidden="true"></i>
-        <span>${esc(label)}</span>
-        <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
-      </a>`
-    }).join('')
+    const playlistActions = renderPlaylistActions(playlists, playlistLabel)
 
     const visitAction = visitUrl
       ? `<a class="ig-account-card__visit-btn" href="${esc(visitUrl)}" target="_blank" rel="noopener noreferrer">
@@ -601,7 +685,7 @@
         </a>`
       : ''
 
-    const hasActions = visitUrl || playlistActions
+    const hasActions = visitUrl || playlistActions.primary
 
     return `<article class="yt-channel-card ig-account-card ig-account-card--youtube">
       <div class="yt-channel-card__hero">
@@ -617,28 +701,15 @@
           <span class="ig-account-card__status ${statusClass}">${statusLabel}</span>
         </header>
         <div class="yt-channel-card__body">
-        <dl class="ig-account-card__meta">
-          <div class="ig-account-card__meta-row">
-            <dt>담당 기간</dt>
-            <dd>${esc(period)}</dd>
-          </div>
-          ${account.role ? `
-          <div class="ig-account-card__meta-row">
-            <dt>담당 업무</dt>
-            <dd>${esc(account.role)}</dd>
-          </div>` : ''}
-        </dl>
-
+        ${renderAccountContextLine(period, account.role)}
         ${statsHtml}
-
-        ${account.summary ? `<p class="ig-account-card__summary">${esc(account.summary)}</p>` : ''}
-        ${highlights}
+        ${summaryHtml}
         ${account.sample ? `<p class="ig-account-card__sample">${esc(sampleNote)}</p>` : ''}
 
-        ${hasActions ? `<div class="ig-account-card__actions${playlistActions ? ' ig-account-card__actions--split' : ''}">
+        ${hasActions ? `<div class="ig-account-card__actions${playlistActions.primary ? ' ig-account-card__actions--split' : ''}">
           ${visitAction}
-          ${playlistActions}
-        </div>` : ''}
+          ${playlistActions.primary}
+        </div>${playlistActions.more}` : ''}
         </div>
       </div>
     </article>`
@@ -666,7 +737,7 @@
     const {
       iconClass,
       visitLabel,
-      playlistLabel = '편집 포트폴리오 재생목록',
+      playlistLabel = '작업 영상 보기',
       shareLabel,
       sampleNote,
       platform = 'youtube',
@@ -745,7 +816,7 @@
       sectionTitle = '채널 관리',
       iconClass = 'ti ti-brand-youtube',
       visitLabel = '유튜브 채널 열기',
-      playlistLabel = '편집 포트폴리오 재생목록',
+      playlistLabel = '작업 영상 보기',
       shareLabel = '링크 복사',
       sampleNote = '샘플 데이터 · 실제 채널 URL과 수치로 교체하세요',
       platform = 'youtube',
@@ -816,7 +887,7 @@
         sectionTitle: '채널 관리',
         iconClass: 'ti ti-brand-youtube',
         visitLabel: '유튜브 채널 열기',
-        playlistLabel: '편집 포트폴리오 재생목록',
+        playlistLabel: '작업 영상 보기',
         shareLabel: '링크 복사',
         sampleNote: '샘플 데이터 · 실제 채널 URL과 수치로 교체하세요',
         platform: 'youtube',
@@ -894,43 +965,6 @@
     })
   }
 
-  // ── 견적 ──────────────────────────────────────────────
-  function applyQuoteMeta(config) {
-    const titleEl = document.getElementById('quote-title')
-    const descEl = document.getElementById('quote-section-desc')
-    const scopeEl = document.getElementById('quote-scope-note')
-    const summaryEl = document.getElementById('quote-summary-note')
-    const disclaimerEl = document.getElementById('quote-disclaimer')
-
-    if (titleEl && config.section_title) titleEl.textContent = config.section_title
-    if (descEl && config.section_desc) descEl.textContent = config.section_desc
-    if (scopeEl) scopeEl.textContent = config.scope_note || ''
-    if (summaryEl && config.summary_note) summaryEl.textContent = config.summary_note
-    if (disclaimerEl && config.disclaimer) disclaimerEl.textContent = config.disclaimer
-    renderScopeTags(config.groups || [])
-  }
-
-  function renderScopeTags(groups) {
-    const tagsEl = document.getElementById('quote-scope-tags')
-    if (!tagsEl) return
-    if (!groups.length) {
-      tagsEl.hidden = true
-      tagsEl.innerHTML = ''
-      return
-    }
-    tagsEl.hidden = false
-    tagsEl.innerHTML = groups.map((group) => `
-      <span class="quote-scope-tag" data-scope-group="${esc(group.id)}">${esc(group.title)}</span>
-    `).join('')
-  }
-
-  function updateScopeTags(selected) {
-    const activeGroups = new Set(selected.map(item => item.groupId))
-    document.querySelectorAll('.quote-scope-tag').forEach((tag) => {
-      tag.classList.toggle('is-active', activeGroups.has(tag.dataset.scopeGroup))
-    })
-  }
-
   async function loadWorksConfig() {
     try {
       const api = window.API || (typeof API !== 'undefined' ? API : null)
@@ -948,147 +982,11 @@
     return PORTFOLIO_DATA
   }
 
-  async function loadQuoteConfig() {
-    try {
-      const api = window.API || (typeof API !== 'undefined' ? API : null)
-      if (api?.get) {
-        const data = await api.get('/instructor-portfolio/quote')
-        if (data?.groups?.length) {
-          quoteConfig = data
-          return quoteConfig
-        }
-      }
-    } catch (_) {}
-    quoteConfig = { ...QUOTE_FALLBACK }
-    return quoteConfig
-  }
-
-  function renderQuoteGroups(container, groups) {
-    const visibleGroups = (groups || []).filter((group) => group.items?.length)
-    if (!visibleGroups.length) {
-      container.innerHTML = '<p class="portfolio-empty">등록된 견적 항목이 없습니다.</p>'
-      return
-    }
-    container.innerHTML = visibleGroups.map((group) => `
-      <div class="quote-group" data-group="${esc(group.id)}">
-        <h3 class="quote-group__title">${esc(group.title)}</h3>
-        ${group.description ? `<p class="quote-group__desc">${esc(group.description)}</p>` : ''}
-        <div class="quote-options">
-          ${group.items.map((item) => `
-            <label class="quote-option" data-option-id="${esc(item.id)}">
-              <input type="checkbox" value="${esc(item.id)}" data-price="${item.price}" data-label="${esc(item.label)}" data-group="${esc(group.title)}" data-group-id="${esc(group.id)}" />
-              <div class="quote-option__body">
-                <div class="quote-option__top">
-                  <span class="quote-option__label">${esc(item.label)}</span>
-                  <span class="quote-option__price">${formatWon(item.price)}</span>
-                </div>
-                <p class="quote-option__desc">${esc(item.desc)}</p>
-              </div>
-            </label>
-          `).join('')}
-        </div>
-      </div>
-    `).join('')
-  }
-
-  function getSelectedOptions() {
-    return [...document.querySelectorAll('#quote-groups input[type="checkbox"]:checked')].map((el) => ({
-      id: el.value,
-      label: el.dataset.label,
-      group: el.dataset.group,
-      groupId: el.dataset.groupId,
-      price: Number(el.dataset.price || 0),
-    }))
-  }
-
-  function updateQuoteSummary() {
-    const selected = getSelectedOptions()
-    const total = selected.reduce((sum, item) => sum + item.price, 0)
-    const countEl = document.getElementById('quote-count')
-    const totalEl = document.getElementById('quote-total')
-    const listEl = document.getElementById('quote-selected-list')
-    const emptyEl = document.getElementById('quote-empty')
-
-    if (countEl) countEl.textContent = `선택 ${selected.length}개`
-    if (totalEl) totalEl.textContent = formatWon(total)
-    updateScopeTags(selected)
-
-    document.querySelectorAll('.quote-option').forEach((label) => {
-      const input = label.querySelector('input')
-      label.classList.toggle('is-checked', !!(input && input.checked))
-    })
-
-    if (!selected.length) {
-      if (listEl) {
-        listEl.hidden = true
-        listEl.innerHTML = ''
-      }
-      if (emptyEl) emptyEl.hidden = false
-      return
-    }
-
-    if (emptyEl) emptyEl.hidden = true
-    if (listEl) {
-      listEl.hidden = false
-      listEl.innerHTML = selected.map((item) => `
-        <li><span>${esc(item.group)} · ${esc(item.label)}</span><span>${formatWon(item.price)}</span></li>
-      `).join('')
-    }
-  }
-
-  function buildQuoteText() {
-    const selected = getSelectedOptions()
-    const total = selected.reduce((sum, item) => sum + item.price, 0)
-    const lines = [
-      '[타닥클래스 강사 포트폴리오 예상 견적]',
-      `작성일: ${new Date().toLocaleDateString('ko-KR')}`,
-      '',
-    ]
-    if (quoteConfig.scope_note) {
-      lines.push(quoteConfig.scope_note, '')
-    }
-    if (!selected.length) {
-      lines.push('선택된 항목이 없습니다.')
-    } else {
-      const byGroup = {}
-      selected.forEach((item) => {
-        if (!byGroup[item.group]) byGroup[item.group] = []
-        byGroup[item.group].push(item)
-      })
-      Object.keys(byGroup).forEach((group) => {
-        lines.push(`■ ${group}`)
-        byGroup[group].forEach((item) => {
-          lines.push(`- ${item.label}: ${formatWon(item.price)}`)
-        })
-        lines.push('')
-      })
-      lines.push(`합계: ${formatWon(total)}`)
-      lines.push('(참고용 초안 단가 · 실제 금액은 협의 후 확정)')
-    }
-    lines.push('', `페이지: ${location.href}`)
-    return lines.join('\n')
-  }
-
-  async function copyQuote() {
-    const text = buildQuoteText()
-    const ok = await copyText(text)
-    notify(ok ? '견적 내용을 복사했습니다.' : '복사에 실패했습니다.', ok ? 'success' : 'error')
-  }
-
-  function resetQuote() {
-    document.querySelectorAll('#quote-groups input[type="checkbox"]').forEach((el) => {
-      el.checked = false
-    })
-    updateQuoteSummary()
-    notify('선택을 초기화했습니다.', 'info')
-  }
-
   // ── 초기화 ────────────────────────────────────────────
   async function init() {
     const yt = document.getElementById('panel-youtube')
     const ig = document.getElementById('panel-instagram')
     const rn = document.getElementById('panel-rednote')
-    const quoteGroups = document.getElementById('quote-groups')
 
     await loadWorksConfig()
 
@@ -1097,33 +995,12 @@
     if (rn) renderRednote(rn)
     initMarqueesIn(document.getElementById('panel-youtube'))
 
-    const quoteData = await loadQuoteConfig()
-    applyQuoteMeta(quoteData)
-    if (quoteGroups) renderQuoteGroups(quoteGroups, quoteData.groups || [])
-
     document.querySelectorAll('.portfolio-filter__btn').forEach((btn) => {
       btn.addEventListener('click', () => setPlatform(btn.dataset.platform))
     })
 
     const worksCard = document.querySelector('.portfolio-card[aria-labelledby="portfolio-works-title"]')
     if (worksCard) bindShareButtons(worksCard)
-
-    document.getElementById('share-page-btn')?.addEventListener('click', () => {
-      shareOrCopy({
-        title: '강사 포트폴리오 — 타닥클래스',
-        text: '도각쌤 포트폴리오를 확인해 보세요',
-        url: location.href,
-      })
-    })
-
-    quoteGroups?.addEventListener('change', (e) => {
-      if (e.target.matches('input[type="checkbox"]')) updateQuoteSummary()
-    })
-
-    document.getElementById('quote-copy-btn')?.addEventListener('click', copyQuote)
-    document.getElementById('quote-reset-btn')?.addEventListener('click', resetQuote)
-
-    updateQuoteSummary()
   }
 
   if (document.readyState === 'loading') {

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-13X3J2EYQ2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-13X3J2EYQ2');
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>선택형 견적서 — 타닥클래스</title>
+  <meta name="description" content="기획·촬영·편집 범위를 선택해 도각쌤 영상 제작 예상 견적을 계산해 보세요." />
+  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <link rel="stylesheet" href="/css/instructor-portfolio.css?v=19" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+</head>
+<body class="portfolio-page">
+
+<div data-site-header></div>
+
+<main>
+  <header class="portfolio-hero">
+    <p class="portfolio-hero-eyebrow">Estimate</p>
+    <h1 class="portfolio-hero-title">선택형 견적서</h1>
+    <p class="portfolio-hero-subtitle">필요한 작업 범위를 골라 예상 금액을 확인하세요</p>
+    <p class="portfolio-hero-lead">기획 · 촬영 · 편집 항목을 선택하면 실시간으로 합계가 계산됩니다</p>
+  </header>
+
+  <div class="portfolio-main">
+    <section class="portfolio-card portfolio-profile" aria-label="강사 요약">
+      <div class="portfolio-profile__meta">
+        <h2 class="portfolio-profile__name">도각쌤 / 이동헌</h2>
+        <p class="portfolio-profile__role">세상에서 가장 빠른 영상편집기사가 될래요</p>
+        <div class="portfolio-profile__tags">
+          <span>캡컷</span>
+          <span>다빈치 리졸브</span>
+          <span>숏폼</span>
+        </div>
+      </div>
+      <div class="portfolio-profile__actions">
+        <a href="/instructors.html" class="portfolio-btn portfolio-btn--ghost">강사 소개</a>
+        <a href="/instructor-portfolio.html" class="portfolio-btn portfolio-btn--ghost">포트폴리오</a>
+      </div>
+    </section>
+
+    <section class="portfolio-card" aria-labelledby="quote-title">
+      <p class="portfolio-section-eyebrow">Calculator</p>
+      <h2 class="portfolio-section-title" id="quote-title">견적 계산</h2>
+      <p class="portfolio-section-desc" id="quote-section-desc">기획 · 촬영 · 편집 중 필요한 범위를 선택하면 예상 금액이 달라집니다.</p>
+      <p class="quote-scope-note" id="quote-scope-note"></p>
+      <div class="quote-scope-tags" id="quote-scope-tags" hidden aria-live="polite"></div>
+
+      <div class="quote-layout">
+        <div class="quote-groups" id="quote-groups"></div>
+        <aside class="quote-summary" aria-live="polite">
+          <p class="quote-summary__eyebrow">예상 견적</p>
+          <p class="quote-summary__count" id="quote-count">선택 0개</p>
+          <p class="quote-summary__total" id="quote-total">₩0</p>
+          <p class="quote-summary__note" id="quote-summary-note">부가세·출장비·수정 횟수에 따라 달라질 수 있습니다</p>
+          <ul class="quote-summary__list" id="quote-selected-list" hidden></ul>
+          <p class="quote-summary__empty" id="quote-empty">항목을 선택하면 여기에 표시됩니다</p>
+          <div class="quote-summary__actions">
+            <button type="button" class="portfolio-btn portfolio-btn--primary" id="quote-copy-btn">견적 내용 복사</button>
+            <button type="button" class="portfolio-btn portfolio-btn--ghost" id="quote-reset-btn">선택 초기화</button>
+          </div>
+        </aside>
+      </div>
+
+      <p class="quote-disclaimer" id="quote-disclaimer">
+        이 견적서는 참고용 초안입니다. 실제 금액은 작업 범위·분량·일정에 따라 달라지며, 문의·결제 기능은 포함되어 있지 않습니다.
+      </p>
+    </section>
+  </div>
+</main>
+
+<div data-chrome="footer"></div>
+
+<script src="/js/api.js?v=3"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=12"></script>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/instructor-portfolio-quote.js?v=1"></script>
+</body>
+</html>

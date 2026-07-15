@@ -12,9 +12,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>강사 포트폴리오 — 타닥클래스</title>
-  <meta name="description" content="도각쌤이 직접 만든 유튜브 쇼츠, 인스타그램, 샤오홍슈 포트폴리오와 선택형 견적서" />
+  <meta name="description" content="도각쌤이 직접 만든 유튜브 쇼츠, 인스타그램, 샤오홍슈 포트폴리오" />
   <link rel="stylesheet" href="/css/style.css?v=16" />
-  <link rel="stylesheet" href="/css/instructor-portfolio.css?v=18" />
+  <link rel="stylesheet" href="/css/instructor-portfolio.css?v=19" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -27,7 +27,7 @@
     <p class="portfolio-hero-eyebrow">Portfolio</p>
     <h1 class="portfolio-hero-title">강사 포트폴리오</h1>
     <p class="portfolio-hero-subtitle">도각쌤이 직접 만든 숏폼 · 릴스 · 샤오홍슈</p>
-    <p class="portfolio-hero-lead">플랫폼별 포트폴리오를 둘러보고, 필요한 서비스를 골라 예상 견적을 확인해 보세요</p>
+    <p class="portfolio-hero-lead">플랫폼별 포트폴리오를 둘러보고, 작업 사례를 확인해 보세요</p>
   </header>
 
   <div class="portfolio-main">
@@ -43,16 +43,16 @@
       </div>
       <div class="portfolio-profile__actions">
         <a href="/instructors.html" class="portfolio-btn portfolio-btn--ghost">강사 소개</a>
-        <button type="button" class="portfolio-btn portfolio-btn--primary" id="share-page-btn">
-          <i class="ti ti-share" aria-hidden="true"></i> 페이지 공유
-        </button>
+        <a href="/instructor-portfolio-quote.html" class="portfolio-btn portfolio-btn--primary">
+          <i class="ti ti-calculator" aria-hidden="true"></i> 선택형 견적서
+        </a>
       </div>
     </section>
 
     <section class="portfolio-card" aria-labelledby="portfolio-works-title">
       <p class="portfolio-section-eyebrow">Portfolio</p>
       <h2 class="portfolio-section-title" id="portfolio-works-title">포트폴리오</h2>
-      <p class="portfolio-section-desc">플랫폼을 선택해 보세요. 유튜브·인스타그램은 채널·계정 관리 성과, 쇼츠·샤오홍슈는 영상 포트폴리오를 확인할 수 있습니다.</p>
+      <p class="portfolio-section-desc">플랫폼을 선택해 보세요. 채널·계정은 핵심 성과 한 줄로, 쇼츠·샤오홍슈는 작업 목록으로 확인할 수 있습니다.</p>
 
       <div class="portfolio-filter" role="tablist" aria-label="플랫폼 필터">
         <button type="button" class="portfolio-filter__btn active" role="tab" aria-selected="true" data-platform="youtube">유튜브</button>
@@ -64,34 +64,6 @@
       <div id="panel-instagram" class="portfolio-panel" role="tabpanel" data-platform="instagram" hidden></div>
       <div id="panel-rednote" class="portfolio-panel" role="tabpanel" data-platform="rednote" hidden></div>
     </section>
-
-    <section class="portfolio-card" aria-labelledby="quote-title">
-      <p class="portfolio-section-eyebrow">Estimate</p>
-      <h2 class="portfolio-section-title" id="quote-title">선택형 견적서</h2>
-      <p class="portfolio-section-desc" id="quote-section-desc">기획 · 촬영 · 편집 중 필요한 범위를 선택하면 예상 금액이 달라집니다.</p>
-      <p class="quote-scope-note" id="quote-scope-note"></p>
-      <div class="quote-scope-tags" id="quote-scope-tags" hidden aria-live="polite"></div>
-
-      <div class="quote-layout">
-        <div class="quote-groups" id="quote-groups"></div>
-        <aside class="quote-summary" aria-live="polite">
-          <p class="quote-summary__eyebrow">예상 견적</p>
-          <p class="quote-summary__count" id="quote-count">선택 0개</p>
-          <p class="quote-summary__total" id="quote-total">₩0</p>
-          <p class="quote-summary__note" id="quote-summary-note">부가세·출장비·수정 횟수에 따라 달라질 수 있습니다</p>
-          <ul class="quote-summary__list" id="quote-selected-list" hidden></ul>
-          <p class="quote-summary__empty" id="quote-empty">항목을 선택하면 여기에 표시됩니다</p>
-          <div class="quote-summary__actions">
-            <button type="button" class="portfolio-btn portfolio-btn--primary" id="quote-copy-btn">견적 내용 복사</button>
-            <button type="button" class="portfolio-btn portfolio-btn--ghost" id="quote-reset-btn">선택 초기화</button>
-          </div>
-        </aside>
-      </div>
-
-      <p class="quote-disclaimer" id="quote-disclaimer">
-        이 견적서는 참고용 초안입니다. 실제 금액은 작업 범위·분량·일정에 따라 달라지며, 문의·결제 기능은 포함되어 있지 않습니다.
-      </p>
-    </section>
   </div>
 </main>
 
@@ -101,6 +73,6 @@
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=12"></script>
 <script src="/js/site-chrome.js"></script>
-<script src="/js/instructor-portfolio.js?v=19"></script>
+<script src="/js/instructor-portfolio.js?v=21"></script>
 </body>
 </html>
