@@ -9,6 +9,12 @@ const router = express.Router()
 const SUBTITLE_ZIP_PATH = process.env.SUBTITLE_TOOL_STORAGE_PATH || 'subtitle-tool/TadakSync.zip'
 const SUBTITLE_MODEL_ZIP_PATH = process.env.SUBTITLE_MODEL_STORAGE_PATH || 'subtitle-tool/whisper-model-large-v3.zip'
 const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://vcml.kr'
+const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions'
+const TRANSLATION_LANGUAGES = {
+  en: '영어',
+  ja: '일본어',
+  zh: '중국어(간체)',
+}
 
 function signSubtitleToken(user, deviceId, sessionId) {
   return jwt.sign(
@@ -27,6 +33,112 @@ function signSubtitleToken(user, deviceId, sessionId) {
   )
 }
 
+function extractJsonObject(text) {
+  const raw = String(text || '').trim()
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch (_) {
+    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i)
+    if (fenced) {
+      try { return JSON.parse(fenced[1]) } catch (_) {}
+    }
+    const start = raw.indexOf('{')
+    const end = raw.lastIndexOf('}')
+    if (start >= 0 && end > start) {
+      try { return JSON.parse(raw.slice(start, end + 1)) } catch (_) {}
+    }
+  }
+  return null
+}
+
+function normalizeTranslationBlocks(blocks) {
+  if (!Array.isArray(blocks)) return []
+  return blocks.map((b, idx) => ({
+    index: Number.isFinite(Number(b?.index)) ? Number(b.index) : idx,
+    text: String(b?.text || b?.translation || '').trim(),
+  }))
+}
+
+async function translateScriptWithOpenAI({ sourceLang, targetLang, scriptText, blocks }) {
+  const apiKey = String(process.env.OPENAI_API_KEY || '').trim()
+  if (!apiKey) {
+    const err = new Error('번역 엔진 설정이 아직 준비되지 않았습니다.')
+    err.status = 503
+    throw err
+  }
+  const targetName = TRANSLATION_LANGUAGES[targetLang]
+  if (!targetName) {
+    const err = new Error('지원하지 않는 번역 언어입니다.')
+    err.status = 400
+    throw err
+  }
+  const sourceName = sourceLang ? String(sourceLang) : '자동 감지된 원어'
+  const safeBlocks = (Array.isArray(blocks) ? blocks : [])
+    .map((b, idx) => ({
+      index: idx,
+      text: String(b?.text || '').trim(),
+    }))
+    .filter(b => b.text)
+  const system = [
+    'You are a senior subtitle translator for short-form and course videos.',
+    'Translate with full-context awareness, natural spoken delivery, and consistent terms.',
+    'Return strict JSON only. Do not include markdown.',
+  ].join(' ')
+  const user = JSON.stringify({
+    task: 'Translate subtitle script while preserving block count and index order.',
+    source_language: sourceName,
+    target_language: targetName,
+    style: 'Natural spoken subtitles. Keep meaning concise, fluent, and viewer-friendly.',
+    constraints: [
+      'Return JSON object: {"translations":[{"index":0,"text":"..."}]}',
+      'translations length must equal blocks length.',
+      'Each index must match the source block index.',
+      'Do not merge or split blocks.',
+      'No explanations.',
+    ],
+    full_script: String(scriptText || '').trim(),
+    blocks: safeBlocks,
+  })
+  const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: process.env.SUBTITLE_TRANSLATION_MODEL || 'gpt-4o',
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    }),
+  })
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    const err = new Error(payload?.error?.message || '번역 엔진 호출에 실패했습니다.')
+    err.status = response.status
+    throw err
+  }
+  const content = payload?.choices?.[0]?.message?.content || ''
+  const parsed = extractJsonObject(content)
+  const translations = normalizeTranslationBlocks(parsed?.translations)
+  if (translations.length !== safeBlocks.length || translations.some((t, idx) => t.index !== idx || !t.text)) {
+    const err = new Error('번역 결과 형식이 올바르지 않습니다. 다시 시도해 주세요.')
+    err.status = 502
+    throw err
+  }
+  return {
+    target_language: targetLang,
+    target_language_label: targetName,
+    translations,
+    usage: payload?.usage || null,
+    model: payload?.model || process.env.SUBTITLE_TRANSLATION_MODEL || 'gpt-4o',
+  }
+}
+
 /** GET /api/subtitle/entitlement — 구글 로그인·잔액 확인 (회원 기본 10코인 + 일일 로그인 1코인) */
 router.get('/entitlement', authMiddleware, async (req, res) => {
   try {
@@ -34,7 +146,10 @@ router.get('/entitlement', authMiddleware, async (req, res) => {
     if (!result.ok) {
       return res.status(403).json(result)
     }
-    res.json(result)
+    res.json({
+      ...result,
+      pricing: db.getSubtitlePricingLaunchMeta(),
+    })
   } catch (e) {
     console.error('subtitle entitlement:', e)
     res.status(500).json({ error: '이용 권한을 확인하지 못했습니다.' })
@@ -56,6 +171,7 @@ router.get('/wallet', authMiddleware, async (req, res) => {
       history,
       just_granted_initial: entitlement.just_granted_initial,
       just_granted_daily: entitlement.just_granted_daily,
+      pricing: db.getSubtitlePricingLaunchMeta(),
     })
   } catch (e) {
     console.error('subtitle wallet:', e)
@@ -332,6 +448,64 @@ router.post('/refund', subtitleAppAuth, async (req, res) => {
   } catch (e) {
     console.error('subtitle refund:', e)
     res.status(500).json({ error: '코인 환불에 실패했습니다.' })
+  }
+})
+
+/** POST /api/subtitle/translate — GPT-4o 전문 맥락 번역 (앱 전용) */
+router.post('/translate', subtitleAppAuth, async (req, res) => {
+  const jobId = String(req.body?.job_id || '').trim()
+  let consumed = false
+  try {
+    const minutes = req.body?.minutes
+    const sourceLang = req.body?.source_lang
+    const targetLang = String(req.body?.target_lang || '').trim()
+    const scriptText = String(req.body?.script_text || '').trim()
+    const blocks = Array.isArray(req.body?.blocks) ? req.body.blocks : []
+    if (!jobId) return res.status(400).json({ ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' })
+    if (!TRANSLATION_LANGUAGES[targetLang]) {
+      return res.status(400).json({ ok: false, code: 'invalid_language', error: '지원하지 않는 번역 언어입니다.' })
+    }
+    if (!scriptText || !blocks.length) {
+      return res.status(400).json({ ok: false, code: 'empty_script', error: '번역할 자막 전문이 없습니다.' })
+    }
+    if (!String(process.env.OPENAI_API_KEY || '').trim()) {
+      return res.status(503).json({ ok: false, code: 'translation_not_configured', error: '번역 엔진 설정이 아직 준비되지 않았습니다.' })
+    }
+
+    const charge = await db.consumeSubtitleTranslationCoins(req.user.id, minutes, jobId)
+    if (!charge.ok) {
+      const status = charge.code === 'insufficient' ? 402 : charge.code === 'invalid_job' ? 400 : 403
+      return res.status(status).json(charge)
+    }
+    consumed = !charge.already
+
+    const translated = await translateScriptWithOpenAI({
+      sourceLang,
+      targetLang,
+      scriptText,
+      blocks,
+    })
+    res.json({
+      ok: true,
+      balance: charge.balance,
+      minutes: charge.minutes,
+      coins: charge.coins,
+      ...translated,
+    })
+  } catch (e) {
+    console.error('subtitle translate:', e)
+    if (consumed && jobId) {
+      try {
+        await db.refundSubtitleTranslationCoins(req.user.id, jobId)
+      } catch (refundErr) {
+        console.error('subtitle translate refund:', refundErr)
+      }
+    }
+    const status = e.status && Number.isFinite(Number(e.status)) ? Number(e.status) : 500
+    res.status(status >= 400 && status < 600 ? status : 500).json({
+      ok: false,
+      error: e.message || '번역에 실패했습니다.',
+    })
   }
 })
 

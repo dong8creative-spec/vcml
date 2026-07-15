@@ -6,68 +6,28 @@
   <title>타닥싱크 2(TadakSync 2) — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=16" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
+  <link rel="stylesheet" href="/css/subtitle-tool.css?v=4" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
-  <style>
-    .st-wrap { max-width: 640px; margin: 36px auto 80px; padding: 0 24px; }
-    .st-hero { margin-bottom: 28px; }
-    .st-hero h1 { font-size: 28px; font-weight: 900; color: #111; margin: 0 0 10px; letter-spacing: -0.02em; }
-    .st-hero p { font-size: 15px; color: #666; line-height: 1.7; margin: 0; }
-    .st-card {
-      background: #fff; border: 1px solid #eee; border-radius: 16px;
-      padding: 24px; margin-bottom: 16px;
-      box-shadow: 0 6px 24px rgba(17,17,17,.04);
-    }
-    .st-card h2 { font-size: 16px; font-weight: 800; margin: 0 0 12px; color: #111; }
-    .st-balance {
-      display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;
-    }
-    .st-balance .num { font-size: 36px; font-weight: 900; color: #111; }
-    .st-balance .unit { font-size: 14px; color: #888; font-weight: 600; }
-    .st-meta { font-size: 13px; color: #888; line-height: 1.6; }
-    .st-meta strong { color: #444; }
-    .st-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-    .st-btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 13px 18px; border-radius: 12px; border: none; cursor: pointer;
-      font-size: 15px; font-weight: 700; text-decoration: none; color: #fff; background: #111;
-    }
-    .st-btn:hover { background: #333; color: #fff; }
-    .st-btn.secondary { background: #f3f3f3; color: #111; }
-    .st-btn.secondary:hover { background: #e8e8e8; }
-    .st-btn:disabled { opacity: .5; cursor: not-allowed; }
-    .st-btn.google { background: #fff; color: #111; border: 1px solid #ddd; }
-    .st-btn.google:hover { background: #fafafa; }
-    .st-banner {
-      border-radius: 12px; padding: 14px 16px; font-size: 14px; line-height: 1.65; margin-bottom: 16px;
-    }
-    .st-banner.info { background: #f5f7ff; color: #334; border: 1px solid #e0e6ff; }
-    .st-banner.warn { background: #fff8e8; color: #664d00; border: 1px solid #ffe58f; }
-    .st-banner.ok { background: #f0fff4; color: #1a5c2e; border: 1px solid #b7ebc6; }
-    .st-banner.err { background: #fff0f0; color: #8b1a1a; border: 1px solid #ffc9c9; }
-    .st-list { margin: 0; padding-left: 18px; color: #555; font-size: 14px; line-height: 1.8; }
-    .st-code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 22px; font-weight: 800; letter-spacing: .12em; color: #111;
-    }
-    .hidden { display: none !important; }
-  </style>
 </head>
-<body>
+<body data-st-active="home">
+<script src="/js/subtitle-pricing-launch.js?v=2"></script>
 <div data-site-header></div>
 
 <div class="st-wrap">
   <div class="st-hero">
     <h1>타닥싱크 2 <span style="font-weight:600;font-size:0.72em;color:#888">TadakSync 2</span></h1>
-    <p>캡컷 프로젝트의 음성을 인식해 자막을 만들고, 스타일·강조 색을 골라 캡컷 캡션 트랙에 바로 넣는 PC 프로그램입니다. 타닥클래스 구글 로그인 후 다운로드하고, 앱에서 기기 연동 뒤 코인으로 이용할 수 있습니다.</p>
+    <p>캡컷 PC 프로젝트의 음성을 인식해 자막을 만들고, 캡컷 캡션 트랙에 바로 넣는 프로그램입니다.</p>
   </div>
+
+  <div data-st-subnav></div>
 
   <div id="st-msg"></div>
 
   <div class="st-card hidden" id="card-device">
     <h2>앱 기기 연동</h2>
-    <p class="st-meta" style="margin-bottom:6px">프로그램을 실행하면 표시되는 연동 코드를 아래 입력창에 붙여넣고 기기 연동을 승인합니다.</p>
-    <p class="st-meta" style="margin-bottom:10px;font-size:12px;color:#888">계정당 1대 PC만 연동됩니다. 새 기기 연동 시 기존 기기는 자동 해제됩니다.</p>
+    <p class="st-meta" style="margin-bottom:6px">프로그램을 실행하면 표시되는 연동 코드를 아래에 확인하고 기기 연동을 승인합니다.</p>
+    <p class="st-meta st-meta--fine" style="margin-bottom:10px">계정당 1대 PC만 연동됩니다. 새 기기 연동 시 기존 기기는 자동 해제됩니다.</p>
     <div class="st-code" id="device-code-label">————</div>
     <div class="st-actions">
       <button type="button" class="st-btn" id="btn-approve" disabled>이 기기로 연동</button>
@@ -80,34 +40,34 @@
   </div>
 
   <div class="st-card">
-    <h2>이용 안내</h2>
-    <div style="margin-bottom: 18px;">
-      <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 이용 대상</div>
-      <ul class="st-list" style="margin-top: 0;">
-        <li>타닥클래스에 <strong>구글 로그인한 회원</strong>이라면 누구나 이용할 수 있습니다.</li>
-        <li>계정당 <strong>PC 1대</strong>만 기기 연동됩니다.</li>
-        <li><strong>7일 동안 사용하지 않으면</strong> 기기 연동이 자동 해제됩니다. 다시 로그인해 주세요.</li>
-      </ul>
+    <div class="st-attendance-box compact">
+      <span class="att-icon" aria-hidden="true">🪙</span>
+      <div>
+        <b>매일 출석하고 1코인 받으세요!</b>
+        <p>하루 1회 구글 로그인(출석) 시 <strong style="color:#fff">1코인</strong> 자동 적립 · KST 기준</p>
+      </div>
     </div>
-    <div style="margin-bottom: 18px;">
-      <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 코인 안내</div>
-      <ul class="st-list" style="margin-top: 0;">
-        <li>최초 이용 시 기본 <strong>10코인</strong> 지급</li>
-        <li>이후 <strong>매일 1회</strong> 로그인(웹·앱) 시 <strong>+1코인</strong> 추가 지급 (KST 기준)</li>
-        <li>전문 인식 성공 시 타임라인 <strong>1분당 1코인</strong> 차감 (최소 1코인). 무음·미인식이면 차감 없음</li>
-        <li>SRT만 불러와 삽입하는 경로는 <strong>코인 차감 없음</strong></li>
-      </ul>
-    </div>
-    <div>
-      <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 사용 방법</div>
-      <ul class="st-list" style="margin-top: 0;">
-        <li>이 페이지에서 구글 로그인 → <strong>프로그램 다운로드</strong> (zip 전체 압축 해제 후 TadakSync2.exe 실행)</li>
-        <li>앱에서 「구글 계정으로 시작하기」→ 연동 코드 확인</li>
-        <li>이 페이지 「앱 기기 연동」에 코드 입력 후 승인 (계정당 1대 PC)</li>
-        <li>캡컷에서 작업할 프로젝트를 닫은 뒤, 앱에서 프로젝트 선택</li>
-        <li>① 전문 인식 → ② 엔터로 줄 나누기 → ③ 블록 확인·어절 강조 색 → ④ 스타일 선택 후 캡컷에 삽입</li>
-        <li>SRT만 불러와 삽입할 수도 있습니다 (이 경로는 코인 차감 없음)</li>
-      </ul>
+  </div>
+
+  <div class="st-card">
+    <h2>안내</h2>
+    <div class="st-hub-links">
+      <a class="st-hub-link" href="/subtitle-tool/start.html">
+        <span class="icon">📥</span>
+        <b>시작하기</b>
+        <span>다운로드 · 설치 · 기기 연동</span>
+      </a>
+      <a class="st-hub-link" href="/subtitle-tool/pricing.html">
+        <span class="icon">💰</span>
+        <b>요금 안내</b>
+        <span data-pricing-prelaunch>요금 · <span data-pricing-launch-label-short>7/22 11시</span> 공개</span>
+        <span data-pricing-live>월 PRO 11,000원 · 코인 15원</span>
+      </a>
+      <a class="st-hub-link" href="/subtitle-tool/guide.html">
+        <span class="icon">📖</span>
+        <b>사용법</b>
+        <span>5단계 흐름 · SRT 경로</span>
+      </a>
     </div>
   </div>
 </div>
@@ -115,6 +75,7 @@
 <script src="/js/api.js?v=3"></script>
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=13"></script>
+<script src="/js/subtitle-tool-nav.js?v=1"></script>
 <script>
 const DEFAULT_COURSE_HREF = '/courses/capcut-pro-basic'
 const params = new URLSearchParams(location.search)
@@ -128,10 +89,6 @@ const bodyEl = document.getElementById('st-body')
 const loadingEl = document.getElementById('st-loading')
 const deviceCard = document.getElementById('card-device')
 const approveBtn = document.getElementById('btn-approve')
-
-function courseHref(slug) {
-  return slug ? `/courses/${encodeURIComponent(slug)}` : DEFAULT_COURSE_HREF
-}
 
 function showMsg(html, kind = 'info') {
   msgEl.innerHTML = html ? `<div class="st-banner ${kind}">${html}</div>` : ''
@@ -189,7 +146,7 @@ async function approveDevice() {
 function renderLoggedOut() {
   bodyEl.innerHTML = `
     <h2>구글 로그인 필요</h2>
-    <p class="st-meta" style="margin-bottom:14px">타닥싱크는 타닥클래스 구글 계정으로 로그인한 회원만 이용할 수 있습니다.</p>
+    <p class="st-meta" style="margin-bottom:14px">타닥클래스 구글 계정으로 로그인한 회원만 이용할 수 있습니다.</p>
     <div class="st-actions">${googleLoginBtn('구글로 로그인')}</div>
   `
 }
@@ -214,24 +171,28 @@ function renderEntitled(data) {
     <h2>이용 가능</h2>
     <div class="st-balance"><span class="num">${data.balance ?? 0}</span><span class="unit">코인</span></div>
     <div class="st-meta">
-      <div>기본 <strong>10코인</strong> · 매일 로그인 <strong>+1코인</strong></div>
-      <div>전문 인식 <strong>1분당 1코인</strong> · SRT 삽입 무료</div>
+      <div data-pricing-prelaunch>기본 <strong>10코인</strong> · 매일 로그인 <strong>+1코인</strong> · <a href="/subtitle-tool/pricing.html">요금 <span data-pricing-launch-label-short>7/22 11시</span> 공개</a></div>
+      <div data-pricing-live>기본 <strong>10코인</strong> · 매일 로그인 <strong>+1코인</strong></div>
+      <div data-pricing-live>종량제 <strong>1코인 15원</strong> · PRO <strong>월 11,000원 = 1,100코인</strong> · <a href="/subtitle-tool/pricing.html">요금 보기</a></div>
     </div>
     <div class="st-actions">
       <button type="button" class="st-btn" id="btn-download" onclick="downloadZip()"><i class="ti ti-download"></i> 프로그램 다운로드</button>
       <a class="st-btn secondary" href="/coins.html">코인 관리</a>
     </div>
-    <p class="st-meta" style="margin-top:10px;font-size:0.85em">
+    <p class="st-meta st-meta--fine" style="margin-top:12px">
       음성인식 모델(약 3GB)은 첫 자막 생성 시 자동으로 받아집니다.
-      자동 다운로드가 안 되는 환경(사내망·방화벽 등)에서만
+      자동 다운로드가 안 되는 환경에서만
       <a href="#" id="btn-download-model" onclick="downloadModel();return false">모델 파일 별도 받기</a>
-      후 TadakSync2.exe가 있는 프로그램 폴더에 바로 압축 해제하세요.
+      · <a href="/subtitle-tool/start.html">설치 안내</a>
     </p>
   `
   if (data.just_granted_initial) {
     showMsg('환영합니다! 기본 10코인이 지급되었습니다.', 'ok')
   } else if (data.just_granted_daily) {
     showMsg('오늘 출석 보너스 1코인이 지급되었습니다.', 'ok')
+  }
+  if (typeof SubtitlePricingLaunch !== 'undefined') {
+    SubtitlePricingLaunch.applyGates(bodyEl)
   }
 }
 
@@ -252,7 +213,6 @@ async function load() {
     bodyEl.classList.remove('hidden')
     renderEntitled(data)
 
-    // 로그인 후에만 앱 기기 연동 섹션 표시
     if (deviceCode) {
       deviceCard.classList.remove('hidden')
       document.getElementById('device-code-label').textContent = deviceCode.toUpperCase()

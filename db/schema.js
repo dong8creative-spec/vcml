@@ -79,12 +79,36 @@ const SUBTITLE_COURSE_SLUG = 'capcut-pro-basic'
 const VIEWS_EDITING_COURSE_SLUG = '조회수-올리는-영상편집법-1783221046465'
 const SUBTITLE_INITIAL_COINS = 10
 const SUBTITLE_DAILY_LOGIN_COINS = 1
+/** 충전 참고 단가(100코인=5,000원). 인식 약 50원/분, 번역 약 1,000원/분 */
+const SUBTITLE_COIN_WON_REFERENCE = 50
+const SUBTITLE_TRANSLATION_COINS_PER_MINUTE = 20
 const VIEWS_EDITING_INITIAL_COINS = 1000
 const SUBTITLE_REVIEW_BONUS_COINS = 50
 const SMARTSTORE_REVIEW_BONUS_COINS = 150
 const SMARTSTORE_REVIEW_URL = process.env.SMARTSTORE_REVIEW_URL || null
 const SUBTITLE_DEVICE_CODE_TTL_MS = 10 * 60 * 1000
 const SUBTITLE_SESSION_IDLE_TTL_MS = 7 * 24 * 60 * 60 * 1000
+/** 타닥싱크 요금·구독 정책 웹 공개 시각 (KST) */
+const SUBTITLE_PRICING_LAUNCH_AT_KST = '2026-07-22'
+const SUBTITLE_PRICING_LAUNCH_ISO = '2026-07-22T11:00:00+09:00'
+const SUBTITLE_PRICING_LAUNCH_LABEL = '2026년 7월 22일 오전 11시'
+const SUBTITLE_PRICING_LAUNCH_LABEL_SHORT = '7/22 11시'
+
+function isSubtitlePricingLaunched(at = new Date()) {
+  const ms = at instanceof Date ? at.getTime() : new Date(at).getTime()
+  if (!Number.isFinite(ms)) return false
+  return ms >= new Date(SUBTITLE_PRICING_LAUNCH_ISO).getTime()
+}
+
+function getSubtitlePricingLaunchMeta() {
+  return {
+    launch_at: SUBTITLE_PRICING_LAUNCH_AT_KST,
+    launch_at_iso: SUBTITLE_PRICING_LAUNCH_ISO,
+    launch_label: SUBTITLE_PRICING_LAUNCH_LABEL,
+    launch_label_short: SUBTITLE_PRICING_LAUNCH_LABEL_SHORT,
+    launched: isSubtitlePricingLaunched(),
+  }
+}
 
 function addOneMonthFrom(iso) {
   return addMonthsFrom(iso, 1)
@@ -6194,6 +6218,109 @@ const db = {
     return out
   },
 
+  async consumeSubtitleTranslationCoins(userId, minutes, jobId) {
+    const mins = Math.max(1, Math.ceil(Number(minutes) || 0))
+    const amount = mins * SUBTITLE_TRANSLATION_COINS_PER_MINUTE
+    const jobKey = String(jobId || '').trim()
+    if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
+
+    const entitlement = await db.ensureSubtitleEntitlement(userId)
+    if (!entitlement.ok) {
+      return { ok: false, code: entitlement.code, error: entitlement.error, balance: entitlement.balance || 0 }
+    }
+
+    const consumeRef = fs.collection('subtitle_coin_ledger').doc(`translate:${jobKey}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
+    let out = null
+    await fs.runTransaction(async t => {
+      const existing = await t.get(consumeRef)
+      const walletSnap = await t.get(walletRef)
+      if (!walletSnap.exists) {
+        out = { ok: false, code: 'no_wallet', error: '코인 지갑이 없습니다.', balance: 0 }
+        return
+      }
+      const balance = walletSnap.data().balance || 0
+      if (existing.exists) {
+        out = {
+          ok: true,
+          balance,
+          minutes: existing.data().minutes || mins,
+          coins: Math.abs(existing.data().delta || amount),
+          already: true,
+        }
+        return
+      }
+      if (balance < amount) {
+        out = { ok: false, code: 'insufficient', error: '번역에 필요한 코인이 부족합니다.', balance, needed: amount }
+        return
+      }
+      const ts = now()
+      const newBal = balance - amount
+      t.update(walletRef, { balance: newBal, updated_at: ts })
+      t.set(consumeRef, {
+        user_id: userId,
+        delta: -amount,
+        balance_after: newBal,
+        reason: 'translate',
+        ref: jobKey,
+        minutes: mins,
+        coins_per_minute: SUBTITLE_TRANSLATION_COINS_PER_MINUTE,
+        created_at: ts,
+      })
+      out = { ok: true, balance: newBal, minutes: mins, coins: amount, already: false }
+    })
+    return out
+  },
+
+  async refundSubtitleTranslationCoins(userId, jobId) {
+    const jobKey = String(jobId || '').trim()
+    if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
+
+    const consumeRef = fs.collection('subtitle_coin_ledger').doc(`translate:${jobKey}`)
+    const refundRef = fs.collection('subtitle_coin_ledger').doc(`translate_refund:${jobKey}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
+    let out = null
+    await fs.runTransaction(async t => {
+      const consumeSnap = await t.get(consumeRef)
+      const refundSnap = await t.get(refundRef)
+      const walletSnap = await t.get(walletRef)
+      if (!consumeSnap.exists) {
+        out = { ok: false, code: 'no_consume', error: '번역 차감 내역이 없습니다.' }
+        return
+      }
+      const consumeData = consumeSnap.data()
+      if (consumeData.user_id !== userId) {
+        out = { ok: false, code: 'forbidden', error: '권한이 없습니다.' }
+        return
+      }
+      const coins = Math.abs(consumeData.delta || 0)
+      const mins = Math.max(1, parseInt(consumeData.minutes, 10) || 1)
+      if (!walletSnap.exists) {
+        out = { ok: false, code: 'no_wallet', error: '코인 지갑이 없습니다.' }
+        return
+      }
+      const balance = walletSnap.data().balance || 0
+      if (refundSnap.exists) {
+        out = { ok: true, balance, minutes: mins, coins, already: true }
+        return
+      }
+      const ts = now()
+      const newBal = balance + coins
+      t.update(walletRef, { balance: newBal, updated_at: ts })
+      t.set(refundRef, {
+        user_id: userId,
+        delta: coins,
+        balance_after: newBal,
+        reason: 'translate_refund',
+        ref: jobKey,
+        minutes: mins,
+        created_at: ts,
+      })
+      out = { ok: true, balance: newBal, minutes: mins, coins, already: false }
+    })
+    return out
+  },
+
   async getSubtitleCoinHistory(userId, limit = 30) {
     // where + orderBy 복합 쿼리는 Firestore 색인 생성이 필요해 배포 단계를 늘리므로,
     // user_id로만 필터링한 뒤 created_at(ISO 문자열) 기준 정렬은 메모리에서 처리한다.
@@ -6580,6 +6707,10 @@ const db = {
   SUBTITLE_COURSE_SLUG,
   VIEWS_EDITING_COURSE_SLUG,
   SUBTITLE_INITIAL_COINS,
+  SUBTITLE_TRANSLATION_COINS_PER_MINUTE,
+  SUBTITLE_PRICING_LAUNCH_AT_KST,
+  isSubtitlePricingLaunched,
+  getSubtitlePricingLaunchMeta,
   VIEWS_EDITING_INITIAL_COINS,
   SUBTITLE_REVIEW_BONUS_COINS,
   SMARTSTORE_REVIEW_BONUS_COINS,
@@ -6601,6 +6732,9 @@ seedInstructorPortfolioQuoteDefaults().catch(console.error)
 seedInstructorPortfolioWorksDefaults().catch(console.error)
 
 module.exports = db
+module.exports.SUBTITLE_PRICING_LAUNCH_AT_KST = SUBTITLE_PRICING_LAUNCH_AT_KST
+module.exports.isSubtitlePricingLaunched = isSubtitlePricingLaunched
+module.exports.getSubtitlePricingLaunchMeta = getSubtitlePricingLaunchMeta
 module.exports.courseAccess = courseAccess
 module.exports.parseLiveStart = parseLiveStart
 module.exports.parseLiveEndsAt = parseLiveEndsAt

@@ -6,6 +6,7 @@
   <title>코인 관리 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=16" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
+  <link rel="stylesheet" href="/css/subtitle-tool.css?v=4" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
   <style>
@@ -23,10 +24,6 @@
     .coin-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
     .coin-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 12px; padding: 12px 16px; background: #111; color: #fff; font-size: 14px; font-weight: 800; border: 0; text-decoration: none; cursor: pointer; }
     .coin-btn.secondary { background: #f3f3f3; color: #111; }
-    .coin-packages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-    .coin-package { border: 1px solid #eee; border-radius: 14px; padding: 16px; background: #fafafa; }
-    .coin-package strong { display: block; font-size: 20px; font-weight: 900; color: #111; }
-    .coin-package span { display: block; color: #777; font-size: 13px; margin-top: 4px; }
     .coin-log { margin-top: 18px; }
     .coin-log-table { width: 100%; border-collapse: collapse; }
     .coin-log-table th { text-align: left; color: #999; font-size: 13px; font-weight: 700; border-bottom: 1px solid #eee; padding: 10px 8px; }
@@ -35,19 +32,121 @@
     .coin-delta.plus { color: #111; }
     .coin-delta.minus { color: #e03131; }
     .coin-empty { color: #999; text-align: center; padding: 34px 12px; border: 1px dashed #ddd; border-radius: 14px; }
+    .coin-draft-badge {
+      display: inline-block; background: #fff8e8; color: #92400e; border: 1px solid #fde68a;
+      border-radius: 8px; padding: 3px 8px; font-size: 11px; font-weight: 700; margin-left: 6px; vertical-align: middle;
+    }
+    .coin-plan-toggle {
+      display: inline-flex; background: #f1f5f9; border-radius: 999px; padding: 4px; margin-bottom: 14px;
+    }
+    .coin-plan-toggle button {
+      border: 0; background: transparent; padding: 8px 14px; border-radius: 999px;
+      font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer;
+    }
+    .coin-plan-toggle button.on { background: #fff; color: #111; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .coin-plan-toggle .badge {
+      display: inline-block; margin-left: 4px; font-size: 10px; font-weight: 800;
+      color: #16a34a; background: #dcfce7; border-radius: 6px; padding: 2px 5px;
+    }
+    .coin-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .coin-plans--single { grid-template-columns: 1fr; max-width: 360px; }
+    .coin-plans--duo { grid-template-columns: 1fr 1fr; }
+    .coin-plan {
+      border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; background: #fafafa; position: relative;
+    }
+    .coin-plan.pick { border-color: #2563eb; background: #f8faff; box-shadow: 0 6px 20px rgba(37,99,235,.1); }
+    .coin-plan .pick-badge {
+      position: absolute; top: -9px; right: 12px; background: #2563eb; color: #fff;
+      font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px;
+    }
+    .coin-plan strong { display: block; font-size: 17px; font-weight: 900; color: #111; }
+    .coin-plan .price { font-size: 24px; font-weight: 900; color: #111; margin: 8px 0 2px; }
+    .coin-plan .price small { font-size: 13px; font-weight: 700; color: #888; }
+    .coin-plan .bill { display: block; color: #64748b; font-size: 12px; margin-bottom: 10px; min-height: 30px; }
+    .coin-plan ul { margin: 0; padding: 0; list-style: none; font-size: 12px; color: #475569; line-height: 1.65; }
+    .coin-plan li { padding: 3px 0; }
+    .coin-ppu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+    .coin-ppu {
+      border: 1px solid #eee; border-radius: 12px; padding: 12px; background: #fff; text-align: center;
+    }
+    .coin-ppu b { display: block; font-size: 15px; color: #111; }
+    .coin-ppu span { font-size: 12px; color: #777; }
     @media (max-width: 760px) {
       .coin-grid { grid-template-columns: 1fr; }
-      .coin-packages { grid-template-columns: 1fr; }
+      .coin-plans, .coin-ppu-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
+<script src="/js/subtitle-pricing-launch.js?v=2"></script>
 <div data-site-header></div>
 
 <main class="coin-wrap">
   <section class="coin-hero">
-    <h1>코인 관리</h1>
-    <p>타닥싱크 2 자막 생성에 사용하는 코인 잔액과 사용 로그를 확인할 수 있습니다. 기본 10코인 · 매일 로그인 +1코인 · 전문 인식 1분당 1코인</p>
+    <h1>코인 · 요금제</h1>
+    <p data-pricing-prelaunch>
+      요금·구독 안내는 <strong data-pricing-launch-label>2026년 7월 22일 오전 11시</strong> 정식 개시와 함께 공개됩니다.
+      지금은 기본 <strong>10코인</strong> · 매일 출석 <strong>+1코인</strong>으로 이용할 수 있습니다.
+    </p>
+    <p data-pricing-live>
+      타닥싱크는 <strong>종량제(코인 충전)</strong>와 <strong>월 구독 PRO</strong>를 함께 제공합니다.
+      기본 10코인 · 매일 출석 +1 · 인식 <strong>20초/1코인</strong> · 줄나눔 <strong>20초/1코인</strong> · 번역 <strong>20초/10코인</strong>
+    </p>
+  </section>
+
+  <section class="coin-card st-prelaunch-card" data-pricing-prelaunch style="margin-bottom:18px;text-align:left">
+    <span class="st-launch-icon" aria-hidden="true">📅</span>
+    <b style="display:block;text-align:center;font-size:17px;color:#64748b">요금 정책 공개 예정</b>
+    <span class="st-launch-date" data-pricing-launch-label style="text-align:center">2026년 7월 22일 오전 11시</span>
+    <p style="text-align:center">
+      종량제·월 구독·코인 충전 가격은 정식 개시일에 안내됩니다.<br>
+      <a href="/subtitle-tool/pricing.html">요금 안내 페이지</a>에서도 같은 날짜에 공개됩니다.
+    </p>
+    <div class="st-prelaunch-note">
+      현재는 코인 잔액 확인·사용 로그만 이용하시면 됩니다.
+    </div>
+  </section>
+
+  <section class="coin-card" data-pricing-live style="margin-bottom:18px">
+    <h2>요금제 비교</h2>
+    <p class="coin-meta" style="margin-bottom:12px">
+      종량제 <strong>1코인 15원</strong> · PRO <strong>월 11,000원 = 1,100코인</strong> (33%↓)
+      · <a href="/subtitle-tool/pricing.html">전체 요금 안내</a>
+    </p>
+    <div class="coin-plan-toggle" id="coin-plan-toggle">
+      <button type="button" class="on" data-bill="monthly">월 결제</button>
+      <button type="button" data-bill="annual">연 결제 <span class="badge">20%↓</span></button>
+    </div>
+    <div class="coin-plans coin-plans--duo" id="coin-plans">
+      <div class="coin-plan">
+        <strong>종량제</strong>
+        <div class="price">15<small>원/코인</small></div>
+        <span class="bill">300~1,000코인 · 15원 / 3,000코인 · 14원</span>
+        <ul>
+          <li>· 인식 · 줄나눔(+20초/1) · 번역</li>
+          <li>· 캡컷 직접 삽입 · SRT보내기</li>
+          <li>· 스타일 프리셋 제한</li>
+        </ul>
+      </div>
+      <div class="coin-plan pick" data-plan="pro">
+        <span class="pick-badge">33%↓</span>
+        <strong>월 구독 PRO</strong>
+        <div class="price" data-monthly="11,000" data-annual-monthly="8,800">11,000<small>원/월</small></div>
+        <span class="bill" data-monthly="매월 1,100코인 · 16,500원 상당" data-annual="연 105,600원 · 월 8,800원 상당">매월 1,100코인 · 16,500원 상당</span>
+        <ul>
+          <li>· 캡컷 직접 삽입 (공통)</li>
+          <li>· 스타일·위치 프리셋</li>
+          <li>· 추가 코인 할인</li>
+        </ul>
+      </div>
+    </div>
+    <p class="coin-meta" style="margin-top:14px">
+      구독·충전 결제는 정식 개시(<span data-pricing-launch-label>2026년 7월 22일 오전 11시</span>) 이후 오픈됩니다.
+    </p>
+    <div class="coin-actions">
+      <a class="coin-btn secondary" href="/inquiry.html?type=coin"><i class="ti ti-message-circle"></i> 요금 문의하기</a>
+      <a class="coin-btn secondary" href="/subtitle-tool/pricing.html"><i class="ti ti-info-circle"></i> 요금 안내</a>
+    </div>
   </section>
 
   <section class="coin-grid">
@@ -56,23 +155,33 @@
       <div class="coin-balance"><span class="num" id="coin-balance">-</span><span class="unit">코인</span></div>
       <div class="coin-meta" id="coin-updated">정보를 불러오는 중입니다.</div>
       <div class="coin-actions">
-        <a class="coin-btn" href="/subtitle-tool.html"><i class="ti ti-download"></i> 타닥싱크 2 열기</a>
+        <a class="coin-btn" href="/subtitle-tool.html"><i class="ti ti-download"></i> 타닥싱크 열기</a>
         <a class="coin-btn secondary" href="/mypage.html"><i class="ti ti-book"></i> 내 강의</a>
       </div>
     </div>
 
-    <div class="coin-card">
-      <h2>코인 충전</h2>
-      <div class="coin-packages" id="coin-packages">
-        <div class="coin-package"><strong>100코인</strong><span>5,000원 예정</span></div>
-        <div class="coin-package"><strong>300코인</strong><span>13,000원 예정</span></div>
-        <div class="coin-package"><strong>1,000코인</strong><span>40,000원 예정</span></div>
+    <div class="coin-card" data-pricing-prelaunch>
+      <h2>이용 안내</h2>
+      <p class="coin-meta">정식 요금은 <span data-pricing-launch-label>2026년 7월 22일 오전 11시</span>에 공개됩니다. 코인 차감 기준도 함께 안내됩니다.</p>
+      <div class="coin-actions">
+        <a class="coin-btn secondary" href="/subtitle-tool/pricing.html"><i class="ti ti-info-circle"></i> 요금 안내</a>
       </div>
-      <p class="coin-meta" style="margin-top:14px">
-        카드 결제와 자동 충전은 준비 중입니다. 긴급 충전이 필요하면 문의하기로 요청해 주세요.
+    </div>
+
+    <div class="coin-card" data-pricing-live>
+      <h2>종량제 (코인)</h2>
+      <p class="coin-meta">구독 없이 쓰거나, 포함 코인 초과 시 적용됩니다.</p>
+      <div class="coin-ppu-grid">
+        <div class="coin-ppu"><b>20초/1코인</b><span>인식 · 1분=3코인</span></div>
+        <div class="coin-ppu"><b>20초/1코인</b><span>줄나눔 · 1분=3코인</span></div>
+        <div class="coin-ppu"><b>20초/10코인</b><span>번역 · 1분=30코인</span></div>
+      </div>
+      <p class="coin-meta" style="margin-top:12px">예: 1분 인식+줄나눔+번역 = 36코인 (종량제 약 540원)</p>
+      <p class="coin-meta" style="margin-top:8px">
+        코인 충전(300코인 4,500원 등)은 정식 개시 이후 오픈됩니다.
       </p>
       <div class="coin-actions">
-        <a class="coin-btn secondary" href="/inquiry.html?type=coin"><i class="ti ti-message-circle"></i> 충전 문의하기</a>
+        <a class="coin-btn secondary" href="/inquiry.html?type=coin"><i class="ti ti-coin"></i> 충전 문의하기</a>
       </div>
     </div>
   </section>
@@ -117,6 +226,8 @@
       smartstore_review: '스마트스토어 후기 보너스',
       consume: '자막 생성 사용',
       refund: '작업 실패 환불',
+      translate: '자막 번역',
+      translate_refund: '번역 실패 환불',
       purchase: '코인 충전',
     }
     return map[reason] || reason || '-'
@@ -158,6 +269,31 @@
       document.getElementById('coin-updated').textContent = e.message || '코인 정보를 불러오지 못했습니다.'
     }
   }
+
+  ;(function initPlanToggle() {
+    const toggle = document.getElementById('coin-plan-toggle')
+    if (!toggle) return
+    const buttons = toggle.querySelectorAll('button')
+    const plans = document.querySelectorAll('#coin-plans .coin-plan[data-plan]')
+    function applyBill(mode) {
+      buttons.forEach((b) => b.classList.toggle('on', b.dataset.bill === mode))
+      plans.forEach((plan) => {
+        const priceEl = plan.querySelector('.price')
+        const billEl = plan.querySelector('.bill')
+        if (!priceEl || !billEl) return
+        if (mode === 'annual') {
+          priceEl.innerHTML = `${priceEl.dataset.annualMonthly}<small>원/월</small>`
+          billEl.textContent = billEl.dataset.annual || ''
+        } else {
+          priceEl.innerHTML = `${priceEl.dataset.monthly}<small>원/월</small>`
+          billEl.textContent = billEl.dataset.monthly || ''
+        }
+      })
+    }
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => applyBill(btn.dataset.bill || 'monthly'))
+    })
+  })()
 
   loadCoins()
 </script>
