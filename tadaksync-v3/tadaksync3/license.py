@@ -129,8 +129,37 @@ def _request(method: str, path: str, body: dict | None = None, token: str | None
 
 
 def minutes_from_audio(audio_len: int, sample_rate: int = 16000) -> int:
-    seconds = max(0.0, float(audio_len) / float(sample_rate))
-    return max(1, int(math.ceil(seconds / 60.0)))
+    """표시용 분(올림). 차감은 duration_us 기준."""
+    from . import billing
+    return billing.minutes_label_from_duration_us(
+        billing.duration_us_from_audio(audio_len, sample_rate))
+
+
+def consume(token: str, duration_us: int, job_id: str) -> dict:
+    return _request(
+        "POST",
+        "/api/subtitle/consume",
+        body={"duration_us": duration_us, "job_id": job_id},
+        token=token,
+    )
+
+
+def consume_line_split(token: str, duration_us: int, job_id: str) -> dict:
+    return _request(
+        "POST",
+        "/api/subtitle/consume-lines",
+        body={"duration_us": duration_us, "job_id": job_id},
+        token=token,
+    )
+
+
+def refund_line_split(token: str, job_id: str) -> dict:
+    return _request(
+        "POST",
+        "/api/subtitle/refund-lines",
+        body={"job_id": job_id},
+        token=token,
+    )
 
 
 def new_job_id() -> str:
@@ -227,15 +256,6 @@ def verify_entitlement(token: str) -> dict:
     return me
 
 
-def consume(token: str, minutes: int, job_id: str) -> dict:
-    return _request(
-        "POST",
-        "/api/subtitle/consume",
-        body={"minutes": minutes, "job_id": job_id},
-        token=token,
-    )
-
-
 def refund(token: str, job_id: str) -> dict:
     return _request(
         "POST",
@@ -245,14 +265,34 @@ def refund(token: str, job_id: str) -> dict:
     )
 
 
-def translate(token: str, *, job_id: str, minutes: int, source_lang: str,
+def consume_translation(token: str, duration_us: int, job_id: str) -> dict:
+    """번역 코인만 차감 (로컬 번역 엔진용)."""
+    return _request(
+        "POST",
+        "/api/subtitle/consume-translation",
+        body={"duration_us": duration_us, "job_id": job_id},
+        token=token,
+    )
+
+
+def refund_translation(token: str, job_id: str) -> dict:
+    """로컬 번역 실패 시 번역 코인 환불."""
+    return _request(
+        "POST",
+        "/api/subtitle/refund-translation",
+        body={"job_id": job_id},
+        token=token,
+    )
+
+
+def translate(token: str, *, job_id: str, duration_us: int, source_lang: str,
               target_lang: str, script_text: str, blocks: list[dict]) -> dict:
     return _request(
         "POST",
         "/api/subtitle/translate",
         body={
             "job_id": job_id,
-            "minutes": minutes,
+            "duration_us": duration_us,
             "source_lang": source_lang,
             "target_lang": target_lang,
             "script_text": script_text,

@@ -66,6 +66,9 @@
   </aside>
 
   <main class="main">
+    <div id="offline-banner" class="offline-banner hidden" role="status">
+      로컬 엔진 모드 — 인식·번역은 이 PC에서 처리하고, 코인은 서버에서 차감됩니다. (OpenAI 불필요)
+    </div>
     <!-- ── STEP 1: 프로젝트 선택 ── -->
     <section class="view" id="view-1">
       <header class="view-head">
@@ -105,7 +108,7 @@
         <h2 id="progress-title">전문을 인식하고 있어요</h2>
         <p class="sub" id="progress-msg">준비 중…</p>
         <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-        <p class="progress-note">말이 인식되면 타임라인 1분당 1코인이 차감돼요. 무음·미인식이면 코인 없이 자동 취소됩니다.</p>
+        <p class="progress-note">말이 인식되면 <b>20초당 1코인</b>이 차감돼요. 무음·미인식이면 코인 없이 자동 취소됩니다.</p>
       </div>
     </section>
 
@@ -115,6 +118,7 @@
         <div>
           <h2>엔터로 자막을 나누세요</h2>
           <p class="sub"><b class="accent">Enter 한 번 = 자막 블록 하나</b>. 잘못 들은 단어는 그냥 고쳐 쓰면 돼요. 빈 줄은 무시됩니다.</p>
+          <p class="sub" id="line-split-hint" style="margin-top:8px;opacity:.85">인식 후 이 단계를 사용하면 20초당 1코인이 추가됩니다.</p>
         </div>
         <div class="head-actions">
           <span class="line-count"><b id="line-count">0</b>개 블록</span>
@@ -142,7 +146,7 @@
       <div class="translate-toolbar">
         <div>
           <b>맥락 번역</b>
-          <span class="sub">전문 전체를 보고 자연스럽게 번역합니다. 번역 시 <b>1분당 20코인(약 1,000원)</b>이 추가로 차감됩니다.</span>
+          <span class="sub">전문 전체를 보고 자연스럽게 번역합니다. 번역 시 <b>20초당 10코인</b>(1분=30코인)이 추가로 차감됩니다.</span>
         </div>
         <div class="translate-actions">
           <span class="translate-estimate" id="translate-estimate">—</span>

@@ -142,8 +142,8 @@ class Project:
 
     @property
     def estimated_coins(self) -> int:
-        s = max(0.0, self.duration_us / US)
-        return max(1, int(math.ceil(s / 60.0)))
+        from . import billing
+        return billing.recognition_coins(self.duration_us)
 
 
 def list_projects() -> list[Project]:

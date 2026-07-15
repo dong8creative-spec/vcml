@@ -22,7 +22,15 @@ const state = {
   selectedProject: null,   // {index, name, ...}
   blocks: [],              // [{start_us, end_us, text, text_translated?}]
   fromSrt: false,
-  minutes: null,           // 인식/SRT 기준 분 (번역 코인 산정)
+  minutes: null,
+  durationUs: null,
+  billing: {
+    billing_unit_sec: 20,
+    recognition_coins_per_unit: 1,
+    line_split_coins_per_unit: 1,
+    translation_coins_per_unit: 10,
+    coin_won_reference: 15,
+  },
   sourceLang: "",
   translateLang: "",       // '' | en | ja | zh
   injectMode: "both",      // original | translated | both
@@ -36,11 +44,46 @@ const state = {
   coinCourses: [],
   smartstoreReview: {},
   shownInboxIds: new Set(),
+  offline: false,
 };
 
 const TRANSLATE_LABELS = { en: "영어", ja: "일본어", zh: "중국어" };
-const TRANSLATE_COINS_PER_MIN = 20;
-const COIN_WON_REFERENCE = 50;
+
+function billingUnitsFromDurationUs(durationUs) {
+  const sec = Math.max(0, Number(durationUs) || 0) / 1_000_000;
+  const unit = state.billing?.billing_unit_sec || 20;
+  return Math.max(1, Math.ceil(sec / unit));
+}
+
+function recognitionCoins(durationUs) {
+  const per = state.billing?.recognition_coins_per_unit || 1;
+  return billingUnitsFromDurationUs(durationUs) * per;
+}
+
+function lineSplitCoins(durationUs) {
+  const per = state.billing?.line_split_coins_per_unit || 1;
+  return billingUnitsFromDurationUs(durationUs) * per;
+}
+
+function translationCoins(durationUs) {
+  const per = state.billing?.translation_coins_per_unit || 10;
+  return billingUnitsFromDurationUs(durationUs) * per;
+}
+
+function coinWonReference() {
+  return state.billing?.coin_won_reference || 15;
+}
+
+function durationUsForBilling() {
+  if (state.durationUs && state.durationUs > 0) return state.durationUs;
+  let maxUs = 0;
+  for (const b of state.blocks) maxUs = Math.max(maxUs, Number(b.end_us) || 0);
+  return maxUs || 20_000_000;
+}
+
+function minutesLabelFromDurationUs(durationUs) {
+  return Math.max(1, Math.ceil(Math.max(0, durationUs) / 60_000_000));
+}
 
 /* ───────────────────────── 유틸 ───────────────────────── */
 
@@ -158,6 +201,13 @@ function renderAuth() {
   $("#shell").classList.remove("hidden");
   $("#acc-name").textContent = a.user_name || a.email || "수강생";
   $("#acc-balance").textContent = (a.balance ?? "—");
+  renderOfflineBanner();
+}
+
+function renderOfflineBanner() {
+  const el = $("#offline-banner");
+  if (!el) return;
+  el.classList.toggle("hidden", !state.offline);
 }
 
 async function startLogin() {
@@ -241,9 +291,16 @@ function onScriptReady(data) {
   state.busy = false;
   $("#script-editor").value = data.text;
   state.fromSrt = false;
-  state.minutes = Number(data.minutes) || null;
+  state.durationUs = Number(data.duration_us) || null;
+  state.minutes = Number(data.minutes) || minutesLabelFromDurationUs(state.durationUs || 0);
   state.sourceLang = data.language || "";
   state.translateLang = "";
+  const lineHint = $("#line-split-hint");
+  if (lineHint) {
+    const coins = Number(data.line_split_coins) || lineSplitCoins(state.durationUs || 0);
+    lineHint.textContent =
+      `이 단계를 사용하면 20초당 1코인 · 예상 +${coins}코인 (약 ${(coins * coinWonReference()).toLocaleString()}원)`;
+  }
   if (data.missing_files && data.missing_files.length) {
     toast(`원본 파일 ${data.missing_files.length}개를 찾지 못해 일부 구간이 빠졌을 수 있어요.`, "warn");
   }
@@ -264,32 +321,42 @@ async function buildBlocks() {
   const res = await state.api.build_blocks(text);
   if (!res.ok) { toast(res.error, "error"); return; }
   state.blocks = res.blocks;
+  state.durationUs = Number(res.duration_us) || state.durationUs;
+  state.minutes = minutesLabelFromDurationUs(durationUsForBilling());
+  if (res.line_split_coins) {
+    toast(`줄 나눔 완료! (${res.line_split_coins}코인 차감)`, "success");
+  }
   state.translateLang = "";
   syncTranslateLangUI();
   updateTranslateEstimate();
   gotoStep(4);
 }
 
-function minutesForTranslate() {
-  if (state.minutes && state.minutes > 0) return state.minutes;
-  let maxUs = 0;
-  for (const b of state.blocks) maxUs = Math.max(maxUs, Number(b.end_us) || 0);
-  return Math.max(1, Math.ceil(maxUs / 60_000_000));
-}
-
 function updateTranslateEstimate() {
   const el = $("#translate-estimate");
   const btn = $("#btn-run-translate");
   if (!el || !btn) return;
-  const mins = minutesForTranslate();
-  const coins = mins * TRANSLATE_COINS_PER_MIN;
+  const dur = durationUsForBilling();
+  const mins = minutesLabelFromDurationUs(dur);
+  const trCoins = translationCoins(dur);
+  const won = coinWonReference();
   const lang = state.translateLang;
+  if (state.offline) {
+    if (!lang) {
+      el.textContent = `인식 완료 · 번역 시 +${trCoins}코인(20초/10 · 약 ${(trCoins * won).toLocaleString()}원)`;
+      btn.disabled = true;
+      return;
+    }
+    el.textContent = `${TRANSLATE_LABELS[lang] || lang} · 로컬 엔진 · +${trCoins}코인(20초/10)`;
+    btn.disabled = !state.blocks.length || state.busy;
+    return;
+  }
   if (!lang) {
-    el.textContent = `인식 ${mins}분 · 번역 시 +${coins}코인(약 ${(coins * COIN_WON_REFERENCE).toLocaleString()}원)`;
+    el.textContent = `타임라인 약 ${mins}분 · 번역 시 +${trCoins}코인(20초/10 · 약 ${(trCoins * won).toLocaleString()}원)`;
     btn.disabled = true;
     return;
   }
-  el.textContent = `${TRANSLATE_LABELS[lang] || lang} · ${mins}분 × ${TRANSLATE_COINS_PER_MIN} = ${coins}코인(약 ${(coins * COIN_WON_REFERENCE).toLocaleString()}원)`;
+  el.textContent = `${TRANSLATE_LABELS[lang] || lang} · +${trCoins}코인(20초/10 · 약 ${(trCoins * won).toLocaleString()}원)`;
   btn.disabled = !state.blocks.length || state.busy;
 }
 
@@ -309,13 +376,22 @@ function requestTranslate() {
     toast("번역할 자막 블록이 없어요.", "warn");
     return;
   }
-  const mins = minutesForTranslate();
-  const coins = mins * TRANSLATE_COINS_PER_MIN;
+  const dur = durationUsForBilling();
+  const mins = minutesLabelFromDurationUs(dur);
+  const coins = translationCoins(dur);
+  const won = coinWonReference();
   const label = TRANSLATE_LABELS[state.translateLang] || state.translateLang;
-  $("#translate-confirm-msg").innerHTML =
-    `<b>${esc(label)}</b>로 전문 맥락 번역을 시작합니다.<br>` +
-    `타임라인 약 <b>${mins}분</b> · 번역 코인 <b>${coins}개</b>(약 <b>${(coins * COIN_WON_REFERENCE).toLocaleString()}원</b>)가 추가로 차감됩니다.` +
-    `<br><span style="opacity:.8">인식 코인(1분당 1)과 별도로 합산됩니다.</span>`;
+  if (state.offline) {
+    $("#translate-confirm-msg").innerHTML =
+      `<b>${esc(label)}</b>로 <b>로컬 번역(Argos)</b>을 실행합니다.<br>` +
+      `타임라인 약 <b>${mins}분</b> · 번역 코인 <b>${coins}개</b>(20초/10 · 약 <b>${(coins * won).toLocaleString()}원</b>)가 차감됩니다.` +
+      `<br><span style="opacity:.8">GPT 맥락 번역 대신 PC에서 처리합니다. 품질은 낮을 수 있어요.</span>`;
+  } else {
+    $("#translate-confirm-msg").innerHTML =
+      `<b>${esc(label)}</b>로 전문 맥락 번역을 시작합니다.<br>` +
+      `타임라인 약 <b>${mins}분</b> · 번역 코인 <b>${coins}개</b>(20초/10 · 약 <b>${(coins * won).toLocaleString()}원</b>)가 추가로 차감됩니다.` +
+      `<br><span style="opacity:.8">인식·줄 나눔 코인과 별도로 합산됩니다.</span>`;
+  }
   $("#translate-overlay").classList.remove("hidden");
 }
 
@@ -328,7 +404,7 @@ async function doTranslate() {
   btn.textContent = "번역 중…";
   try {
     const res = await state.api.translate_blocks(
-      state.blocks, state.translateLang, minutesForTranslate());
+      state.blocks, state.translateLang, durationUsForBilling());
     if (!res.ok) { toast(res.error, "error"); return; }
     state.blocks = res.blocks;
     if (res.auth) state.auth = res.auth;
@@ -491,7 +567,8 @@ async function importSrt() {
   if (!res.ok) { toast(res.error, "error"); return; }
   state.blocks = res.blocks;
   state.fromSrt = true;
-  state.minutes = Number(res.minutes) || minutesForTranslate();
+  state.durationUs = Number(res.duration_us) || durationUsForBilling();
+  state.minutes = minutesLabelFromDurationUs(state.durationUs);
   state.translateLang = "";
   syncTranslateLangUI();
   gotoStep(4);
@@ -618,6 +695,7 @@ function resetJob() {
   state.blocks = [];
   state.playingIdx = null;
   state.fromSrt = false;
+  state.durationUs = null;
   state.minutes = null;
   state.sourceLang = "";
   state.translateLang = "";
@@ -648,6 +726,8 @@ async function openHistory() {
     initial: "기본 지급",
     daily_login: "일일 로그인 지급",
     consume: "전문 인식",
+    line_split: "직접 줄 나눔",
+    line_split_refund: "줄 나눔 실패 환불",
     refund: "작업 실패 환불",
     translate: "자막 번역",
     translate_refund: "번역 실패 환불",
@@ -861,6 +941,14 @@ function makeMockApi() {
         { key: "lime", name: "네온 라임", desc: "라임 볼드 + 검은 외곽선 — 쇼츠·트렌디한 영상" },
       ],
       capcut_running: false,
+      offline: false,
+      billing: {
+        billing_unit_sec: 20,
+        recognition_coins_per_unit: 1,
+        line_split_coins_per_unit: 1,
+        translation_coins_per_unit: 10,
+        coin_won_reference: 15,
+      },
     }),
     start_login: async () => {
       emit("login_code", { code: "83A2FQ", url: "#" }, 700);
@@ -911,10 +999,18 @@ function makeMockApi() {
     capcut_running: async () => ({ ok: true, running: Math.random() < 0.4 }),
     start_transcribe: async () => {
       emit("progress", { message: "타임라인 오디오를 분석하고 있어요..." }, 400);
-      emit("progress", { message: "코인 5개를 차감하고 있어요… (타임라인 약 5분)" }, 1300);
+      emit("progress", { message: "코인 15개를 차감하고 있어요… (20초당 1코인)" }, 1300);
       emit("progress", { message: "음성을 인식하고 있어요..." }, 2200);
       for (let i = 1; i <= 8; i++) emit("progress_ratio", { ratio: i / 8 }, 2200 + i * 500);
-      emit("script_ready", { text: SENT.join(" "), language: "ko", minutes: 5, missing_files: [] }, 6600);
+      emit("script_ready", {
+        text: SENT.join(" "),
+        language: "ko",
+        minutes: 5,
+        duration_us: 300_000_000,
+        recognition_coins: 15,
+        line_split_coins: 15,
+        missing_files: [],
+      }, 6600);
       return { ok: true };
     },
     build_blocks: async (text) => {
@@ -938,9 +1034,10 @@ function makeMockApi() {
     export_srt: async () => ({ ok: true, path: "C:\\mock\\subtitles.srt" }),
     preview_play: async () => ({ ok: true }),
     preview_stop: async () => ({ ok: true }),
-    translate_blocks: async (blocks, targetLang, minutes) => {
-      const mins = Math.max(1, Number(minutes) || 5);
-      const coins = mins * 20;
+    translate_blocks: async (blocks, targetLang, durationUs) => {
+      const dur = Math.max(20_000_000, Number(durationUs) || 300_000_000);
+      const coins = translationCoins(dur);
+      const mins = minutesLabelFromDurationUs(dur);
       mockAuth = { ...mockAuth, balance: Math.max(0, (mockAuth.balance || 0) - coins) };
       const dict = {
         en: (t) => `[EN] ${t}`,
@@ -979,6 +1076,8 @@ async function init() {
   state.auth = st.auth;
   state.languages = st.languages;
   state.styles = st.styles;
+  state.offline = !!st.offline;
+  if (st.billing) state.billing = { ...state.billing, ...st.billing };
   if (st.styles.length && !st.styles.some((s) => s.key === state.styleKey)) {
     state.styleKey = st.styles[0].key;
   }

@@ -5,8 +5,7 @@ pywebview의 js_api로 노출된다. JS에서 window.pywebview.api.<메서드>(.
 오래 걸리는 작업(로그인 폴링, 전문 인식)은 내부 스레드로 돌리고
 진행 상황을 window.__pyEvent({event, data}) 이벤트로 push한다.
 
-코인 정책: 전문 인식에 성공(비어 있지 않은 전문)한 뒤에만 분당 1코인 차감.
-무음·미인식이면 차감하지 않는다. 전문이 확정된 뒤에는 환불하지 않는다.
+코인 정책: 전문 인식·직접 줄 나눔 20초당 1코인. 무음·미인식 시 미차감.
 """
 
 from __future__ import annotations
@@ -19,6 +18,7 @@ import traceback
 from pathlib import Path
 
 from . import APP_NAME, VERSION
+from . import billing
 from . import capcut
 from . import license as license_api
 from . import srt as srt_io
@@ -93,6 +93,10 @@ def _clean_spans(spans: list, text: str) -> list[dict]:
     return cleaned
 
 
+def _duration_us_from_blocks(blocks: list[dict]) -> int:
+    return billing.duration_us_from_blocks(blocks)
+
+
 class Api:
     def __init__(self) -> None:
         self._window = None
@@ -105,6 +109,9 @@ class Api:
         self._project: capcut.Project | None = None
         self._audio = None                    # np.ndarray | None
         self._script: FullScript | None = None
+        self._duration_us: int | None = None
+        self._from_transcribe = False
+        self._line_split_job_id: str | None = None
 
         self._busy = False
         self._login_cancel: threading.Event | None = None
@@ -191,6 +198,7 @@ class Api:
             languages=list(LANGUAGE_CHOICES.keys()),
             styles=styles.list_presets(),
             capcut_running=running,
+            billing=billing.billing_meta(),
         )
 
     def refresh_me(self) -> dict:
@@ -379,6 +387,9 @@ class Api:
                     "오디오에서 말을 찾지 못했어요. 작업이 취소되었고 코인은 차감되지 않았어요.")
 
             minutes = license_api.minutes_from_audio(len(res.audio), SR)
+            duration_us = res.duration_us or billing.duration_us_from_audio(
+                len(res.audio), SR)
+            recognition_coin_cost = billing.recognition_coins(duration_us)
             self._transcriber.load(MODEL, progress=status)
             script = self._transcriber.transcribe_full_script(
                 res.audio, language=language,
@@ -389,14 +400,16 @@ class Api:
 
             # 전문이 확보된 뒤에만 차감 — 이후에는 환불하지 않음
             job_id = license_api.new_job_id()
-            status(f"코인 {minutes}개를 차감하고 있어요… (타임라인 약 {minutes}분)")
+            status(
+                f"코인 {recognition_coin_cost}개를 차감하고 있어요… "
+                f"(타임라인 약 {minutes}분 · 20초당 1코인)")
             try:
-                consumed_res = license_api.consume(token, minutes, job_id)
+                consumed_res = license_api.consume(token, duration_us, job_id)
             except Exception as e:
                 payload = getattr(e, "payload", {}) or {}
                 if payload.get("code") == "insufficient":
                     raise RuntimeError(
-                        f"코인이 부족해요. (필요 {minutes}개, 보유 "
+                        f"코인이 부족해요. (필요 {recognition_coin_cost}개, 보유 "
                         f"{payload.get('balance', '?')}개)") from e
                 if getattr(e, "status", None) in (401, 403):
                     license_api.clear_auth()
@@ -411,10 +424,16 @@ class Api:
 
             self._audio = res.audio
             self._script = script
+            self._duration_us = duration_us
+            self._from_transcribe = True
+            self._line_split_job_id = None
             self._emit("script_ready", {
                 "text": script.text,
                 "language": script.language,
                 "minutes": minutes,
+                "duration_us": duration_us,
+                "recognition_coins": recognition_coin_cost,
+                "line_split_coins": billing.line_split_coins(duration_us),
                 "missing_files": res.missing_files,
             })
         except Exception as e:
@@ -433,13 +452,7 @@ class Api:
 
     # ------------------------------------------------------------- 자막 블록
     def build_blocks(self, script_text: str) -> dict:
-        """엔터로 나눈 전문 → 타임코드 자막 블록.
-
-        build_lines_from_script()가 주는 시각은 Whisper 원시 단어 타임스탬프라
-        ±0.3~1초 오차(특히 자막이 실제보다 일찍 나오는 경향)가 흔하다.
-        v1의 세그먼트 분할 경로가 쓰던 VAD 기반 발화 경계 스냅을 여기서도
-        동일하게 적용해 실제 발화 시작/끝에 맞춘다.
-        """
+        """엔터로 나눈 전문 → 타임코드 자막 블록. 인식 경로면 줄 나눔 코인 추가 차감."""
         if not self._script:
             return _err("먼저 전문을 인식해 주세요.")
         lines = build_lines_from_script(script_text or "", self._script.words)
@@ -447,7 +460,38 @@ class Api:
             return _err("타임코드를 만들 수 있는 자막 줄이 없어요.")
         if self._audio is not None and len(self._audio) > 0:
             lines = _close_gaps(_refine_speech_boundaries(lines, self._audio))
-        return _ok(blocks=_lines_to_dicts(lines))
+        blocks = _lines_to_dicts(lines)
+        duration_us = _duration_us_from_blocks(blocks) or self._duration_us or 0
+        self._duration_us = duration_us
+        line_split_coins = 0
+        if self._from_transcribe and self._auth:
+            if not self._line_split_job_id:
+                self._line_split_job_id = license_api.new_job_id()
+            line_split_coins = billing.line_split_coins(duration_us)
+            try:
+                charged = license_api.consume_line_split(
+                    self._auth["token"], duration_us, self._line_split_job_id)
+            except Exception as e:
+                payload = getattr(e, "payload", {}) or {}
+                if payload.get("code") == "insufficient":
+                    return _err(
+                        f"줄 나눔 코인이 부족해요. (필요 {line_split_coins}개, 보유 "
+                        f"{payload.get('balance', '?')}개)",
+                        needed=line_split_coins, balance=payload.get("balance"))
+                if getattr(e, "status", None) in (401, 403):
+                    license_api.clear_auth()
+                    self._auth = None
+                    self._balance = None
+                    self._emit("auth", self._auth_state())
+                    return _err("로그인이 만료됐어요. 다시 로그인해 주세요.")
+                return _err(str(e) or "줄 나눔 코인 차감에 실패했어요.")
+            self._save_balance(charged.get("balance"))
+            line_split_coins = charged.get("coins", line_split_coins)
+        return _ok(
+            blocks=blocks,
+            duration_us=duration_us,
+            line_split_coins=line_split_coins,
+        )
 
     def import_srt(self, project_index: int) -> dict:
         """SRT 파일을 불러와 블록으로 사용 (인식 없이, 코인 차감 없음).
@@ -470,7 +514,11 @@ class Api:
             return _err(f"SRT를 읽지 못했어요: {e}")
         if not lines:
             return _err("SRT에서 자막을 찾지 못했어요.")
-        return _ok(blocks=_lines_to_dicts(lines), project=self._project.name)
+        block_dicts = _lines_to_dicts(lines)
+        self._duration_us = _duration_us_from_blocks(block_dicts)
+        self._from_transcribe = False
+        self._line_split_job_id = None
+        return _ok(blocks=block_dicts, project=self._project.name)
 
     def export_srt(self, blocks: list[dict]) -> dict:
         import webview

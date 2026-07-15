@@ -129,8 +129,37 @@ def _request(method: str, path: str, body: dict | None = None, token: str | None
 
 
 def minutes_from_audio(audio_len: int, sample_rate: int = 16000) -> int:
-    seconds = max(0.0, float(audio_len) / float(sample_rate))
-    return max(1, int(math.ceil(seconds / 60.0)))
+    """표시용 분(올림). 차감은 duration_us 기준."""
+    from . import billing
+    return billing.minutes_label_from_duration_us(
+        billing.duration_us_from_audio(audio_len, sample_rate))
+
+
+def consume(token: str, duration_us: int, job_id: str) -> dict:
+    return _request(
+        "POST",
+        "/api/subtitle/consume",
+        body={"duration_us": duration_us, "job_id": job_id},
+        token=token,
+    )
+
+
+def consume_line_split(token: str, duration_us: int, job_id: str) -> dict:
+    return _request(
+        "POST",
+        "/api/subtitle/consume-lines",
+        body={"duration_us": duration_us, "job_id": job_id},
+        token=token,
+    )
+
+
+def refund_line_split(token: str, job_id: str) -> dict:
+    return _request(
+        "POST",
+        "/api/subtitle/refund-lines",
+        body={"job_id": job_id},
+        token=token,
+    )
 
 
 def new_job_id() -> str:
@@ -225,15 +254,6 @@ def verify_entitlement(token: str) -> dict:
         err.payload = payload  # type: ignore[attr-defined]
         raise err from e
     return me
-
-
-def consume(token: str, minutes: int, job_id: str) -> dict:
-    return _request(
-        "POST",
-        "/api/subtitle/consume",
-        body={"minutes": minutes, "job_id": job_id},
-        token=token,
-    )
 
 
 def refund(token: str, job_id: str) -> dict:

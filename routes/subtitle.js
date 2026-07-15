@@ -16,6 +16,18 @@ const TRANSLATION_LANGUAGES = {
   zh: '중국어(간체)',
 }
 
+function parseSubtitleDurationUs(body) {
+  const raw = body?.duration_us
+  if (raw != null && raw !== '') {
+    return Math.max(0, parseInt(raw, 10) || 0)
+  }
+  const mins = Number(body?.minutes)
+  if (Number.isFinite(mins) && mins > 0) {
+    return db.subtitleDurationUsFromMinutes(mins)
+  }
+  return 0
+}
+
 function signSubtitleToken(user, deviceId, sessionId) {
   return jwt.sign(
     {
@@ -213,6 +225,7 @@ router.get('/me', subtitleAppAuth, async (req, res) => {
       community_website_url: result.community_website_url || SITE_ORIGIN,
       smartstore_review: result.smartstore_review || null,
       pending_actions: result.pending_actions || [],
+      billing: db.getSubtitleBillingMeta(),
     })
   } catch (e) {
     console.error('subtitle me:', e)
@@ -418,12 +431,15 @@ router.get('/device/poll', async (req, res) => {
   }
 })
 
-/** POST /api/subtitle/consume — { minutes, job_id } (앱 전용) */
+/** POST /api/subtitle/consume — { duration_us, job_id } 전문 인식 (앱 전용) */
 router.post('/consume', subtitleAppAuth, async (req, res) => {
   try {
-    const minutes = req.body?.minutes
+    const durationUs = parseSubtitleDurationUs(req.body)
     const jobId = req.body?.job_id
-    const result = await db.consumeSubtitleCoins(req.user.id, minutes, jobId)
+    if (!durationUs) {
+      return res.status(400).json({ ok: false, code: 'invalid_duration', error: 'duration_us가 필요합니다.' })
+    }
+    const result = await db.consumeSubtitleCoins(req.user.id, jobId, durationUs)
     if (!result.ok) {
       const status = result.code === 'insufficient' ? 402 : result.code === 'invalid_job' ? 400 : 403
       return res.status(status).json(result)
@@ -451,12 +467,84 @@ router.post('/refund', subtitleAppAuth, async (req, res) => {
   }
 })
 
+/** POST /api/subtitle/consume-lines — 직접 줄 나눔 코인 차감 (앱 전용) */
+router.post('/consume-lines', subtitleAppAuth, async (req, res) => {
+  try {
+    const durationUs = parseSubtitleDurationUs(req.body)
+    const jobId = req.body?.job_id
+    if (!durationUs) {
+      return res.status(400).json({ ok: false, code: 'invalid_duration', error: 'duration_us가 필요합니다.' })
+    }
+    const result = await db.consumeSubtitleLineSplitCoins(req.user.id, jobId, durationUs)
+    if (!result.ok) {
+      const status = result.code === 'insufficient' ? 402 : result.code === 'invalid_job' ? 400 : 403
+      return res.status(status).json(result)
+    }
+    res.json(result)
+  } catch (e) {
+    console.error('subtitle consume-lines:', e)
+    res.status(500).json({ error: '줄 나눔 코인 차감에 실패했습니다.' })
+  }
+})
+
+/** POST /api/subtitle/refund-lines — 줄 나눔 실패 환불 (앱 전용) */
+router.post('/refund-lines', subtitleAppAuth, async (req, res) => {
+  try {
+    const jobId = req.body?.job_id
+    const result = await db.refundSubtitleLineSplitCoins(req.user.id, jobId)
+    if (!result.ok) {
+      const status = result.code === 'invalid_job' || result.code === 'no_consume' ? 400 : 403
+      return res.status(status).json(result)
+    }
+    res.json(result)
+  } catch (e) {
+    console.error('subtitle refund-lines:', e)
+    res.status(500).json({ error: '줄 나눔 코인 환불에 실패했습니다.' })
+  }
+})
+
+/** POST /api/subtitle/consume-translation — 번역 코인만 차감 (앱 로컬 번역용) */
+router.post('/consume-translation', subtitleAppAuth, async (req, res) => {
+  try {
+    const durationUs = parseSubtitleDurationUs(req.body)
+    const jobId = req.body?.job_id
+    if (!durationUs) {
+      return res.status(400).json({ ok: false, code: 'invalid_duration', error: 'duration_us가 필요합니다.' })
+    }
+    const result = await db.consumeSubtitleTranslationCoins(req.user.id, jobId, durationUs)
+    if (!result.ok) {
+      const status = result.code === 'insufficient' ? 402 : result.code === 'invalid_job' ? 400 : 403
+      return res.status(status).json(result)
+    }
+    res.json(result)
+  } catch (e) {
+    console.error('subtitle consume-translation:', e)
+    res.status(500).json({ error: '번역 코인 차감에 실패했습니다.' })
+  }
+})
+
+/** POST /api/subtitle/refund-translation — 로컬 번역 실패 시 환불 (앱 전용) */
+router.post('/refund-translation', subtitleAppAuth, async (req, res) => {
+  try {
+    const jobId = req.body?.job_id
+    const result = await db.refundSubtitleTranslationCoins(req.user.id, jobId)
+    if (!result.ok) {
+      const status = result.code === 'invalid_job' || result.code === 'no_consume' ? 400 : 403
+      return res.status(status).json(result)
+    }
+    res.json(result)
+  } catch (e) {
+    console.error('subtitle refund-translation:', e)
+    res.status(500).json({ error: '번역 코인 환불에 실패했습니다.' })
+  }
+})
+
 /** POST /api/subtitle/translate — GPT-4o 전문 맥락 번역 (앱 전용) */
 router.post('/translate', subtitleAppAuth, async (req, res) => {
   const jobId = String(req.body?.job_id || '').trim()
   let consumed = false
   try {
-    const minutes = req.body?.minutes
+    const durationUs = parseSubtitleDurationUs(req.body)
     const sourceLang = req.body?.source_lang
     const targetLang = String(req.body?.target_lang || '').trim()
     const scriptText = String(req.body?.script_text || '').trim()
@@ -468,11 +556,14 @@ router.post('/translate', subtitleAppAuth, async (req, res) => {
     if (!scriptText || !blocks.length) {
       return res.status(400).json({ ok: false, code: 'empty_script', error: '번역할 자막 전문이 없습니다.' })
     }
+    if (!durationUs) {
+      return res.status(400).json({ ok: false, code: 'invalid_duration', error: 'duration_us가 필요합니다.' })
+    }
     if (!String(process.env.OPENAI_API_KEY || '').trim()) {
       return res.status(503).json({ ok: false, code: 'translation_not_configured', error: '번역 엔진 설정이 아직 준비되지 않았습니다.' })
     }
 
-    const charge = await db.consumeSubtitleTranslationCoins(req.user.id, minutes, jobId)
+    const charge = await db.consumeSubtitleTranslationCoins(req.user.id, jobId, durationUs)
     if (!charge.ok) {
       const status = charge.code === 'insufficient' ? 402 : charge.code === 'invalid_job' ? 400 : 403
       return res.status(status).json(charge)

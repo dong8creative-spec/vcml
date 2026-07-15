@@ -79,9 +79,12 @@ const SUBTITLE_COURSE_SLUG = 'capcut-pro-basic'
 const VIEWS_EDITING_COURSE_SLUG = '조회수-올리는-영상편집법-1783221046465'
 const SUBTITLE_INITIAL_COINS = 10
 const SUBTITLE_DAILY_LOGIN_COINS = 1
-/** 충전 참고 단가(100코인=5,000원). 인식 약 50원/분, 번역 약 1,000원/분 */
-const SUBTITLE_COIN_WON_REFERENCE = 50
-const SUBTITLE_TRANSLATION_COINS_PER_MINUTE = 20
+/** 충전 참고 단가(종량제 1코인=15원). 인식·줄나눔 20초/1코인, 번역 20초/10코인 */
+const SUBTITLE_COIN_WON_REFERENCE = 15
+const SUBTITLE_BILLING_UNIT_SEC = 20
+const SUBTITLE_RECOGNITION_COINS_PER_UNIT = 1
+const SUBTITLE_LINE_SPLIT_COINS_PER_UNIT = 1
+const SUBTITLE_TRANSLATION_COINS_PER_UNIT = 10
 const VIEWS_EDITING_INITIAL_COINS = 1000
 const SUBTITLE_REVIEW_BONUS_COINS = 50
 const SMARTSTORE_REVIEW_BONUS_COINS = 150
@@ -100,6 +103,38 @@ function isSubtitlePricingLaunched(at = new Date()) {
   return ms >= new Date(SUBTITLE_PRICING_LAUNCH_ISO).getTime()
 }
 
+function subtitleBillingUnitsFromDurationUs(durationUs) {
+  const sec = Math.max(0, Number(durationUs) || 0) / 1_000_000
+  return Math.max(1, Math.ceil(sec / SUBTITLE_BILLING_UNIT_SEC))
+}
+
+function subtitleDurationUsFromMinutes(minutes) {
+  const mins = Math.max(1, Math.ceil(Number(minutes) || 0))
+  return mins * 60 * 1_000_000
+}
+
+function subtitleRecognitionCoins(durationUs) {
+  return subtitleBillingUnitsFromDurationUs(durationUs) * SUBTITLE_RECOGNITION_COINS_PER_UNIT
+}
+
+function subtitleLineSplitCoins(durationUs) {
+  return subtitleBillingUnitsFromDurationUs(durationUs) * SUBTITLE_LINE_SPLIT_COINS_PER_UNIT
+}
+
+function subtitleTranslationCoins(durationUs) {
+  return subtitleBillingUnitsFromDurationUs(durationUs) * SUBTITLE_TRANSLATION_COINS_PER_UNIT
+}
+
+function getSubtitleBillingMeta() {
+  return {
+    billing_unit_sec: SUBTITLE_BILLING_UNIT_SEC,
+    recognition_coins_per_unit: SUBTITLE_RECOGNITION_COINS_PER_UNIT,
+    line_split_coins_per_unit: SUBTITLE_LINE_SPLIT_COINS_PER_UNIT,
+    translation_coins_per_unit: SUBTITLE_TRANSLATION_COINS_PER_UNIT,
+    coin_won_reference: SUBTITLE_COIN_WON_REFERENCE,
+  }
+}
+
 function getSubtitlePricingLaunchMeta() {
   return {
     launch_at: SUBTITLE_PRICING_LAUNCH_AT_KST,
@@ -107,6 +142,7 @@ function getSubtitlePricingLaunchMeta() {
     launch_label: SUBTITLE_PRICING_LAUNCH_LABEL,
     launch_label_short: SUBTITLE_PRICING_LAUNCH_LABEL_SHORT,
     launched: isSubtitlePricingLaunched(),
+    billing: getSubtitleBillingMeta(),
   }
 }
 
@@ -6125,8 +6161,11 @@ const db = {
     return { ok: true, status: 'rejected', reject_reason: rejectReason }
   },
 
-  async consumeSubtitleCoins(userId, minutes, jobId) {
-    const mins = Math.max(1, Math.ceil(Number(minutes) || 0))
+  async consumeSubtitleCoins(userId, jobId, durationUs) {
+    const duration_us = Math.max(0, parseInt(durationUs, 10) || 0)
+    const units = subtitleBillingUnitsFromDurationUs(duration_us)
+    const coins = subtitleRecognitionCoins(duration_us)
+    const mins = Math.max(1, Math.ceil(duration_us / 60_000_000))
     const jobKey = String(jobId || '').trim()
     if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
 
@@ -6147,26 +6186,36 @@ const db = {
       }
       const balance = walletSnap.data().balance || 0
       if (existing.exists) {
-        out = { ok: true, balance, minutes: existing.data().minutes || mins, already: true }
+        out = {
+          ok: true,
+          balance,
+          minutes: existing.data().minutes || mins,
+          units: existing.data().units || units,
+          coins: Math.abs(existing.data().delta || coins),
+          duration_us: existing.data().duration_us || duration_us,
+          already: true,
+        }
         return
       }
-      if (balance < mins) {
-        out = { ok: false, code: 'insufficient', error: '코인이 부족합니다.', balance, needed: mins }
+      if (balance < coins) {
+        out = { ok: false, code: 'insufficient', error: '코인이 부족합니다.', balance, needed: coins }
         return
       }
       const ts = now()
-      const newBal = balance - mins
+      const newBal = balance - coins
       t.update(walletRef, { balance: newBal, updated_at: ts })
       t.set(consumeRef, {
         user_id: userId,
-        delta: -mins,
+        delta: -coins,
         balance_after: newBal,
         reason: 'consume',
         ref: jobKey,
         minutes: mins,
+        units,
+        duration_us,
         created_at: ts,
       })
-      out = { ok: true, balance: newBal, minutes: mins, already: false }
+      out = { ok: true, balance: newBal, minutes: mins, units, coins, duration_us, already: false }
     })
     return out
   },
@@ -6191,7 +6240,8 @@ const db = {
         out = { ok: false, code: 'forbidden', error: '권한이 없습니다.' }
         return
       }
-      const mins = Math.max(1, parseInt(consumeSnap.data().minutes, 10) || Math.abs(consumeSnap.data().delta || 0) || 1)
+      const mins = Math.max(1, parseInt(consumeSnap.data().minutes, 10) || 1)
+      const coins = Math.abs(consumeSnap.data().delta || mins)
       if (!walletSnap.exists) {
         out = { ok: false, code: 'no_wallet', error: '코인 지갑이 없습니다.' }
         return
@@ -6202,25 +6252,134 @@ const db = {
         return
       }
       const ts = now()
-      const newBal = balance + mins
+      const newBal = balance + coins
       t.update(walletRef, { balance: newBal, updated_at: ts })
       t.set(refundRef, {
         user_id: userId,
-        delta: mins,
+        delta: coins,
         balance_after: newBal,
         reason: 'refund',
         ref: jobKey,
         minutes: mins,
         created_at: ts,
       })
-      out = { ok: true, balance: newBal, minutes: mins, already: false }
+      out = { ok: true, balance: newBal, minutes: mins, coins, already: false }
     })
     return out
   },
 
-  async consumeSubtitleTranslationCoins(userId, minutes, jobId) {
-    const mins = Math.max(1, Math.ceil(Number(minutes) || 0))
-    const amount = mins * SUBTITLE_TRANSLATION_COINS_PER_MINUTE
+  async consumeSubtitleLineSplitCoins(userId, jobId, durationUs) {
+    const duration_us = Math.max(0, parseInt(durationUs, 10) || 0)
+    const units = subtitleBillingUnitsFromDurationUs(duration_us)
+    const coins = subtitleLineSplitCoins(duration_us)
+    const mins = Math.max(1, Math.ceil(duration_us / 60_000_000))
+    const jobKey = String(jobId || '').trim()
+    if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
+
+    const entitlement = await db.ensureSubtitleEntitlement(userId)
+    if (!entitlement.ok) {
+      return { ok: false, code: entitlement.code, error: entitlement.error, balance: entitlement.balance || 0 }
+    }
+
+    const consumeRef = fs.collection('subtitle_coin_ledger').doc(`lines:${jobKey}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
+    let out = null
+    await fs.runTransaction(async t => {
+      const existing = await t.get(consumeRef)
+      const walletSnap = await t.get(walletRef)
+      if (!walletSnap.exists) {
+        out = { ok: false, code: 'no_wallet', error: '코인 지갑이 없습니다.', balance: 0 }
+        return
+      }
+      const balance = walletSnap.data().balance || 0
+      if (existing.exists) {
+        out = {
+          ok: true,
+          balance,
+          minutes: existing.data().minutes || mins,
+          units: existing.data().units || units,
+          coins: Math.abs(existing.data().delta || coins),
+          duration_us: existing.data().duration_us || duration_us,
+          already: true,
+        }
+        return
+      }
+      if (balance < coins) {
+        out = { ok: false, code: 'insufficient', error: '줄 나눔에 필요한 코인이 부족합니다.', balance, needed: coins }
+        return
+      }
+      const ts = now()
+      const newBal = balance - coins
+      t.update(walletRef, { balance: newBal, updated_at: ts })
+      t.set(consumeRef, {
+        user_id: userId,
+        delta: -coins,
+        balance_after: newBal,
+        reason: 'line_split',
+        ref: jobKey,
+        minutes: mins,
+        units,
+        duration_us,
+        created_at: ts,
+      })
+      out = { ok: true, balance: newBal, minutes: mins, units, coins, duration_us, already: false }
+    })
+    return out
+  },
+
+  async refundSubtitleLineSplitCoins(userId, jobId) {
+    const jobKey = String(jobId || '').trim()
+    if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
+
+    const consumeRef = fs.collection('subtitle_coin_ledger').doc(`lines:${jobKey}`)
+    const refundRef = fs.collection('subtitle_coin_ledger').doc(`lines_refund:${jobKey}`)
+    const walletRef = fs.collection('subtitle_wallets').doc(userId)
+    let out = null
+    await fs.runTransaction(async t => {
+      const consumeSnap = await t.get(consumeRef)
+      const refundSnap = await t.get(refundRef)
+      const walletSnap = await t.get(walletRef)
+      if (!consumeSnap.exists) {
+        out = { ok: false, code: 'no_consume', error: '줄 나눔 차감 내역이 없습니다.' }
+        return
+      }
+      if (consumeSnap.data().user_id !== userId) {
+        out = { ok: false, code: 'forbidden', error: '권한이 없습니다.' }
+        return
+      }
+      const coins = Math.abs(consumeSnap.data().delta || 0)
+      const mins = Math.max(1, parseInt(consumeSnap.data().minutes, 10) || 1)
+      if (!walletSnap.exists) {
+        out = { ok: false, code: 'no_wallet', error: '코인 지갑이 없습니다.' }
+        return
+      }
+      const balance = walletSnap.data().balance || 0
+      if (refundSnap.exists) {
+        out = { ok: true, balance, minutes: mins, coins, already: true }
+        return
+      }
+      const ts = now()
+      const newBal = balance + coins
+      t.update(walletRef, { balance: newBal, updated_at: ts })
+      t.set(refundRef, {
+        user_id: userId,
+        delta: coins,
+        balance_after: newBal,
+        reason: 'line_split_refund',
+        ref: jobKey,
+        minutes: mins,
+        created_at: ts,
+      })
+      out = { ok: true, balance: newBal, minutes: mins, coins, already: false }
+    })
+    return out
+  },
+
+  async consumeSubtitleTranslationCoins(userId, jobId, durationUs) {
+    const duration_us = Math.max(0, parseInt(durationUs, 10) || 0)
+    const units = subtitleBillingUnitsFromDurationUs(duration_us)
+    const coins = subtitleTranslationCoins(duration_us)
+    const mins = Math.max(1, Math.ceil(duration_us / 60_000_000))
     const jobKey = String(jobId || '').trim()
     if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
 
@@ -6245,29 +6404,32 @@ const db = {
           ok: true,
           balance,
           minutes: existing.data().minutes || mins,
-          coins: Math.abs(existing.data().delta || amount),
+          units: existing.data().units || units,
+          coins: Math.abs(existing.data().delta || coins),
+          duration_us: existing.data().duration_us || duration_us,
           already: true,
         }
         return
       }
-      if (balance < amount) {
-        out = { ok: false, code: 'insufficient', error: '번역에 필요한 코인이 부족합니다.', balance, needed: amount }
+      if (balance < coins) {
+        out = { ok: false, code: 'insufficient', error: '번역에 필요한 코인이 부족합니다.', balance, needed: coins }
         return
       }
       const ts = now()
-      const newBal = balance - amount
+      const newBal = balance - coins
       t.update(walletRef, { balance: newBal, updated_at: ts })
       t.set(consumeRef, {
         user_id: userId,
-        delta: -amount,
+        delta: -coins,
         balance_after: newBal,
         reason: 'translate',
         ref: jobKey,
         minutes: mins,
-        coins_per_minute: SUBTITLE_TRANSLATION_COINS_PER_MINUTE,
+        units,
+        duration_us,
         created_at: ts,
       })
-      out = { ok: true, balance: newBal, minutes: mins, coins: amount, already: false }
+      out = { ok: true, balance: newBal, minutes: mins, units, coins, duration_us, already: false }
     })
     return out
   },
@@ -6707,7 +6869,12 @@ const db = {
   SUBTITLE_COURSE_SLUG,
   VIEWS_EDITING_COURSE_SLUG,
   SUBTITLE_INITIAL_COINS,
-  SUBTITLE_TRANSLATION_COINS_PER_MINUTE,
+  SUBTITLE_BILLING_UNIT_SEC,
+  SUBTITLE_RECOGNITION_COINS_PER_UNIT,
+  SUBTITLE_LINE_SPLIT_COINS_PER_UNIT,
+  SUBTITLE_TRANSLATION_COINS_PER_UNIT,
+  SUBTITLE_COIN_WON_REFERENCE,
+  getSubtitleBillingMeta,
   SUBTITLE_PRICING_LAUNCH_AT_KST,
   isSubtitlePricingLaunched,
   getSubtitlePricingLaunchMeta,
@@ -6734,6 +6901,8 @@ seedInstructorPortfolioWorksDefaults().catch(console.error)
 module.exports = db
 module.exports.SUBTITLE_PRICING_LAUNCH_AT_KST = SUBTITLE_PRICING_LAUNCH_AT_KST
 module.exports.isSubtitlePricingLaunched = isSubtitlePricingLaunched
+module.exports.subtitleDurationUsFromMinutes = subtitleDurationUsFromMinutes
+module.exports.getSubtitleBillingMeta = getSubtitleBillingMeta
 module.exports.getSubtitlePricingLaunchMeta = getSubtitlePricingLaunchMeta
 module.exports.courseAccess = courseAccess
 module.exports.parseLiveStart = parseLiveStart

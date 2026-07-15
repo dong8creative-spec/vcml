@@ -113,6 +113,16 @@ b { font-weight: 700; }
 }
 .sidebar .brand-mark { padding: 0 8px; margin-bottom: 36px; }
 .main { flex: 1; overflow-y: auto; padding: 34px 40px; display: flex; flex-direction: column; }
+.offline-banner {
+  margin: -10px 0 18px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  color: #E8C84A;
+  font-size: 13px;
+  line-height: 1.5;
+}
 
 /* ─────────── 스텝 내비 ─────────── */
 .steps { display: flex; flex-direction: column; gap: 4px; flex: 1; }
