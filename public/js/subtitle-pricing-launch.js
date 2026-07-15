@@ -2,9 +2,9 @@
  * 타닥싱크 요금 정책 공개 시각 — db/schema.js SUBTITLE_PRICING_LAUNCH_ISO 와 동기화
  */
 (function (global) {
-  const LAUNCH_AT = '2026-07-22T11:00:00+09:00'
-  const LAUNCH_LABEL = '2026년 7월 22일 오전 11시'
-  const LAUNCH_LABEL_SHORT = '7/22 11시'
+  const LAUNCH_AT = '2026-08-01T00:00:00+09:00'
+  const LAUNCH_LABEL = '2026년 8월 1일'
+  const LAUNCH_LABEL_SHORT = '8/1'
 
   function isLaunched(now) {
     return (now || new Date()).getTime() >= new Date(LAUNCH_AT).getTime()

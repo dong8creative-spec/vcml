@@ -263,7 +263,7 @@
 .st-compare-arrow { font-size: 20px; color: #94a3b8; font-weight: 700; text-align: center; }
 .st-compare-foot { margin: 14px 0 0; font-size: 15px; font-weight: 700; color: #111; }
 
-/* 요금 정책 — 2026-07-22 11:00 KST 정식 개시 전 비공개 */
+/* 요금 정책 — 2026-08-01 KST 정식 개시 전 비공개 */
 html:not(.st-pricing-launched) [data-pricing-live] { display: none !important; }
 html.st-pricing-launched [data-pricing-prelaunch] { display: none !important; }
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-/** 타닥싱크 요금 정책 정식 오픈 공지 등록 (중복 시 스킵) */
+/** 타닥싱크 요금 정책 정식 오픈 공지 등록·수정 (기존 타닥싱크 요금 공지가 있으면 업데이트) */
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') })
 const db = require('../db/schema')
 
-const NOTICE_TITLE = '타닥싱크 2 요금 정책 정식 오픈 안내 — 7월 22일(화) 오전 11시'
+const NOTICE_TITLE = '타닥싱크 2 요금 정책 정식 오픈 안내 — 8월 1일(토)'
 
 const NOTICE_CONTENT = `안녕하세요, 타닥클래스입니다.
 
@@ -11,9 +11,9 @@ const NOTICE_CONTENT = `안녕하세요, 타닥클래스입니다.
 
 ■ 정식 오픈 일시
 
-2026년 7월 22일(화) 오전 11시 (한국 시간)
+2026년 8월 1일(토) (한국 시간)
 
-위 시각부터 타닥클래스 웹사이트의 「요금 안내」 페이지에 전체 요금 정책이 공개됩니다.
+위 날짜부터 타닥클래스 웹사이트의 「요금 안내」 페이지에 전체 요금 정책이 공개됩니다.
 
 ■ 오픈 시 안내 예정 내용
 
@@ -35,8 +35,23 @@ const NOTICE_CONTENT = `안녕하세요, 타닥클래스입니다.
 감사합니다.
 타닥클래스 드림`
 
+const NOTICE_TITLE_PATTERN = /타닥싱크 2 요금 정책 정식 오픈/
+
 async function seed() {
   const existing = await db.getNotices()
+  const prev = existing.find(n => NOTICE_TITLE_PATTERN.test(n.title || ''))
+  if (prev) {
+    const updated = await db.updateNotice(prev.id, {
+      title: NOTICE_TITLE,
+      content: NOTICE_CONTENT,
+      is_public: true,
+      is_pinned: true,
+    })
+    console.log('✓ 공지 수정 완료:', updated.id)
+    console.log('  · 제목:', updated.title)
+    process.exit(0)
+  }
+
   const dup = existing.find(n => n.title === NOTICE_TITLE)
   if (dup) {
     console.log('ℹ 이미 등록된 공지입니다:', dup.id)

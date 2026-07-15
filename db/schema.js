@@ -89,10 +89,10 @@ const SMARTSTORE_REVIEW_URL = process.env.SMARTSTORE_REVIEW_URL || null
 const SUBTITLE_DEVICE_CODE_TTL_MS = 10 * 60 * 1000
 const SUBTITLE_SESSION_IDLE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 /** 타닥싱크 요금·구독 정책 웹 공개 시각 (KST) */
-const SUBTITLE_PRICING_LAUNCH_AT_KST = '2026-07-22'
-const SUBTITLE_PRICING_LAUNCH_ISO = '2026-07-22T11:00:00+09:00'
-const SUBTITLE_PRICING_LAUNCH_LABEL = '2026년 7월 22일 오전 11시'
-const SUBTITLE_PRICING_LAUNCH_LABEL_SHORT = '7/22 11시'
+const SUBTITLE_PRICING_LAUNCH_AT_KST = '2026-08-01'
+const SUBTITLE_PRICING_LAUNCH_ISO = '2026-08-01T00:00:00+09:00'
+const SUBTITLE_PRICING_LAUNCH_LABEL = '2026년 8월 1일'
+const SUBTITLE_PRICING_LAUNCH_LABEL_SHORT = '8/1'
 
 function isSubtitlePricingLaunched(at = new Date()) {
   const ms = at instanceof Date ? at.getTime() : new Date(at).getTime()
