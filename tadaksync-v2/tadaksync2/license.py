@@ -17,7 +17,7 @@ DEFAULT_API_BASE = os.environ.get("CAPCUT_SUBTITLE_API", "https://vcml.kr")
 APP_DIR_NAME = "TadakSync"
 AUTH_FILE = "auth.json"
 DEVICE_ID_FILE = "device_id.txt"
-POLL_INTERVAL_SEC = 2.0
+POLL_INTERVAL_SEC = 0.5
 POLL_TIMEOUT_SEC = 10 * 60
 
 
@@ -185,7 +185,7 @@ def start_device_login(on_status=None, on_code=None, cancel_event=None) -> dict:
             except RuntimeError:
                 clear_auth()
                 raise
-            return save_auth(token, user_name, me.get("balance"), me.get("email"))
+            return save_auth(me.get("token") or token, user_name, me.get("balance"), me.get("email"))
         if status in ("expired", "invalid"):
             raise RuntimeError("연동 코드가 만료됐어요. 다시 로그인해 주세요.")
         if on_status:

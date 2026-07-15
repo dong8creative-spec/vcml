@@ -71,7 +71,7 @@
       <header class="view-head">
         <div>
           <h2>캡컷 프로젝트를 선택하세요</h2>
-          <p class="sub">자막을 넣을 프로젝트를 고르면 시작할 수 있어요. <b>캡컷에서 해당 프로젝트는 닫아두세요.</b></p>
+          <p class="sub">전문 인식이든 SRT 불러오기든, <b>자막을 넣을 프로젝트</b>를 먼저 고르세요. <b>캡컷에서 해당 프로젝트는 닫아두세요.</b></p>
         </div>
         <div class="head-actions">
           <button class="btn btn-ghost" id="btn-add-root">폴더 지정</button>
@@ -138,6 +138,20 @@
           <button class="btn btn-primary" id="btn-go-style">③ 스타일 선택 →</button>
         </div>
       </header>
+      <div class="highlight-toolbar">
+        <div>
+          <b>어절 강조 색</b>
+          <span class="sub">색을 고른 뒤 아래 어절을 클릭하세요. 같은 색을 다시 클릭하면 해제됩니다.</span>
+        </div>
+        <div class="highlight-tools">
+          <div class="highlight-swatches" id="highlight-swatches"></div>
+          <label class="color-picker-label">
+            <span>색 선택</span>
+            <input type="color" id="highlight-color" value="#ffef3b">
+          </label>
+          <button class="btn btn-ghost" id="btn-eyedropper">스포이드</button>
+        </div>
+      </div>
       <div class="block-list" id="block-list"></div>
     </section>
 
@@ -170,6 +184,8 @@
             <button data-v="bottom" class="on">하단</button>
             <button data-v="middle">중앙</button>
             <button data-v="top">상단</button>
+            <button data-v="pos_1075">0, 1075</button>
+            <button data-v="pos_minus_465">0, -465</button>
           </div>
         </div>
       </div>
@@ -200,7 +216,8 @@
 <div id="confirm-overlay" class="overlay hidden">
   <div class="overlay-card">
     <h2>캡컷이 실행 중이에요</h2>
-    <p class="sub">프로그램은 켜져 있어도 되지만, <b>작업할 프로젝트가 캡컷에서 열려 있으면</b><br>
+    <p class="sub">「<b id="confirm-project-name">—</b>」에 삽입합니다.<br>
+    프로그램은 켜져 있어도 되지만, <b>작업할 프로젝트가 캡컷에서 열려 있으면</b><br>
     삽입한 자막이 저장 시점에 사라질 수 있어요. 프로젝트를 닫았는지 확인해 주세요.</p>
     <div class="done-actions">
       <button class="btn btn-ghost" id="btn-confirm-cancel">돌아가기</button>

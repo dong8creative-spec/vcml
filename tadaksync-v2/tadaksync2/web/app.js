@@ -25,6 +25,8 @@ const state = {
   styleKey: "classic",
   size: "medium",
   position: "bottom",
+  highlightColor: "#ffef3b",
+  recentHighlightColors: ["#ffef3b", "#00e5ff", "#ff5c8a", "#c8ff00"],
   playingIdx: null,
   busy: false,
   coinCourses: [],
@@ -58,6 +60,18 @@ function parseTime(str) {
   const sec = parseFloat(m[2]);
   if (!isFinite(sec)) return null;
   return Math.round((min * 60 + sec) * 1_000_000);
+}
+
+function normalizeColor(color) {
+  const s = String(color || "").trim();
+  const m = s.match(/^#?([0-9a-fA-F]{6})$/);
+  return m ? `#${m[1].toLowerCase()}` : "#ffef3b";
+}
+
+function rememberHighlightColor(color) {
+  const c = normalizeColor(color);
+  state.highlightColor = c;
+  state.recentHighlightColors = [c, ...state.recentHighlightColors.filter((x) => x !== c)].slice(0, 6);
 }
 
 function esc(s) {
@@ -168,17 +182,24 @@ function renderProjects() {
   grid.innerHTML = "";
   $("#project-empty").classList.toggle("hidden", state.projects.length > 0);
   for (const p of state.projects) {
+    const coins = p.estimated_coins ?? 1;
     const card = document.createElement("div");
     card.className = "project-card" +
       (state.selectedProject?.index === p.index ? " selected" : "");
     card.innerHTML = `
       <div class="p-name" title="${esc(p.name)}">${esc(p.name)}</div>
-      <div class="p-meta"><span class="p-dur">${esc(p.duration)}</span><span>${esc(p.mtime)}</span></div>`;
-    card.addEventListener("click", () => {
+      <div class="p-meta">
+        <div class="p-dur">영상 최종길이 ${esc(p.duration)} (코인 ${esc(coins)}개 소모 예정)</div>
+        <div class="p-mtime">프로젝트 최신 수정일자 ${esc(p.mtime)}</div>
+      </div>`;
+    card.addEventListener("click", async () => {
       state.selectedProject = p;
       renderProjects();
       $("#start-bar").classList.remove("hidden");
       $("#sel-project-name").textContent = p.name;
+      const r = await state.api.select_project(p.index);
+      if (!r.ok) toast(r.error, "error");
+      if (state.step === 5) renderInjectSummary();
     });
     grid.appendChild(card);
   }
@@ -228,10 +249,66 @@ async function buildBlocks() {
   gotoStep(4);
 }
 
+function tokensForText(text) {
+  const tokens = [];
+  const re = /\S+/g;
+  let m;
+  while ((m = re.exec(text || "")) !== null) {
+    tokens.push({ text: m[0], start: m.index, end: m.index + m[0].length });
+  }
+  return tokens;
+}
+
+function findSpan(block, start, end) {
+  return (block.spans || []).find((s) => s.start === start && s.end === end);
+}
+
+function setSpanColor(block, start, end, color) {
+  const c = normalizeColor(color);
+  block.spans = (block.spans || []).filter((s) => !(s.start === start && s.end === end));
+  block.spans.push({ start, end, color: c });
+}
+
+function toggleSpanColor(block, start, end) {
+  const current = findSpan(block, start, end);
+  const c = normalizeColor(state.highlightColor);
+  if (current && normalizeColor(current.color) === c) {
+    block.spans = (block.spans || []).filter((s) => !(s.start === start && s.end === end));
+  } else {
+    setSpanColor(block, start, end, c);
+  }
+}
+
+function renderWordChips(block) {
+  const tokens = tokensForText(block.text);
+  if (!tokens.length) return `<div class="word-chip-empty">강조할 어절이 없어요.</div>`;
+  return tokens.map((t) => {
+    const span = findSpan(block, t.start, t.end);
+    const color = span ? normalizeColor(span.color) : "";
+    const style = color
+      ? ` style="--chip-color:${esc(color)};border-color:${esc(color)};color:${esc(color)}"`
+      : "";
+    return `<button class="word-chip${color ? " colored" : ""}" data-start="${t.start}" data-end="${t.end}"${style}>${esc(t.text)}</button>`;
+  }).join("");
+}
+
+function renderHighlightToolbar() {
+  const input = $("#highlight-color");
+  if (input) input.value = normalizeColor(state.highlightColor);
+  const swatches = $("#highlight-swatches");
+  if (!swatches) return;
+  swatches.innerHTML = state.recentHighlightColors.map((c) => {
+    const color = normalizeColor(c);
+    return `<button class="color-swatch${color === state.highlightColor ? " selected" : ""}" data-color="${esc(color)}" style="--swatch:${esc(color)}" title="${esc(color)}"></button>`;
+  }).join("");
+}
+
 function renderBlocks() {
+  renderHighlightToolbar();
   const list = $("#block-list");
   list.innerHTML = "";
   state.blocks.forEach((b, i) => {
+    if (!Array.isArray(b.spans)) b.spans = [];
     const row = document.createElement("div");
     row.className = "block-row" + (state.playingIdx === i ? " playing" : "");
     row.innerHTML = `
@@ -242,6 +319,7 @@ function renderBlocks() {
         <input class="t-end" value="${fmtTime(b.end_us)}">
       </span>
       <input class="block-text" value="${esc(b.text)}">
+      <div class="word-chip-strip">${renderWordChips(b)}</div>
       <span class="block-btns">
         <button class="icon-btn play" title="이 구간 미리듣기">${state.playingIdx === i ? "⏸" : "▶"}</button>
         <button class="icon-btn del" title="삭제">✕</button>
@@ -259,6 +337,14 @@ function renderBlocks() {
     });
     row.querySelector(".block-text").addEventListener("input", (e) => {
       b.text = e.target.value;
+      b.spans = [];
+      row.querySelector(".word-chip-strip").innerHTML = renderWordChips(b);
+    });
+    row.querySelector(".word-chip-strip").addEventListener("click", (e) => {
+      const chip = e.target.closest(".word-chip");
+      if (!chip) return;
+      toggleSpanColor(b, Number(chip.dataset.start), Number(chip.dataset.end));
+      row.querySelector(".word-chip-strip").innerHTML = renderWordChips(b);
     });
     row.querySelector(".play").addEventListener("click", async () => {
       if (state.playingIdx === i) {
@@ -285,13 +371,18 @@ function renderBlocks() {
 }
 
 async function importSrt() {
-  const res = await state.api.import_srt();
+  if (!state.selectedProject) {
+    toast("자막을 넣을 프로젝트를 먼저 선택해 주세요.", "warn");
+    return;
+  }
+  const res = await state.api.import_srt(state.selectedProject.index);
   if (res.cancelled) return;
   if (!res.ok) { toast(res.error, "error"); return; }
   state.blocks = res.blocks;
   state.fromSrt = true;
   gotoStep(4);
-  toast(`SRT에서 자막 ${res.blocks.length}개를 불러왔어요.`, "success");
+  const pname = res.project || state.selectedProject.name;
+  toast(`「${pname}」용으로 SRT 자막 ${res.blocks.length}개를 불러왔어요.`, "success");
 }
 
 async function exportSrt() {
@@ -328,7 +419,7 @@ function renderStyles() {
 function renderInjectSummary() {
   const name = state.selectedProject?.name || "—";
   $("#inject-summary").textContent =
-    `${name} · 자막 ${state.blocks.length}개`;
+    `「${name}」에 자막 ${state.blocks.length}개 삽입`;
 }
 
 function bindSegmented(rootSel, key) {
@@ -342,8 +433,14 @@ function bindSegmented(rootSel, key) {
 
 async function requestInject() {
   if (!state.blocks.length) { toast("삽입할 자막이 없어요.", "warn"); return; }
+  if (!state.selectedProject) {
+    toast("프로젝트를 먼저 선택해 주세요. 1단계에서 고를 수 있어요.", "warn");
+    gotoStep(1, { unlock: false });
+    return;
+  }
   const chk = await state.api.capcut_running();
   if (chk.ok && chk.running) {
+    $("#confirm-project-name").textContent = state.selectedProject.name;
     $("#confirm-overlay").classList.remove("hidden");
     return;
   }
@@ -352,12 +449,18 @@ async function requestInject() {
 
 async function doInject() {
   $("#confirm-overlay").classList.add("hidden");
+  if (!state.selectedProject) {
+    toast("프로젝트를 먼저 선택해 주세요. 1단계에서 고를 수 있어요.", "warn");
+    gotoStep(1, { unlock: false });
+    return;
+  }
   const btn = $("#btn-inject");
   btn.disabled = true;
   btn.textContent = "삽입하고 있어요…";
   try {
     const res = await state.api.inject(
-      state.blocks, state.styleKey, state.size, state.position);
+      state.blocks, state.styleKey, state.size, state.position,
+      state.selectedProject.index);
     if (!res.ok) { toast(res.error, "error"); return; }
     $("#done-msg").textContent =
       `「${res.project}」에 자막 ${res.count}개를 삽입했어요.`;
@@ -565,6 +668,15 @@ window.__pyEvent = (msg) => {
     case "pending_actions":
       handlePendingActions(data || []);
       break;
+    case "prewarm_status":
+      if (data?.message && (
+        data.kind === "warn"
+        || data.message.includes("미리 준비")
+        || data.message.includes("준비가 끝")
+      )) {
+        toast(data.message, data.kind || "success");
+      }
+      break;
   }
 };
 
@@ -626,13 +738,17 @@ function makeMockApi() {
     list_projects: async () => ({
       ok: true, capcut_running: Math.random() < 0.5,
       projects: [
-        { index: 0, name: "0714 브이로그 최종", dir: "C:\\...", duration: "4:12.5", mtime: "2026-07-14 09:12" },
-        { index: 1, name: "쇼츠 - 자막 실험", dir: "C:\\...", duration: "0:58.2", mtime: "2026-07-13 22:40" },
-        { index: 2, name: "강의 3강 편집본", dir: "C:\\...", duration: "12:03.0", mtime: "2026-07-11 15:27" },
-        { index: 3, name: "0627_test4", dir: "C:\\...", duration: "2:31.8", mtime: "2026-06-27 14:02" },
+        { index: 0, name: "0714 브이로그 최종", dir: "C:\\...", duration: "4:12.50", estimated_coins: 5, mtime: "2026-07-14 09:12" },
+        { index: 1, name: "쇼츠 - 자막 실험", dir: "C:\\...", duration: "0:58.20", estimated_coins: 1, mtime: "2026-07-13 22:40" },
+        { index: 2, name: "강의 3강 편집본", dir: "C:\\...", duration: "12:03.00", estimated_coins: 13, mtime: "2026-07-11 15:27" },
+        { index: 3, name: "0627_test4", dir: "C:\\...", duration: "2:31.80", estimated_coins: 3, mtime: "2026-06-27 14:02" },
       ],
     }),
     add_draft_root: async () => ({ ok: true, cancelled: true }),
+    select_project: async (index) => ({
+      ok: true,
+      project: { index, name: ["0714 브이로그 최종", "쇼츠 - 자막 실험", "강의 3강 편집본", "0627_test4"][index] || "프로젝트" },
+    }),
     capcut_running: async () => ({ ok: true, running: Math.random() < 0.4 }),
     start_transcribe: async () => {
       emit("progress", { message: "타임라인 오디오를 분석하고 있어요..." }, 400);
@@ -656,13 +772,22 @@ function makeMockApi() {
         }),
       };
     },
-    import_srt: async () => ({ ok: true, cancelled: true }),
+    import_srt: async (projectIndex) => {
+      if (projectIndex == null) return { ok: false, error: "프로젝트를 다시 선택해 주세요." };
+      return { ok: true, cancelled: true };
+    },
     export_srt: async () => ({ ok: true, path: "C:\\mock\\subtitles.srt" }),
     preview_play: async () => ({ ok: true }),
     preview_stop: async () => ({ ok: true }),
-    inject: async (blocks) => {
+    inject: async (blocks, _style, _size, _pos, projectIndex) => {
+      if (projectIndex == null) return { ok: false, error: "프로젝트를 먼저 선택해 주세요." };
       await new Promise((r) => setTimeout(r, 900));
-      return { ok: true, count: blocks.length, backup: "draft_content.aisub_backup_mock.json", project: "0714 브이로그 최종" };
+      const names = ["0714 브이로그 최종", "쇼츠 - 자막 실험", "강의 3강 편집본", "0627_test4"];
+      return {
+        ok: true, count: blocks.length,
+        backup: "draft_content.aisub_backup_mock.json",
+        project: names[projectIndex] || "프로젝트",
+      };
     },
     open_url: async () => ({ ok: true }),
   };
@@ -754,6 +879,29 @@ function bindEvents() {
 
   $("#script-editor").addEventListener("input", updateLineCount);
   $("#btn-build-blocks").addEventListener("click", buildBlocks);
+  $("#highlight-color").addEventListener("input", (e) => {
+    rememberHighlightColor(e.target.value);
+    renderHighlightToolbar();
+  });
+  $("#highlight-swatches").addEventListener("click", (e) => {
+    const btn = e.target.closest(".color-swatch");
+    if (!btn) return;
+    rememberHighlightColor(btn.dataset.color);
+    renderHighlightToolbar();
+  });
+  $("#btn-eyedropper").addEventListener("click", async () => {
+    if (!window.EyeDropper) {
+      toast("이 환경에서는 스포이드가 지원되지 않아요. 색 선택 버튼을 사용해 주세요.", "warn");
+      return;
+    }
+    try {
+      const res = await new window.EyeDropper().open();
+      rememberHighlightColor(res.sRGBHex);
+      renderHighlightToolbar();
+    } catch (_) {
+      // 사용자가 스포이드를 취소한 경우는 조용히 둔다.
+    }
+  });
 
   $("#btn-back-script").addEventListener("click", () => {
     if (state.fromSrt) { toast("SRT로 불러온 자막은 줄 나누기 화면이 없어요.", "warn"); return; }

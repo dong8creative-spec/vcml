@@ -59,7 +59,7 @@
 <div class="st-wrap">
   <div class="st-hero">
     <h1>타닥싱크 2 <span style="font-weight:600;font-size:0.72em;color:#888">TadakSync 2</span></h1>
-    <p>타닥싱크 코인 프로그램이 연결된 강의 수강생 전용 PC 프로그램입니다. 구글 로그인 후 다운로드하고, 앱에서 기기 연동 후 분당 코인으로 자막을 생성할 수 있습니다.</p>
+    <p>캡컷 프로젝트의 음성을 인식해 자막을 만들고, 스타일·강조 색을 골라 캡컷 캡션 트랙에 바로 넣는 PC 프로그램입니다. 구글 로그인 후 다운로드하고, 앱에서 기기 연동 뒤 분당 코인으로 이용할 수 있습니다.</p>
   </div>
 
   <div id="st-msg"></div>
@@ -91,19 +91,21 @@
     <div style="margin-bottom: 18px;">
       <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 코인 안내</div>
       <ul class="st-list" style="margin-top: 0;">
-        <li>최초 이용 시 강의별 기본 코인 지급 (초신속 100코인 · 조회수 편집법 1,000코인)</li>
+        <li>일반(초신속 등) 최초 이용 시 <strong>10코인</strong> 지급 · 조회수 편집법 등 별도 강의는 강의별 안내 코인</li>
         <li>별점 5점과 함께 수강 후기를 남겨주신 분께는 감사의 뜻으로 강의별 <strong>50코인</strong>을 추가 지급해 드려요</li>
         <li>네이버 스마트스토어 후기 작성 후 앱에서 완료 신고 시, 관리자 확인을 거쳐 <strong>150코인</strong>을 추가 지급해 드려요</li>
-        <li>자막 생성 시 타임라인 <strong>1분당 1코인</strong> 차감 (최소 1코인)</li>
+        <li>전문 인식 성공 시 타임라인 <strong>1분당 1코인</strong> 차감 (최소 1코인). 무음·미인식이면 차감 없음</li>
       </ul>
     </div>
     <div>
       <div style="font-size: 13px; color: #888; font-weight: 600; margin-bottom: 6px;">■ 사용 방법</div>
       <ul class="st-list" style="margin-top: 0;">
-        <li>구글 로그인 후 프로그램 다운로드</li>
-        <li>프로그램에서 기기 연동 코드 발급</li>
-        <li>이 페이지에서 위의 "앱 기기 연동" 섹션에 코드 입력 후 연동 승인</li>
-        <li>프로그램에서 자막 생성·편집 후 캡컷 프로젝트에 삽입</li>
+        <li>이 페이지에서 구글 로그인 → <strong>프로그램 다운로드</strong> (zip 전체 압축 해제 후 TadakSync2.exe 실행)</li>
+        <li>앱에서 「구글 계정으로 시작하기」→ 연동 코드 확인</li>
+        <li>이 페이지 「앱 기기 연동」에 코드 입력 후 승인 (계정당 1대 PC)</li>
+        <li>캡컷에서 작업할 프로젝트를 닫은 뒤, 앱에서 프로젝트 선택</li>
+        <li>① 전문 인식 → ② 엔터로 줄 나누기 → ③ 블록 확인·어절 강조 색 → ④ 스타일 선택 후 캡컷에 삽입</li>
+        <li>SRT만 불러와 삽입할 수도 있습니다 (이 경로는 코인 차감 없음)</li>
       </ul>
     </div>
   </div>
@@ -111,7 +113,7 @@
 
 <script src="/js/api.js?v=3"></script>
 <script src="/js/site-layout.js"></script>
-<script src="/js/site-header.js?v=12"></script>
+<script src="/js/site-header.js?v=13"></script>
 <script>
 const DEFAULT_COURSE_HREF = '/courses/capcut-pro-basic'
 const params = new URLSearchParams(location.search)

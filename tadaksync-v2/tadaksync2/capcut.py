@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import subprocess
@@ -137,7 +138,12 @@ class Project:
     @property
     def duration_str(self) -> str:
         s = self.duration_us / US
-        return f"{int(s // 60)}:{s % 60:04.1f}"
+        return f"{int(s // 60)}:{s % 60:05.2f}"
+
+    @property
+    def estimated_coins(self) -> int:
+        s = max(0.0, self.duration_us / US)
+        return max(1, int(math.ceil(s / 60.0)))
 
 
 def list_projects() -> list[Project]:

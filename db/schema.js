@@ -77,12 +77,13 @@ const STACKABLE_COURSE_COUPON_REASONS = [ANTICIPATION_COUPON_REASON, COURSE_REVI
 const TIMED_PERCENT_COUPON_REASONS = new Set(STACKABLE_COURSE_COUPON_REASONS)
 const SUBTITLE_COURSE_SLUG = 'capcut-pro-basic'
 const VIEWS_EDITING_COURSE_SLUG = '조회수-올리는-영상편집법-1783221046465'
-const SUBTITLE_INITIAL_COINS = 100
+const SUBTITLE_INITIAL_COINS = 10
 const VIEWS_EDITING_INITIAL_COINS = 1000
 const SUBTITLE_REVIEW_BONUS_COINS = 50
 const SMARTSTORE_REVIEW_BONUS_COINS = 150
 const SMARTSTORE_REVIEW_URL = process.env.SMARTSTORE_REVIEW_URL || null
 const SUBTITLE_DEVICE_CODE_TTL_MS = 10 * 60 * 1000
+const SUBTITLE_SESSION_IDLE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 function addOneMonthFrom(iso) {
   return addMonthsFrom(iso, 1)
@@ -6267,6 +6268,19 @@ const db = {
         ok: false,
         code: 'device_mismatch',
         error: '이 기기와 연동된 계정이 아닙니다. 다시 로그인해 주세요.',
+      }
+    }
+    const lastSeenAt = data.last_seen_at ? new Date(data.last_seen_at).getTime() : NaN
+    if (!Number.isFinite(lastSeenAt) || Date.now() - lastSeenAt > SUBTITLE_SESSION_IDLE_TTL_MS) {
+      await ref.update({
+        session_id: null,
+        expired_at: now(),
+        expire_reason: 'idle_timeout',
+      })
+      return {
+        ok: false,
+        code: 'session_revoked',
+        error: '7일 동안 사용하지 않아 기기 연동이 만료되었습니다. 다시 로그인해 주세요.',
       }
     }
     await ref.update({

@@ -33,6 +33,7 @@ class SubtitleLine:
     end_us: int
     text: str
     words: list[Word] = field(default_factory=list)  # 정밀 분할에 사용, 없어도 동작
+    spans: list[dict] = field(default_factory=list)  # [{start,end,color}] 어절 강조
 
 
 @dataclass
@@ -72,15 +73,37 @@ class Transcriber:
     def __init__(self) -> None:
         self._model = None
         self._model_size: Optional[str] = None
+        self._device = "cpu"
         # 백그라운드 예열과 자막 생성이 동시에 load()를 불러도
         # 모델이 이중으로 적재(RAM 6GB+)되지 않도록 직렬화한다
         self._load_lock = threading.Lock()
+
+    def _load_whisper_model(self, path: str, progress: Callable[[str], None]):
+        from faster_whisper import WhisperModel
+
+        try:
+            import ctranslate2
+            has_cuda = ctranslate2.get_cuda_device_count() > 0
+        except Exception:
+            has_cuda = False
+
+        if has_cuda:
+            try:
+                progress("NVIDIA GPU로 음성인식 모델을 준비하고 있어요...")
+                model = WhisperModel(path, device="cuda", compute_type="float16")
+                self._device = "cuda"
+                return model
+            except Exception as e:
+                progress(f"GPU 준비에 실패해 CPU로 전환할게요: {e}")
+
+        progress("CPU로 음성인식 모델을 준비하고 있어요...")
+        self._device = "cpu"
+        return WhisperModel(path, device="cpu", compute_type="int8")
 
     def load(self, model_size: str, progress: Callable[[str], None] = print) -> None:
         with self._load_lock:
             if self._model is not None and self._model_size == model_size:
                 return
-            from faster_whisper import WhisperModel
 
             path = bundled_model_dir()
             if path:
@@ -88,9 +111,9 @@ class Transcriber:
             else:
                 path = self._ensure_downloaded(model_size, progress)
                 progress("음성인식 모델을 준비하고 있어요... (매 실행 시 30초~1분, 다운로드 아님)")
-            self._model = WhisperModel(path, device="cpu", compute_type="int8")
+            self._model = self._load_whisper_model(path, progress)
             self._model_size = model_size
-            progress("음성인식 준비 완료")
+            progress(f"음성인식 준비 완료 ({self._device})")
 
     def _ensure_downloaded(self, model_size: str,
                            progress: Callable[[str], None]) -> str:
@@ -150,7 +173,7 @@ class Transcriber:
             audio,
             language=language,
             word_timestamps=True,
-            vad_filter=False,
+            vad_filter=True,
             condition_on_previous_text=False,
         )
         all_segments = list(segments)
@@ -177,7 +200,7 @@ class Transcriber:
             audio,
             language=language,
             word_timestamps=True,
-            vad_filter=False,
+            vad_filter=True,
             condition_on_previous_text=False,
         )
         words: list[Word] = []
@@ -459,7 +482,8 @@ def _refine_speech_boundaries(lines: list[SubtitleLine],
                               audio: np.ndarray) -> list[SubtitleLine]:
     """각 자막 start/end를 타임라인 오디오의 실제 발화 온셋·오프셋에 스냅.
 
-    Whisper 시각은 탐색 창 힌트만 제공한다. 시작을 Whisper보다 앞으로 당기지 않는다.
+    Whisper 시각은 탐색 창 힌트로만 사용한다. Whisper가 실제 발화보다 늦게
+    잡은 경우에는 제한된 범위에서 앞당기되, 이전 자막과 겹치지 않게 한다.
     """
     if not lines:
         return lines
@@ -477,19 +501,20 @@ def _refine_speech_boundaries(lines: list[SubtitleLine],
 
     refined: list[SubtitleLine] = []
     prev_end = 0.0
+    max_early_snap = 0.4
 
     for idx, line in enumerate(lines):
         s = line.start_us / US
         e = line.end_us / US
         next_s = lines[idx + 1].start_us / US if idx + 1 < len(lines) else audio_dur
 
-        win_lo = max(prev_end, s - 0.15, 0.0)
+        win_lo = max(prev_end, s - max_early_snap, 0.0)
         win_hi = min(e + 0.25, audio_dur)
 
         ov = [(rs, re_) for rs, re_ in regions if re_ > win_lo and rs < win_hi]
         if not ov:
             ov = [(rs, re_) for rs, re_ in regions
-                  if re_ > s - 0.3 and rs < e + 0.3]
+                  if re_ > s - max_early_snap and rs < e + 0.3]
         if not ov:
             continue
 
@@ -498,12 +523,20 @@ def _refine_speech_boundaries(lines: list[SubtitleLine],
             nearest = ov[1]
 
         rs, re_ = nearest
-        # 온셋: whisper 시각 근처부터 탐색 (region 시작에 묶이지 않음)
+        # 온셋: Whisper 시작이 늦은 경우 실제 발화 시작으로 제한적으로 당긴다.
         onset_lo = max(win_lo, prev_end)
         onset_hi = min(win_hi, max(e + 0.1, rs + 0.5), audio_dur)
         onset = find_onset(audio, onset_lo, max(onset_lo + 0.05, onset_hi), env)
 
-        if not _in_speech(s, regions, pad=0.02):
+        early_onset = None
+        if onset is not None and onset < s and s - onset <= max_early_snap:
+            early_onset = onset
+        elif rs < s and s - rs <= max_early_snap:
+            early_onset = rs
+
+        if early_onset is not None:
+            new_s = max(early_onset, prev_end)
+        elif not _in_speech(s, regions, pad=0.02):
             if onset is not None and onset >= s - 0.02:
                 new_s = max(onset, prev_end)
             else:

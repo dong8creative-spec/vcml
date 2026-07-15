@@ -12,6 +12,7 @@ pywebview의 js_api로 노출된다. JS에서 window.pywebview.api.<메서드>(.
 from __future__ import annotations
 
 import json
+import re
 import threading
 import time
 import traceback
@@ -44,24 +45,52 @@ def _project_dict(p: capcut.Project, index: int) -> dict:
         "name": p.name,
         "dir": str(p.dir),
         "duration": p.duration_str,
+        "duration_us": p.duration_us,
+        "estimated_coins": p.estimated_coins,
         "mtime": time.strftime("%Y-%m-%d %H:%M", time.localtime(p.mtime)),
     }
 
 
 def _lines_to_dicts(lines: list[SubtitleLine]) -> list[dict]:
-    return [{"start_us": l.start_us, "end_us": l.end_us, "text": l.text}
-            for l in lines]
+    out = []
+    for l in lines:
+        item = {"start_us": l.start_us, "end_us": l.end_us, "text": l.text}
+        if getattr(l, "spans", None):
+            item["spans"] = l.spans
+        out.append(item)
+    return out
 
 
 def _dicts_to_lines(blocks: list[dict]) -> list[SubtitleLine]:
     out: list[SubtitleLine] = []
     for b in blocks:
-        text = (b.get("text") or "").strip()
+        raw_text = str(b.get("text") or "")
+        text = raw_text.strip()
         start = int(b.get("start_us", 0))
         end = int(b.get("end_us", 0))
         if text and end > start:
-            out.append(SubtitleLine(start_us=start, end_us=end, text=text))
+            spans = _clean_spans(b.get("spans") or [], raw_text)
+            out.append(SubtitleLine(start_us=start, end_us=end, text=text, spans=spans))
     return out
+
+
+def _clean_spans(spans: list, text: str) -> list[dict]:
+    cleaned: list[dict] = []
+    text_len = len(text)
+    for s in spans:
+        try:
+            start = int(s.get("start", -1))
+            end = int(s.get("end", -1))
+            color = str(s.get("color") or "").strip()
+        except (AttributeError, ValueError, TypeError):
+            continue
+        if not (0 <= start < end <= text_len):
+            continue
+        if not re.match(r"^#[0-9a-fA-F]{6}$", color):
+            continue
+        cleaned.append({"start": start, "end": end, "color": color.lower()})
+    cleaned.sort(key=lambda x: (x["start"], x["end"]))
+    return cleaned
 
 
 class Api:
@@ -79,9 +108,12 @@ class Api:
 
         self._busy = False
         self._login_cancel: threading.Event | None = None
+        self._prewarm_started = False
 
     def set_window(self, window) -> None:
         self._window = window
+        if self._auth:
+            self._prewarm_model()
 
     # ---------------------------------------------------------------- 이벤트
     def _emit(self, event: str, data=None) -> None:
@@ -112,6 +144,41 @@ class Api:
             balance, self._auth.get("email"))
         self._emit("auth", self._auth_state())
 
+    def _apply_me_snapshot(self, me: dict) -> None:
+        if not self._auth:
+            return
+        token = me.get("token") or self._auth["token"]
+        self._balance = me.get("balance")
+        self._auth = license_api.save_auth(
+            token,
+            me.get("name") or self._auth.get("user_name"),
+            self._balance,
+            me.get("email") or self._auth.get("email"),
+        )
+        self._emit("auth", self._auth_state())
+
+    def _prewarm_model(self) -> None:
+        if self._prewarm_started:
+            return
+        self._prewarm_started = True
+
+        def worker() -> None:
+            try:
+                self._emit("prewarm_status", {"message": "음성인식 모델을 미리 준비하고 있어요."})
+                self._transcriber.load(
+                    MODEL,
+                    progress=lambda m: self._emit("prewarm_status", {"message": m}),
+                )
+                self._emit("prewarm_status", {"message": "음성인식 모델 준비가 끝났어요."})
+            except Exception as e:
+                self._prewarm_started = False
+                self._emit("prewarm_status", {
+                    "message": f"음성인식 모델 예열에 실패했어요. 생성할 때 다시 준비할게요: {e}",
+                    "kind": "warn",
+                })
+
+        threading.Thread(target=worker, daemon=True).start()
+
     # ----------------------------------------------------------------- 상태
     def get_state(self) -> dict:
         try:
@@ -132,7 +199,8 @@ class Api:
             return _err("로그인이 필요해요.", logged_in=False)
         try:
             me = license_api.verify_entitlement(self._auth["token"])
-            self._save_balance(me.get("balance"))
+            self._apply_me_snapshot(me)
+            self._prewarm_model()
             pending = me.get("pending_actions") or []
             if pending:
                 self._emit("pending_actions", pending)
@@ -158,7 +226,7 @@ class Api:
         try:
             result = license_api.claim_smartstore_review(self._auth["token"])
             me = license_api.fetch_me(self._auth["token"])
-            self._save_balance(me.get("balance"))
+            self._apply_me_snapshot(me)
             return _ok(
                 result=result,
                 auth=self._auth_state(),
@@ -201,6 +269,7 @@ class Api:
                 self._auth = auth
                 self._balance = auth.get("balance")
                 self._emit("auth", self._auth_state())
+                self._prewarm_model()
             except Exception as e:
                 if str(e) != "cancelled":
                     self._emit("login_error", {"message": str(e) or "로그인에 실패했어요."})
@@ -255,6 +324,16 @@ class Api:
 
     def capcut_running(self) -> dict:
         return _ok(running=capcut.is_capcut_running())
+
+    def select_project(self, project_index: int) -> dict:
+        """UI에서 고른 프로젝트를 삽입 대상으로 고정."""
+        try:
+            idx = int(project_index)
+            project = self._projects[idx]
+        except (IndexError, ValueError, TypeError):
+            return _err("프로젝트를 다시 선택해 주세요.")
+        self._project = project
+        return _ok(project=_project_dict(project, idx))
 
     # ------------------------------------------------------------- 전문 인식
     def start_transcribe(self, project_index: int, language_label: str) -> dict:
@@ -370,8 +449,14 @@ class Api:
             lines = _close_gaps(_refine_speech_boundaries(lines, self._audio))
         return _ok(blocks=_lines_to_dicts(lines))
 
-    def import_srt(self) -> dict:
-        """SRT 파일을 불러와 블록으로 사용 (인식 없이, 코인 차감 없음)."""
+    def import_srt(self, project_index: int) -> dict:
+        """SRT 파일을 불러와 블록으로 사용 (인식 없이, 코인 차감 없음).
+
+        삽입 대상 프로젝트를 먼저 확정한 뒤 파일을 연다.
+        """
+        sel = self.select_project(project_index)
+        if not sel.get("ok"):
+            return sel
         import webview
         if self._window is None:
             return _err("창이 준비되지 않았어요.")
@@ -385,7 +470,7 @@ class Api:
             return _err(f"SRT를 읽지 못했어요: {e}")
         if not lines:
             return _err("SRT에서 자막을 찾지 못했어요.")
-        return _ok(blocks=_lines_to_dicts(lines))
+        return _ok(blocks=_lines_to_dicts(lines), project=self._project.name)
 
     def export_srt(self, blocks: list[dict]) -> dict:
         import webview
@@ -424,9 +509,14 @@ class Api:
 
     # ---------------------------------------------------------------- 삽입
     def inject(self, blocks: list[dict], style_key: str,
-               size: str = "medium", position: str = "bottom") -> dict:
-        if self._project is None:
+               size: str = "medium", position: str = "bottom",
+               project_index: int | None = None) -> dict:
+        # 삽입 시점의 UI 선택을 최종 기준으로 다시 고정 (SRT/인식 공통)
+        if project_index is None:
             return _err("프로젝트를 먼저 선택해 주세요.")
+        sel = self.select_project(project_index)
+        if not sel.get("ok"):
+            return sel
         lines = _dicts_to_lines(blocks or [])
         if not lines:
             return _err("삽입할 자막이 없어요.")

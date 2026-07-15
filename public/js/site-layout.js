@@ -16,6 +16,7 @@
       all: true,
       instructors: true,
       capcut: true,
+      tadaksync: true,
       editors: false,
       projects: false,
     },

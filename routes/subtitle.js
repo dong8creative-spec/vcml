@@ -27,7 +27,7 @@ function signSubtitleToken(user, deviceId, sessionId) {
   )
 }
 
-/** GET /api/subtitle/entitlement — 수강·구글·잔액 확인 (최초 100코인 지급) */
+/** GET /api/subtitle/entitlement — 수강·구글·잔액 확인 (일반 프로그램 최초 10코인 등) */
 router.get('/entitlement', authMiddleware, async (req, res) => {
   try {
     const result = await db.ensureSubtitleEntitlement(req.user.id)
@@ -65,9 +65,16 @@ router.get('/me', subtitleAppAuth, async (req, res) => {
     if (!result.ok) {
       return res.status(403).json(result)
     }
+    const user = await db.findUserById(req.user.id)
+    const refreshedToken = signSubtitleToken(
+      user || req.user,
+      req.user.device_id,
+      req.user.session_id,
+    )
     res.json({
       email: req.user.email || null,
       name: req.user.name || null,
+      token: refreshedToken,
       balance: result.balance,
       initial_granted: result.initial_granted,
       review_bonus_granted: result.review_bonus_granted,

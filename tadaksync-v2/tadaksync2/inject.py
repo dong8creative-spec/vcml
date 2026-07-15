@@ -42,7 +42,12 @@ class SubtitleStyle:
     border_color: Color = (0.0, 0.0, 0.0)
     border: bool = True
     bold: bool = False
+    transform_x: float = 0.0
     transform_y: float = -0.8   # -1(하단) ~ 1(상단)
+    # 캡컷 위치 패널에 보이는 픽셀값. 있으면 삽입 시 캔버스 크기로 나눠
+    # transform에 기록한다. (패널표시 ≈ transform * canvas_w/h)
+    ui_x: float | None = None
+    ui_y: float | None = None
     as_caption: bool = True     # True면 캡컷 '자동 캡션'과 같은 캡션 트랙으로 삽입
     # --- v2 확장 ---
     shadow: bool = False
@@ -51,11 +56,39 @@ class SubtitleStyle:
     bg: bool = False                    # 배경 박스 (뉴스 자막 바 스타일)
     bg_color: Color = (0.0, 0.0, 0.0)
     bg_alpha: float = 0.75
+    bg_round_radius: float = 0.24
+    bg_width: float = 0.14
+    bg_height: float = 0.14
+
+
+def _canvas_size(data: dict) -> tuple[float, float]:
+    cc = data.get("canvas_config") or {}
+    w = float(cc.get("width") or 1920)
+    h = float(cc.get("height") or 1080)
+    return max(w, 1.0), max(h, 1.0)
+
+
+def _resolve_transform(style: SubtitleStyle,
+                       canvas_w: float, canvas_h: float) -> tuple[float, float]:
+    """정규화 transform 또는 캡컷 UI 픽셀 → clip.transform 값."""
+    if style.ui_x is not None and style.ui_y is not None:
+        return style.ui_x / canvas_w, style.ui_y / canvas_h
+    return style.transform_x, style.transform_y
 
 
 def _hex(color: Color) -> str:
     r, g, b = (max(0, min(255, round(c * 255))) for c in color)
     return f"#{r:02X}{g:02X}{b:02X}"
+
+
+def _rgb_hex(hex_color: str) -> Color:
+    value = str(hex_color or "").strip().lstrip("#")
+    if len(value) != 6:
+        return (1.0, 1.0, 1.0)
+    try:
+        return tuple(int(value[i:i + 2], 16) / 255.0 for i in (0, 2, 4))  # type: ignore[return-value]
+    except ValueError:
+        return (1.0, 1.0, 1.0)
 
 
 def _new_id() -> str:
@@ -108,18 +141,18 @@ def _system_font_path(data: dict) -> str:
     return ""
 
 
-def _build_content(text: str, style: SubtitleStyle, font_path: str) -> str:
-    """소재의 content 필드(JSON 문자열)를 실측 구조로 생성."""
+def _style_entry(text_len: int, style: SubtitleStyle, font_path: str,
+                 start: int, end: int, color: Color) -> dict:
     entry: dict = {
         "fill": {
             "content": {
                 "render_type": "solid",
-                "solid": {"color": list(style.color)},
+                "solid": {"color": list(color)},
             }
         },
         "font": {"path": font_path, "id": ""},
         "size": style.size,
-        "range": [0, len(text)],
+        "range": [max(0, min(text_len, start)), max(0, min(text_len, end))],
     }
     if style.bold:
         entry["bold"] = True
@@ -128,7 +161,49 @@ def _build_content(text: str, style: SubtitleStyle, font_path: str) -> str:
             "content": {"solid": {"color": list(style.border_color)}},
             "width": 0.08,
         }]
-    return json.dumps({"text": text, "styles": [entry]}, ensure_ascii=False)
+    return entry
+
+
+def _normalize_color_spans(text: str, spans: list[dict] | None) -> list[dict]:
+    out: list[dict] = []
+    used_end = 0
+    text_len = len(text)
+    for s in sorted(spans or [], key=lambda x: (x.get("start", 0), x.get("end", 0))):
+        try:
+            start = int(s.get("start", -1))
+            end = int(s.get("end", -1))
+        except (AttributeError, TypeError, ValueError):
+            continue
+        if start < used_end or start < 0 or end <= start or end > text_len:
+            continue
+        out.append({"start": start, "end": end, "color": str(s.get("color") or "")})
+        used_end = end
+    return out
+
+
+def _build_content(text: str, style: SubtitleStyle, font_path: str,
+                   spans: list[dict] | None = None) -> str:
+    """소재의 content 필드(JSON 문자열)를 실측 구조로 생성."""
+    text_len = len(text)
+    color_spans = _normalize_color_spans(text, spans)
+    if not color_spans:
+        entry = _style_entry(text_len, style, font_path, 0, text_len, style.color)
+        return json.dumps({"text": text, "styles": [entry]}, ensure_ascii=False)
+
+    styles: list[dict] = []
+    cursor = 0
+    for span in color_spans:
+        start, end = span["start"], span["end"]
+        if cursor < start:
+            styles.append(_style_entry(text_len, style, font_path,
+                                       cursor, start, style.color))
+        styles.append(_style_entry(text_len, style, font_path,
+                                   start, end, _rgb_hex(span["color"])))
+        cursor = end
+    if cursor < text_len:
+        styles.append(_style_entry(text_len, style, font_path,
+                                   cursor, text_len, style.color))
+    return json.dumps({"text": text, "styles": styles}, ensure_ascii=False)
 
 
 def _remove_previous_track(data: dict) -> None:
@@ -162,6 +237,8 @@ def _build_track(data: dict, lines: list[SubtitleLine],
     font_path = _system_font_path(data)
     text_track_count = sum(1 for t in data.get("tracks") or []
                            if t.get("type") == "text")
+    canvas_w, canvas_h = _canvas_size(data)
+    tx, ty = _resolve_transform(style, canvas_w, canvas_h)
 
     track = copy.deepcopy(TRACK_TPL)
     track["id"] = _new_id()
@@ -177,26 +254,36 @@ def _build_track(data: dict, lines: list[SubtitleLine],
         mat["id"] = _new_id()
         if style.as_caption:
             mat["type"] = "subtitle"
-        mat["content"] = _build_content(line.text, style, font_path)
+        mat["content"] = _build_content(line.text, style, font_path,
+                                        getattr(line, "spans", None))
         mat["font_path"] = font_path
         mat["font_size"] = style.size
         mat["text_size"] = round(style.size * 2)
         mat["text_color"] = _hex(style.color)
         mat["border_width"] = 0.08 if style.border else 0.0
-        mat["check_flag"] = 15 if style.border else 7
+        # 캡컷 check_flag: 7 기본 | 8 외곽선 | 16 배경 | 32 그림자
+        check_flag = 7
         if style.border:
+            check_flag |= 8
             mat["border_color"] = _hex(style.border_color)
         if style.bold:
             mat["bold_width"] = 0.008
         if style.shadow:
+            check_flag |= 32
             mat["has_shadow"] = True
             mat["shadow_color"] = _hex(style.shadow_color)
             mat["shadow_alpha"] = style.shadow_alpha
         if style.bg:
+            check_flag |= 16
             mat["background_style"] = 1
             mat["background_color"] = _hex(style.bg_color)
             mat["background_alpha"] = style.bg_alpha
-            mat["background_round_radius"] = 0.24
+            mat["background_round_radius"] = style.bg_round_radius
+            mat["background_width"] = style.bg_width
+            # 높이 0이면 캡컷이 박스를 그리지 않음
+            mat["background_height"] = (
+                style.bg_height if style.bg_height > 0 else 0.14)
+        mat["check_flag"] = check_flag
 
         anim = copy.deepcopy(ANIMATION_TPL)
         anim["id"] = _new_id()
@@ -209,7 +296,8 @@ def _build_track(data: dict, lines: list[SubtitleLine],
             "start": line.start_us,
             "duration": max(1, line.end_us - line.start_us),
         }
-        seg["clip"]["transform"]["y"] = style.transform_y
+        seg["clip"]["transform"]["x"] = tx
+        seg["clip"]["transform"]["y"] = ty
         seg["track_render_index"] = text_track_count + 1
 
         texts.append(mat)

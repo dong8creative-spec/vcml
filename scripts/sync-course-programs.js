@@ -1,6 +1,6 @@
 /**
  * 타닥싱크 프로그램 레코드 생성(없을 때만) + 알려진 강의에 program_id 연결.
- * 기존 프로그램 메타(이름·코인 등)는 덮어쓰지 않음.
+ * 일반(tadak-sync) 프로그램의 최초 코인이 레거시 100이면 10으로 맞춘다.
  *
  * 사용:
  *   node scripts/sync-course-programs.js --dry-run
@@ -19,6 +19,12 @@ async function main() {
     subtitle: { id: subtitle.id, slug: subtitle.slug, name: subtitle.name, initial_coins: subtitle.initial_coins },
     views: { id: views.id, slug: views.slug, name: views.name, initial_coins: views.initial_coins },
   })
+
+  // 일반 다운로드(초신속 등) 최초 코인: 레거시 100 → 10
+  if (!dryRun && Number(subtitle.initial_coins) === 100) {
+    await db.updateCourseProgram(subtitle.id, { initial_coins: db.SUBTITLE_INITIAL_COINS })
+    console.log(`[coins] ${subtitle.slug} initial_coins 100 → ${db.SUBTITLE_INITIAL_COINS}`)
+  }
 
   // 관리자 목록에서 구분이 되도록 조회수 프로그램 이름만 1회 정리 (코인/스토리지는 유지)
   if (!dryRun && views.name === '조회수 편집법 코인') {

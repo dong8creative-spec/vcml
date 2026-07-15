@@ -18,6 +18,7 @@
       <a href="/notices.html" data-nav-key="notices">공지사항</a>
       <a href="/#all" data-gnb-all data-nav-key="all">전체강의</a>
       <a href="/?cat=capcut#all" data-gnb-cat="capcut" data-nav-key="capcut">캡컷 PRO</a>
+      <a href="/subtitle-tool.html" data-nav-key="tadaksync">타닥싱크</a>
       <a href="/institution.html" data-nav-key="institution">열람실</a>
     </nav>
     <div class="header-right" id="header-right">${DEFAULT_AUTH_HTML}</div>
