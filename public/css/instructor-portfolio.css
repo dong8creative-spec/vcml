@@ -769,6 +769,23 @@ body.portfolio-page *:not(code):not(kbd):not(samp):not(pre) {
   margin-top: 4px;
 }
 
+.yt-channel-card__stats--views {
+  margin-top: 0;
+}
+
+.yt-channel-card__stats--metrics + .yt-channel-card__stats--views {
+  margin-top: -6px;
+}
+
+.rednote-row-card__main .yt-channel-card__stats {
+  margin: 12px 0 0;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.rednote-row-card__main .yt-channel-card__stats--metrics .yt-channel-card__stat-value {
+  font-size: clamp(14px, 1.6vw, 18px);
+}
+
 .yt-channel-card__stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

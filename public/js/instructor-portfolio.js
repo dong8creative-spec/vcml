@@ -276,6 +276,7 @@
           <h3 class="rednote-row-card__title">${esc(item.title)}</h3>
         </div>
         ${item.description ? `<p class="rednote-row-card__desc">${esc(item.description)}</p>` : ''}
+        ${renderGrowthMetricsGrid(item.metrics)}
       </div>
       <div class="rednote-row-card__actions">
         <a class="rednote-row-card__link" href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">
@@ -466,103 +467,52 @@
     return `<p class="account-card__context">${esc(parts.join(' · '))}</p>`
   }
 
-  function formatMetricSubline(metric) {
-    if (!metric) return ''
-    const label = String(metric.label || '').trim()
-    const growth = String(metric.growth || '').trim()
-    const after = String(metric.after || '').trim()
-    if (growth) return label ? `${label} ${growth}` : growth
-    if (after) return label ? `${label} ${after}` : after
-    return label
-  }
-
-  function renderMetricDetails(metrics, extraLines = []) {
-    const lines = []
-    for (const metric of metrics || []) {
-      const label = String(metric.label || '').trim()
-      const before = String(metric.before || '').trim()
-      const after = String(metric.after || '').trim()
-      const growth = String(metric.growth || '').trim()
-      if (!label && !before && !after && !growth) continue
-      const main = before && after ? `${before} → ${after}` : (after || before || '')
-      const tail = growth && !main.includes(growth) ? ` · ${growth}` : ''
-      lines.push(label ? `${label} ${main}${tail}`.trim() : `${main}${tail}`.trim())
-    }
-    for (const line of extraLines) {
-      const text = String(line || '').trim()
-      if (text) lines.push(text)
-    }
-    if (!lines.length) return ''
-    return `<details class="account-card__details">
-      <summary>상세 지표 보기</summary>
-      <ul class="account-card__details-list">${lines.map((line) => `<li>${esc(line)}</li>`).join('')}</ul>
-    </details>`
-  }
-
-  function renderSimplifiedMetricsBlock(metrics, viewStats = null) {
+  function renderGrowthMetricsGrid(metrics) {
     const list = Array.isArray(metrics)
       ? metrics.filter((metric) => String(metric?.label || metric?.before || metric?.after || metric?.growth || '').trim())
       : []
-    const primary = list[0]
-    const secondary = list[1]
-    let heroLabel = ''
-    let heroValue = ''
-    let heroSub = ''
+    if (!list.length) return ''
+    return `<div class="yt-channel-card__stats yt-channel-card__stats--metrics">${list.map((metric) => `
+      <div class="yt-channel-card__stat">
+        <span class="yt-channel-card__stat-label">${esc(metric.label)}</span>
+        <strong class="yt-channel-card__stat-value">${esc(metric.before)} → ${esc(metric.after)}</strong>
+        ${metric.growth ? `<span class="yt-channel-card__stat-growth">${esc(metric.growth)}</span>` : ''}
+      </div>
+    `).join('')}</div>`
+  }
 
-    if (primary) {
-      const label = String(primary.label || '').trim()
-      const growth = String(primary.growth || '').trim()
-      const after = String(primary.after || '').trim()
-      if (growth) {
-        heroLabel = label
-        heroValue = growth
-        if (after) heroSub = `결과 ${after}`
-      } else if (after) {
-        heroLabel = label
-        heroValue = after
-        if (String(primary.before || '').trim()) heroSub = `${primary.before}에서 시작`
-      }
-    }
-
+  function renderPlaylistViewStats(viewStats) {
     const stats = viewStats || {}
-    if (!heroValue && stats.averageViews) {
-      heroLabel = '평균 조회수'
-      heroValue = `${formatViewCount(stats.averageViews)}회`
-      if (stats.videoCount) heroSub = `편집 영상 ${formatViewCount(stats.videoCount)}개`
-    }
+    if (!stats.videoCount && !stats.totalViews && !stats.averageViews) return ''
+    return `<div class="yt-channel-card__stats yt-channel-card__stats--views">
+      <div class="yt-channel-card__stat">
+        <span class="yt-channel-card__stat-label">평균 조회수</span>
+        <strong class="yt-channel-card__stat-value">${formatViewCount(stats.averageViews)}</strong>
+        <span class="yt-channel-card__stat-unit">회</span>
+      </div>
+      <div class="yt-channel-card__stat">
+        <span class="yt-channel-card__stat-label">편집 영상</span>
+        <strong class="yt-channel-card__stat-value">${formatViewCount(stats.videoCount)}</strong>
+        <span class="yt-channel-card__stat-unit">개</span>
+      </div>
+      <div class="yt-channel-card__stat">
+        <span class="yt-channel-card__stat-label">총 조회수</span>
+        <strong class="yt-channel-card__stat-value">${formatViewCount(stats.totalViews)}</strong>
+        <span class="yt-channel-card__stat-unit">회</span>
+      </div>
+    </div>`
+  }
 
-    if (!heroValue && !heroSub && !list.length && !stats.videoCount && !stats.totalViews) {
-      return '<p class="yt-channel-card__stats-empty">성과 지표를 입력하면 핵심 성과가 표시됩니다.</p>'
+  function renderChannelMetricStats(metrics, viewStats = null) {
+    const growthHtml = renderGrowthMetricsGrid(metrics)
+    const viewsHtml = viewStats ? renderPlaylistViewStats(viewStats) : ''
+    if (!growthHtml && !viewsHtml) {
+      if (viewStats) {
+        return '<p class="yt-channel-card__stats-empty">재생목록을 연결하면 편집 포트폴리오의 평균·총 조회수가 표시됩니다.</p>'
+      }
+      return '<p class="yt-channel-card__stats-empty">성과 지표를 입력하면 계정 운영 성과가 표시됩니다.</p>'
     }
-
-    if (!heroSub && secondary) heroSub = formatMetricSubline(secondary)
-    if (!heroSub && stats.totalViews && heroLabel !== '평균 조회수') {
-      heroSub = `총 조회 ${formatViewCount(stats.totalViews)}회`
-    }
-
-    const extraLines = []
-    if (stats.averageViews && heroLabel !== '평균 조회수') {
-      extraLines.push(`평균 조회수: ${formatViewCount(stats.averageViews)}회`)
-    }
-    if (stats.videoCount && !(heroSub || '').includes('편집 영상')) {
-      extraLines.push(`편집 영상: ${formatViewCount(stats.videoCount)}개`)
-    }
-    if (stats.totalViews && !(heroSub || '').includes('총 조회')) {
-      extraLines.push(`총 조회수: ${formatViewCount(stats.totalViews)}회`)
-    }
-
-    const hasMetricDetails = list.some((metric) => String(metric.before || '').trim() || String(metric.after || '').trim())
-    const detailsHtml = (list.length > 1 || hasMetricDetails || extraLines.length)
-      ? renderMetricDetails(list, extraLines)
-      : ''
-
-    if (!heroValue) return detailsHtml || '<p class="yt-channel-card__stats-empty">성과 지표를 입력하면 핵심 성과가 표시됩니다.</p>'
-
-    return `<div class="account-hero-metric">
-      ${heroLabel ? `<span class="account-hero-metric__label">${esc(heroLabel)}</span>` : ''}
-      <strong class="account-hero-metric__value">${esc(heroValue)}</strong>
-      ${heroSub ? `<span class="account-hero-metric__sub">${esc(heroSub)}</span>` : ''}
-    </div>${detailsHtml}`
+    return `${growthHtml}${viewsHtml}`
   }
 
   function renderPlaylistActions(playlists, defaultLabel = '작업 영상 보기') {
@@ -595,10 +545,6 @@
     return { primary: primaryHtml, more: moreHtml }
   }
 
-  function renderChannelMetricStats(metrics, viewStats = null) {
-    return renderSimplifiedMetricsBlock(metrics, viewStats)
-  }
-
   function renderInstagramAccountCard(account, options) {
     const {
       visitLabel = '인스타그램 열기',
@@ -609,7 +555,7 @@
     const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
     const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
     const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
-    const metricsHtml = renderSimplifiedMetricsBlock(account.metrics)
+    const metricsHtml = renderChannelMetricStats(account.metrics)
     const summaryHtml = mergeAccountSummary(account)
 
     const avatarHtml = avatarUrl
@@ -673,7 +619,7 @@
          <div class="yt-channel-card__avatar yt-channel-card__avatar--fallback" aria-hidden="true"><i class="ti ti-brand-youtube"></i></div>`
       : `<div class="yt-channel-card__avatar yt-channel-card__avatar--fallback" aria-hidden="true"><i class="ti ti-brand-youtube"></i></div>`
 
-    const statsHtml = renderSimplifiedMetricsBlock(account.metrics, stats)
+    const statsHtml = renderChannelMetricStats(account.metrics, stats)
 
     const playlistActions = renderPlaylistActions(playlists, playlistLabel)
 
@@ -913,7 +859,7 @@
   }
 
   function renderMetricCards(metrics) {
-    return renderChannelMetricStats(metrics)
+    return renderGrowthMetricsGrid(metrics)
   }
 
   function renderInstagram(container) {

@@ -15,8 +15,11 @@
     nav: {
       all: true,
       instructors: true,
-      capcut: true,
-      tadaksync: true,
+      notices: true,
+      institution: true,
+      capcut: false,
+      tadaksync: false,
+      reviews: false,
       editors: false,
       projects: false,
     },

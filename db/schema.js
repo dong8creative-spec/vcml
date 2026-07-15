@@ -1039,17 +1039,21 @@ function normalizeFooterConfig(data = {}) {
 }
 
 const DEFAULT_TEST_ROOM_CONFIG = {
-  enabled: false,
-  label: '테스트룸',
+  enabled: true,
+  label: '바로가기',
   hint: '',
+  room_url: '',
+  room_label: '편집 테스트',
   instagram_url: '',
   instagram_label: '인스타그램',
   kakao_url: '',
   kakao_label: '카카오 대기방',
+  tadaksync_url: '/subtitle-tool.html',
+  tadaksync_label: '타닥싱크',
 }
 
 function devTestRoomFallback(cfg) {
-  return { ...cfg, enabled: false }
+  return cfg
 }
 
 function normalizeTestRoomConfig(data = {}) {
@@ -1064,6 +1068,14 @@ function normalizeTestRoomConfig(data = {}) {
   if (data.kakao_url != null) base.kakao_url = String(data.kakao_url).trim().slice(0, 500)
   if (data.kakao_label != null) {
     base.kakao_label = String(data.kakao_label).trim().slice(0, 24) || base.kakao_label
+  }
+  if (data.room_url != null) base.room_url = String(data.room_url).trim().slice(0, 500)
+  if (data.room_label != null) {
+    base.room_label = String(data.room_label).trim().slice(0, 24) || base.room_label
+  }
+  if (data.tadaksync_url != null) base.tadaksync_url = String(data.tadaksync_url).trim().slice(0, 500) || base.tadaksync_url
+  if (data.tadaksync_label != null) {
+    base.tadaksync_label = String(data.tadaksync_label).trim().slice(0, 24) || base.tadaksync_label
   }
   return base
 }
@@ -1664,6 +1676,7 @@ function normalizePortfolioMediaItems(list, prefix) {
         description: String(item?.description || '').trim().slice(0, 300),
         url,
         thumbnailUrl: String(item?.thumbnailUrl || item?.thumbnail_url || '').trim().slice(0, 400),
+        metrics: normalizePortfolioMetrics(item?.metrics),
       }
     })
     .filter(Boolean)
@@ -5767,11 +5780,51 @@ const db = {
     if (data?.youtube?.shorts !== undefined) merged.youtube.shorts = data.youtube.shorts
     if (data?.instagram?.accounts !== undefined) merged.instagram.accounts = data.instagram.accounts
     const next = normalizePortfolioWorks(merged)
-    await enrichPortfolioWorksAvatars(next)
-    await enrichPortfolioWorksYoutubeStats(next)
-    await enrichPortfolioWorksRednoteThumbnails(next, rest)
     await fs.collection('site_settings').doc('instructor_portfolio_works').set({ ...next, updated_at: now() })
     return { ...next, updated_at: now() }
+  },
+
+  async refreshInstructorPortfolioVisuals({ youtube = false, instagram = false, rednote = false } = {}) {
+    const doc = await fs.collection('site_settings').doc('instructor_portfolio_works').get()
+    const stored = doc.exists ? doc.data() : {}
+    const works = { ...normalizePortfolioWorks(stored), updated_at: stored.updated_at || null }
+    let changed = false
+
+    if (youtube) {
+      const channels = works.youtube?.channels
+      if (Array.isArray(channels)) {
+        for (const account of channels) {
+          const updated = await enrichYoutubeChannel(account, { refreshStats: false })
+          if (updated) changed = true
+        }
+      }
+    }
+
+    if (instagram) {
+      const accounts = works.instagram?.accounts
+      if (Array.isArray(accounts)) {
+        for (const account of accounts) {
+          if (account.avatarUrl || !account.accountUrl) continue
+          const resolved = await resolveSocialAvatarUrl(account.accountUrl)
+          if (resolved) {
+            account.avatarUrl = resolved
+            changed = true
+          }
+        }
+      }
+    }
+
+    if (rednote) {
+      const updated = await enrichPortfolioWorksRednoteThumbnails(works, normalizePortfolioWorks(stored))
+      if (updated) changed = true
+    }
+
+    const updatedAt = now()
+    if (changed) {
+      await fs.collection('site_settings').doc('instructor_portfolio_works').set({ ...works, updated_at: updatedAt })
+      return { ...works, updated_at: updatedAt }
+    }
+    return { ...works, updated_at: works.updated_at || null }
   },
 
   async refreshInstructorPortfolioYoutubeStats() {

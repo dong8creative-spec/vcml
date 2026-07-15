@@ -113,8 +113,8 @@
         if (!h.length) return ''
         return h.length === 1 ? h[0] : h.join(' ')
       })())}</textarea>
-      ${isChannel ? '' : `<div class="pf-metrics" data-a-metrics>${metricRowsHtml(account.metrics)}</div>
-      <button type="button" class="btn-sm" data-add-metric style="margin-top:6px">+ 지표 추가</button>`}
+      <div class="pf-metrics" data-a-metrics>${metricRowsHtml(account.metrics)}</div>
+      <button type="button" class="btn-sm" data-add-metric style="margin-top:6px">+ 지표 추가</button>
       <input type="hidden" data-a-id value="${esc(account.id || '')}" />
       <input type="hidden" data-a-kind value="${esc(kind)}" />
     </div>`
@@ -132,7 +132,7 @@
 
   function rednoteMediaRowHtml(item = emptyMedia()) {
     const thumb = String(item.thumbnailUrl || item.thumbnail_url || '').trim()
-    return `<div class="pf-media-row pf-media-row--rednote" data-pf-media>
+    return `<div class="pf-media-row pf-media-row--rednote" data-pf-media data-pf-media-metrics>
       <div class="pf-media-row__fields">
         <input type="text" data-m-title placeholder="제목" value="${esc(item.title || '')}" />
         <input type="text" data-m-desc placeholder="설명" value="${esc(item.description || '')}" />
@@ -143,6 +143,8 @@
         <img class="pf-media-thumb-preview" data-m-thumb-preview src="${esc(thumb)}" alt="" ${thumb ? '' : 'hidden'} />
         <input type="url" data-m-thumb placeholder="썸네일 이미지 URL (9:16 권장)" value="${esc(thumb)}" />
       </div>
+      <div class="pf-metrics" data-m-metrics>${metricRowsHtml(item.metrics)}</div>
+      <button type="button" class="btn-sm" data-add-media-metric style="margin-top:6px">+ 지표 추가</button>
       <input type="hidden" data-m-id value="${esc(item.id || '')}" />
     </div>`
   }
@@ -181,7 +183,7 @@
         ongoing: !!card.querySelector('[data-a-ongoing]')?.checked,
         summary: card.querySelector('[data-a-summary]')?.value.trim() || '',
         highlights: highlightsRaw.trim() ? [highlightsRaw.trim()] : [],
-        metrics: kind === 'channel' ? [] : metrics,
+        metrics,
       }
     }).filter((a) => a.name || a.handle)
   }
@@ -197,6 +199,15 @@
       }
       const thumbEl = row.querySelector('[data-m-thumb]')
       if (thumbEl) item.thumbnailUrl = thumbEl.value.trim() || ''
+      if (row.hasAttribute('data-pf-media-metrics')) {
+        const metrics = [...row.querySelectorAll('.pf-metric-row')].map((metricRow) => ({
+          label: metricRow.querySelector('[data-m-label]')?.value.trim() || '',
+          before: metricRow.querySelector('[data-m-before]')?.value.trim() || '',
+          after: metricRow.querySelector('[data-m-after]')?.value.trim() || '',
+          growth: metricRow.querySelector('[data-m-growth]')?.value.trim() || '',
+        })).filter((m) => m.label || m.before || m.after)
+        if (metrics.length) item.metrics = metrics
+      }
       return item
     }).filter((m) => m.title || m.url)
   }
@@ -229,6 +240,52 @@
         accounts: readAccounts(document.getElementById('pf-ig-accounts')),
       },
       rednote: readMedia(document.getElementById('pf-rn-items')),
+    }
+  }
+
+  function readYoutubeForm() {
+    return {
+      youtube: {
+        intro: document.getElementById('pf-yt-intro')?.value.trim() || '',
+        channels: readAccounts(document.getElementById('pf-yt-channels')),
+        shorts: readMedia(document.getElementById('pf-yt-shorts')),
+      },
+    }
+  }
+
+  function readInstagramForm() {
+    return {
+      instagram: {
+        intro: document.getElementById('pf-ig-intro')?.value.trim() || '',
+        accounts: readAccounts(document.getElementById('pf-ig-accounts')),
+      },
+    }
+  }
+
+  function readRednoteForm() {
+    return {
+      rednote: readMedia(document.getElementById('pf-rn-items')),
+    }
+  }
+
+  function setStatus(message) {
+    const statusEl = document.getElementById('portfolio-works-status')
+    if (statusEl) statusEl.textContent = message || ''
+  }
+
+  async function runPortfolioAction(buttonId, busyText, action) {
+    const btn = document.getElementById(buttonId)
+    try {
+      if (btn) btn.disabled = true
+      setStatus(busyText)
+      const result = await action()
+      fillWorksEditor(result)
+      _worksLoaded = true
+      setStatus('완료되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : ''))
+    } catch (e) {
+      alert(e.message || '작업 실패')
+    } finally {
+      if (btn) btn.disabled = false
     }
   }
 
@@ -318,8 +375,18 @@
       container.insertAdjacentHTML('beforeend', rowHtml())
     })
     container?.addEventListener('click', (e) => {
-      if (!e.target.closest('[data-remove-media]')) return
-      e.target.closest('[data-pf-media]')?.remove()
+      if (e.target.closest('[data-remove-media]')) {
+        e.target.closest('[data-pf-media]')?.remove()
+        return
+      }
+      if (e.target.closest('[data-add-media-metric]')) {
+        const metrics = e.target.closest('[data-pf-media]')?.querySelector('[data-m-metrics]')
+        metrics?.insertAdjacentHTML('beforeend', metricRowsHtml([{ label: '', before: '', after: '', growth: '' }]))
+        return
+      }
+      if (e.target.closest('[data-remove-metric]')) {
+        e.target.closest('.pf-metric-row')?.remove()
+      }
     })
     container?.addEventListener('input', (e) => {
       const thumbInput = e.target.closest('[data-m-thumb]')

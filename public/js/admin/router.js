@@ -18,7 +18,9 @@
     submissions: '미션 제출 검수',
     tickets: '고객 문의',
     faqs: 'FAQ 관리',
+    blog: '블로그',
     homepage: '홈페이지 관리',
+    'smartstore-reviews': '스마트스토어 후기',
     settings: '사이트 설정',
     institution: '열람실 관리',
   }
@@ -37,6 +39,7 @@
   }
 
   function showSection(name) {
+    if (!name) return
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'))
     document.querySelectorAll('.section').forEach(el => el.classList.remove('active'))
 
@@ -55,6 +58,8 @@
 
   function bindNav() {
     document.querySelectorAll('.nav-item').forEach(el => {
+      if (el.dataset.routerBound === '1') return
+      el.dataset.routerBound = '1'
       el.addEventListener('click', e => {
         e.preventDefault()
         showSection(el.dataset.section)

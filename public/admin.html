@@ -1080,9 +1080,13 @@
             </div>
           </div>
 
-          <div style="display:flex;align-items:center;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-            <button type="button" class="btn-save" id="portfolio-works-save">포트폴리오 저장</button>
-            <button type="button" class="btn-sm" id="portfolio-works-refresh-stats">유튜브 조회수 갱신</button>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);flex-wrap:wrap">
+            <button type="button" class="btn-save" id="portfolio-youtube-save">유튜브 저장</button>
+            <button type="button" class="btn-sm" id="portfolio-youtube-refresh">조회수·배너 갱신</button>
+            <button type="button" class="btn-save" id="portfolio-instagram-save">인스타그램 저장</button>
+            <button type="button" class="btn-sm" id="portfolio-instagram-refresh">아바타 갱신</button>
+            <button type="button" class="btn-save" id="portfolio-rednote-save">샤오홍슈 저장</button>
+            <button type="button" class="btn-sm" id="portfolio-rednote-refresh">썸네일 추출</button>
             <span id="portfolio-works-status" style="font-size:14px;color:#888"></span>
           </div>
         </div>
@@ -2244,6 +2248,7 @@
   <script src="/js/admin/seq-nav.js?v=1"></script>
   <script src="/js/admin/auth.js?v=1"></script>
   <script src="/js/admin/router.js?v=1"></script>
+  <script src="/js/admin/boot.js?v=1"></script>
   <script src="/js/admin/modules/support.js?v=1"></script>
   <script src="/js/admin/modules/blog.js?v=1"></script>
   <script src="/js/admin/modules/ops.js?v=1"></script>

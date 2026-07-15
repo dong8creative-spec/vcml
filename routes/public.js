@@ -73,9 +73,12 @@ router.get('/footer', async (req, res) => {
   }
 })
 
-// 테스트룸 FAB는 수강생 노출 중단 — 하위 호환용 고정 응답
 router.get('/test-room', async (_req, res) => {
-  res.json({ enabled: false })
+  try {
+    res.json(await db.getTestRoomConfig())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
 })
 
 router.get('/hero', async (req, res) => {

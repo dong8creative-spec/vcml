@@ -1075,7 +1075,7 @@ router.get('/test-room', async (req, res) => {
 })
 
 router.patch('/test-room', async (req, res) => {
-  const { enabled, label, hint, instagram_url, instagram_label, kakao_url, kakao_label } = req.body
+  const { enabled, label, hint, room_url, room_label, instagram_url, instagram_label, kakao_url, kakao_label, tadaksync_url, tadaksync_label } = req.body
   if (instagram_url && !isValidExternalUrl(instagram_url)) {
     return res.status(400).json({ error: '인스타그램 URL 형식이 올바르지 않습니다.' })
   }
@@ -1086,10 +1086,14 @@ router.patch('/test-room', async (req, res) => {
     enabled,
     label,
     hint,
+    room_url: room_url || '',
+    room_label,
     instagram_url: instagram_url || '',
     instagram_label,
     kakao_url: kakao_url || '',
     kakao_label,
+    tadaksync_url: tadaksync_url || '/subtitle-tool.html',
+    tadaksync_label,
   })
   res.json({ success: true, ...settings })
 })
@@ -1152,6 +1156,33 @@ router.post('/instructor-portfolio-works/refresh-youtube-stats', async (req, res
     res.json({ success: true, ...works })
   } catch (e) {
     res.status(400).json({ error: e.message || '조회수 갱신에 실패했습니다.' })
+  }
+})
+
+router.post('/instructor-portfolio-works/refresh-youtube-visuals', async (req, res) => {
+  try {
+    const works = await db.refreshInstructorPortfolioVisuals({ youtube: true })
+    res.json({ success: true, ...works })
+  } catch (e) {
+    res.status(400).json({ error: e.message || '유튜브 배너 갱신에 실패했습니다.' })
+  }
+})
+
+router.post('/instructor-portfolio-works/refresh-instagram-avatars', async (req, res) => {
+  try {
+    const works = await db.refreshInstructorPortfolioVisuals({ instagram: true })
+    res.json({ success: true, ...works })
+  } catch (e) {
+    res.status(400).json({ error: e.message || '인스타그램 아바타 갱신에 실패했습니다.' })
+  }
+})
+
+router.post('/instructor-portfolio-works/refresh-rednote-thumbnails', async (req, res) => {
+  try {
+    const works = await db.refreshInstructorPortfolioVisuals({ rednote: true })
+    res.json({ success: true, ...works })
+  } catch (e) {
+    res.status(400).json({ error: e.message || '샤오홍슈 썸네일 추출에 실패했습니다.' })
   }
 })
 
