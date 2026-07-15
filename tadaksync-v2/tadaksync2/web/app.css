@@ -227,11 +227,28 @@ select:focus { border-color: var(--lime); }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .project-card .p-meta {
-  display: flex; flex-direction: column; gap: 5px;
+  display: flex; flex-direction: column; gap: 8px;
   color: var(--muted); font-size: 12.5px; line-height: 1.35;
 }
-.project-card .p-dur { color: var(--lime); font-weight: 700; }
-.project-card .p-mtime { color: var(--muted); }
+.project-card .p-dur-row {
+  display: flex; align-items: center; min-width: 0;
+}
+.project-card .p-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: 100%;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lime) 14%, var(--panel-2));
+  border: 1px solid color-mix(in srgb, var(--lime) 35%, var(--border));
+  color: var(--lime);
+  font-size: 12px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.project-card .p-badge-label { color: color-mix(in srgb, var(--lime) 72%, #fff); font-weight: 600; }
+.project-card .p-badge-val { letter-spacing: 0.01em; }
+.project-card .p-badge-sep { color: color-mix(in srgb, var(--lime) 45%, var(--muted)); font-weight: 500; }
+.project-card .p-badge-coin { color: var(--lime); }
+.project-card .p-mtime { color: var(--muted); font-size: 12px; }
 .empty { text-align: center; color: var(--muted); padding: 80px 0; }
 .empty p:first-child { font-size: 16px; color: var(--text); margin-bottom: 6px; }
 

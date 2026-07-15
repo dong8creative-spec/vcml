@@ -189,7 +189,14 @@ function renderProjects() {
     card.innerHTML = `
       <div class="p-name" title="${esc(p.name)}">${esc(p.name)}</div>
       <div class="p-meta">
-        <div class="p-dur">영상 최종길이 ${esc(p.duration)} (코인 ${esc(coins)}개 소모 예정)</div>
+        <div class="p-dur-row">
+          <span class="p-badge" title="영상 최종길이 · 예상 코인">
+            <span class="p-badge-label">최종길이</span>
+            <span class="p-badge-val">${esc(p.duration)}</span>
+            <span class="p-badge-sep">·</span>
+            <span class="p-badge-coin">🪙 ${esc(coins)}</span>
+          </span>
+        </div>
         <div class="p-mtime">프로젝트 최신 수정일자 ${esc(p.mtime)}</div>
       </div>`;
     card.addEventListener("click", async () => {
