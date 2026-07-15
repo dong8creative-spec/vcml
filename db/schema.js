@@ -9,6 +9,7 @@ const {
   fetchChannelVisuals,
   aggregateViewStats,
 } = require('../lib/youtube-portfolio')
+const { enrichPortfolioWorksRednoteThumbnails } = require('../lib/rednote-portfolio')
 
 // ── Firebase Admin 초기화 ──
 if (!admin.apps.length) {
@@ -1171,14 +1172,7 @@ function slugifyQuoteId(value, fallback) {
 }
 
 function formatQuoteInlineText(text) {
-  return String(text || '')
-    .replace(/\s*[\r\n]+/g, ' · ')
-    .replace(/\s*,\s*/g, ' · ')
-    .replace(/\s*及\s*/g, ' · ')
-    .replace(/\s*및\s+/g, ' · ')
-    .replace(/\s*·\s*/g, ' · ')
-    .replace(/(?: · )+/g, ' · ')
-    .trim()
+  return String(text || '').trim()
 }
 
 function normalizePortfolioQuoteItems(items) {
@@ -1371,13 +1365,11 @@ function normalizePortfolioHighlights(list) {
   if (!Array.isArray(list)) {
     if (typeof list === 'string') {
       const raw = list.trim()
-      if (!raw) return []
-      const lines = raw.split(/\n/).map(s => s.trim()).filter(Boolean)
-      return (lines.length ? lines : [raw]).slice(0, 8)
+      return raw ? [raw.slice(0, 200)] : []
     }
     return []
   }
-  return list.map(h => String(h || '').trim().slice(0, 80)).filter(Boolean).slice(0, 8)
+  return list.map(h => String(h || '').trim().slice(0, 200)).filter(Boolean).slice(0, 8)
 }
 
 function normalizePortfolioPlaylists(item) {
@@ -5737,6 +5729,7 @@ const db = {
     const next = normalizePortfolioWorks(merged)
     await enrichPortfolioWorksAvatars(next)
     await enrichPortfolioWorksYoutubeStats(next)
+    await enrichPortfolioWorksRednoteThumbnails(next, rest)
     await fs.collection('site_settings').doc('instructor_portfolio_works').set({ ...next, updated_at: now() })
     return { ...next, updated_at: now() }
   },

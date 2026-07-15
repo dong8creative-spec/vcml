@@ -180,6 +180,14 @@
       .replace(/"/g, '&quot;')
   }
 
+  function renderHighlightsHtml(account) {
+    const list = Array.isArray(account?.highlights) ? account.highlights : []
+    if (!list.length) return ''
+    const text = list.length === 1 ? list[0] : list.join(' ')
+    if (!String(text).trim()) return ''
+    return `<p class="ig-account-card__highlights-text">${esc(text)}</p>`
+  }
+
   function formatWon(n) {
     return '₩' + Number(n || 0).toLocaleString('ko-KR')
   }
@@ -419,6 +427,80 @@
     return num.toLocaleString('ko-KR')
   }
 
+  function renderChannelMetricStats(metrics) {
+    if (!Array.isArray(metrics) || !metrics.length) {
+      return '<p class="yt-channel-card__stats-empty">성과 지표를 입력하면 계정 운영 성과가 표시됩니다.</p>'
+    }
+    return `<div class="yt-channel-card__stats yt-channel-card__stats--metrics">${metrics.map((metric) => `
+      <div class="yt-channel-card__stat">
+        <span class="yt-channel-card__stat-label">${esc(metric.label)}</span>
+        <strong class="yt-channel-card__stat-value">${esc(metric.before)} → ${esc(metric.after)}</strong>
+        ${metric.growth ? `<span class="yt-channel-card__stat-growth">${esc(metric.growth)}</span>` : ''}
+      </div>
+    `).join('')}</div>`
+  }
+
+  function renderInstagramAccountCard(account, options) {
+    const {
+      visitLabel = '인스타그램 열기',
+      sampleNote,
+    } = options
+    const visitUrl = normalizeVisitUrl(account.accountUrl, 'instagram')
+    const avatarUrl = String(account.avatarUrl || account.avatar_url || account.profileImage || '').trim()
+    const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
+    const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
+    const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
+    const highlights = renderHighlightsHtml(account)
+    const metricsHtml = renderChannelMetricStats(account.metrics)
+
+    const avatarHtml = avatarUrl
+      ? `<img class="yt-channel-card__avatar" src="${esc(avatarUrl)}" alt="" loading="lazy" decoding="async" onerror="this.classList.add('is-hidden')" />
+         <div class="yt-channel-card__avatar yt-channel-card__avatar--fallback" aria-hidden="true"><i class="ti ti-brand-instagram"></i></div>`
+      : `<div class="yt-channel-card__avatar yt-channel-card__avatar--fallback" aria-hidden="true"><i class="ti ti-brand-instagram"></i></div>`
+
+    const visitAction = visitUrl
+      ? `<a class="ig-account-card__visit-btn" href="${esc(visitUrl)}" target="_blank" rel="noopener noreferrer">
+          <i class="ti ti-brand-instagram" aria-hidden="true"></i>
+          <span>${esc(visitLabel)}</span>
+          <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+        </a>`
+      : ''
+
+    return `<article class="yt-channel-card ig-account-card ig-account-card--instagram yt-channel-card--no-hero">
+      <div class="yt-channel-card__main">
+        <header class="yt-channel-card__header">
+          <div class="yt-channel-card__avatar-wrap">${avatarHtml}</div>
+          <div class="yt-channel-card__identity">
+            <h3 class="yt-channel-card__name">${esc(account.name)}</h3>
+            <p class="yt-channel-card__handle">${esc(account.handle)}</p>
+          </div>
+          <span class="ig-account-card__status ${statusClass}">${statusLabel}</span>
+        </header>
+        <div class="yt-channel-card__body">
+          <dl class="ig-account-card__meta">
+            <div class="ig-account-card__meta-row">
+              <dt>담당 기간</dt>
+              <dd>${esc(period)}</dd>
+            </div>
+            ${account.role ? `
+            <div class="ig-account-card__meta-row">
+              <dt>담당 업무</dt>
+              <dd>${esc(account.role)}</dd>
+            </div>` : ''}
+          </dl>
+
+          ${metricsHtml}
+
+          ${account.summary ? `<p class="ig-account-card__summary">${esc(account.summary)}</p>` : ''}
+          ${highlights}
+          ${account.sample ? `<p class="ig-account-card__sample">${esc(sampleNote)}</p>` : ''}
+
+          ${visitAction ? `<div class="ig-account-card__actions">${visitAction}</div>` : ''}
+        </div>
+      </div>
+    </article>`
+  }
+
   function renderYoutubeChannelCard(account, options) {
     const {
       visitLabel = '유튜브 채널 열기',
@@ -434,9 +516,7 @@
     const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
     const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
     const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
-    const highlights = Array.isArray(account.highlights) && account.highlights.length
-      ? `<ul class="ig-account-card__highlights">${account.highlights.map((item) => `<li>${esc(item)}</li>`).join('')}</ul>`
-      : ''
+    const highlights = renderHighlightsHtml(account)
 
     const bannerHtml = bannerUrl
       ? `<img class="yt-channel-card__banner" src="${esc(bannerUrl)}" alt="" loading="lazy" decoding="async" />`
@@ -543,6 +623,9 @@
     if (options.platform === 'youtube') {
       return renderYoutubeChannelCard(account, options)
     }
+    if (options.platform === 'instagram') {
+      return renderInstagramAccountCard(account, options)
+    }
 
     const {
       iconClass,
@@ -558,9 +641,7 @@
     const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
     const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
     const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
-    const highlights = Array.isArray(account.highlights) && account.highlights.length
-      ? `<ul class="ig-account-card__highlights">${account.highlights.map((item) => `<li>${esc(item)}</li>`).join('')}</ul>`
-      : ''
+    const highlights = renderHighlightsHtml(account)
 
     const visitAction = visitUrl
       ? `<a class="ig-account-card__visit-btn" href="${esc(visitUrl)}" target="_blank" rel="noopener noreferrer">
@@ -637,7 +718,7 @@
       <section class="platform-section">
         <h3 class="platform-section__title">${esc(sectionTitle)}</h3>
         ${intro ? `<p class="platform-section__desc">${esc(intro)}</p>` : ''}
-        <div class="ig-account-list${platform === 'youtube' ? ' yt-channel-list' : ''}">
+        <div class="ig-account-list${platform === 'youtube' || platform === 'instagram' ? ' yt-channel-list' : ''}">
           ${accounts.map((account) => renderChannelAccountCard(account, {
             iconClass, visitLabel, playlistLabel, shareLabel, sampleNote, platform,
           })).join('')}
@@ -725,14 +806,7 @@
   }
 
   function renderMetricCards(metrics) {
-    if (!Array.isArray(metrics) || !metrics.length) return ''
-    return `<div class="ig-account-card__metrics">${metrics.map((metric) => `
-      <div class="ig-metric">
-        <p class="ig-metric__label">${esc(metric.label)}</p>
-        <p class="ig-metric__value">${esc(metric.before)} → ${esc(metric.after)}</p>
-        ${metric.growth ? `<p class="ig-metric__growth">${esc(metric.growth)}</p>` : ''}
-      </div>
-    `).join('')}</div>`
+    return renderChannelMetricStats(metrics)
   }
 
   function renderInstagram(container) {

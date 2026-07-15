@@ -108,7 +108,11 @@
       </div>
       ${viewStatsHtml(account)}` : ''}
       <textarea data-a-summary rows="2" placeholder="성과 요약" style="width:100%;font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--adm-border,#ddd);border-radius:7px;resize:vertical">${esc(account.summary || '')}</textarea>
-      <textarea data-a-highlights rows="2" placeholder="하이라이트 (줄바꿈으로 항목 구분)" style="width:100%;font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--adm-border,#ddd);border-radius:7px;resize:vertical">${esc((account.highlights || []).join('\n'))}</textarea>
+      <textarea data-a-highlights rows="2" placeholder="하이라이트" style="width:100%;font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--adm-border,#ddd);border-radius:7px;resize:vertical">${esc((() => {
+        const h = account.highlights || []
+        if (!h.length) return ''
+        return h.length === 1 ? h[0] : h.join(' ')
+      })())}</textarea>
       ${isChannel ? '' : `<div class="pf-metrics" data-a-metrics>${metricRowsHtml(account.metrics)}</div>
       <button type="button" class="btn-sm" data-add-metric style="margin-top:6px">+ 지표 추가</button>`}
       <input type="hidden" data-a-id value="${esc(account.id || '')}" />
@@ -176,7 +180,7 @@
           : (card.querySelector('[data-a-end]')?.value || ''),
         ongoing: !!card.querySelector('[data-a-ongoing]')?.checked,
         summary: card.querySelector('[data-a-summary]')?.value.trim() || '',
-        highlights: highlightsRaw.split(/\n/).map((s) => s.trim()).filter(Boolean),
+        highlights: highlightsRaw.trim() ? [highlightsRaw.trim()] : [],
         metrics: kind === 'channel' ? [] : metrics,
       }
     }).filter((a) => a.name || a.handle)
@@ -352,13 +356,18 @@
       const btn = document.getElementById('portfolio-works-save')
       try {
         btn.disabled = true
-        if (statusEl) statusEl.textContent = '저장 및 재생목록 조회수 계산 중…'
+        if (statusEl) statusEl.textContent = '저장 중… (유튜브 조회수·샤오홍슈 썸네일 자동 추출)'
         const payload = readWorksForm()
         const result = await API.patch('/admin/instructor-portfolio-works', payload)
         fillWorksEditor(result)
         _worksLoaded = true
+        const rnFilled = (result.rednote || []).filter((item) => String(item.thumbnailUrl || '').trim()).length
+        const rnTotal = (result.rednote || []).filter((item) => String(item.url || '').trim()).length
+        const rnNote = rnTotal
+          ? ` · 샤오홍슈 썸네일 ${rnFilled}/${rnTotal}`
+          : ''
         if (statusEl) {
-          statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+          statusEl.textContent = '저장되었습니다.' + rnNote + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
         }
       } catch (e) {
         alert(e.message || '저장 실패')

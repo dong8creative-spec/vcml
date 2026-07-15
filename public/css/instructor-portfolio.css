@@ -1,6 +1,9 @@
 /* ── 강사 포트폴리오 (채널형 + 선택형 견적) ── */
 .portfolio-page {
   background: #fbfbfd;
+  word-break: normal;
+  line-break: auto;
+  overflow-wrap: break-word;
 }
 
 .portfolio-hero {
@@ -81,6 +84,7 @@
   color: #6e6e73;
   line-height: 1.6;
   margin-bottom: 22px;
+  white-space: pre-wrap;
 }
 
 .portfolio-profile {
@@ -398,6 +402,7 @@
   color: #86868b;
   line-height: 1.5;
   margin: 0;
+  white-space: pre-wrap;
 }
 
 .portfolio-media-card__actions {
@@ -439,6 +444,7 @@
   font-size: 15px;
   color: #6e6e73;
   line-height: 1.65;
+  white-space: pre-wrap;
 }
 
 .platform-section__media {
@@ -462,6 +468,36 @@
   background: #fff;
   border: 1px solid rgba(0, 0, 0, .08);
   box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
+}
+
+.yt-channel-card--no-hero .yt-channel-card__main {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.yt-channel-card--no-hero .yt-channel-card__header {
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.ig-account-card--instagram .yt-channel-card__avatar--fallback {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  color: #fff;
+}
+
+.yt-channel-card__stats--metrics .yt-channel-card__stat-value {
+  display: block;
+  font-size: clamp(16px, 2vw, 22px);
+  line-height: 1.35;
+}
+
+.yt-channel-card__stat-growth {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4169e1;
+  line-height: 1.4;
 }
 
 .yt-channel-card__hero {
@@ -547,8 +583,6 @@
   color: #0f0f0f;
   letter-spacing: -.02em;
   line-height: 1.35;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
 }
 
 .yt-channel-card__handle {
@@ -596,11 +630,11 @@
   font-weight: 600;
   color: #0f0f0f;
   line-height: 1.55;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .yt-channel-card__body .ig-account-card__summary,
+.yt-channel-card__body .ig-account-card__highlights-text,
 .yt-channel-card__body .ig-account-card__highlights,
 .yt-channel-card__body .ig-account-card__sample,
 .yt-channel-card__body .yt-channel-card__stats-empty,
@@ -608,6 +642,7 @@
   margin: 0;
 }
 
+.yt-channel-card__body .ig-account-card__highlights-text,
 .yt-channel-card__body .ig-account-card__highlights {
   margin: 0;
 }
@@ -830,6 +865,16 @@
   font-size: 14px;
   color: #424245;
   line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.ig-account-card__highlights-text {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4169e1;
+  line-height: 1.55;
+  white-space: pre-wrap;
 }
 
 .ig-account-card__highlights {
@@ -916,6 +961,15 @@
 
 .ig-account-card--instagram .ig-account-card__visit-btn:hover {
   filter: brightness(1.05);
+}
+
+.ig-account-card--instagram.yt-channel-card .ig-account-card__actions {
+  display: block;
+}
+
+.ig-account-card--instagram.yt-channel-card .ig-account-card__visit-btn {
+  width: 100%;
+  justify-content: center;
 }
 
 .ig-account-card__playlist-btn {
@@ -1053,9 +1107,7 @@
   color: #86868b;
   line-height: 1.5;
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: pre-wrap;
 }
 
 .quote-summary {
@@ -1164,6 +1216,7 @@
   font-size: 13px;
   color: #6e6e73;
   line-height: 1.55;
+  white-space: pre-wrap;
 }
 
 .quote-scope-note {
@@ -1175,6 +1228,7 @@
   font-size: 14px;
   color: #424245;
   line-height: 1.65;
+  white-space: pre-wrap;
 }
 
 .quote-scope-note:empty {
@@ -1209,9 +1263,7 @@
   font-size: 13px;
   color: #86868b;
   line-height: 1.55;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: pre-wrap;
 }
 
 @media (max-width: 860px) {
