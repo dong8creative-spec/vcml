@@ -1023,6 +1023,47 @@
 
       <div class="card">
         <div class="card-header">
+          <div class="card-title">포트폴리오 선택형 견적서</div>
+          <p class="sec-sub">/instructor-portfolio.html 하단 견적서 · 기획·촬영·편집 분류와 항목·단가를 관리합니다.</p>
+        </div>
+        <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:16px">
+          <div class="two-col" style="gap:12px">
+            <div class="form-group">
+              <label>섹션 제목</label>
+              <input type="text" id="portfolio-quote-title" placeholder="선택형 견적서" />
+            </div>
+            <div class="form-group">
+              <label>섹션 설명</label>
+              <input type="text" id="portfolio-quote-desc" placeholder="기획 · 촬영 · 편집 중 필요한 범위를 선택하면..." />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>범위 안내 문구</label>
+            <textarea id="portfolio-quote-scope-note" rows="2" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="기획·촬영·편집 선택에 따라 견적이 달라진다는 안내"></textarea>
+          </div>
+          <div class="form-group">
+            <label>합계 안내 문구</label>
+            <input type="text" id="portfolio-quote-summary-note" placeholder="부가세·출장비·수정 횟수에 따라 달라질 수 있습니다" />
+          </div>
+          <div class="form-group">
+            <label>하단 면책 문구</label>
+            <textarea id="portfolio-quote-disclaimer" rows="3" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
+          </div>
+          <div class="form-group">
+            <label>견적 분류 · 항목</label>
+            <p class="sec-sub">기획 / 촬영 / 편집 등 분류별로 항목과 단가를 입력하세요. 분류마다 최소 1개 항목이 필요합니다.</p>
+            <div id="portfolio-quote-groups-editor"></div>
+            <button type="button" class="btn-sm" id="portfolio-quote-group-add" style="margin-top:8px;width:fit-content">+ 분류 추가</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <button type="button" class="btn-save" id="portfolio-quote-save">견적서 저장</button>
+            <span id="portfolio-quote-status" style="font-size:14px;color:#888"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
           <div class="card-title">대표 강사 프로필</div>
           <p class="sec-sub">사진·이름·한줄 소개·태그가 페이지 상단 프로필 영역에 표시됩니다.</p>
         </div>
@@ -5226,6 +5267,7 @@
       if (!_instructorsIntroLoaded) {
         await loadInstructorsIntroSettings(true)
       }
+      await loadPortfolioQuoteSettings(true)
       await loadInstructorTable()
     }
 
@@ -5324,6 +5366,135 @@
         const result = await API.patch('/admin/instructors-intro', payload)
         fillInstructorsIntroEditor(result)
         _instructorsIntroLoaded = true
+        if (statusEl) {
+          statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+        }
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      } finally {
+        btn.disabled = false
+      }
+    })
+
+    let _portfolioQuoteLoaded = false
+
+    function quoteItemRowHtml(item = {}) {
+      return `<div class="quote-item-row">
+        <input type="text" data-item-label placeholder="항목명" value="${esc(item.label || '')}" />
+        <input type="text" data-item-desc placeholder="설명" value="${esc(item.desc || '')}" />
+        <input type="number" data-item-price min="0" step="1000" placeholder="단가" value="${Number(item.price) || ''}" />
+        <button type="button" class="btn-sm-danger" data-remove-item>삭제</button>
+      </div>`
+    }
+
+    function renderQuoteGroupCard(group = { title: '', description: '', items: [] }) {
+      const items = (group.items && group.items.length ? group.items : [{ label: '', desc: '', price: 0 }])
+        .map(item => quoteItemRowHtml(item)).join('')
+      return `<div class="quote-group-card" data-quote-group>
+        <div class="quote-group-card-head">
+          <input type="text" data-group-title placeholder="분류명 (예: 기획)" value="${esc(group.title || '')}" />
+          <input type="text" data-group-desc placeholder="분류 설명" value="${esc(group.description || '')}" />
+          <button type="button" class="btn-sm-danger" data-remove-group>분류 삭제</button>
+        </div>
+        <div class="quote-item-rows" data-group-items>${items}</div>
+        <button type="button" class="btn-sm" data-add-item style="margin-top:8px">+ 항목 추가</button>
+      </div>`
+    }
+
+    function fillPortfolioQuoteEditor(cfg) {
+      document.getElementById('portfolio-quote-title').value = cfg.section_title || ''
+      document.getElementById('portfolio-quote-desc').value = cfg.section_desc || ''
+      document.getElementById('portfolio-quote-scope-note').value = cfg.scope_note || ''
+      document.getElementById('portfolio-quote-summary-note').value = cfg.summary_note || ''
+      document.getElementById('portfolio-quote-disclaimer').value = cfg.disclaimer || ''
+      const groupsEl = document.getElementById('portfolio-quote-groups-editor')
+      const groups = cfg.groups?.length ? cfg.groups : [{ title: '', description: '', items: [{ label: '', desc: '', price: 0 }] }]
+      groupsEl.innerHTML = groups.map(renderQuoteGroupCard).join('')
+    }
+
+    function readPortfolioQuoteForm() {
+      const groups = [...document.querySelectorAll('[data-quote-group]')].map(groupEl => ({
+        title: groupEl.querySelector('[data-group-title]')?.value.trim() || '',
+        description: groupEl.querySelector('[data-group-desc]')?.value.trim() || '',
+        items: [...groupEl.querySelectorAll('[data-group-items] .quote-item-row')].map(row => ({
+          label: row.querySelector('[data-item-label]')?.value.trim() || '',
+          desc: row.querySelector('[data-item-desc]')?.value.trim() || '',
+          price: Number(row.querySelector('[data-item-price]')?.value) || 0,
+        })).filter(item => item.label),
+      })).filter(group => group.title)
+      return {
+        section_title: document.getElementById('portfolio-quote-title').value.trim(),
+        section_desc: document.getElementById('portfolio-quote-desc').value.trim(),
+        scope_note: document.getElementById('portfolio-quote-scope-note').value.trim(),
+        summary_note: document.getElementById('portfolio-quote-summary-note').value.trim(),
+        disclaimer: document.getElementById('portfolio-quote-disclaimer').value.trim(),
+        groups,
+      }
+    }
+
+    async function loadPortfolioQuoteSettings(force = false) {
+      if (_portfolioQuoteLoaded && !force) return
+      try {
+        const cfg = await API.get('/admin/instructor-portfolio-quote')
+        fillPortfolioQuoteEditor(cfg)
+        _portfolioQuoteLoaded = true
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
+    document.getElementById('portfolio-quote-group-add')?.addEventListener('click', () => {
+      const editor = document.getElementById('portfolio-quote-groups-editor')
+      editor.insertAdjacentHTML('beforeend', renderQuoteGroupCard({ title: '', description: '', items: [{ label: '', desc: '', price: 0 }] }))
+    })
+
+    document.getElementById('portfolio-quote-groups-editor')?.addEventListener('click', e => {
+      const addBtn = e.target.closest('[data-add-item]')
+      if (addBtn) {
+        const groupEl = addBtn.closest('[data-quote-group]')
+        groupEl.querySelector('[data-group-items]').insertAdjacentHTML('beforeend', quoteItemRowHtml())
+        return
+      }
+      const removeItemBtn = e.target.closest('[data-remove-item]')
+      if (removeItemBtn) {
+        const rows = removeItemBtn.closest('[data-group-items]')
+        const row = removeItemBtn.closest('.quote-item-row')
+        if (rows.querySelectorAll('.quote-item-row').length <= 1) {
+          alert('분류마다 최소 1개 항목이 필요합니다.')
+          return
+        }
+        row.remove()
+        return
+      }
+      const removeGroupBtn = e.target.closest('[data-remove-group]')
+      if (removeGroupBtn) {
+        const editor = document.getElementById('portfolio-quote-groups-editor')
+        if (editor.querySelectorAll('[data-quote-group]').length <= 1) {
+          alert('최소 1개 분류가 필요합니다.')
+          return
+        }
+        removeGroupBtn.closest('[data-quote-group]').remove()
+      }
+    })
+
+    document.getElementById('portfolio-quote-save')?.addEventListener('click', async () => {
+      const statusEl = document.getElementById('portfolio-quote-status')
+      const btn = document.getElementById('portfolio-quote-save')
+      try {
+        btn.disabled = true
+        const payload = readPortfolioQuoteForm()
+        if (!payload.groups.length) {
+          alert('최소 1개 분류를 입력해주세요.')
+          return
+        }
+        const emptyGroup = payload.groups.find(group => !group.items.length)
+        if (emptyGroup) {
+          alert(`"${emptyGroup.title}" 분류에 최소 1개 항목을 입력해주세요.`)
+          return
+        }
+        const result = await API.patch('/admin/instructor-portfolio-quote', payload)
+        fillPortfolioQuoteEditor(result)
+        _portfolioQuoteLoaded = true
         if (statusEl) {
           statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
         }

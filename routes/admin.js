@@ -1120,6 +1120,19 @@ router.patch('/instructors-intro', async (req, res) => {
   }
 })
 
+router.get('/instructor-portfolio-quote', async (req, res) => {
+  res.json(await db.getInstructorPortfolioQuote())
+})
+
+router.patch('/instructor-portfolio-quote', async (req, res) => {
+  try {
+    const quote = await db.updateInstructorPortfolioQuote(req.body)
+    res.json({ success: true, ...quote })
+  } catch (e) {
+    res.status(400).json({ error: e.message || '저장에 실패했습니다.' })
+  }
+})
+
 router.get('/instructors', async (req, res) => {
   res.json(await db.getInstructors({ publicOnly: false }))
 })

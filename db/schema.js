@@ -616,6 +616,15 @@ async function seedInstructorsIntroDefaults() {
   })
 }
 
+async function seedInstructorPortfolioQuoteDefaults() {
+  const doc = await fs.collection('site_settings').doc('instructor_portfolio_quote').get()
+  if (doc.exists) return
+  await fs.collection('site_settings').doc('instructor_portfolio_quote').set({
+    ...normalizePortfolioQuote({}),
+    updated_at: now(),
+  })
+}
+
 async function seedEditorWorkbooks() {
   for (const wb of EDITOR_WORKBOOK_SEED) {
     const snap = await fs.collection('editor_workbooks').where('slug', '==', wb.slug).limit(1).get()
@@ -1018,6 +1027,136 @@ const DEFAULT_INSTRUCTORS_INTRO = {
     { year: '2020', title: '방송·광고 현장 활동', description: '캡컷·다빈치 리졸브 기반 상업 영상 제작' },
     { year: '2010', title: '영상 제작 경력 시작', description: '편집·모션그래픽 분야 현장 경험 축적' },
   ],
+}
+
+const DEFAULT_INSTRUCTOR_PORTFOLIO_QUOTE = {
+  section_title: '선택형 견적서',
+  section_desc: '기획 · 촬영 · 편집 중 필요한 범위를 선택하면 예상 금액이 달라집니다.',
+  scope_note: '견적은 선택하신 기획·촬영·편집 범위와 항목에 따라 달라집니다. 필요한 분류와 옵션만 골라 확인하세요.',
+  summary_note: '부가세·출장비·수정 횟수에 따라 달라질 수 있습니다',
+  disclaimer: '이 견적서는 참고용 초안입니다. 실제 금액은 작업 범위·분량·일정에 따라 달라지며, 문의·결제 기능은 포함되어 있지 않습니다.',
+  groups: [
+    {
+      id: 'planning',
+      title: '기획',
+      description: '콘셉트 · 콘티 · 촬영 · 편집 방향 설계',
+      sort_order: 1,
+      items: [
+        { id: 'plan-content', label: '콘텐츠 기획', desc: '주제 정리 · 타깃 · 톤앤매너 설계', price: 50000, sort_order: 1 },
+        { id: 'plan-platform', label: '플랫폼 맞춤형 기획', desc: '플랫폼별 콘텐츠 전략 · 촬영 · 편집 방향 설계', price: 120000, sort_order: 2 },
+      ],
+    },
+    {
+      id: 'shooting',
+      title: '촬영',
+      description: '현장 촬영 · 디렉팅 · 소스 확보',
+      sort_order: 2,
+      items: [
+        { id: 'shoot-2h', label: '2시간 촬영', desc: '카메라 촬영 · 기본 소스 확보', price: 150000, sort_order: 1 },
+        { id: 'shoot-4h', label: '4시간 촬영', desc: '현장 촬영 · 다각도 소스 확보', price: 350000, sort_order: 2 },
+        { id: 'shoot-8h', label: '1일 촬영 (8시간)', desc: '종일 촬영 · 다각도 소스 확보', price: 750000, sort_order: 3 },
+      ],
+    },
+    {
+      id: 'editing',
+      title: '편집',
+      description: '컷 편집 · 자막 · 모션 · 업로드 세팅',
+      sort_order: 3,
+      items: [
+        { id: 'edit-basic', label: '기본 편집', desc: '컷 편집 · BGM · 기본 자막 (15~30초)', price: 120000, sort_order: 1 },
+        { id: 'edit-subtitle', label: '고급 자막·모션', desc: '키워드 강조 · 간단한 모션 그래픽', price: 70000, sort_order: 2 },
+        { id: 'edit-upload', label: '플랫폼 업로드 세팅', desc: '유튜브 · 인스타 · 샤오홍슈 업로드 가이드', price: 40000, sort_order: 3 },
+      ],
+    },
+    {
+      id: 'training',
+      title: '강의 · 컨설팅',
+      description: '교육 · 피드백 · 채널 컨설팅',
+      sort_order: 4,
+      items: [
+        { id: 'tr-1on1-online', label: '1:1 편집 컨설팅 (온라인)', desc: '3시간 화상 피드백', price: 600000, sort_order: 1 },
+        { id: 'tr-1on1-offline', label: '1:1 편집 컨설팅 (오프라인)', desc: '3시간 대면 피드백', price: 750000, sort_order: 2 },
+        { id: 'tr-group', label: '소규모 그룹 워크숍', desc: '4시간 · 2회차 · 5~8명 대상 실습형 강의', price: 1200000, sort_order: 3 },
+        { id: 'tr-channel', label: '채널 콘텐츠 컨설팅 및 협동운영', desc: '2개월 · 매주 2회 · 16회차', price: 3500000, sort_order: 4 },
+      ],
+    },
+  ],
+}
+
+function slugifyQuoteId(value, fallback) {
+  const base = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+  return base || fallback
+}
+
+function formatQuoteInlineText(text) {
+  return String(text || '')
+    .replace(/\s*[\r\n]+/g, ' · ')
+    .replace(/\s*,\s*/g, ' · ')
+    .replace(/\s*及\s*/g, ' · ')
+    .replace(/\s*및\s+/g, ' · ')
+    .replace(/\s*·\s*/g, ' · ')
+    .replace(/(?: · )+/g, ' · ')
+    .trim()
+}
+
+function normalizePortfolioQuoteItems(items) {
+  if (!Array.isArray(items)) return []
+  return items
+    .map((item, i) => ({
+      id: String(item?.id || slugifyQuoteId(item?.label, `item-${i + 1}`)).trim().slice(0, 60),
+      label: String(item?.label || '').trim().slice(0, 80),
+      desc: formatQuoteInlineText(item?.desc).slice(0, 300),
+      price: Math.max(0, Number(item?.price) || 0),
+      sort_order: Number(item?.sort_order) || i + 1,
+    }))
+    .filter(item => item.label)
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+    .slice(0, 20)
+    .map((item, i) => ({ ...item, sort_order: i + 1 }))
+}
+
+function normalizePortfolioQuoteGroups(groups) {
+  if (!Array.isArray(groups)) {
+    return DEFAULT_INSTRUCTOR_PORTFOLIO_QUOTE.groups.map((group, i) => ({
+      ...group,
+      items: group.items.map(item => ({ ...item })),
+      sort_order: i + 1,
+    }))
+  }
+  return groups
+    .map((group, i) => ({
+      id: String(group?.id || slugifyQuoteId(group?.title, `group-${i + 1}`)).trim().slice(0, 40),
+      title: String(group?.title || '').trim().slice(0, 40),
+      description: formatQuoteInlineText(group?.description).slice(0, 300),
+      sort_order: Number(group?.sort_order) || i + 1,
+      items: normalizePortfolioQuoteItems(group?.items),
+    }))
+    .filter(group => group.title)
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+    .slice(0, 10)
+    .map((group, i) => ({ ...group, sort_order: i + 1 }))
+}
+
+function normalizePortfolioQuote(data = {}) {
+  const base = {
+    ...DEFAULT_INSTRUCTOR_PORTFOLIO_QUOTE,
+    groups: DEFAULT_INSTRUCTOR_PORTFOLIO_QUOTE.groups.map(group => ({
+      ...group,
+      items: group.items.map(item => ({ ...item })),
+    })),
+  }
+  if (data.section_title != null) base.section_title = String(data.section_title).trim().slice(0, 80) || base.section_title
+  if (data.section_desc != null) base.section_desc = String(data.section_desc).trim().slice(0, 500)
+  if (data.scope_note != null) base.scope_note = String(data.scope_note).trim().slice(0, 500)
+  if (data.summary_note != null) base.summary_note = String(data.summary_note).trim().slice(0, 300)
+  if (data.disclaimer != null) base.disclaimer = String(data.disclaimer).trim().slice(0, 1000)
+  if (data.groups !== undefined) base.groups = normalizePortfolioQuoteGroups(data.groups)
+  return base
 }
 
 function normalizeTimelineAchievements(list) {
@@ -4972,6 +5111,28 @@ const db = {
     return db.getInstructorsIntro()
   },
 
+  async getInstructorPortfolioQuote() {
+    const doc = await fs.collection('site_settings').doc('instructor_portfolio_quote').get()
+    if (!doc.exists) return { ...normalizePortfolioQuote({}), updated_at: null }
+    const data = doc.data()
+    return { ...normalizePortfolioQuote(data), updated_at: data.updated_at || null }
+  },
+
+  async updateInstructorPortfolioQuote(data) {
+    const existing = await db.getInstructorPortfolioQuote()
+    const { updated_at, ...rest } = existing || {}
+    const merged = { ...rest, ...data }
+    if (Array.isArray(data?.groups)) merged.groups = data.groups
+    const next = normalizePortfolioQuote(merged)
+    for (const group of next.groups || []) {
+      if (!group.items.length) {
+        throw new Error(`"${group.title}" 분류에 최소 1개 이상의 항목이 필요합니다.`)
+      }
+    }
+    await fs.collection('site_settings').doc('instructor_portfolio_quote').set({ ...next, updated_at: now() })
+    return db.getInstructorPortfolioQuote()
+  },
+
   async getInstructors({ publicOnly = false } = {}) {
     const key = publicOnly ? 'instructors:public' : 'instructors:all'
     const cached = cacheGet(key)
@@ -6036,6 +6197,7 @@ seed().catch(console.error)
 seedEditorWorkbooks().catch(console.error)
 seedClientCouponFaq().catch(console.error)
 seedInstructorsIntroDefaults().catch(console.error)
+seedInstructorPortfolioQuoteDefaults().catch(console.error)
 
 module.exports = db
 module.exports.courseAccess = courseAccess

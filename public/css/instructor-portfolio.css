@@ -1,0 +1,906 @@
+/* ── 강사 포트폴리오 (채널형 + 선택형 견적) ── */
+.portfolio-page {
+  background: #fbfbfd;
+}
+
+.portfolio-hero {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 52px 22px 20px;
+  text-align: center;
+}
+
+.portfolio-hero-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #86868b;
+  margin-bottom: 10px;
+}
+
+.portfolio-hero-title {
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 700;
+  letter-spacing: -.015em;
+  line-height: 1.08;
+  color: #1d1d1f;
+  margin-bottom: 10px;
+}
+
+.portfolio-hero-subtitle {
+  font-size: 17px;
+  color: #6e6e73;
+  max-width: 560px;
+  margin: 0 auto 12px;
+  line-height: 1.55;
+}
+
+.portfolio-hero-lead {
+  font-size: 15px;
+  color: #86868b;
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.portfolio-main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 22px 72px;
+}
+
+.portfolio-card {
+  padding: 32px 36px;
+  margin-bottom: 24px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .04);
+}
+
+.portfolio-section-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #86868b;
+  margin-bottom: 8px;
+}
+
+.portfolio-section-title {
+  font-size: clamp(22px, 3.2vw, 28px);
+  font-weight: 700;
+  color: #1d1d1f;
+  letter-spacing: -.015em;
+  margin-bottom: 8px;
+}
+
+.portfolio-section-desc {
+  font-size: 15px;
+  color: #6e6e73;
+  line-height: 1.6;
+  margin-bottom: 22px;
+}
+
+.portfolio-profile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.portfolio-profile__meta {
+  min-width: 0;
+}
+
+.portfolio-profile__name {
+  font-size: clamp(22px, 3.5vw, 28px);
+  font-weight: 800;
+  color: #1d1d1f;
+  letter-spacing: -.02em;
+  margin-bottom: 6px;
+}
+
+.portfolio-profile__role {
+  font-size: 15px;
+  color: #6e6e73;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.portfolio-profile__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portfolio-profile__tags span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
+.portfolio-profile__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.portfolio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, transform .15s ease;
+}
+
+.portfolio-btn:active {
+  transform: scale(.98);
+}
+
+.portfolio-btn--primary {
+  background: #1d1d1f;
+  color: #fff;
+}
+
+.portfolio-btn--primary:hover {
+  background: #333;
+}
+
+.portfolio-btn--ghost {
+  background: #fff;
+  color: #1d1d1f;
+  border: 1.5px solid rgba(0, 0, 0, .12);
+}
+
+.portfolio-btn--ghost:hover {
+  background: #f5f5f7;
+  border-color: rgba(0, 0, 0, .2);
+}
+
+.portfolio-btn--sm {
+  min-height: 38px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.portfolio-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.portfolio-filter__btn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1.5px solid #eee;
+  background: #fff;
+  color: #666;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.portfolio-filter__btn:hover {
+  border-color: #ccc;
+  color: #1d1d1f;
+}
+
+.portfolio-filter__btn.active {
+  background: #1d1d1f;
+  color: #fff;
+  border-color: #1d1d1f;
+}
+
+.portfolio-panel[hidden] {
+  display: none !important;
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.portfolio-marquee {
+  position: relative;
+  overflow: hidden;
+  margin: 0 -4px;
+  padding: 2px 0 6px;
+}
+
+.portfolio-marquee::before,
+.portfolio-marquee::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.portfolio-marquee::before {
+  left: 0;
+  background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
+}
+
+.portfolio-marquee::after {
+  right: 0;
+  background: linear-gradient(to left, #fff, rgba(255, 255, 255, 0));
+}
+
+.portfolio-marquee__viewport {
+  overflow: hidden;
+  width: 100%;
+}
+
+.portfolio-marquee__track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.portfolio-marquee.is-active .portfolio-marquee__track {
+  animation: portfolio-marquee-scroll var(--marquee-duration, 32s) linear infinite;
+}
+
+.portfolio-marquee.is-paused .portfolio-marquee__track {
+  animation-play-state: paused;
+}
+
+.portfolio-marquee__group {
+  display: flex;
+  gap: 18px;
+  padding-right: 18px;
+  flex-shrink: 0;
+}
+
+.portfolio-marquee__group .portfolio-media-card {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+@keyframes portfolio-marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-1 * var(--marquee-distance, 50%))); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-marquee.is-active .portfolio-marquee__track {
+    animation: none;
+  }
+
+  .portfolio-marquee__viewport {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+}
+
+.portfolio-media-card {
+  display: flex;
+  flex-direction: column;
+  background: #fbfbfd;
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.portfolio-media-card:hover {
+  border-color: rgba(0, 0, 0, .12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+}
+
+.portfolio-media-card__thumb {
+  position: relative;
+  aspect-ratio: 9 / 16;
+  background: linear-gradient(160deg, #1d1d1f 0%, #3a3a3c 100%);
+  overflow: hidden;
+}
+
+.portfolio-media-card__thumb iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.portfolio-media-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  color: rgba(255, 255, 255, .88);
+  text-align: center;
+}
+
+.portfolio-media-card__placeholder i {
+  font-size: 36px;
+  opacity: .9;
+}
+
+.portfolio-media-card__placeholder span {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  opacity: .85;
+}
+
+.portfolio-media-card__badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  backdrop-filter: blur(6px);
+}
+
+.portfolio-media-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 14px 16px;
+  flex: 1;
+}
+
+.portfolio-media-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1d1d1f;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.portfolio-media-card__desc {
+  font-size: 13px;
+  color: #86868b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.portfolio-media-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.portfolio-instagram {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.ig-intro {
+  margin: 0 0 18px;
+  font-size: 15px;
+  color: #6e6e73;
+  line-height: 1.65;
+}
+
+.ig-account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ig-account-card {
+  padding: 24px;
+  background: linear-gradient(145deg, #fbfbfd 0%, #f5f5f7 100%);
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 16px;
+}
+
+.ig-account-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ig-account-card__identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.ig-account-card__icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #1d1d1f;
+  color: #fff;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.ig-account-card__name {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1d1d1f;
+  letter-spacing: -.02em;
+  margin: 0 0 4px;
+}
+
+.ig-account-card__handle {
+  font-size: 14px;
+  color: #86868b;
+  margin: 0;
+}
+
+.ig-account-card__status {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ig-account-card__status.is-ongoing {
+  background: rgba(65, 105, 225, .12);
+  color: #4169e1;
+}
+
+.ig-account-card__status.is-completed {
+  background: #ececee;
+  color: #6e6e73;
+}
+
+.ig-account-card__meta {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.ig-account-card__meta-row {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+
+.ig-account-card__meta-row dt {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #86868b;
+}
+
+.ig-account-card__meta-row dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  line-height: 1.5;
+}
+
+.ig-account-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ig-metric {
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 12px;
+}
+
+.ig-metric__label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #86868b;
+}
+
+.ig-metric__value {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1d1d1f;
+  font-variant-numeric: tabular-nums;
+}
+
+.ig-metric__growth {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4169e1;
+}
+
+.ig-account-card__summary {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #424245;
+  line-height: 1.65;
+}
+
+.ig-account-card__highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.ig-account-card__highlights li {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(65, 105, 225, .1);
+  color: #4169e1;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.ig-account-card__sample {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #aeaeb2;
+}
+
+.ig-account-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portfolio-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #86868b;
+  font-size: 15px;
+}
+
+/* ── 선택형 견적서 ── */
+.quote-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 22px;
+  align-items: start;
+}
+
+.quote-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.quote-group__title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1d1d1f;
+  margin: 0 0 12px;
+}
+
+.quote-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quote-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: #fbfbfd;
+  border: 1.5px solid rgba(0, 0, 0, .06);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+
+.quote-option:hover {
+  border-color: rgba(0, 0, 0, .14);
+}
+
+.quote-option.is-checked {
+  background: #fff;
+  border-color: #1d1d1f;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .05);
+}
+
+.quote-option input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: #1d1d1f;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.quote-option__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.quote-option__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.quote-option__label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1d1d1f;
+}
+
+.quote-option__price {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1d1d1f;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.quote-option__desc {
+  font-size: 13px;
+  color: #86868b;
+  line-height: 1.5;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quote-summary {
+  position: sticky;
+  top: 88px;
+  padding: 22px;
+  background: #1d1d1f;
+  color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
+}
+
+.quote-summary__eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .55);
+  margin-bottom: 8px;
+}
+
+.quote-summary__count {
+  font-size: 14px;
+  color: rgba(255, 255, 255, .7);
+  margin-bottom: 6px;
+}
+
+.quote-summary__total {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
+}
+
+.quote-summary__note {
+  font-size: 12px;
+  color: rgba(255, 255, 255, .5);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.quote-summary__list {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.quote-summary__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, .8);
+}
+
+.quote-summary__list li span:last-child {
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.quote-summary__empty {
+  font-size: 13px;
+  color: rgba(255, 255, 255, .45);
+  margin: 0 0 16px;
+}
+
+.quote-summary__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quote-summary .portfolio-btn--primary {
+  background: #fff;
+  color: #1d1d1f;
+}
+
+.quote-summary .portfolio-btn--primary:hover {
+  background: #f0f0f0;
+}
+
+.quote-summary .portfolio-btn--ghost {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, .28);
+}
+
+.quote-summary .portfolio-btn--ghost:hover {
+  background: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .45);
+}
+
+.quote-disclaimer {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: #f5f5f7;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #6e6e73;
+  line-height: 1.55;
+}
+
+.quote-scope-note {
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  background: rgba(65, 105, 225, .08);
+  border: 1px solid rgba(65, 105, 225, .16);
+  border-radius: 12px;
+  font-size: 14px;
+  color: #424245;
+  line-height: 1.65;
+}
+
+.quote-scope-note:empty {
+  display: none;
+}
+
+.quote-scope-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.quote-scope-tag {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f5f5f7;
+  border: 1px solid rgba(0, 0, 0, .08);
+  font-size: 12px;
+  font-weight: 700;
+  color: #86868b;
+}
+
+.quote-scope-tag.is-active {
+  background: #1d1d1f;
+  border-color: #1d1d1f;
+  color: #fff;
+}
+
+.quote-group__desc {
+  margin: -4px 0 12px;
+  font-size: 13px;
+  color: #86868b;
+  line-height: 1.55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 860px) {
+  .quote-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .quote-summary {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .portfolio-card {
+    padding: 24px 20px;
+  }
+
+  .portfolio-profile {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .portfolio-profile__actions,
+  .portfolio-instagram-card__actions,
+  .portfolio-media-card__actions {
+    width: 100%;
+  }
+
+  .portfolio-profile__actions .portfolio-btn,
+  .ig-account-card__actions .portfolio-btn,
+  .portfolio-media-card__actions .portfolio-btn {
+    flex: 1;
+  }
+
+  .ig-account-card {
+    padding: 20px 18px;
+  }
+
+  .ig-account-card__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ig-account-card__meta-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .ig-account-card__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .quote-option__top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 420px) {
+  .portfolio-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -133,6 +133,34 @@
   white-space: pre-line;
 }
 
+.instructor-profile__actions {
+  margin-top: 18px;
+}
+
+.instructor-profile__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: #1d1d1f;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background .2s ease, transform .15s ease;
+}
+
+.instructor-profile__cta:hover {
+  background: #333;
+}
+
+.instructor-profile__cta:active {
+  transform: scale(.98);
+}
+
 .instructor-greeting {
   padding: 40px 40px 44px;
   margin-bottom: 28px;

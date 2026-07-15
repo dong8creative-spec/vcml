@@ -965,6 +965,37 @@ button { cursor: pointer; }
   cursor: pointer;
 }
 
+.quote-group-card {
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 14px;
+  background: var(--bg-soft);
+  margin-bottom: 12px;
+}
+.quote-group-card-head {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.quote-item-rows { display: flex; flex-direction: column; gap: 8px; }
+.quote-item-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 120px auto;
+  gap: 8px;
+  align-items: center;
+}
+.quote-item-row input[type="text"],
+.quote-item-row input[type="number"] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--adm-border);
+  border-radius: 7px;
+  font-size: 13px;
+  background: #fff;
+}
+
 /* ===== INSTRUCTOR TIMELINE EDITOR ===== */
 .instructors-timeline-editor {
   display: flex;

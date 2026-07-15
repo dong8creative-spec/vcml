@@ -87,6 +87,14 @@ router.get('/instructors', async (req, res) => {
   }
 })
 
+router.get('/instructor-portfolio/quote', async (req, res) => {
+  try {
+    res.json(await db.getInstructorPortfolioQuote())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.get('/recent-orders', async (req, res) => {
   try {
     const orders = await db.getRecentPublicOrders(20)
