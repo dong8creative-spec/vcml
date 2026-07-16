@@ -1,7 +1,7 @@
 /** 우측 고정 바로가기 플로팅 패널 (편집 테스트 · 타닥싱크 · SNS) */
 ;(function () {
   const ROOT_ID = 'test-room-fab'
-  const FAB_VERSION = 18
+  const FAB_VERSION = 20
   const ENTER_MS = 540
   const LEAVE_MS = 300
   const REVIEWS_SECTION = '.review-ticker-section, [data-home-section="reviews"]'
@@ -156,7 +156,47 @@
 
   function initScrollReveal(root) {
     teardownScrollReveal()
-    setFabRevealState(root, true, false)
+
+    if (!isHomePage()) {
+      setFabRevealState(root, true, false)
+      return
+    }
+
+    setFabRevealState(root, false, false)
+
+    let ticking = false
+    const scheduleUpdate = () => {
+      if (!ticking) {
+        ticking = true
+        requestAnimationFrame(() => {
+          ticking = false
+          evaluateReveal(root)
+        })
+      }
+    }
+
+    window.addEventListener('scroll', scheduleUpdate, { passive: true })
+    window.addEventListener('resize', scheduleUpdate, { passive: true })
+    scrollRevealCleanup = () => {
+      window.removeEventListener('scroll', scheduleUpdate)
+      window.removeEventListener('resize', scheduleUpdate)
+    }
+
+    scheduleUpdate()
+    window.addEventListener('load', scheduleUpdate, { once: true })
+
+    const origApply = window.applyHomepageLayout
+    if (origApply && !origApply.__trfHooked) {
+      window.applyHomepageLayout = async function (...args) {
+        const result = await origApply.apply(this, args)
+        scheduleUpdate()
+        return result
+      }
+      window.applyHomepageLayout.__trfHooked = true
+    }
+
+    window.setTimeout(scheduleUpdate, 300)
+    window.setTimeout(scheduleUpdate, 1200)
   }
 
   function removeWidget() {
@@ -255,7 +295,7 @@
     }
     try {
       const cfg = await fetchConfig()
-      mountWidget({ ...cfg, enabled: true })
+      mountWidget(cfg)
     } catch (err) {
       console.warn('[test-room-fab]', err)
       removeWidget()

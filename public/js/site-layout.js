@@ -58,21 +58,23 @@
 
   async function fetchLayout() {
     try {
-      // 통합 엔드포인트에서 미리 받은 데이터가 있으면 재사용
       if (window._homepageData?.layout) {
         layout = window._homepageData.layout
       } else {
-        layout = readCachedLayout()
-        if (!layout) {
-          layout = await API.get('/homepage-layout')
-          writeCachedLayout(layout)
-        }
+        layout = await API.get('/homepage-layout')
       }
     } catch {
       layout = { ...DEFAULT, updated_at: null }
     }
     window.__homepageLayout = layout
     return layout
+  }
+
+  window.clearHomepageLayoutCache = function () {
+    try { sessionStorage.removeItem(CACHE_KEY) } catch {}
+    layout = null
+    window.__homepageLayout = null
+    window._homepageData = null
   }
 
   function applyNav() {

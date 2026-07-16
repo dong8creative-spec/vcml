@@ -10,6 +10,15 @@ const {
   aggregateViewStats,
 } = require('../lib/youtube-portfolio')
 const { enrichPortfolioWorksRednoteThumbnails } = require('../lib/rednote-portfolio')
+const {
+  decodeSocialImageUrl,
+  resolveInstagramAvatarUrl,
+  fetchInstagramAvatarBuffer,
+  isHostedPortfolioAvatar,
+  isInstagramCdnUrl,
+  extractSocialAvatarFromHtml,
+} = require('../lib/instagram-portfolio')
+const { uploadImageBuffer } = require('../utils/storage')
 
 // ── Firebase Admin 초기화 ──
 if (!admin.apps.length) {
@@ -1473,10 +1482,32 @@ function normalizePortfolioViewStats(raw, playlists) {
   }
 }
 
+function inferPortfolioHandleFromUrl(accountUrl) {
+  const raw = String(accountUrl || '').trim()
+  if (!raw) return { name: '', handle: '' }
+  const ig = raw.match(/instagram\.com\/([^/?#]+)/i)
+  if (ig && !['p', 'reel', 'reels', 'stories', 'explore'].includes(ig[1].toLowerCase())) {
+    const user = ig[1]
+    return { name: user, handle: '@' + user }
+  }
+  const ytHandle = raw.match(/youtube\.com\/(@[^/?#]+)/i)
+  if (ytHandle) {
+    const h = ytHandle[1]
+    return { name: h.replace(/^@/, ''), handle: h.startsWith('@') ? h : '@' + h }
+  }
+  const ytChannel = raw.match(/youtube\.com\/channel\/([^/?#]+)/i)
+  if (ytChannel) {
+    return { name: 'YouTube 채널', handle: ytChannel[1].slice(0, 20) }
+  }
+  return { name: '', handle: '' }
+}
+
 function normalizePortfolioAccount(item, i, prefix) {
-  const name = String(item?.name || '').trim().slice(0, 80)
-  const handle = String(item?.handle || '').trim().slice(0, 60)
-  if (!name && !handle) return null
+  const accountUrl = String(item?.accountUrl || item?.account_url || '').trim().slice(0, 400)
+  const inferred = inferPortfolioHandleFromUrl(accountUrl)
+  const name = String(item?.name || '').trim().slice(0, 80) || inferred.name
+  const handle = String(item?.handle || '').trim().slice(0, 60) || inferred.handle
+  if (!name && !handle && !accountUrl) return null
   const playlists = normalizePortfolioPlaylists(item)
   const legacyPlaylistUrl = playlists[0]?.url || ''
   const legacyPlaylistLabel = playlists[0]?.label || ''
@@ -1484,8 +1515,8 @@ function normalizePortfolioAccount(item, i, prefix) {
     id: String(item?.id || slugifyQuoteId(name || handle, `${prefix}-${i + 1}`)).trim().slice(0, 60),
     name: name || handle,
     handle,
-    accountUrl: String(item?.accountUrl || item?.account_url || '').trim().slice(0, 400),
-    avatarUrl: String(item?.avatarUrl || item?.avatar_url || item?.profileImage || item?.profile_image || '').trim().slice(0, 400),
+    accountUrl,
+    avatarUrl: decodeSocialImageUrl(item?.avatarUrl || item?.avatar_url || item?.profileImage || item?.profile_image || '').slice(0, 2000),
     bannerUrl: String(item?.bannerUrl || item?.banner_url || '').trim().slice(0, 400),
     playlistUrl: legacyPlaylistUrl,
     playlistLabel: legacyPlaylistLabel,
@@ -1535,57 +1566,91 @@ function normalizeSocialProfileFetchUrl(accountUrl) {
   return raw.split(/[?#]/)[0]
 }
 
-function extractSocialAvatarFromHtml(html) {
-  const patterns = [
-    /<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image(?::secure_url)?["']/i,
-    /"avatar":\s*\{\s*"thumbnails":\s*\[\s*\{\s*"url":\s*"([^"]+)"/,
-    /"profile_pic_url(?:_hd)?":"([^"]+)"/,
-  ]
-  for (const pattern of patterns) {
-    const match = String(html || '').match(pattern)
-    if (match?.[1]) {
-      return match[1]
-        .replace(/\\u0026/g, '&')
-        .replace(/\\u003d/g, '=')
-        .replace(/\\\//g, '/')
-        .trim()
-    }
-  }
-  return ''
-}
-
 async function resolveSocialAvatarUrl(accountUrl) {
   const fetchUrl = normalizeSocialProfileFetchUrl(accountUrl)
   if (!fetchUrl) return ''
+  if (/instagram\.com/i.test(fetchUrl)) {
+    return resolveInstagramAvatarUrl(accountUrl)
+  }
   try {
     const res = await fetch(fetchUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; VCMLBot/1.0; +https://vcml.kr)',
-        Accept: 'text/html,application/xhtml+xml',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
       redirect: 'follow',
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(12000),
     })
     if (!res.ok) return ''
     const html = await res.text()
-    return extractSocialAvatarFromHtml(html).slice(0, 400)
+    return decodeSocialImageUrl(extractSocialAvatarFromHtml(html)).slice(0, 2000)
   } catch {
     return ''
   }
 }
 
-async function enrichYoutubeChannel(account, { refreshStats = false } = {}) {
+async function persistInstagramAvatar(account) {
+  const source = decodeSocialImageUrl(account?.avatarUrl)
+  if (!source || isHostedPortfolioAvatar(source)) return false
+  let fetched = null
+  if (isInstagramCdnUrl(source)) {
+    fetched = await fetchInstagramAvatarBuffer(source)
+  }
+  if (!fetched && account?.accountUrl) {
+    const fresh = await resolveInstagramAvatarUrl(account.accountUrl)
+    if (fresh) fetched = await fetchInstagramAvatarBuffer(fresh)
+    if (fresh && !account.avatarUrl) account.avatarUrl = fresh
+  }
+  if (!fetched) return false
+  const safeId = String(account.id || slugifyQuoteId(account.handle || account.name, 'ig'))
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .slice(0, 60) || 'ig-avatar'
+  const hostedUrl = await uploadImageBuffer(fetched.buffer, {
+    folder: `portfolio/instagram-avatars/${safeId}`,
+    contentType: fetched.contentType,
+  })
+  account.avatarUrl = hostedUrl
+  return true
+}
+
+async function enrichInstagramAccountAvatars(accounts, { previousAccounts = [] } = {}) {
+  if (!Array.isArray(accounts)) return false
+  const prevById = Object.fromEntries((previousAccounts || []).map((a) => [a.id, a]))
+  let changed = false
+  for (const account of accounts) {
+    if (!account?.accountUrl) continue
+    const prev = prevById[account.id]
+    const urlChanged = prev && prev.accountUrl !== account.accountUrl
+    if (!account.avatarUrl || urlChanged) {
+      const resolved = await resolveSocialAvatarUrl(account.accountUrl)
+      if (resolved && resolved !== account.avatarUrl) {
+        account.avatarUrl = resolved
+        changed = true
+      }
+    }
+    if (account.avatarUrl && !isHostedPortfolioAvatar(account.avatarUrl)) {
+      try {
+        if (await persistInstagramAvatar(account)) changed = true
+      } catch (e) {
+        console.warn('[enrichInstagramAccountAvatars]', account.id, e.message)
+      }
+    }
+  }
+  return changed
+}
+
+async function enrichYoutubeChannel(account, { refreshStats = false, previousAccount = null } = {}) {
   if (!account?.accountUrl) return false
   let changed = false
+  const urlChanged = previousAccount && previousAccount.accountUrl !== account.accountUrl
 
-  if (!account.bannerUrl || !account.avatarUrl) {
+  if (urlChanged || !account.bannerUrl || !account.avatarUrl) {
     const visuals = await fetchChannelVisuals(account.accountUrl)
-    if (!account.avatarUrl && visuals.avatarUrl) {
+    if ((urlChanged || !account.avatarUrl) && visuals.avatarUrl) {
       account.avatarUrl = visuals.avatarUrl
       changed = true
     }
-    if (!account.bannerUrl && visuals.bannerUrl) {
+    if ((urlChanged || !account.bannerUrl) && visuals.bannerUrl) {
       account.bannerUrl = visuals.bannerUrl
       changed = true
     }
@@ -1626,28 +1691,31 @@ async function enrichYoutubeChannel(account, { refreshStats = false } = {}) {
   return changed
 }
 
+async function enrichYoutubeChannelAccounts(channels, { previousChannels = [] } = {}) {
+  if (!Array.isArray(channels)) return false
+  const prevById = Object.fromEntries((previousChannels || []).map((a) => [a.id, a]))
+  let changed = false
+  for (const account of channels) {
+    const updated = await enrichYoutubeChannel(account, {
+      refreshStats: false,
+      previousAccount: prevById[account.id],
+    })
+    if (updated) changed = true
+  }
+  return changed
+}
+
 async function enrichPortfolioWorksAvatars(works) {
   if (!works) return false
   let changed = false
 
-  const instagramAccounts = works.instagram?.accounts
-  if (Array.isArray(instagramAccounts)) {
-    for (const account of instagramAccounts) {
-      if (account.avatarUrl || !account.accountUrl) continue
-      const resolved = await resolveSocialAvatarUrl(account.accountUrl)
-      if (resolved) {
-        account.avatarUrl = resolved
-        changed = true
-      }
-    }
+  if (await enrichInstagramAccountAvatars(works.instagram?.accounts)) {
+    changed = true
   }
 
   const youtubeChannels = works.youtube?.channels
-  if (Array.isArray(youtubeChannels)) {
-    for (const account of youtubeChannels) {
-      const updated = await enrichYoutubeChannel(account, { refreshStats: false })
-      if (updated) changed = true
-    }
+  if (await enrichYoutubeChannelAccounts(youtubeChannels)) {
+    changed = true
   }
 
   return changed
@@ -5676,7 +5744,6 @@ const db = {
     const doc = await fs.collection('site_settings').doc('test_room').get()
     const data = doc.exists ? doc.data() : {}
     const result = devTestRoomFallback({ ...normalizeTestRoomConfig(data), updated_at: data.updated_at || null })
-    result.enabled = true
     cacheSet('site:test_room', result, TTL.TEST_ROOM)
     return result
   },
@@ -5781,8 +5848,19 @@ const db = {
     if (data?.youtube?.shorts !== undefined) merged.youtube.shorts = data.youtube.shorts
     if (data?.instagram?.accounts !== undefined) merged.instagram.accounts = data.instagram.accounts
     const next = normalizePortfolioWorks(merged)
-    await fs.collection('site_settings').doc('instructor_portfolio_works').set({ ...next, updated_at: now() })
-    return { ...next, updated_at: now() }
+    if (data?.youtube) {
+      await enrichYoutubeChannelAccounts(next.youtube?.channels, {
+        previousChannels: rest.youtube?.channels,
+      })
+    }
+    if (data?.instagram) {
+      await enrichInstagramAccountAvatars(next.instagram?.accounts, {
+        previousAccounts: rest.instagram?.accounts,
+      })
+    }
+    const updatedAt = now()
+    await fs.collection('site_settings').doc('instructor_portfolio_works').set({ ...next, updated_at: updatedAt })
+    return { ...next, updated_at: updatedAt }
   },
 
   async refreshInstructorPortfolioVisuals({ youtube = false, instagram = false, rednote = false } = {}) {
@@ -5792,26 +5870,14 @@ const db = {
     let changed = false
 
     if (youtube) {
-      const channels = works.youtube?.channels
-      if (Array.isArray(channels)) {
-        for (const account of channels) {
-          const updated = await enrichYoutubeChannel(account, { refreshStats: false })
-          if (updated) changed = true
-        }
+      if (await enrichYoutubeChannelAccounts(works.youtube?.channels)) {
+        changed = true
       }
     }
 
     if (instagram) {
-      const accounts = works.instagram?.accounts
-      if (Array.isArray(accounts)) {
-        for (const account of accounts) {
-          if (account.avatarUrl || !account.accountUrl) continue
-          const resolved = await resolveSocialAvatarUrl(account.accountUrl)
-          if (resolved) {
-            account.avatarUrl = resolved
-            changed = true
-          }
-        }
+      if (await enrichInstagramAccountAvatars(works.instagram?.accounts)) {
+        changed = true
       }
     }
 

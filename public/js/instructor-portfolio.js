@@ -410,6 +410,36 @@
     }
   }
 
+  function portfolioAvatarSrc(url, profileUrl = '') {
+    const u = String(url || '').replace(/&amp;/g, '&').trim()
+    const profile = String(profileUrl || '').trim()
+    if (!u && profile) {
+      return `/api/image-proxy?profile=${encodeURIComponent(profile)}`
+    }
+    if (!u) return ''
+    if (/storage\.googleapis\.com/i.test(u)) return u
+    if (/cdninstagram\.com|fbcdn\.net/i.test(u)) {
+      const params = new URLSearchParams({ url: u })
+      if (profile) params.set('profile', profile)
+      return `/api/image-proxy?${params.toString()}`
+    }
+    return u
+  }
+
+  function renderInstagramInlineMetrics(metrics) {
+    const list = Array.isArray(metrics)
+      ? metrics.filter((metric) => String(metric?.label || metric?.before || metric?.after || metric?.growth || '').trim())
+      : []
+    if (!list.length) return ''
+    return `<ul class="ig-account-card__inline-metrics">${list.map((metric) => `
+      <li class="ig-account-card__inline-metric">
+        <span class="ig-account-card__inline-metric-label">${esc(metric.label)}</span>
+        <span class="ig-account-card__inline-metric-value">${esc(metric.before)} → ${esc(metric.after)}</span>
+        ${metric.growth ? `<span class="ig-account-card__inline-metric-growth">${esc(metric.growth)}</span>` : ''}
+      </li>
+    `).join('')}</ul>`
+  }
+
   function normalizeVisitUrl(url, platform) {
     let raw = String(url || '').trim()
     if (!raw) return ''
@@ -551,11 +581,14 @@
       sampleNote,
     } = options
     const visitUrl = normalizeVisitUrl(account.accountUrl, 'instagram')
-    const avatarUrl = String(account.avatarUrl || account.avatar_url || account.profileImage || '').trim()
+    const avatarUrl = portfolioAvatarSrc(
+      account.avatarUrl || account.avatar_url || account.profileImage || '',
+      account.accountUrl,
+    )
     const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
     const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
     const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
-    const metricsHtml = renderChannelMetricStats(account.metrics)
+    const inlineMetricsHtml = renderInstagramInlineMetrics(account.metrics)
     const summaryHtml = mergeAccountSummary(account)
 
     const avatarHtml = avatarUrl
@@ -573,20 +606,23 @@
 
     return `<article class="yt-channel-card ig-account-card ig-account-card--instagram yt-channel-card--no-hero">
       <div class="yt-channel-card__main">
-        <header class="yt-channel-card__header">
-          <div class="yt-channel-card__avatar-wrap">${avatarHtml}</div>
-          <div class="yt-channel-card__identity">
-            <h3 class="yt-channel-card__name">${esc(account.name)}</h3>
-            <p class="yt-channel-card__handle">${esc(account.handle)}</p>
+        <header class="ig-account-card__compact-head">
+          <div class="ig-account-card__compact-avatar-wrap">${avatarHtml}</div>
+          <div class="ig-account-card__compact-body">
+            <div class="ig-account-card__compact-top">
+              <div class="ig-account-card__compact-identity">
+                <h3 class="yt-channel-card__name">${esc(account.name)}</h3>
+                <p class="yt-channel-card__handle">${esc(account.handle)}</p>
+              </div>
+              <span class="ig-account-card__status ${statusClass}">${statusLabel}</span>
+            </div>
+            ${inlineMetricsHtml}
           </div>
-          <span class="ig-account-card__status ${statusClass}">${statusLabel}</span>
         </header>
-        <div class="yt-channel-card__body">
+        <div class="yt-channel-card__body ig-account-card__compact-content">
           ${renderAccountContextLine(period, account.role)}
-          ${metricsHtml}
           ${summaryHtml}
           ${account.sample ? `<p class="ig-account-card__sample">${esc(sampleNote)}</p>` : ''}
-
           ${visitAction ? `<div class="ig-account-card__actions">${visitAction}</div>` : ''}
         </div>
       </div>
@@ -662,7 +698,10 @@
   }
 
   function renderAccountAvatar(account, iconClass) {
-    const avatarUrl = String(account?.avatarUrl || account?.avatar_url || account?.profileImage || '').trim()
+    const avatarUrl = portfolioAvatarSrc(
+      account?.avatarUrl || account?.avatar_url || account?.profileImage || '',
+      account?.accountUrl,
+    )
     if (!avatarUrl) {
       return `<div class="ig-account-card__icon" aria-hidden="true"><i class="${iconClass}"></i></div>`
     }

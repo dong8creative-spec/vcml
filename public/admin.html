@@ -1047,8 +1047,8 @@
               <textarea id="pf-yt-intro" rows="2" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
             </div>
             <div class="form-group">
-              <label>채널 관리 목록</label>
-              <p class="sec-sub">담당 기간 · 성과 지표(첫 항목이 카드에 크게 표시) · 하이라이트는 요약과 함께 한 문단으로 노출됩니다.</p>
+              <label>운영 채널 목록</label>
+              <p class="sec-sub">채널 URL만 입력해도 저장 시 프로필 사진·배너가 자동 등록됩니다. 담당 기간 · 성과 지표 · 하이라이트는 카드에 함께 노출됩니다.</p>
               <div id="pf-yt-channels"></div>
               <button type="button" class="btn-sm" id="pf-yt-channel-add" style="margin-top:8px">+ 채널 추가</button>
             </div>
@@ -1065,7 +1065,8 @@
               <textarea id="pf-ig-intro" rows="2" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical"></textarea>
             </div>
             <div class="form-group">
-              <label>성장 계정 목록</label>
+              <label>운영 계정 목록</label>
+              <p class="sec-sub">계정 URL만 입력해도 저장 시 프로필 이미지가 자동 등록됩니다. 추출이 안 되면 이미지 URL을 직접 입력하세요.</p>
               <div id="pf-ig-accounts"></div>
               <button type="button" class="btn-sm" id="pf-ig-account-add" style="margin-top:8px">+ 계정 추가</button>
             </div>
@@ -1764,18 +1765,70 @@
               <div>
                 <div class="layout-toggle-group-title" style="font-size:12px">상단 메뉴</div>
                 <div class="layout-toggle-list" id="hp-nav-toggles">
-                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="all" checked /><span>전체강의</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="instructors" checked /><span>강사 소개</span></label>
-                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="capcut" checked /><span>캡컷 PRO</span></label>
-                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="tadaksync" checked /><span>타닥싱크</span></label>
-                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="editors" checked /><span>에디터즈</span></label>
-                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="projects" checked /><span>클라이언츠</span></label>
+                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="notices" checked /><span>공지사항</span></label>
+                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="all" checked /><span>전체강의</span></label>
+                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="institution" checked /><span>열람실</span></label>
                 </div>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:12px;padding-top:8px;border-top:1px solid var(--border)">
               <button type="button" class="btn-save" id="hp-layout-save">홈 설정 저장</button>
               <span id="hp-layout-status" style="font-size:14px;color:#888"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">우측 플로팅 바로가기</div>
+            <p class="sec-sub">홈·서브페이지 우측에 표시되는 바로가기 버튼입니다. 홈에서는 히어로를 지나 스크롤한 뒤 나타납니다.</p>
+          </div>
+          <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:16px">
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;cursor:pointer">
+              <input type="checkbox" id="tr-enabled" checked /> 플로팅 바로가기 사용
+            </label>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+              <div class="form-group">
+                <label>패널 이름 (접근성)</label>
+                <input type="text" id="tr-label" maxlength="20" placeholder="바로가기" />
+              </div>
+              <div class="form-group">
+                <label>편집 테스트 URL</label>
+                <input type="text" id="tr-room-url" placeholder="/editor-workbooks.html" maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>편집 테스트 버튼 문구</label>
+                <input type="text" id="tr-room-label" maxlength="24" placeholder="편집 테스트" />
+              </div>
+              <div class="form-group">
+                <label>타닥싱크 URL</label>
+                <input type="text" id="tr-tadaksync-url" placeholder="/subtitle-tool.html" maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>타닥싱크 버튼 문구</label>
+                <input type="text" id="tr-tadaksync-label" maxlength="24" placeholder="타닥싱크" />
+              </div>
+              <div class="form-group">
+                <label>인스타그램 URL</label>
+                <input type="url" id="tr-instagram-url" placeholder="https://instagram.com/..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>인스타 버튼 문구</label>
+                <input type="text" id="tr-instagram-label" maxlength="24" placeholder="인스타그램" />
+              </div>
+              <div class="form-group">
+                <label>카카오 오픈채팅 URL</label>
+                <input type="url" id="tr-kakao-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
+              </div>
+              <div class="form-group">
+                <label>카카오 버튼 문구</label>
+                <input type="text" id="tr-kakao-label" maxlength="24" placeholder="카카오 대기방" />
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding-top:8px;border-top:1px solid var(--border)">
+              <button type="button" class="btn-save" id="tr-save-btn">플로팅 바로가기 저장</button>
+              <span id="tr-save-status" style="font-size:14px;color:#888"></span>
             </div>
           </div>
         </div>
@@ -2252,7 +2305,7 @@
   <script src="/js/admin/modules/support.js?v=1"></script>
   <script src="/js/admin/modules/blog.js?v=1"></script>
   <script src="/js/admin/modules/ops.js?v=1"></script>
-  <script src="/js/admin/modules/instructor-portfolio.js?v=9"></script>
+  <script src="/js/admin/modules/instructor-portfolio.js?v=13"></script>
   <script>
     // ── 헬퍼 (AdminUtils 위임) ──
     const esc = (...a) => AdminUtils.esc(...a)
@@ -4652,6 +4705,56 @@
 
     document.getElementById('hp-preview-refresh')?.addEventListener('click', reloadHomePreview)
 
+    async function loadTestRoomSettings() {
+      const statusEl = document.getElementById('tr-save-status')
+      try {
+        const cfg = await API.get('/admin/test-room')
+        document.getElementById('tr-enabled').checked = cfg.enabled !== false
+        document.getElementById('tr-label').value = cfg.label || ''
+        document.getElementById('tr-room-url').value = cfg.room_url || ''
+        document.getElementById('tr-room-label').value = cfg.room_label || ''
+        document.getElementById('tr-tadaksync-url').value = cfg.tadaksync_url || '/subtitle-tool.html'
+        document.getElementById('tr-tadaksync-label').value = cfg.tadaksync_label || ''
+        document.getElementById('tr-instagram-url').value = cfg.instagram_url || ''
+        document.getElementById('tr-instagram-label').value = cfg.instagram_label || ''
+        document.getElementById('tr-kakao-url').value = cfg.kakao_url || ''
+        document.getElementById('tr-kakao-label').value = cfg.kakao_label || ''
+        if (statusEl && cfg.updated_at) {
+          statusEl.textContent = '마지막 저장: ' + cfg.updated_at.slice(0, 16).replace('T', ' ')
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = '설정을 불러오지 못했습니다.'
+      }
+    }
+
+    document.getElementById('tr-save-btn')?.addEventListener('click', async () => {
+      const statusEl = document.getElementById('tr-save-status')
+      const btn = document.getElementById('tr-save-btn')
+      try {
+        btn.disabled = true
+        const result = await API.patch('/admin/test-room', {
+          enabled: document.getElementById('tr-enabled').checked,
+          label: document.getElementById('tr-label').value.trim(),
+          room_url: document.getElementById('tr-room-url').value.trim(),
+          room_label: document.getElementById('tr-room-label').value.trim(),
+          tadaksync_url: document.getElementById('tr-tadaksync-url').value.trim() || '/subtitle-tool.html',
+          tadaksync_label: document.getElementById('tr-tadaksync-label').value.trim(),
+          instagram_url: document.getElementById('tr-instagram-url').value.trim(),
+          instagram_label: document.getElementById('tr-instagram-label').value.trim(),
+          kakao_url: document.getElementById('tr-kakao-url').value.trim(),
+          kakao_label: document.getElementById('tr-kakao-label').value.trim(),
+        })
+        if (statusEl) {
+          statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
+        }
+        reloadHomePreview()
+      } catch (e) {
+        alert(e.message || '저장 실패')
+      } finally {
+        btn.disabled = false
+      }
+    })
+
     async function loadHomepage() {
       try {
         const layout = await API.get('/admin/homepage-layout')
@@ -4661,7 +4764,7 @@
       } catch (e) {
         document.getElementById('hp-layout-status').textContent = '설정을 불러오지 못했습니다.'
       }
-      await Promise.all([loadHeroSettings(), loadHpCourses(), loadHpPlatformReviews()])
+      await Promise.all([loadHeroSettings(), loadHpCourses(), loadHpPlatformReviews(), loadTestRoomSettings()])
       reloadHomePreview()
     }
 
@@ -4689,6 +4792,7 @@
           statusMsg += ' · 푸터 브랜드명 반영'
         }
         if (statusEl) statusEl.textContent = statusMsg
+        if (typeof window.clearHomepageLayoutCache === 'function') window.clearHomepageLayoutCache()
         reloadHomePreview()
       } catch (e) {
         alert(e.message || '저장 실패')
@@ -4918,6 +5022,7 @@
         if (statusEl) {
           statusEl.textContent = '저장되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
         }
+        if (typeof window.clearHomepageLayoutCache === 'function') window.clearHomepageLayoutCache()
         reloadHomePreview()
       } catch (e) {
         alert(e.message || '저장 실패')

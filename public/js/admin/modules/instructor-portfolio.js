@@ -79,6 +79,19 @@
     `).join('')
   }
 
+  function portfolioAvatarPreviewSrc(url, profileUrl = '') {
+    const u = String(url || '').replace(/&amp;/g, '&').trim()
+    if (!u) return ''
+    if (/storage\.googleapis\.com/i.test(u)) return u
+    if (/cdninstagram\.com|fbcdn\.net/i.test(u)) {
+      const params = new URLSearchParams({ url: u })
+      const profile = String(profileUrl || '').trim()
+      if (profile) params.set('profile', profile)
+      return `/api/image-proxy?${params.toString()}`
+    }
+    return u
+  }
+
   function accountCardHtml(account = emptyAccount(), kind = 'channel') {
     const isChannel = kind === 'channel'
     return `<div class="pf-account-card${isChannel ? ' pf-account-card--channel' : ''}" data-pf-account>
@@ -95,7 +108,7 @@
         <input type="month" data-a-end value="${esc((account.endDate || '').slice(0, 7))}" title="종료" ${account.ongoing ? 'disabled' : ''} />
       </div>
       <div class="pf-avatar-row">
-        <img class="pf-avatar-preview" data-a-avatar-preview src="${esc(account.avatarUrl || '')}" alt="" ${account.avatarUrl ? '' : 'hidden'} />
+        <img class="pf-avatar-preview" data-a-avatar-preview src="${esc(portfolioAvatarPreviewSrc(account.avatarUrl || '', account.accountUrl || ''))}" alt="" ${account.avatarUrl ? '' : 'hidden'} />
         <input type="url" data-a-avatar placeholder="프로필 사진 URL (비우면 자동)" value="${esc(account.avatarUrl || '')}" />
       </div>
       ${isChannel ? `<input type="url" data-a-banner placeholder="채널 배너 URL (비우면 자동)" value="${esc(account.bannerUrl || '')}" />
@@ -185,7 +198,7 @@
         highlights: highlightsRaw.trim() ? [highlightsRaw.trim()] : [],
         metrics,
       }
-    }).filter((a) => a.name || a.handle)
+    }).filter((a) => a.name || a.handle || a.accountUrl)
   }
 
   function readMedia(container) {
@@ -273,7 +286,7 @@
     if (statusEl) statusEl.textContent = message || ''
   }
 
-  async function runPortfolioAction(buttonId, busyText, action) {
+  async function runPortfolioAction(buttonId, busyText, action, { formatDone } = {}) {
     const btn = document.getElementById(buttonId)
     try {
       if (btn) btn.disabled = true
@@ -281,7 +294,8 @@
       const result = await action()
       fillWorksEditor(result)
       _worksLoaded = true
-      setStatus('완료되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : ''))
+      const stamp = result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : ''
+      setStatus(formatDone ? formatDone(result, stamp) : ('완료되었습니다.' + stamp))
     } catch (e) {
       alert(e.message || '작업 실패')
     } finally {
@@ -418,48 +432,67 @@
     bindMediaContainer(document.getElementById('pf-yt-shorts'), 'pf-yt-short-add')
     bindMediaContainer(document.getElementById('pf-rn-items'), 'pf-rn-item-add', { rowHtml: rednoteMediaRowHtml })
 
-    document.getElementById('portfolio-works-save')?.addEventListener('click', async () => {
-      const statusEl = document.getElementById('portfolio-works-status')
-      const btn = document.getElementById('portfolio-works-save')
-      try {
-        btn.disabled = true
-        if (statusEl) statusEl.textContent = '저장 중… (유튜브 조회수·샤오홍슈 썸네일 자동 추출)'
-        const payload = readWorksForm()
-        const result = await API.patch('/admin/instructor-portfolio-works', payload)
-        fillWorksEditor(result)
-        _worksLoaded = true
-        const rnFilled = (result.rednote || []).filter((item) => String(item.thumbnailUrl || '').trim()).length
-        const rnTotal = (result.rednote || []).filter((item) => String(item.url || '').trim()).length
-        const rnNote = rnTotal
-          ? ` · 샤오홍슈 썸네일 ${rnFilled}/${rnTotal}`
-          : ''
-        if (statusEl) {
-          statusEl.textContent = '저장되었습니다.' + rnNote + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
-        }
-      } catch (e) {
-        alert(e.message || '저장 실패')
-      } finally {
-        btn.disabled = false
-      }
+    document.getElementById('portfolio-youtube-save')?.addEventListener('click', async () => {
+      await runPortfolioAction(
+        'portfolio-youtube-save',
+        '유튜브 저장 중… (운영 채널 프로필·배너 자동 추출)',
+        async () => API.patch('/admin/instructor-portfolio-works', readYoutubeForm()),
+        {
+          formatDone: (result, stamp) => {
+            const channels = result.youtube?.channels || []
+            const total = channels.filter((a) => String(a.accountUrl || '').trim()).length
+            const avatars = channels.filter((a) => String(a.avatarUrl || '').trim()).length
+            if (total) return `저장되었습니다. 운영 채널 프로필 ${avatars}/${total}${stamp}`
+            return '저장되었습니다.' + stamp
+          },
+        },
+      )
     })
 
-    document.getElementById('portfolio-works-refresh-stats')?.addEventListener('click', async () => {
-      const statusEl = document.getElementById('portfolio-works-status')
-      const btn = document.getElementById('portfolio-works-refresh-stats')
-      try {
-        btn.disabled = true
-        if (statusEl) statusEl.textContent = '유튜브 재생목록 조회수 갱신 중…'
-        const result = await API.post('/admin/instructor-portfolio-works/refresh-youtube-stats')
-        fillWorksEditor(result)
-        _worksLoaded = true
-        if (statusEl) {
-          statusEl.textContent = '조회수가 갱신되었습니다.' + (result.updated_at ? ' (' + result.updated_at.slice(0, 16).replace('T', ' ') + ')' : '')
-        }
-      } catch (e) {
-        alert(e.message || '조회수 갱신 실패')
-      } finally {
-        btn.disabled = false
-      }
+    document.getElementById('portfolio-instagram-save')?.addEventListener('click', async () => {
+      await runPortfolioAction(
+        'portfolio-instagram-save',
+        '인스타그램 저장 중… (운영 계정 프로필 자동 추출)',
+        async () => API.patch('/admin/instructor-portfolio-works', readInstagramForm()),
+        {
+          formatDone: (result, stamp) => {
+            const accounts = result.instagram?.accounts || []
+            const total = accounts.filter((a) => String(a.accountUrl || '').trim()).length
+            const filled = accounts.filter((a) => String(a.avatarUrl || '').trim()).length
+            if (total && filled < total) {
+              return `저장되었습니다. 프로필 이미지 ${filled}/${total}${stamp} (일부는 URL 직접 입력)`
+            }
+            if (total) return `저장되었습니다. 운영 계정 프로필 ${filled}/${total}${stamp}`
+            return '저장되었습니다.' + stamp
+          },
+        },
+      )
+    })
+
+    document.getElementById('portfolio-rednote-save')?.addEventListener('click', async () => {
+      await runPortfolioAction('portfolio-rednote-save', '샤오홍슈 저장 중… (썸네일 자동 추출)', async () => {
+        await API.patch('/admin/instructor-portfolio-works', readRednoteForm())
+        return API.post('/admin/instructor-portfolio-works/refresh-rednote-thumbnails')
+      })
+    })
+
+    document.getElementById('portfolio-youtube-refresh')?.addEventListener('click', async () => {
+      await runPortfolioAction('portfolio-youtube-refresh', '유튜브 조회수·배너 갱신 중…', async () => {
+        await API.post('/admin/instructor-portfolio-works/refresh-youtube-stats')
+        return API.post('/admin/instructor-portfolio-works/refresh-youtube-visuals')
+      })
+    })
+
+    document.getElementById('portfolio-instagram-refresh')?.addEventListener('click', async () => {
+      await runPortfolioAction('portfolio-instagram-refresh', '인스타그램 아바타 갱신 중…', async () => {
+        return API.post('/admin/instructor-portfolio-works/refresh-instagram-avatars')
+      })
+    })
+
+    document.getElementById('portfolio-rednote-refresh')?.addEventListener('click', async () => {
+      await runPortfolioAction('portfolio-rednote-refresh', '샤오홍슈 썸네일 추출 중…', async () => {
+        return API.post('/admin/instructor-portfolio-works/refresh-rednote-thumbnails')
+      })
     })
   }
 

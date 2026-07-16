@@ -1,6 +1,11 @@
 const router = require('express').Router()
 const db = require('../db/schema')
 const { optionalAuth, allowedReviewTypes } = require('../middleware/auth')
+const {
+  decodeSocialImageUrl,
+  isAllowedProxyImageUrl,
+  serveInstagramAvatar,
+} = require('../lib/instagram-portfolio')
 
 function publicCache(req, res, next) {
   if (req.method === 'GET') {
@@ -114,6 +119,27 @@ router.get('/instructor-portfolio/works', async (req, res) => {
     res.json(await db.getInstructorPortfolioWorks())
   } catch (e) {
     res.status(500).json({ error: e.message })
+  }
+})
+
+router.get('/image-proxy', async (req, res) => {
+  const raw = decodeSocialImageUrl(req.query.url)
+  const profile = String(req.query.profile || '').trim()
+  if (!raw && !profile) {
+    return res.status(400).send('Invalid image URL')
+  }
+  if (raw && !isAllowedProxyImageUrl(raw)) {
+    return res.status(400).send('Invalid image URL')
+  }
+  try {
+    const served = await serveInstagramAvatar(raw, profile)
+    if (!served) return res.status(404).send('Image not found')
+    res.set('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
+    res.set('Content-Type', served.contentType)
+    res.send(served.buffer)
+  } catch (e) {
+    console.error('[image-proxy]', e.message)
+    res.status(502).send('Proxy error')
   }
 })
 

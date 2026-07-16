@@ -538,6 +538,7 @@ initFromUrl()
 // 통합 엔드포인트로 홈 데이터를 한 번에 받아 캐시 → 개별 함수는 재사용
 ;(async () => {
   try {
+    if (typeof window.clearHomepageLayoutCache === 'function') window.clearHomepageLayoutCache()
     window._homepageData = await API.get('/homepage')
   } catch (_) {
     window._homepageData = null
