@@ -206,6 +206,7 @@
   }
 
   window.renderHeaderAuth = () => renderHeaderAuthWithWallet()
+  window.initGnbCatLinks = initGnbCatLinks
 
   function scheduleBoot() {
     boot().catch(() => renderHeaderAuthWithWallet())

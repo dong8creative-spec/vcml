@@ -323,7 +323,7 @@ window.addEventListener('resize', () => scheduleFitOneLineTexts())
 
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/test-room-fab.js?v=18'
+  s.src = '/js/test-room-fab.js?v=19'
   s.defer = true
   document.head.appendChild(s)
 })()

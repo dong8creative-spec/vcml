@@ -156,47 +156,7 @@
 
   function initScrollReveal(root) {
     teardownScrollReveal()
-
-    if (!isHomePage()) {
-      setFabRevealState(root, true, false)
-      return
-    }
-
-    setFabRevealState(root, false, false)
-
-    let ticking = false
-    const scheduleUpdate = () => {
-      if (!ticking) {
-        ticking = true
-        requestAnimationFrame(() => {
-          ticking = false
-          evaluateReveal(root)
-        })
-      }
-    }
-
-    window.addEventListener('scroll', scheduleUpdate, { passive: true })
-    window.addEventListener('resize', scheduleUpdate, { passive: true })
-    scrollRevealCleanup = () => {
-      window.removeEventListener('scroll', scheduleUpdate)
-      window.removeEventListener('resize', scheduleUpdate)
-    }
-
-    scheduleUpdate()
-    window.addEventListener('load', scheduleUpdate, { once: true })
-
-    const origApply = window.applyHomepageLayout
-    if (origApply && !origApply.__trfHooked) {
-      window.applyHomepageLayout = async function (...args) {
-        const result = await origApply.apply(this, args)
-        scheduleUpdate()
-        return result
-      }
-      window.applyHomepageLayout.__trfHooked = true
-    }
-
-    window.setTimeout(scheduleUpdate, 300)
-    window.setTimeout(scheduleUpdate, 1200)
+    setFabRevealState(root, true, false)
   }
 
   function removeWidget() {
@@ -294,7 +254,8 @@
       return
     }
     try {
-      mountWidget(await fetchConfig())
+      const cfg = await fetchConfig()
+      mountWidget({ ...cfg, enabled: true })
     } catch (err) {
       console.warn('[test-room-fab]', err)
       removeWidget()

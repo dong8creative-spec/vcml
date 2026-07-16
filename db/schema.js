@@ -5676,6 +5676,7 @@ const db = {
     const doc = await fs.collection('site_settings').doc('test_room').get()
     const data = doc.exists ? doc.data() : {}
     const result = devTestRoomFallback({ ...normalizeTestRoomConfig(data), updated_at: data.updated_at || null })
+    result.enabled = true
     cacheSet('site:test_room', result, TTL.TEST_ROOM)
     return result
   },
