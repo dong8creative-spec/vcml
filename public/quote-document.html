@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>견적서 양식 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <link rel="stylesheet" href="/css/quote-document.css?v=3" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+</head>
+<body class="quote-doc-page">
+
+<header class="quote-doc-toolbar no-print">
+  <div class="quote-doc-toolbar__brand">
+    견적서 양식
+    <span>업체 발행용 · 브라우저에서 편집 후 인쇄/PDF 저장</span>
+  </div>
+  <div class="quote-doc-toolbar__actions">
+    <span class="quote-doc-status" id="qd-status" aria-live="polite"></span>
+    <button type="button" class="quote-doc-btn" id="qd-new-btn"><i class="ti ti-file-plus" aria-hidden="true"></i> 새 견적서</button>
+    <button type="button" class="quote-doc-btn" id="qd-load-btn"><i class="ti ti-folder-open" aria-hidden="true"></i> 초안 불러오기</button>
+    <button type="button" class="quote-doc-btn" id="qd-save-btn"><i class="ti ti-device-floppy" aria-hidden="true"></i> 초안 저장</button>
+    <button type="button" class="quote-doc-btn quote-doc-btn--primary" id="qd-print-btn"><i class="ti ti-printer" aria-hidden="true"></i> 인쇄 / PDF</button>
+  </div>
+</header>
+
+<main class="quote-doc-wrap">
+  <article class="quote-doc-sheet" aria-label="견적서">
+
+    <header class="quote-doc-head">
+      <div>
+        <h1 class="quote-doc-title">견 적 서</h1>
+        <p class="quote-doc-title-en">Quotation</p>
+      </div>
+      <div class="quote-doc-meta-quick">
+        <div class="quote-doc-meta-row">
+          <label for="qd-quote-no">견적번호</label>
+          <input type="text" class="quote-doc-input" id="qd-quote-no" />
+        </div>
+        <div class="quote-doc-meta-row">
+          <label for="qd-quote-date">견적일자</label>
+          <input type="date" class="quote-doc-input" id="qd-quote-date" />
+        </div>
+        <div class="quote-doc-meta-row">
+          <label for="qd-valid-until">유효기간</label>
+          <input type="date" class="quote-doc-input" id="qd-valid-until" />
+        </div>
+      </div>
+    </header>
+
+    <div class="quote-doc-parties">
+      <section class="quote-doc-party">
+        <div class="quote-doc-party__label">수 신 (고객사)</div>
+        <div class="quote-doc-party__body">
+          <div class="quote-doc-field">
+            <label for="qd-client-company">회사명</label>
+            <input type="text" class="quote-doc-input" id="qd-client-company" placeholder="(주) 고객사명" />
+          </div>
+          <div class="quote-doc-field">
+            <label for="qd-client-name">담당자</label>
+            <input type="text" class="quote-doc-input" id="qd-client-name" placeholder="홍길동 팀장" />
+          </div>
+          <div class="quote-doc-field">
+            <label for="qd-client-email">이메일</label>
+            <input type="email" class="quote-doc-input" id="qd-client-email" placeholder="contact@company.com" />
+          </div>
+          <div class="quote-doc-field">
+            <label for="qd-client-phone">연락처</label>
+            <input type="text" class="quote-doc-input" id="qd-client-phone" placeholder="010-0000-0000" />
+          </div>
+        </div>
+      </section>
+
+      <section class="quote-doc-party">
+        <div class="quote-doc-party__label">발 신 (공급자)</div>
+        <div class="quote-doc-party__body">
+          <div class="quote-doc-field">
+            <label for="qd-issuer-company">상호</label>
+            <input type="text" class="quote-doc-input" id="qd-issuer-company" />
+          </div>
+          <div class="quote-doc-field">
+            <label for="qd-issuer-brand">브랜드</label>
+            <input type="text" class="quote-doc-input" id="qd-issuer-brand" />
+          </div>
+          <div class="quote-doc-field">
+            <label for="qd-issuer-rep">대표자</label>
+            <input type="text" class="quote-doc-input" id="qd-issuer-rep" />
+          </div>
+          <div class="quote-doc-field">
+            <label for="qd-issuer-bizno">사업자번호</label>
+            <input type="text" class="quote-doc-input" id="qd-issuer-bizno" />
+          </div>
+          <div class="quote-doc-field">
+            <label for="qd-issuer-address">주소</label>
+            <input type="text" class="quote-doc-input" id="qd-issuer-address" />
+          </div>
+          <div class="quote-doc-field">
+            <label for="qd-issuer-phone">연락처</label>
+            <input type="text" class="quote-doc-input" id="qd-issuer-phone" />
+          </div>
+          <div class="quote-doc-field">
+            <label for="qd-issuer-email">이메일</label>
+            <input type="email" class="quote-doc-input" id="qd-issuer-email" />
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="quote-doc-project">
+      <label for="qd-project">프로젝트 / 작업명</label>
+      <input type="text" class="quote-doc-input" id="qd-project" placeholder="예: 유튜브 채널 숏폼 영상 제작 (3편)" />
+    </div>
+
+    <div class="quote-doc-table-wrap">
+      <table class="quote-doc-table">
+        <thead>
+          <tr>
+            <th class="col-no">No</th>
+            <th class="col-item">품목</th>
+            <th class="col-item">규격 · 상세</th>
+            <th class="col-qty">수량</th>
+            <th class="col-unit">단위</th>
+            <th class="col-price">단가 (원)</th>
+            <th class="col-amount">금액 (원)</th>
+            <th class="col-action no-print">삭제</th>
+          </tr>
+        </thead>
+        <tbody id="qd-items-body"></tbody>
+      </table>
+      <div class="quote-doc-add-row no-print">
+        <button type="button" class="quote-doc-btn quote-doc-btn--light" id="qd-add-row">
+          <i class="ti ti-plus" aria-hidden="true"></i> 항목 추가
+        </button>
+        <label class="quote-doc-vat-toggle">
+          <input type="checkbox" id="qd-vat-toggle" checked />
+          부가세(10%) 포함 합계 표시
+        </label>
+      </div>
+    </div>
+
+    <div class="quote-doc-totals">
+      <table>
+        <tbody>
+          <tr>
+            <td>공급가액</td>
+            <td id="qd-supply-total">₩0</td>
+          </tr>
+          <tr id="qd-vat-row">
+            <td>부가세 (10%)</td>
+            <td id="qd-vat-total">₩0</td>
+          </tr>
+          <tr class="grand-total">
+            <td>합계</td>
+            <td id="qd-grand-total">₩0</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="quote-doc-notes">
+      <label for="qd-notes">비고 · 특이사항</label>
+      <textarea class="quote-doc-textarea" id="qd-notes"></textarea>
+    </div>
+
+    <div class="quote-doc-terms">
+      <div>
+        <label for="qd-payment-terms">결제 조건</label>
+        <input type="text" class="quote-doc-input" id="qd-payment-terms" />
+      </div>
+      <div>
+        <label for="qd-delivery-date">납기 · 일정</label>
+        <input type="text" class="quote-doc-input" id="qd-delivery-date" />
+      </div>
+    </div>
+
+    <footer class="quote-doc-footer">
+      <div class="quote-doc-footer__stamp">
+        상기 금액으로 견적합니다.<br />
+        문의: <span id="qd-footer-email">dong8creative@gmail.com</span> · <span id="qd-footer-phone">010-4850-6946</span>
+      </div>
+      <div class="quote-doc-footer__sign">
+        <p>블루필드매뉴얼픽쳐스 (타닥클래스)</p>
+        <div class="sign-line">대표 이동헌 (인)</div>
+      </div>
+    </footer>
+
+  </article>
+</main>
+
+<script src="/js/quote-document.js?v=2"></script>
+<script>
+  // 발신 연락처 변경 시 하단 문의란 동기화
+  ;(function () {
+    const phone = document.getElementById('qd-issuer-phone')
+    const email = document.getElementById('qd-issuer-email')
+    const footPhone = document.getElementById('qd-footer-phone')
+    const footEmail = document.getElementById('qd-footer-email')
+    function sync() {
+      if (phone && footPhone) footPhone.textContent = phone.value || footPhone.textContent
+      if (email && footEmail) footEmail.textContent = email.value || footEmail.textContent
+    }
+    phone?.addEventListener('input', sync)
+    email?.addEventListener('input', sync)
+  })()
+</script>
+</body>
+</html>

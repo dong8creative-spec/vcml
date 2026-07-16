@@ -26,7 +26,10 @@ const state = {
   durationUs: null,
   billing: {
     billing_unit_sec: 20,
+    recognition_billing_unit_sec: 30,
+    translation_billing_unit_sec: 20,
     recognition_coins_per_unit: 1,
+    line_split_flat_coins: 1,
     line_split_coins_per_unit: 1,
     translation_coins_per_unit: 10,
     coin_won_reference: 15,
@@ -49,25 +52,36 @@ const state = {
 
 const TRANSLATE_LABELS = { en: "영어", ja: "일본어", zh: "중국어" };
 
-function billingUnitsFromDurationUs(durationUs) {
+function recognitionBillingUnitsFromDurationUs(durationUs) {
   const sec = Math.max(0, Number(durationUs) || 0) / 1_000_000;
-  const unit = state.billing?.billing_unit_sec || 20;
+  const unit = state.billing?.recognition_billing_unit_sec || 30;
   return Math.max(1, Math.ceil(sec / unit));
+}
+
+function translationBillingUnitsFromDurationUs(durationUs) {
+  const sec = Math.max(0, Number(durationUs) || 0) / 1_000_000;
+  const unit = state.billing?.translation_billing_unit_sec || state.billing?.billing_unit_sec || 20;
+  return Math.max(1, Math.ceil(sec / unit));
+}
+
+function billingUnitsFromDurationUs(durationUs) {
+  return translationBillingUnitsFromDurationUs(durationUs);
 }
 
 function recognitionCoins(durationUs) {
   const per = state.billing?.recognition_coins_per_unit || 1;
-  return billingUnitsFromDurationUs(durationUs) * per;
+  return recognitionBillingUnitsFromDurationUs(durationUs) * per;
 }
 
-function lineSplitCoins(durationUs) {
-  const per = state.billing?.line_split_coins_per_unit || 1;
-  return billingUnitsFromDurationUs(durationUs) * per;
+function lineSplitCoins(_durationUs) {
+  const flat = Number(state.billing?.line_split_flat_coins);
+  if (Number.isFinite(flat) && flat > 0) return flat;
+  return 1;
 }
 
 function translationCoins(durationUs) {
   const per = state.billing?.translation_coins_per_unit || 10;
-  return billingUnitsFromDurationUs(durationUs) * per;
+  return translationBillingUnitsFromDurationUs(durationUs) * per;
 }
 
 function coinWonReference() {
@@ -299,7 +313,7 @@ function onScriptReady(data) {
   if (lineHint) {
     const coins = Number(data.line_split_coins) || lineSplitCoins(state.durationUs || 0);
     lineHint.textContent =
-      `이 단계를 사용하면 20초당 1코인 · 예상 +${coins}코인 (약 ${(coins * coinWonReference()).toLocaleString()}원)`;
+      `이 단계를 사용하면 1회당 1코인 · 예상 +${coins}코인 (약 ${(coins * coinWonReference()).toLocaleString()}원)`;
   }
   if (data.missing_files && data.missing_files.length) {
     toast(`원본 파일 ${data.missing_files.length}개를 찾지 못해 일부 구간이 빠졌을 수 있어요.`, "warn");
@@ -944,7 +958,10 @@ function makeMockApi() {
       offline: false,
       billing: {
         billing_unit_sec: 20,
+        recognition_billing_unit_sec: 30,
+        translation_billing_unit_sec: 20,
         recognition_coins_per_unit: 1,
+        line_split_flat_coins: 1,
         line_split_coins_per_unit: 1,
         translation_coins_per_unit: 10,
         coin_won_reference: 15,
@@ -999,7 +1016,7 @@ function makeMockApi() {
     capcut_running: async () => ({ ok: true, running: Math.random() < 0.4 }),
     start_transcribe: async () => {
       emit("progress", { message: "타임라인 오디오를 분석하고 있어요..." }, 400);
-      emit("progress", { message: "코인 15개를 차감하고 있어요… (20초당 1코인)" }, 1300);
+      emit("progress", { message: "코인 15개를 차감하고 있어요… (30초당 1코인)" }, 1300);
       emit("progress", { message: "음성을 인식하고 있어요..." }, 2200);
       for (let i = 1; i <= 8; i++) emit("progress_ratio", { ratio: i / 8 }, 2200 + i * 500);
       emit("script_ready", {

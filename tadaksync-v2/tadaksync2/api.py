@@ -5,7 +5,7 @@ pywebview의 js_api로 노출된다. JS에서 window.pywebview.api.<메서드>(.
 오래 걸리는 작업(로그인 폴링, 전문 인식)은 내부 스레드로 돌리고
 진행 상황을 window.__pyEvent({event, data}) 이벤트로 push한다.
 
-코인 정책: 전문 인식·직접 줄 나눔 20초당 1코인. 무음·미인식 시 미차감.
+코인 정책: 전문 인식 30초당 1코인, 직접 줄 나눔 1회 1코인. 무음·미인식 시 미차감.
 """
 
 from __future__ import annotations
@@ -402,7 +402,7 @@ class Api:
             job_id = license_api.new_job_id()
             status(
                 f"코인 {recognition_coin_cost}개를 차감하고 있어요… "
-                f"(타임라인 약 {minutes}분 · 20초당 1코인)")
+                f"(타임라인 약 {minutes}분 · 30초당 1코인)")
             try:
                 consumed_res = license_api.consume(token, duration_us, job_id)
             except Exception as e:

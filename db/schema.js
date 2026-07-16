@@ -97,10 +97,13 @@ const SUBTITLE_COURSE_SLUG = 'capcut-pro-basic'
 const VIEWS_EDITING_COURSE_SLUG = '조회수-올리는-영상편집법-1783221046465'
 const SUBTITLE_INITIAL_COINS = 10
 const SUBTITLE_DAILY_LOGIN_COINS = 1
-/** 충전 참고 단가(종량제 1코인=15원). 인식·줄나눔 20초/1코인, 번역 20초/10코인 */
+/** 충전 참고 단가(종량제 1코인=15원). 인식 30초/1코인, 줄나눔 1회/1코인, 번역 20초/10코인 */
 const SUBTITLE_COIN_WON_REFERENCE = 15
-const SUBTITLE_BILLING_UNIT_SEC = 20
+const SUBTITLE_RECOGNITION_BILLING_UNIT_SEC = 30
+const SUBTITLE_TRANSLATION_BILLING_UNIT_SEC = 20
+const SUBTITLE_BILLING_UNIT_SEC = SUBTITLE_TRANSLATION_BILLING_UNIT_SEC
 const SUBTITLE_RECOGNITION_COINS_PER_UNIT = 1
+const SUBTITLE_LINE_SPLIT_FLAT_COINS = 1
 const SUBTITLE_LINE_SPLIT_COINS_PER_UNIT = 1
 const SUBTITLE_TRANSLATION_COINS_PER_UNIT = 10
 const VIEWS_EDITING_INITIAL_COINS = 1000
@@ -121,9 +124,18 @@ function isSubtitlePricingLaunched(at = new Date()) {
   return ms >= new Date(SUBTITLE_PRICING_LAUNCH_ISO).getTime()
 }
 
-function subtitleBillingUnitsFromDurationUs(durationUs) {
+function subtitleRecognitionBillingUnitsFromDurationUs(durationUs) {
   const sec = Math.max(0, Number(durationUs) || 0) / 1_000_000
-  return Math.max(1, Math.ceil(sec / SUBTITLE_BILLING_UNIT_SEC))
+  return Math.max(1, Math.ceil(sec / SUBTITLE_RECOGNITION_BILLING_UNIT_SEC))
+}
+
+function subtitleTranslationBillingUnitsFromDurationUs(durationUs) {
+  const sec = Math.max(0, Number(durationUs) || 0) / 1_000_000
+  return Math.max(1, Math.ceil(sec / SUBTITLE_TRANSLATION_BILLING_UNIT_SEC))
+}
+
+function subtitleBillingUnitsFromDurationUs(durationUs) {
+  return subtitleTranslationBillingUnitsFromDurationUs(durationUs)
 }
 
 function subtitleDurationUsFromMinutes(minutes) {
@@ -132,21 +144,24 @@ function subtitleDurationUsFromMinutes(minutes) {
 }
 
 function subtitleRecognitionCoins(durationUs) {
-  return subtitleBillingUnitsFromDurationUs(durationUs) * SUBTITLE_RECOGNITION_COINS_PER_UNIT
+  return subtitleRecognitionBillingUnitsFromDurationUs(durationUs) * SUBTITLE_RECOGNITION_COINS_PER_UNIT
 }
 
-function subtitleLineSplitCoins(durationUs) {
-  return subtitleBillingUnitsFromDurationUs(durationUs) * SUBTITLE_LINE_SPLIT_COINS_PER_UNIT
+function subtitleLineSplitCoins(_durationUs) {
+  return SUBTITLE_LINE_SPLIT_FLAT_COINS
 }
 
 function subtitleTranslationCoins(durationUs) {
-  return subtitleBillingUnitsFromDurationUs(durationUs) * SUBTITLE_TRANSLATION_COINS_PER_UNIT
+  return subtitleTranslationBillingUnitsFromDurationUs(durationUs) * SUBTITLE_TRANSLATION_COINS_PER_UNIT
 }
 
 function getSubtitleBillingMeta() {
   return {
-    billing_unit_sec: SUBTITLE_BILLING_UNIT_SEC,
+    billing_unit_sec: SUBTITLE_TRANSLATION_BILLING_UNIT_SEC,
+    recognition_billing_unit_sec: SUBTITLE_RECOGNITION_BILLING_UNIT_SEC,
+    translation_billing_unit_sec: SUBTITLE_TRANSLATION_BILLING_UNIT_SEC,
     recognition_coins_per_unit: SUBTITLE_RECOGNITION_COINS_PER_UNIT,
+    line_split_flat_coins: SUBTITLE_LINE_SPLIT_FLAT_COINS,
     line_split_coins_per_unit: SUBTITLE_LINE_SPLIT_COINS_PER_UNIT,
     translation_coins_per_unit: SUBTITLE_TRANSLATION_COINS_PER_UNIT,
     coin_won_reference: SUBTITLE_COIN_WON_REFERENCE,
@@ -6628,7 +6643,7 @@ const db = {
 
   async consumeSubtitleCoins(userId, jobId, durationUs) {
     const duration_us = Math.max(0, parseInt(durationUs, 10) || 0)
-    const units = subtitleBillingUnitsFromDurationUs(duration_us)
+    const units = subtitleRecognitionBillingUnitsFromDurationUs(duration_us)
     const coins = subtitleRecognitionCoins(duration_us)
     const mins = Math.max(1, Math.ceil(duration_us / 60_000_000))
     const jobKey = String(jobId || '').trim()
@@ -6735,7 +6750,7 @@ const db = {
 
   async consumeSubtitleLineSplitCoins(userId, jobId, durationUs) {
     const duration_us = Math.max(0, parseInt(durationUs, 10) || 0)
-    const units = subtitleBillingUnitsFromDurationUs(duration_us)
+    const units = subtitleRecognitionBillingUnitsFromDurationUs(duration_us)
     const coins = subtitleLineSplitCoins(duration_us)
     const mins = Math.max(1, Math.ceil(duration_us / 60_000_000))
     const jobKey = String(jobId || '').trim()
@@ -6842,7 +6857,7 @@ const db = {
 
   async consumeSubtitleTranslationCoins(userId, jobId, durationUs) {
     const duration_us = Math.max(0, parseInt(durationUs, 10) || 0)
-    const units = subtitleBillingUnitsFromDurationUs(duration_us)
+    const units = subtitleTranslationBillingUnitsFromDurationUs(duration_us)
     const coins = subtitleTranslationCoins(duration_us)
     const mins = Math.max(1, Math.ceil(duration_us / 60_000_000))
     const jobKey = String(jobId || '').trim()
@@ -7334,8 +7349,11 @@ const db = {
   SUBTITLE_COURSE_SLUG,
   VIEWS_EDITING_COURSE_SLUG,
   SUBTITLE_INITIAL_COINS,
+  SUBTITLE_RECOGNITION_BILLING_UNIT_SEC,
+  SUBTITLE_TRANSLATION_BILLING_UNIT_SEC,
   SUBTITLE_BILLING_UNIT_SEC,
   SUBTITLE_RECOGNITION_COINS_PER_UNIT,
+  SUBTITLE_LINE_SPLIT_FLAT_COINS,
   SUBTITLE_LINE_SPLIT_COINS_PER_UNIT,
   SUBTITLE_TRANSLATION_COINS_PER_UNIT,
   SUBTITLE_COIN_WON_REFERENCE,
