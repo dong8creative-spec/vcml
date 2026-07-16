@@ -523,28 +523,25 @@
   }
 
   function resolveChannelViewStats(account) {
-    const playlists = Array.isArray(account?.playlists) ? account.playlists : []
-    const hasPlaylistStats = playlists.some(
-      (pl) => (Number(pl?.videoCount) || 0) > 0 || (Number(pl?.totalViews) || 0) > 0,
-    )
-    if (hasPlaylistStats) {
-      const videoCount = playlists.reduce((sum, pl) => sum + (Number(pl.videoCount) || 0), 0)
-      const totalViews = playlists.reduce((sum, pl) => sum + (Number(pl.totalViews) || 0), 0)
-      return {
-        videoCount,
-        totalViews,
-        averageViews: videoCount ? Math.round(totalViews / videoCount) : 0,
-      }
-    }
     const stored = account?.viewStats || {}
     const videoCount = Number(stored.videoCount) || 0
     const totalViews = Number(stored.totalViews) || 0
+    if (videoCount || totalViews) {
+      return {
+        videoCount,
+        totalViews,
+        averageViews: videoCount
+          ? Math.round(totalViews / videoCount)
+          : (Number(stored.averageViews) || 0),
+      }
+    }
+    const playlists = Array.isArray(account?.playlists) ? account.playlists : []
+    const plVideoCount = playlists.reduce((sum, pl) => sum + (Number(pl.videoCount) || 0), 0)
+    const plTotalViews = playlists.reduce((sum, pl) => sum + (Number(pl.totalViews) || 0), 0)
     return {
-      videoCount,
-      totalViews,
-      averageViews: videoCount
-        ? Math.round(totalViews / videoCount)
-        : (Number(stored.averageViews) || 0),
+      videoCount: plVideoCount,
+      totalViews: plTotalViews,
+      averageViews: plVideoCount ? Math.round(plTotalViews / plVideoCount) : 0,
     }
   }
 
@@ -570,10 +567,13 @@
     </div>`
   }
 
-  function renderChannelMetricStats(metrics, viewStats = null) {
+  function renderChannelMetricStats(metrics, viewStats = null, { hasPlaylists = false } = {}) {
     const growthHtml = renderGrowthMetricsGrid(metrics)
     const viewsHtml = viewStats ? renderPlaylistViewStats(viewStats) : ''
     if (!growthHtml && !viewsHtml) {
+      if (hasPlaylists) {
+        return '<p class="yt-channel-card__stats-empty">재생목록은 연결되어 있습니다. 조회수 집계가 완료되면 평균·총 조회수가 표시됩니다.</p>'
+      }
       if (viewStats) {
         return '<p class="yt-channel-card__stats-empty">재생목록을 연결하면 편집 포트폴리오의 평균·총 조회수가 표시됩니다.</p>'
       }
@@ -693,7 +693,7 @@
          <div class="yt-channel-card__avatar yt-channel-card__avatar--fallback" aria-hidden="true"><i class="ti ti-brand-youtube"></i></div>`
       : `<div class="yt-channel-card__avatar yt-channel-card__avatar--fallback" aria-hidden="true"><i class="ti ti-brand-youtube"></i></div>`
 
-    const statsHtml = renderChannelMetricStats(account.metrics, stats)
+    const statsHtml = renderChannelMetricStats(account.metrics, stats, { hasPlaylists: playlists.length > 0 })
 
     const playlistActions = renderPlaylistActions(playlists, playlistLabel)
 

@@ -1749,10 +1749,52 @@ async function enrichPortfolioWorksAvatars(works) {
   return changed
 }
 
+const PORTFOLIO_YOUTUBE_STATS_STALE_MS = 24 * 60 * 60 * 1000
+
+function portfolioYoutubeChannelHasPlaylists(account) {
+  return (account?.playlists || []).some((pl) => normalizePlaylistUrl(pl?.url || pl?.playlistUrl || ''))
+}
+
+function portfolioYoutubeChannelNeedsStatsRefresh(account) {
+  if (!portfolioYoutubeChannelHasPlaylists(account)) return false
+
+  const playlists = account.playlists || []
+  const vs = account.viewStats || {}
+  const videoCount = Math.max(
+    Number(vs.videoCount) || 0,
+    ...playlists.map((pl) => Number(pl.videoCount) || 0),
+  )
+  const totalViews = Math.max(
+    Number(vs.totalViews) || 0,
+    ...playlists.map((pl) => Number(pl.totalViews) || 0),
+  )
+
+  if (!videoCount && !totalViews) return true
+  if (videoCount > 0 && !totalViews) return true
+
+  const updatedAt = String(vs.updatedAt || vs.updated_at || '').trim()
+    || playlists.map((pl) => pl.statsUpdatedAt).find(Boolean)
+    || ''
+  const updatedMs = updatedAt ? Date.parse(updatedAt) : 0
+  if (!updatedMs || Number.isNaN(updatedMs)) return true
+  return Date.now() - updatedMs > PORTFOLIO_YOUTUBE_STATS_STALE_MS
+}
+
 async function enrichPortfolioWorksYoutubeStats(works) {
   if (!works?.youtube?.channels?.length) return false
   let changed = false
   for (const account of works.youtube.channels) {
+    const updated = await enrichYoutubeChannel(account, { refreshStats: true })
+    if (updated) changed = true
+  }
+  return changed
+}
+
+async function enrichPortfolioWorksYoutubeStatsIfNeeded(works) {
+  if (!works?.youtube?.channels?.length) return false
+  let changed = false
+  for (const account of works.youtube.channels) {
+    if (!portfolioYoutubeChannelNeedsStatsRefresh(account)) continue
     const updated = await enrichYoutubeChannel(account, { refreshStats: true })
     if (updated) changed = true
   }
@@ -5857,8 +5899,9 @@ const db = {
     if (!doc.exists) return { ...normalizePortfolioWorks({}), updated_at: null }
     const data = doc.data()
     const works = { ...normalizePortfolioWorks(data), updated_at: data.updated_at || null }
-    const enriched = await enrichPortfolioWorksAvatars(works)
-    if (enriched) {
+    const avatarEnriched = await enrichPortfolioWorksAvatars(works)
+    const statsEnriched = await enrichPortfolioWorksYoutubeStatsIfNeeded(works)
+    if (avatarEnriched || statsEnriched) {
       await fs.collection('site_settings').doc('instructor_portfolio_works').set({ ...works, updated_at: now() })
     }
     return works
@@ -5880,6 +5923,12 @@ const db = {
       await enrichYoutubeChannelAccounts(next.youtube?.channels, {
         previousChannels: rest.youtube?.channels,
       })
+      if (data?.youtube?.channels !== undefined && next.youtube?.channels?.length) {
+        for (const account of next.youtube.channels) {
+          if (!portfolioYoutubeChannelHasPlaylists(account)) continue
+          await enrichYoutubeChannel(account, { refreshStats: true })
+        }
+      }
     }
     if (data?.instagram) {
       await enrichInstagramAccountAvatars(next.instagram?.accounts, {
