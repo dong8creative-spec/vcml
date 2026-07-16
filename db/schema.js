@@ -8,6 +8,7 @@ const {
   fetchPlaylistStats,
   fetchChannelVisuals,
   aggregateViewStats,
+  aggregateUniqueVideoStats,
 } = require('../lib/youtube-portfolio')
 const { enrichPortfolioWorksRednoteThumbnails } = require('../lib/rednote-portfolio')
 const {
@@ -17,6 +18,7 @@ const {
   isHostedPortfolioAvatar,
   isInstagramCdnUrl,
   extractSocialAvatarFromHtml,
+  resolveInstagramPortfolioAccountUrl,
 } = require('../lib/instagram-portfolio')
 const { uploadImageBuffer } = require('../utils/storage')
 
@@ -1467,10 +1469,23 @@ function normalizePortfolioPlaylists(item) {
 }
 
 function normalizePortfolioViewStats(raw, playlists) {
-  const agg = aggregateViewStats(playlists)
+  const list = Array.isArray(playlists) ? playlists : []
+  const hasPlaylistStats = list.some(
+    (pl) => (Number(pl?.videoCount) || 0) > 0 || (Number(pl?.totalViews) || 0) > 0,
+  )
+  if (hasPlaylistStats) {
+    const agg = aggregateViewStats(list)
+    const stored = raw && typeof raw === 'object' ? raw : {}
+    return {
+      videoCount: agg.videoCount,
+      totalViews: agg.totalViews,
+      averageViews: agg.averageViews,
+      updatedAt: String(stored.updatedAt || stored.updated_at || '').trim().slice(0, 30),
+    }
+  }
   const stored = raw && typeof raw === 'object' ? raw : {}
-  const videoCount = Math.max(agg.videoCount, Number(stored.videoCount) || 0)
-  const totalViews = Math.max(agg.totalViews, Number(stored.totalViews) || 0)
+  const videoCount = Math.max(0, Number(stored.videoCount) || 0)
+  const totalViews = Math.max(0, Number(stored.totalViews) || 0)
   const averageViews = videoCount
     ? Math.round(totalViews / videoCount)
     : Math.max(0, Number(stored.averageViews) || 0)
@@ -1511,11 +1526,14 @@ function normalizePortfolioAccount(item, i, prefix) {
   const playlists = normalizePortfolioPlaylists(item)
   const legacyPlaylistUrl = playlists[0]?.url || ''
   const legacyPlaylistLabel = playlists[0]?.label || ''
+  const resolvedAccountUrl = prefix === 'ig'
+    ? resolveInstagramPortfolioAccountUrl({ accountUrl, handle, name })
+    : accountUrl
   return {
     id: String(item?.id || slugifyQuoteId(name || handle, `${prefix}-${i + 1}`)).trim().slice(0, 60),
     name: name || handle,
     handle,
-    accountUrl,
+    accountUrl: resolvedAccountUrl,
     avatarUrl: decodeSocialImageUrl(item?.avatarUrl || item?.avatar_url || item?.profileImage || item?.profile_image || '').slice(0, 2000),
     bannerUrl: String(item?.bannerUrl || item?.banner_url || '').trim().slice(0, 400),
     playlistUrl: legacyPlaylistUrl,
@@ -1597,7 +1615,7 @@ async function persistInstagramAvatar(account) {
     fetched = await fetchInstagramAvatarBuffer(source)
   }
   if (!fetched && account?.accountUrl) {
-    const fresh = await resolveInstagramAvatarUrl(account.accountUrl)
+    const fresh = await resolveInstagramAvatarUrl(resolveInstagramPortfolioAccountUrl(account))
     if (fresh) fetched = await fetchInstagramAvatarBuffer(fresh)
     if (fresh && !account.avatarUrl) account.avatarUrl = fresh
   }
@@ -1618,15 +1636,20 @@ async function enrichInstagramAccountAvatars(accounts, { previousAccounts = [] }
   const prevById = Object.fromEntries((previousAccounts || []).map((a) => [a.id, a]))
   let changed = false
   for (const account of accounts) {
-    if (!account?.accountUrl) continue
+    const profileUrl = resolveInstagramPortfolioAccountUrl(account)
+    if (!profileUrl) continue
     const prev = prevById[account.id]
-    const urlChanged = prev && prev.accountUrl !== account.accountUrl
+    const urlChanged = prev && resolveInstagramPortfolioAccountUrl(prev) !== profileUrl
     if (!account.avatarUrl || urlChanged) {
-      const resolved = await resolveSocialAvatarUrl(account.accountUrl)
+      const resolved = await resolveInstagramAvatarUrl(profileUrl)
       if (resolved && resolved !== account.avatarUrl) {
         account.avatarUrl = resolved
         changed = true
       }
+    }
+    if (!account.accountUrl || urlChanged) {
+      account.accountUrl = profileUrl
+      changed = true
     }
     if (account.avatarUrl && !isHostedPortfolioAvatar(account.avatarUrl)) {
       try {
@@ -1668,6 +1691,7 @@ async function enrichYoutubeChannel(account, { refreshStats = false, previousAcc
     return changed
   }
 
+  const playlistStatsResults = []
   for (const playlist of account.playlists) {
     if (!playlist?.url) continue
     try {
@@ -1676,14 +1700,18 @@ async function enrichYoutubeChannel(account, { refreshStats = false, previousAcc
       playlist.totalViews = stats.totalViews
       playlist.averageViews = stats.averageViews
       playlist.statsUpdatedAt = stats.statsUpdatedAt
+      playlistStatsResults.push(stats)
       changed = true
     } catch {
       // 개별 재생목록 실패 시 나머지는 계속 처리
     }
   }
 
+  const uniqueStats = aggregateUniqueVideoStats(playlistStatsResults)
   account.viewStats = {
-    ...aggregateViewStats(account.playlists),
+    videoCount: uniqueStats.videoCount,
+    totalViews: uniqueStats.totalViews,
+    averageViews: uniqueStats.averageViews,
     updatedAt: now(),
   }
   account.playlistUrl = account.playlists[0]?.url || ''

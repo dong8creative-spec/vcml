@@ -79,13 +79,29 @@
     `).join('')
   }
 
-  function portfolioAvatarPreviewSrc(url, profileUrl = '') {
+  function resolveInstagramAccountUrl(account = {}) {
+    const raw = String(account?.accountUrl || account?.account_url || '').trim()
+    const user = raw.match(/instagram\.com\/([^/?#]+)/i)
+    if (user && !['p', 'reel', 'reels', 'stories', 'explore'].includes(user[1].toLowerCase())) {
+      return `https://www.instagram.com/${user[1]}/`
+    }
+    const handle = String(account?.handle || '').trim().replace(/^@+/, '')
+    if (handle) return `https://www.instagram.com/${encodeURIComponent(handle)}/`
+    const name = String(account?.name || '').trim()
+    if (name) return `https://www.instagram.com/${encodeURIComponent(name)}/`
+    return raw
+  }
+
+  function portfolioAvatarPreviewSrc(url, account = {}) {
     const u = String(url || '').replace(/&amp;/g, '&').trim()
+    const profile = resolveInstagramAccountUrl(account)
+    if (!u && profile) {
+      return `/api/image-proxy?profile=${encodeURIComponent(profile)}`
+    }
     if (!u) return ''
     if (/storage\.googleapis\.com/i.test(u)) return u
     if (/cdninstagram\.com|fbcdn\.net/i.test(u)) {
       const params = new URLSearchParams({ url: u })
-      const profile = String(profileUrl || '').trim()
       if (profile) params.set('profile', profile)
       return `/api/image-proxy?${params.toString()}`
     }
@@ -108,7 +124,7 @@
         <input type="month" data-a-end value="${esc((account.endDate || '').slice(0, 7))}" title="종료" ${account.ongoing ? 'disabled' : ''} />
       </div>
       <div class="pf-avatar-row">
-        <img class="pf-avatar-preview" data-a-avatar-preview src="${esc(portfolioAvatarPreviewSrc(account.avatarUrl || '', account.accountUrl || ''))}" alt="" ${account.avatarUrl ? '' : 'hidden'} />
+        <img class="pf-avatar-preview" data-a-avatar-preview src="${esc(portfolioAvatarPreviewSrc(account.avatarUrl || '', account))}" alt="" ${portfolioAvatarPreviewSrc(account.avatarUrl || '', account) ? '' : 'hidden'} />
         <input type="url" data-a-avatar placeholder="프로필 사진 URL (비우면 자동)" value="${esc(account.avatarUrl || '')}" />
       </div>
       ${isChannel ? `<input type="url" data-a-banner placeholder="채널 배너 URL (비우면 자동)" value="${esc(account.bannerUrl || '')}" />

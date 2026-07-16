@@ -410,9 +410,20 @@
     }
   }
 
+  function resolveInstagramAccountUrl(account = {}) {
+    const raw = String(account?.accountUrl || account?.account_url || '').trim()
+    const fromNormalize = normalizeVisitUrl(raw, 'instagram')
+    if (fromNormalize && !/\/instagram\.com\/?$/i.test(fromNormalize)) return fromNormalize
+    const handle = String(account?.handle || '').trim().replace(/^@+/, '')
+    if (handle) return `https://www.instagram.com/${encodeURIComponent(handle)}/`
+    const name = String(account?.name || '').trim()
+    if (name) return `https://www.instagram.com/${encodeURIComponent(name)}/`
+    return fromNormalize || raw
+  }
+
   function portfolioAvatarSrc(url, profileUrl = '') {
     const u = String(url || '').replace(/&amp;/g, '&').trim()
-    const profile = String(profileUrl || '').trim()
+    const profile = resolveInstagramAccountUrl({ accountUrl: profileUrl })
     if (!u && profile) {
       return `/api/image-proxy?profile=${encodeURIComponent(profile)}`
     }
@@ -511,6 +522,32 @@
     `).join('')}</div>`
   }
 
+  function resolveChannelViewStats(account) {
+    const playlists = Array.isArray(account?.playlists) ? account.playlists : []
+    const hasPlaylistStats = playlists.some(
+      (pl) => (Number(pl?.videoCount) || 0) > 0 || (Number(pl?.totalViews) || 0) > 0,
+    )
+    if (hasPlaylistStats) {
+      const videoCount = playlists.reduce((sum, pl) => sum + (Number(pl.videoCount) || 0), 0)
+      const totalViews = playlists.reduce((sum, pl) => sum + (Number(pl.totalViews) || 0), 0)
+      return {
+        videoCount,
+        totalViews,
+        averageViews: videoCount ? Math.round(totalViews / videoCount) : 0,
+      }
+    }
+    const stored = account?.viewStats || {}
+    const videoCount = Number(stored.videoCount) || 0
+    const totalViews = Number(stored.totalViews) || 0
+    return {
+      videoCount,
+      totalViews,
+      averageViews: videoCount
+        ? Math.round(totalViews / videoCount)
+        : (Number(stored.averageViews) || 0),
+    }
+  }
+
   function renderPlaylistViewStats(viewStats) {
     const stats = viewStats || {}
     if (!stats.videoCount && !stats.totalViews && !stats.averageViews) return ''
@@ -580,10 +617,11 @@
       visitLabel = '인스타그램 열기',
       sampleNote,
     } = options
-    const visitUrl = normalizeVisitUrl(account.accountUrl, 'instagram')
+    const profileUrl = resolveInstagramAccountUrl(account)
+    const visitUrl = profileUrl
     const avatarUrl = portfolioAvatarSrc(
       account.avatarUrl || account.avatar_url || account.profileImage || '',
-      account.accountUrl,
+      profileUrl,
     )
     const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
     const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
@@ -640,7 +678,7 @@
     const avatarUrl = String(account.avatarUrl || account.avatar_url || '').trim()
     const playlists = (Array.isArray(account.playlists) ? account.playlists : [])
       .filter((pl) => normalizePlaylistUrl(pl?.url || pl?.playlistUrl))
-    const stats = account.viewStats || {}
+    const stats = resolveChannelViewStats(account)
     const period = formatPeriod(account.startDate, account.endDate, account.ongoing)
     const statusLabel = account.ongoing ? '진행 중' : '계약 종료'
     const statusClass = account.ongoing ? 'is-ongoing' : 'is-completed'
@@ -700,7 +738,7 @@
   function renderAccountAvatar(account, iconClass) {
     const avatarUrl = portfolioAvatarSrc(
       account?.avatarUrl || account?.avatar_url || account?.profileImage || '',
-      account?.accountUrl,
+      resolveInstagramAccountUrl(account),
     )
     if (!avatarUrl) {
       return `<div class="ig-account-card__icon" aria-hidden="true"><i class="${iconClass}"></i></div>`
