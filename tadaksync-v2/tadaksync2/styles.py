@@ -87,8 +87,8 @@ POSITION_MAP = {
     "bottom": {"transform": (0.0, -0.8)},
     "middle": {"transform": (0.0, 0.0)},
     "top": {"transform": (0.0, 0.8)},
-    "pos_1075": {"ui": (0.0, 1075.0)},
-    "pos_minus_465": {"ui": (0.0, -465.0)},
+    "pos_1075": {"ui": (0.0, 1075.0)},       # UI: 인스타그램
+    "pos_minus_465": {"ui": (0.0, -465.0)},  # UI: 유튜브
 }
 
 

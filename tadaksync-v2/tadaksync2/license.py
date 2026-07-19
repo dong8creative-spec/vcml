@@ -144,11 +144,13 @@ def consume(token: str, duration_us: int, job_id: str) -> dict:
     )
 
 
-def consume_line_split(token: str, duration_us: int, job_id: str) -> dict:
+def consume_line_split(token: str, duration_us: int, job_id: str,
+                       split_mode: str = "auto") -> dict:
     return _request(
         "POST",
         "/api/subtitle/consume-lines",
-        body={"duration_us": duration_us, "job_id": job_id},
+        body={"duration_us": duration_us, "job_id": job_id,
+              "split_mode": split_mode},
         token=token,
     )
 

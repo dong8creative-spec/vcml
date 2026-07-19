@@ -100,12 +100,52 @@
 
     <!-- ── STEP 2: 전문 인식 진행 ── -->
     <section class="view hidden" id="view-2">
-      <div class="progress-stage">
+      <div class="progress-stage" id="progress-stage">
         <div class="pulse-ring"><div class="pulse-core"></div></div>
         <h2 id="progress-title">전문을 인식하고 있어요</h2>
         <p class="sub" id="progress-msg">준비 중…</p>
         <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
         <p class="progress-note">말이 인식되면 <b>30초당 1코인</b>이 차감돼요. 무음·미인식이면 코인 없이 자동 취소됩니다.</p>
+      </div>
+      <div class="split-choice hidden" id="split-choice">
+        <h2>자막을 어떻게 나눌까요?</h2>
+        <p class="sub">한 가지 방식만 선택할 수 있어요. 선택 후 코인이 차감됩니다.</p>
+        <div class="split-choice-grid">
+          <div class="split-choice-card" id="split-auto-card">
+            <div class="split-choice-title">자동 어절 나누기</div>
+            <div class="split-choice-desc">Whisper 타임스탬프 기준으로 문장·어절 단위 자동 분할</div>
+            <div class="split-auto-options" id="split-auto-options">
+              <label class="split-word-opt">최소 어절
+                <select id="split-min-words" aria-label="최소 어절">
+                  <option value="1" selected>1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
+              </label>
+              <label class="split-word-opt">최대 어절
+                <select id="split-max-words" aria-label="최대 어절">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5" selected>5</option>
+                  <option value="6">6</option>
+                </select>
+              </label>
+            </div>
+            <p class="split-boundary-note">마침표·느낌표·물음표로 끝나는 문장은 절대 합치지 않습니다.</p>
+            <div class="split-choice-coin">🪙 <span id="split-auto-coins">1</span> 코인</div>
+            <button type="button" class="btn btn-primary split-run-btn" id="btn-split-auto">자동 어절 나누기 실행</button>
+          </div>
+          <button type="button" class="split-choice-card" id="btn-split-manual">
+            <div class="split-choice-title">엔터로 줄 나누기</div>
+            <div class="split-choice-desc">전문을 직접 편집하며 Enter로 자막 블록을 정합니다</div>
+            <div class="split-choice-coin">🪙 <span id="split-manual-coins">2</span> 코인</div>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -134,24 +174,11 @@
         </div>
         <div class="head-actions">
           <button class="btn btn-ghost" id="btn-back-script">← 줄 나누기로</button>
+          <button class="btn btn-ghost" id="btn-open-style-editor">단어·스타일 편집</button>
           <button class="btn btn-ghost" id="btn-export-srt">SRT 내보내기</button>
           <button class="btn btn-primary" id="btn-go-style">③ 스타일 선택 →</button>
         </div>
       </header>
-      <div class="highlight-toolbar">
-        <div>
-          <b>어절 강조 색</b>
-          <span class="sub">색을 고른 뒤 아래 어절을 클릭하세요. 같은 색을 다시 클릭하면 해제됩니다.</span>
-        </div>
-        <div class="highlight-tools">
-          <div class="highlight-swatches" id="highlight-swatches"></div>
-          <label class="color-picker-label">
-            <span>색 선택</span>
-            <input type="color" id="highlight-color" value="#ffef3b">
-          </label>
-          <button class="btn btn-ghost" id="btn-eyedropper">스포이드</button>
-        </div>
-      </div>
       <div class="block-list" id="block-list"></div>
     </section>
 
@@ -184,8 +211,8 @@
             <button data-v="bottom" class="on">하단</button>
             <button data-v="middle">중앙</button>
             <button data-v="top">상단</button>
-            <button data-v="pos_1075">0, 1075</button>
-            <button data-v="pos_minus_465">0, -465</button>
+            <button data-v="pos_1075">인스타그램</button>
+            <button data-v="pos_minus_465">유튜브</button>
           </div>
         </div>
       </div>
@@ -252,6 +279,15 @@
 </div>
 
 <div id="toast-root"></div>
+
+<div id="dev-dock" class="dev-dock hidden" aria-live="polite">
+  <div class="dev-dock-head">
+    <strong>DEV</strong>
+    <span id="dev-hud-state">—</span>
+    <span class="dev-hud-hint">F5 UI · F12 콘솔 · .py 저장=재시작</span>
+  </div>
+  <div id="dev-log" class="dev-log"></div>
+</div>
 
 <script src="app.js"></script>
 </body>

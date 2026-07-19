@@ -22,6 +22,8 @@ const state = {
   selectedProject: null,   // {index, name, ...}
   blocks: [],              // [{start_us, end_us, text}]
   fromSrt: false,
+  splitMode: null,           // 'auto' | 'manual'
+  scriptReadyMeta: null,
   styleKey: "classic",
   size: "medium",
   position: "bottom",
@@ -32,6 +34,9 @@ const state = {
   coinCourses: [],
   smartstoreReview: {},
   shownInboxIds: new Set(),
+  keywordScan: null,
+  blocksUndo: null,
+  styleEditorOpen: false,
 };
 
 /* ───────────────────────── 유틸 ───────────────────────── */
@@ -126,7 +131,13 @@ function gotoStep(n, opts = {}) {
   $(`#view-${n}`).classList.remove("hidden");
   renderStepNav();
   if (n === 3) updateLineCount();
-  if (n === 4) renderBlocks();
+  if (n === 4) {
+    renderBlocks();
+    if (state.blocks.length) openStyleEditor({ silent: true });
+    else closeStyleEditor();
+  } else {
+    closeStyleEditor();
+  }
   if (n === 5) renderInjectSummary();
 }
 
@@ -218,6 +229,9 @@ async function startTranscribe() {
   if (!state.selectedProject) { toast("프로젝트를 먼저 선택해 주세요.", "warn"); return; }
   const lang = $("#sel-language").value;
   state.busy = true;
+  state.splitMode = null;
+  $("#progress-stage").classList.remove("hidden");
+  $("#split-choice").classList.add("hidden");
   gotoStep(2, { unlock: false });
   $("#progress-fill").style.width = "0%";
   $("#progress-msg").textContent = "준비 중…";
@@ -231,13 +245,60 @@ async function startTranscribe() {
 
 function onScriptReady(data) {
   state.busy = false;
+  state.scriptReadyMeta = data;
   $("#script-editor").value = data.text;
   state.fromSrt = false;
+  state.splitMode = null;
   if (data.missing_files && data.missing_files.length) {
     toast(`원본 파일 ${data.missing_files.length}개를 찾지 못해 일부 구간이 빠졌을 수 있어요.`, "warn");
   }
+  const autoCoins = data.line_split_auto_coins ?? data.line_split_coins ?? 1;
+  const manualCoins = data.line_split_manual_coins ?? 2;
+  $("#split-auto-coins").textContent = autoCoins;
+  $("#split-manual-coins").textContent = manualCoins;
+  $("#progress-stage").classList.add("hidden");
+  $("#split-choice").classList.remove("hidden");
+  gotoStep(2);
+  toast("전문 인식 완료! 줄 나누기 방식을 선택하세요.", "success");
+}
+
+function showSplitChoice() {
+  $("#progress-stage").classList.add("hidden");
+  $("#split-choice").classList.remove("hidden");
+}
+
+async function chooseSplitAuto() {
+  if (state.busy) return;
+  const minW = Number($("#split-min-words")?.value || 1);
+  const maxW = Number($("#split-max-words")?.value || 5);
+  if (minW > maxW) {
+    toast("최소 어절은 최대 어절보다 클 수 없어요.", "warn");
+    return;
+  }
+  state.busy = true;
+  try {
+    const res = await state.api.build_blocks_auto(minW, maxW);
+    if (!res.ok) { toast(res.error, "error"); return; }
+    state.splitMode = "auto";
+    state.blocks = res.blocks;
+    if (res.line_split_coins) {
+      toast(`자동 어절 나누기 (${minW}~${maxW}어절) · ${res.line_split_coins}코인 차감`, "success");
+      if (res.balance != null && state.auth) state.auth.balance = res.balance;
+      renderAuth();
+    }
+    gotoStep(4);
+  } catch (e) {
+    toast(e?.message || "자동 어절 나누기에 실패했어요.", "error");
+  } finally {
+    state.busy = false;
+  }
+}
+
+function chooseSplitManual() {
+  state.splitMode = "manual";
+  $("#split-choice").classList.add("hidden");
   gotoStep(3);
-  toast("전문 인식 완료! 엔터로 자막을 나눠보세요.", "success");
+  updateLineCount();
 }
 
 function updateLineCount() {
@@ -252,72 +313,97 @@ async function buildBlocks() {
   if (!text.trim()) { toast("전문이 비어 있어요.", "warn"); return; }
   const res = await state.api.build_blocks(text);
   if (!res.ok) { toast(res.error, "error"); return; }
+  state.splitMode = "manual";
   state.blocks = res.blocks;
+  if (res.line_split_coins) {
+    toast(`엔터 줄 나누기 · ${res.line_split_coins}코인 차감`, "success");
+    if (res.balance != null && state.auth) state.auth.balance = res.balance;
+    renderAuth();
+  }
   gotoStep(4);
 }
 
-function tokensForText(text) {
-  const tokens = [];
-  const re = /\S+/g;
-  let m;
-  while ((m = re.exec(text || "")) !== null) {
-    tokens.push({ text: m[0], start: m.index, end: m.index + m[0].length });
+function remapSpansOnTextChange(oldText, newText, spans) {
+  if (!Array.isArray(spans) || !spans.length) return [];
+  const src = String(oldText || "");
+  const dst = String(newText || "");
+  if (src === dst) return spans;
+  const out = [];
+  let from = 0;
+  for (const span of spans) {
+    const frag = src.slice(span.start, span.end);
+    if (!frag) continue;
+    const idx = dst.indexOf(frag, from);
+    if (idx < 0) continue;
+    out.push({ ...span, start: idx, end: idx + frag.length });
+    from = idx + frag.length;
   }
-  return tokens;
+  return out;
 }
 
-function findSpan(block, start, end) {
-  return (block.spans || []).find((s) => s.start === start && s.end === end);
-}
-
-function setSpanColor(block, start, end, color) {
-  const c = normalizeColor(color);
-  block.spans = (block.spans || []).filter((s) => !(s.start === start && s.end === end));
-  block.spans.push({ start, end, color: c });
-}
-
-function toggleSpanColor(block, start, end) {
-  const current = findSpan(block, start, end);
-  const c = normalizeColor(state.highlightColor);
-  if (current && normalizeColor(current.color) === c) {
-    block.spans = (block.spans || []).filter((s) => !(s.start === start && s.end === end));
-  } else {
-    setSpanColor(block, start, end, c);
+function syncSplitWordRange() {
+  const minEl = $("#split-min-words");
+  const maxEl = $("#split-max-words");
+  if (!minEl || !maxEl) return;
+  if (Number(minEl.value) > Number(maxEl.value)) {
+    minEl.value = maxEl.value;
   }
 }
 
-function renderWordChips(block) {
-  const tokens = tokensForText(block.text);
-  if (!tokens.length) return `<div class="word-chip-empty">강조할 어절이 없어요.</div>`;
-  return tokens.map((t) => {
-    const span = findSpan(block, t.start, t.end);
-    const color = span ? normalizeColor(span.color) : "";
-    const style = color
-      ? ` style="--chip-color:${esc(color)};border-color:${esc(color)};color:${esc(color)}"`
-      : "";
-    return `<button class="word-chip${color ? " colored" : ""}" data-start="${t.start}" data-end="${t.end}"${style}>${esc(t.text)}</button>`;
-  }).join("");
+let syncEditorTimer = null;
+
+function updateStyleEditorButton() {
+  const btn = $("#btn-open-style-editor");
+  if (!btn) return;
+  btn.classList.toggle("active", state.styleEditorOpen);
+  btn.textContent = state.styleEditorOpen ? "단어·스타일 편집 (열림)" : "단어·스타일 편집";
 }
 
-function renderHighlightToolbar() {
-  const input = $("#highlight-color");
-  if (input) input.value = normalizeColor(state.highlightColor);
-  const swatches = $("#highlight-swatches");
-  if (!swatches) return;
-  swatches.innerHTML = state.recentHighlightColors.map((c) => {
-    const color = normalizeColor(c);
-    return `<button class="color-swatch${color === state.highlightColor ? " selected" : ""}" data-color="${esc(color)}" style="--swatch:${esc(color)}" title="${esc(color)}"></button>`;
-  }).join("");
+function scheduleSyncEditorBlocks() {
+  if (!state.styleEditorOpen) return;
+  clearTimeout(syncEditorTimer);
+  syncEditorTimer = setTimeout(async () => {
+    await state.api.sync_editor_blocks(state.blocks);
+  }, 280);
+}
+
+async function openStyleEditor(opts = {}) {
+  if (!state.blocks.length) {
+    if (!opts.silent) toast("편집할 자막 블록이 없어요.", "warn");
+    return;
+  }
+  await state.api.sync_editor_blocks(state.blocks);
+  await state.api.sync_editor_config({ highlightColor: state.highlightColor });
+  const res = await state.api.open_style_editor_window();
+  if (!res.ok) {
+    if (!opts.silent) toast(res.error, "error");
+    return;
+  }
+  state.styleEditorOpen = true;
+  updateStyleEditorButton();
+}
+
+async function closeStyleEditor() {
+  if (!state.styleEditorOpen) return;
+  await state.api.close_style_editor_window();
+  state.styleEditorOpen = false;
+  updateStyleEditorButton();
+}
+
+async function toggleStyleEditor() {
+  if (state.styleEditorOpen) await closeStyleEditor();
+  else await openStyleEditor();
 }
 
 function renderBlocks() {
-  renderHighlightToolbar();
   const list = $("#block-list");
   list.innerHTML = "";
   state.blocks.forEach((b, i) => {
     if (!Array.isArray(b.spans)) b.spans = [];
     const row = document.createElement("div");
     row.className = "block-row" + (state.playingIdx === i ? " playing" : "");
+    const spanHint = (b.spans && b.spans.length)
+      ? `<span class="block-span-hint">${b.spans.length}개 강조</span>` : "";
     row.innerHTML = `
       <span class="block-idx">${i + 1}</span>
       <span class="block-time">
@@ -325,8 +411,10 @@ function renderBlocks() {
         <span class="tilde">–</span>
         <input class="t-end" value="${fmtTime(b.end_us)}">
       </span>
-      <input class="block-text" value="${esc(b.text)}">
-      <div class="word-chip-strip">${renderWordChips(b)}</div>
+      <div class="block-text-wrap">
+        <input class="block-text" value="${esc(b.text)}">
+        ${spanHint}
+      </div>
       <span class="block-btns">
         <button class="icon-btn play" title="이 구간 미리듣기">${state.playingIdx === i ? "⏸" : "▶"}</button>
         <button class="icon-btn del" title="삭제">✕</button>
@@ -343,15 +431,10 @@ function renderBlocks() {
       b.end_us = us; e.target.value = fmtTime(us);
     });
     row.querySelector(".block-text").addEventListener("input", (e) => {
+      const prev = b.text;
       b.text = e.target.value;
-      b.spans = [];
-      row.querySelector(".word-chip-strip").innerHTML = renderWordChips(b);
-    });
-    row.querySelector(".word-chip-strip").addEventListener("click", (e) => {
-      const chip = e.target.closest(".word-chip");
-      if (!chip) return;
-      toggleSpanColor(b, Number(chip.dataset.start), Number(chip.dataset.end));
-      row.querySelector(".word-chip-strip").innerHTML = renderWordChips(b);
+      b.spans = remapSpansOnTextChange(prev, b.text, b.spans || []);
+      scheduleSyncEditorBlocks();
     });
     row.querySelector(".play").addEventListener("click", async () => {
       if (state.playingIdx === i) {
@@ -372,6 +455,7 @@ function renderBlocks() {
     row.querySelector(".del").addEventListener("click", () => {
       state.blocks.splice(i, 1);
       renderBlocks();
+      scheduleSyncEditorBlocks();
     });
     list.appendChild(row);
   });
@@ -625,6 +709,86 @@ function renderReviewGuide() {
   }
 }
 
+/* ───────────────────────── DEV 모니터 ───────────────────────── */
+
+function isDevMode() {
+  return window.__TADAKSYNC_DEV__ === true
+    || new URLSearchParams(location.search).get("dev") === "1";
+}
+
+function devLine(tag, ...parts) {
+  const msg = parts.map((p) => {
+    if (p == null) return "";
+    if (typeof p === "object") {
+      try { return JSON.stringify(p).slice(0, 140); } catch (_) { return String(p); }
+    }
+    return String(p);
+  }).filter(Boolean).join(" ");
+  console.log(`[dev:${tag}]`, msg);
+  const log = $("#dev-log");
+  if (!log) return;
+  const row = document.createElement("div");
+  row.className = "dev-log-row";
+  row.textContent = `[${tag}] ${msg}`;
+  log.prepend(row);
+  while (log.childNodes.length > 100) log.removeChild(log.lastChild);
+}
+
+function updateDevHud() {
+  const hud = $("#dev-hud-state");
+  if (!hud) return;
+  hud.textContent = `step=${state.step} busy=${state.busy} split=${state.splitMode || "-"} blocks=${state.blocks.length}`;
+}
+
+function attachDevApiMonitor(api) {
+  if (!api || typeof Proxy === "undefined") return api;
+  return new Proxy(api, {
+    get(target, prop) {
+      const val = target[prop];
+      if (typeof val !== "function") return val;
+      return async (...args) => {
+        devLine("api→", String(prop));
+        const t0 = performance.now();
+        try {
+          const res = await val.apply(target, args);
+          const ms = `${(performance.now() - t0).toFixed(0)}ms`;
+          if (res && res.ok === false) devLine("api←", String(prop), res.error || "fail", ms);
+          else devLine("api←", String(prop), ms);
+          return res;
+        } catch (e) {
+          devLine("api!", String(prop), e?.message || e);
+          throw e;
+        }
+      };
+    },
+  });
+}
+
+window.installDevMonitor = function installDevMonitor() {
+  if (window.__devMonitorInstalled) return;
+  window.__devMonitorInstalled = true;
+  window.__TADAKSYNC_DEV__ = true;
+  $("#dev-dock")?.classList.remove("hidden");
+  const prev = window.__pyEvent;
+  window.__pyEvent = (msg) => {
+    devLine("event", msg?.event);
+    return prev?.(msg);
+  };
+  updateDevHud();
+  if (!window.__devHudTimer) {
+    window.__devHudTimer = setInterval(updateDevHud, 400);
+  }
+  devLine("app", "dev monitor ready");
+};
+
+function maybeEnableDev(api) {
+  if (!isDevMode()) return api;
+  window.installDevMonitor();
+  // pywebview.api는 Proxy로 감싸면 get_state 등 브리지 호출이 깨진다.
+  // Python 쪽 DevApiWrapper가 API 로그를 이미 남긴다.
+  return api;
+}
+
 /* ───────────────────────── Python 이벤트 ───────────────────────── */
 
 window.__pyEvent = (msg) => {
@@ -684,6 +848,16 @@ window.__pyEvent = (msg) => {
         toast(data.message, data.kind || "success");
       }
       break;
+    case "blocks_updated":
+      if (data?.blocks) {
+        state.blocks = data.blocks;
+        if (state.step === 4) renderBlocks();
+      }
+      break;
+    case "style_editor_closed":
+      state.styleEditorOpen = false;
+      updateStyleEditorButton();
+      break;
   }
 };
 
@@ -697,6 +871,9 @@ function makeMockApi() {
     "먼저 프로그램을 열고 프로젝트를 선택합니다", "전문 인식을 누르면 이렇게 전체 대본이 나와요",
     "이제 엔터만 눌러서 자막을 나누면 끝입니다", "스타일까지 고르면 캡컷에 바로 들어가요"];
   let mockAuth = { logged_in: false };
+  let mockEditorBlocks = [];
+  let mockEditorConfig = {};
+  let mockEditorWin = null;
   return {
     get_state: async () => ({
       ok: true,
@@ -762,7 +939,10 @@ function makeMockApi() {
       emit("progress", { message: "코인 5개를 차감하고 있어요… (타임라인 약 5분)" }, 1300);
       emit("progress", { message: "음성을 인식하고 있어요..." }, 2200);
       for (let i = 1; i <= 8; i++) emit("progress_ratio", { ratio: i / 8 }, 2200 + i * 500);
-      emit("script_ready", { text: SENT.join(" "), language: "ko", minutes: 5, missing_files: [] }, 6600);
+      emit("script_ready", {
+        text: SENT.join(" "), language: "ko", minutes: 5, missing_files: [],
+        line_split_auto_coins: 1, line_split_manual_coins: 2,
+      }, 6600);
       return { ok: true };
     },
     build_blocks: async (text) => {
@@ -777,7 +957,133 @@ function makeMockApi() {
           t += dur + 150_000;
           return b;
         }),
+        line_split_coins: 2,
+        split_mode: "manual",
       };
+    },
+    build_blocks_auto: async () => {
+      const lines = SENT;
+      let t = 0;
+      return {
+        ok: true,
+        blocks: lines.map((l) => {
+          const dur = Math.max(1_200_000, l.length * 130_000);
+          const b = { start_us: t, end_us: t + dur, text: l };
+          t += dur + 150_000;
+          return b;
+        }),
+        line_split_coins: 1,
+        split_mode: "auto",
+      };
+    },
+    scan_keyword: async (blocks, keyword, mode) => {
+      const kw = String(keyword || "").trim();
+      if (!kw) return { ok: false, error: "키워드를 입력해 주세요." };
+      const matches = [];
+      (blocks || []).forEach((b, bi) => {
+        const text = b.text || "";
+        if (mode === "contains") {
+          let start = 0;
+          while (true) {
+            const idx = text.indexOf(kw, start);
+            if (idx < 0) break;
+            matches.push({ block_index: bi, start: idx, end: idx + kw.length, snippet: text.slice(Math.max(0, idx - 4), idx + kw.length + 4) });
+            start = idx + Math.max(1, kw.length);
+          }
+        } else {
+          const re = /\S+/g;
+          let m;
+          while ((m = re.exec(text)) !== null) {
+            if (m[0] === kw) matches.push({ block_index: bi, start: m.index, end: m.index + kw.length, snippet: m[0] });
+          }
+        }
+      });
+      const blockSet = new Set(matches.map((m) => m.block_index));
+      return { ok: true, keyword: kw, mode, count: matches.length, block_count: blockSet.size, matches };
+    },
+    apply_keyword_highlight: async (blocks, keyword, mode, color, bold, boldWidth, italic, italicDegree) => {
+      const kw = String(keyword || "").trim();
+      const out = JSON.parse(JSON.stringify(blocks || []));
+      let applied = 0;
+      out.forEach((b, bi) => {
+        const text = b.text || "";
+        const hits = [];
+        if (mode === "contains") {
+          let start = 0;
+          while (true) {
+            const idx = text.indexOf(kw, start);
+            if (idx < 0) break;
+            hits.push({ start: idx, end: idx + kw.length });
+            start = idx + Math.max(1, kw.length);
+          }
+        } else {
+          const re = /\S+/g;
+          let m;
+          while ((m = re.exec(text)) !== null) {
+            if (m[0] === kw) hits.push({ start: m.index, end: m.index + kw.length });
+          }
+        }
+        hits.forEach(({ start, end }) => {
+          b.spans = b.spans || [];
+          const entry = { start, end };
+          if (color) entry.color = color;
+          if (bold) { entry.bold = true; if (boldWidth != null) entry.bold_width = boldWidth; }
+          if (italic) { entry.italic = true; if (italicDegree != null) entry.italic_degree = italicDegree; }
+          b.spans = b.spans.filter((s) => !(s.start === start && s.end === end));
+          b.spans.push(entry);
+          applied += 1;
+        });
+      });
+      if (!applied) return { ok: false, error: "일치하는 단어가 없어요." };
+      return { ok: true, blocks: out, applied, count: applied, block_count: out.length };
+    },
+    clear_keyword_highlight: async (blocks, keyword, mode) => {
+      const kw = String(keyword || "").trim();
+      const out = JSON.parse(JSON.stringify(blocks || []));
+      out.forEach((b) => {
+        const text = b.text || "";
+        b.spans = (b.spans || []).filter((s) => {
+          const frag = text.slice(s.start, s.end);
+          if (mode === "contains") return frag !== kw && !text.slice(s.start, s.end).includes(kw);
+          return frag !== kw;
+        });
+      });
+      return { ok: true, blocks: out };
+    },
+    replace_keyword_text: async (blocks, keyword, replacement, mode) => {
+      const kw = String(keyword || "").trim();
+      const repl = String(replacement ?? "");
+      const out = JSON.parse(JSON.stringify(blocks || []));
+      let replaced = 0;
+      out.forEach((b) => {
+        let text = b.text || "";
+        const old = text;
+        const hits = [];
+        if (mode === "contains") {
+          let start = 0;
+          while (true) {
+            const idx = text.indexOf(kw, start);
+            if (idx < 0) break;
+            hits.push({ start: idx, end: idx + kw.length });
+            start = idx + Math.max(1, kw.length);
+          }
+        } else {
+          const re = /\S+/g;
+          let m;
+          while ((m = re.exec(text)) !== null) {
+            if (m[0] === kw) hits.push({ start: m.index, end: m.index + kw.length });
+          }
+        }
+        hits.reverse().forEach(({ start, end }) => {
+          text = text.slice(0, start) + repl + text.slice(end);
+          replaced += 1;
+        });
+        if (text !== old) {
+          b.text = text;
+          b.spans = remapSpansOnTextChange(old, text, b.spans || []);
+        }
+      });
+      return { ok: true, blocks: out, replaced };
     },
     import_srt: async (projectIndex) => {
       if (projectIndex == null) return { ok: false, error: "프로젝트를 다시 선택해 주세요." };
@@ -797,6 +1103,45 @@ function makeMockApi() {
       };
     },
     open_url: async () => ({ ok: true }),
+    sync_editor_blocks: async (blocks) => {
+      mockEditorBlocks = JSON.parse(JSON.stringify(blocks || []));
+      if (mockEditorWin && !mockEditorWin.closed) {
+        mockEditorWin.postMessage({ event: "blocks_synced", data: { blocks: mockEditorBlocks } }, "*");
+      }
+      return { ok: true };
+    },
+    sync_editor_config: async (config) => {
+      mockEditorConfig = { ...(config || {}) };
+      return { ok: true };
+    },
+    get_editor_state: async () => ({
+      ok: true,
+      blocks: mockEditorBlocks,
+      config: mockEditorConfig,
+    }),
+    push_editor_blocks: async (blocks) => {
+      mockEditorBlocks = JSON.parse(JSON.stringify(blocks || []));
+      emit("blocks_updated", { blocks: mockEditorBlocks }, 0);
+      return { ok: true };
+    },
+    style_editor_is_open: async () => ({ ok: true, open: !!(mockEditorWin && !mockEditorWin.closed) }),
+    open_style_editor_window: async () => {
+      if (!mockEditorBlocks.length) return { ok: false, error: "편집할 자막 블록이 없어요." };
+      if (mockEditorWin && !mockEditorWin.closed) {
+        mockEditorWin.focus();
+        mockEditorWin.postMessage({ event: "blocks_synced", data: { blocks: mockEditorBlocks } }, "*");
+        return { ok: true, open: true };
+      }
+      mockEditorWin = window.open("style-editor.html", "tadaksync-style-editor", "width=440,height=720");
+      return { ok: true, open: true };
+    },
+    close_style_editor_window: async () => {
+      if (mockEditorWin && !mockEditorWin.closed) mockEditorWin.close();
+      mockEditorWin = null;
+      emit("style_editor_closed", {}, 0);
+      return { ok: true, open: false };
+    },
+    toggle_style_editor_window: async () => ({ ok: true }),
   };
 }
 
@@ -886,34 +1231,22 @@ function bindEvents() {
 
   $("#script-editor").addEventListener("input", updateLineCount);
   $("#btn-build-blocks").addEventListener("click", buildBlocks);
-  $("#highlight-color").addEventListener("input", (e) => {
-    rememberHighlightColor(e.target.value);
-    renderHighlightToolbar();
-  });
-  $("#highlight-swatches").addEventListener("click", (e) => {
-    const btn = e.target.closest(".color-swatch");
-    if (!btn) return;
-    rememberHighlightColor(btn.dataset.color);
-    renderHighlightToolbar();
-  });
-  $("#btn-eyedropper").addEventListener("click", async () => {
-    if (!window.EyeDropper) {
-      toast("이 환경에서는 스포이드가 지원되지 않아요. 색 선택 버튼을 사용해 주세요.", "warn");
-      return;
-    }
-    try {
-      const res = await new window.EyeDropper().open();
-      rememberHighlightColor(res.sRGBHex);
-      renderHighlightToolbar();
-    } catch (_) {
-      // 사용자가 스포이드를 취소한 경우는 조용히 둔다.
-    }
-  });
+  $("#split-min-words")?.addEventListener("change", syncSplitWordRange);
+  $("#split-max-words")?.addEventListener("change", syncSplitWordRange);
+
+  $("#btn-open-style-editor").addEventListener("click", toggleStyleEditor);
 
   $("#btn-back-script").addEventListener("click", () => {
     if (state.fromSrt) { toast("SRT로 불러온 자막은 줄 나누기 화면이 없어요.", "warn"); return; }
+    if (state.splitMode === "auto") {
+      showSplitChoice();
+      gotoStep(2);
+      return;
+    }
     gotoStep(3);
   });
+  $("#btn-split-auto").addEventListener("click", chooseSplitAuto);
+  $("#btn-split-manual").addEventListener("click", chooseSplitManual);
   $("#btn-export-srt").addEventListener("click", exportSrt);
   $("#btn-go-style").addEventListener("click", () => {
     if (!state.blocks.length) { toast("자막 블록이 없어요.", "warn"); return; }
@@ -933,7 +1266,7 @@ function bindEvents() {
 function boot() {
   bindEvents();
   if (window.pywebview && window.pywebview.api) {
-    state.api = window.pywebview.api;
+    state.api = maybeEnableDev(window.pywebview.api);
     init();
     return;
   }
@@ -942,7 +1275,7 @@ function boot() {
   const bootReal = () => {
     if (booted) return;
     booted = true;
-    state.api = window.pywebview.api;
+    state.api = maybeEnableDev(window.pywebview.api);
     init();
   };
   window.addEventListener("pywebviewready", bootReal);
@@ -964,7 +1297,7 @@ function boot() {
       clearInterval(poll);
       if (booted) return;
       booted = true;
-      state.api = makeMockApi();
+      state.api = maybeEnableDev(makeMockApi());
       document.title += " (mock)";
       init();
     }

@@ -142,7 +142,9 @@ def _system_font_path(data: dict) -> str:
 
 
 def _style_entry(text_len: int, style: SubtitleStyle, font_path: str,
-                 start: int, end: int, color: Color) -> dict:
+                 start: int, end: int, color: Color,
+                 *, span: dict | None = None) -> dict:
+    span = span or {}
     entry: dict = {
         "fill": {
             "content": {
@@ -154,8 +156,21 @@ def _style_entry(text_len: int, style: SubtitleStyle, font_path: str,
         "size": style.size,
         "range": [max(0, min(text_len, start)), max(0, min(text_len, end))],
     }
-    if style.bold:
+    use_bold = span.get("bold") if "bold" in span else style.bold
+    if use_bold:
         entry["bold"] = True
+        if span.get("bold_width") is not None:
+            try:
+                entry["bold_width"] = max(0.0, min(0.05, float(span["bold_width"])))
+            except (TypeError, ValueError):
+                pass
+    if span.get("italic"):
+        entry["italic"] = True
+        if span.get("italic_degree") is not None:
+            try:
+                entry["italic_degree"] = max(-45.0, min(45.0, float(span["italic_degree"])))
+            except (TypeError, ValueError):
+                pass
     if style.border:
         entry["strokes"] = [{
             "content": {"solid": {"color": list(style.border_color)}},
@@ -164,7 +179,7 @@ def _style_entry(text_len: int, style: SubtitleStyle, font_path: str,
     return entry
 
 
-def _normalize_color_spans(text: str, spans: list[dict] | None) -> list[dict]:
+def _normalize_spans(text: str, spans: list[dict] | None) -> list[dict]:
     out: list[dict] = []
     used_end = 0
     text_len = len(text)
@@ -176,29 +191,46 @@ def _normalize_color_spans(text: str, spans: list[dict] | None) -> list[dict]:
             continue
         if start < used_end or start < 0 or end <= start or end > text_len:
             continue
-        out.append({"start": start, "end": end, "color": str(s.get("color") or "")})
+        item: dict = {"start": start, "end": end}
+        color = str(s.get("color") or "").strip()
+        if color:
+            item["color"] = color
+        if s.get("bold") is True:
+            item["bold"] = True
+        if s.get("italic") is True:
+            item["italic"] = True
+        if s.get("bold_width") is not None:
+            item["bold_width"] = s.get("bold_width")
+        if s.get("italic_degree") is not None:
+            item["italic_degree"] = s.get("italic_degree")
+        out.append(item)
         used_end = end
     return out
+
+
+def _normalize_color_spans(text: str, spans: list[dict] | None) -> list[dict]:
+    return _normalize_spans(text, spans)
 
 
 def _build_content(text: str, style: SubtitleStyle, font_path: str,
                    spans: list[dict] | None = None) -> str:
     """소재의 content 필드(JSON 문자열)를 실측 구조로 생성."""
     text_len = len(text)
-    color_spans = _normalize_color_spans(text, spans)
-    if not color_spans:
+    norm_spans = _normalize_spans(text, spans)
+    if not norm_spans:
         entry = _style_entry(text_len, style, font_path, 0, text_len, style.color)
         return json.dumps({"text": text, "styles": [entry]}, ensure_ascii=False)
 
     styles: list[dict] = []
     cursor = 0
-    for span in color_spans:
+    for span in norm_spans:
         start, end = span["start"], span["end"]
         if cursor < start:
             styles.append(_style_entry(text_len, style, font_path,
                                        cursor, start, style.color))
+        span_color = _rgb_hex(span["color"]) if span.get("color") else style.color
         styles.append(_style_entry(text_len, style, font_path,
-                                   start, end, _rgb_hex(span["color"])))
+                                   start, end, span_color, span=span))
         cursor = end
     if cursor < text_len:
         styles.append(_style_entry(text_len, style, font_path,

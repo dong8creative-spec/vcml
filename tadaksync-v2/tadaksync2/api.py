@@ -5,7 +5,7 @@ pywebview의 js_api로 노출된다. JS에서 window.pywebview.api.<메서드>(.
 오래 걸리는 작업(로그인 폴링, 전문 인식)은 내부 스레드로 돌리고
 진행 상황을 window.__pyEvent({event, data}) 이벤트로 push한다.
 
-코인 정책: 전문 인식 30초당 1코인, 직접 줄 나눔 1회 1코인. 무음·미인식 시 미차감.
+코인 정책: 전문 인식 30초당 1코인, 자동 어절 1코인, 엔터 줄 나눔 2코인. 무음·미인식 시 미차감.
 """
 
 from __future__ import annotations
@@ -25,7 +25,9 @@ from . import srt as srt_io
 from . import styles
 from .inject import inject_subtitles
 from .playback import Player
-from .pro_plan import build_lines_from_script
+from . import keyword_spans
+from .dev_util import dev_log, is_dev_mode
+from .pro_plan import build_lines_auto, build_lines_from_script, _clamp_word_range
 from .transcribe import (LANGUAGE_CHOICES, MODEL, SR, FullScript,
                          SubtitleLine, Transcriber, _close_gaps,
                          _refine_speech_boundaries, audio_has_speech)
@@ -81,16 +83,59 @@ def _clean_spans(spans: list, text: str) -> list[dict]:
         try:
             start = int(s.get("start", -1))
             end = int(s.get("end", -1))
-            color = str(s.get("color") or "").strip()
         except (AttributeError, ValueError, TypeError):
             continue
         if not (0 <= start < end <= text_len):
             continue
-        if not re.match(r"^#[0-9a-fA-F]{6}$", color):
+        entry: dict = {"start": start, "end": end}
+        color = str(s.get("color") or "").strip()
+        if re.match(r"^#[0-9a-fA-F]{6}$", color):
+            entry["color"] = color.lower()
+        if s.get("bold") is True:
+            entry["bold"] = True
+        if s.get("italic") is True:
+            entry["italic"] = True
+        try:
+            bw = float(s.get("bold_width"))
+            entry["bold_width"] = max(0.0, min(0.05, bw))
+        except (AttributeError, TypeError, ValueError):
+            pass
+        try:
+            deg = float(s.get("italic_degree"))
+            entry["italic_degree"] = max(-45.0, min(45.0, deg))
+        except (AttributeError, TypeError, ValueError):
+            pass
+        if not (entry.get("color") or entry.get("bold") or entry.get("italic")):
             continue
-        cleaned.append({"start": start, "end": end, "color": color.lower()})
+        cleaned.append(entry)
     cleaned.sort(key=lambda x: (x["start"], x["end"]))
     return cleaned
+
+
+def _normalize_keyword_style(
+    color=None, bold=None, bold_width=None, italic=None, italic_degree=None,
+) -> dict | None:
+    style: dict = {}
+    c = str(color or "").strip()
+    if re.match(r"^#[0-9a-fA-F]{6}$", c):
+        style["color"] = c.lower()
+    if bold is True:
+        style["bold"] = True
+    if italic is True:
+        style["italic"] = True
+    try:
+        if bold_width is not None:
+            style["bold_width"] = max(0.0, min(0.05, float(bold_width)))
+    except (TypeError, ValueError):
+        pass
+    try:
+        if italic_degree is not None:
+            style["italic_degree"] = max(-45.0, min(45.0, float(italic_degree)))
+    except (TypeError, ValueError):
+        pass
+    if not (style.get("color") or style.get("bold") or style.get("italic")):
+        return None
+    return style
 
 
 def _duration_us_from_blocks(blocks: list[dict]) -> int:
@@ -100,6 +145,10 @@ def _duration_us_from_blocks(blocks: list[dict]) -> int:
 class Api:
     def __init__(self) -> None:
         self._window = None
+        self._style_editor_window = None
+        self._style_editor_url = ""
+        self._editor_blocks: list[dict] = []
+        self._editor_config: dict = {}
         self._auth = license_api.load_auth()
         self._balance = (self._auth or {}).get("balance")
         self._transcriber = Transcriber()
@@ -112,6 +161,7 @@ class Api:
         self._duration_us: int | None = None
         self._from_transcribe = False
         self._line_split_job_id: str | None = None
+        self._split_mode: str | None = None
 
         self._busy = False
         self._login_cancel: threading.Event | None = None
@@ -122,13 +172,32 @@ class Api:
         if self._auth:
             self._prewarm_model()
 
+    def set_style_editor_url(self, url: str) -> None:
+        self._style_editor_url = str(url or "")
+
     # ---------------------------------------------------------------- 이벤트
     def _emit(self, event: str, data=None) -> None:
+        if is_dev_mode():
+            preview = ""
+            if isinstance(data, dict):
+                keys = list(data.keys())[:4]
+                preview = f" keys={keys}"
+            dev_log("EVENT", event + preview)
         if self._window is None:
             return
         payload = json.dumps({"event": event, "data": data}, ensure_ascii=False)
         try:
             self._window.evaluate_js(f"window.__pyEvent && window.__pyEvent({payload})")
+        except Exception:
+            pass
+
+    def _emit_editor(self, event: str, data=None) -> None:
+        if self._style_editor_window is None:
+            return
+        payload = json.dumps({"event": event, "data": data}, ensure_ascii=False)
+        try:
+            self._style_editor_window.evaluate_js(
+                f"window.__pyEvent && window.__pyEvent({payload})")
         except Exception:
             pass
 
@@ -433,7 +502,9 @@ class Api:
                 "minutes": minutes,
                 "duration_us": duration_us,
                 "recognition_coins": recognition_coin_cost,
-                "line_split_coins": billing.line_split_coins(duration_us),
+                "line_split_auto_coins": billing.line_split_coins(duration_us, "auto"),
+                "line_split_manual_coins": billing.line_split_coins(duration_us, "manual"),
+                "line_split_coins": billing.line_split_coins(duration_us, "auto"),
                 "missing_files": res.missing_files,
             })
         except Exception as e:
@@ -451,8 +522,70 @@ class Api:
             self._busy = False
 
     # ------------------------------------------------------------- 자막 블록
+    def _charge_line_split(self, duration_us: int, split_mode: str) -> dict:
+        """인식 경로에서 줄 나눔 코인 차감. ok/err dict 반환."""
+        mode = billing.normalize_line_split_mode(split_mode)
+        need = billing.line_split_coins(duration_us, mode)
+        if not (self._from_transcribe and self._auth):
+            return _ok(line_split_coins=0, split_mode=mode)
+        if not self._line_split_job_id:
+            self._line_split_job_id = license_api.new_job_id()
+        try:
+            charged = license_api.consume_line_split(
+                self._auth["token"], duration_us, self._line_split_job_id, mode)
+        except Exception as e:
+            payload = getattr(e, "payload", {}) or {}
+            if payload.get("code") == "insufficient":
+                return _err(
+                    f"줄 나눔 코인이 부족해요. (필요 {need}개, 보유 "
+                    f"{payload.get('balance', '?')}개)",
+                    needed=need, balance=payload.get("balance"))
+            if getattr(e, "status", None) in (401, 403):
+                license_api.clear_auth()
+                self._auth = None
+                self._balance = None
+                self._emit("auth", self._auth_state())
+                return _err("로그인이 만료됐어요. 다시 로그인해 주세요.")
+            return _err(str(e) or "줄 나눔 코인 차감에 실패했어요.")
+        self._save_balance(charged.get("balance"))
+        self._split_mode = mode
+        coins = charged.get("coins", need)
+        return _ok(line_split_coins=coins, split_mode=mode, balance=charged.get("balance"))
+
+    def build_blocks_auto(self, *word_args: int) -> dict:
+        """자동 어절 분할 → 타임코드 블록 (1코인).
+
+        인자: (max,) 또는 (min, max) — pywebview/구버전 호환.
+        """
+        min_w, max_w = 1, 5
+        if len(word_args) == 1:
+            max_w = word_args[0]
+        elif len(word_args) >= 2:
+            min_w, max_w = word_args[0], word_args[1]
+        min_w, max_w = _clamp_word_range(min_w, max_w)
+        if not self._script:
+            return _err("먼저 전문을 인식해 주세요.")
+        lines = build_lines_auto(self._script.words, min_w, max_w)
+        if not lines:
+            return _err("자동으로 나눌 자막 줄이 없어요.")
+        if self._audio is not None and len(self._audio) > 0:
+            lines = _close_gaps(_refine_speech_boundaries(lines, self._audio))
+        blocks = _lines_to_dicts(lines)
+        duration_us = _duration_us_from_blocks(blocks) or self._duration_us or 0
+        self._duration_us = duration_us
+        charged = self._charge_line_split(duration_us, "auto")
+        if not charged.get("ok"):
+            return charged
+        return _ok(
+            blocks=blocks,
+            duration_us=duration_us,
+            line_split_coins=charged.get("line_split_coins", 0),
+            split_mode="auto",
+            balance=charged.get("balance"),
+        )
+
     def build_blocks(self, script_text: str) -> dict:
-        """엔터로 나눈 전문 → 타임코드 자막 블록. 인식 경로면 줄 나눔 코인 추가 차감."""
+        """엔터로 나눈 전문 → 타임코드 자막 블록 (2코인)."""
         if not self._script:
             return _err("먼저 전문을 인식해 주세요.")
         lines = build_lines_from_script(script_text or "", self._script.words)
@@ -463,35 +596,159 @@ class Api:
         blocks = _lines_to_dicts(lines)
         duration_us = _duration_us_from_blocks(blocks) or self._duration_us or 0
         self._duration_us = duration_us
-        line_split_coins = 0
-        if self._from_transcribe and self._auth:
-            if not self._line_split_job_id:
-                self._line_split_job_id = license_api.new_job_id()
-            line_split_coins = billing.line_split_coins(duration_us)
-            try:
-                charged = license_api.consume_line_split(
-                    self._auth["token"], duration_us, self._line_split_job_id)
-            except Exception as e:
-                payload = getattr(e, "payload", {}) or {}
-                if payload.get("code") == "insufficient":
-                    return _err(
-                        f"줄 나눔 코인이 부족해요. (필요 {line_split_coins}개, 보유 "
-                        f"{payload.get('balance', '?')}개)",
-                        needed=line_split_coins, balance=payload.get("balance"))
-                if getattr(e, "status", None) in (401, 403):
-                    license_api.clear_auth()
-                    self._auth = None
-                    self._balance = None
-                    self._emit("auth", self._auth_state())
-                    return _err("로그인이 만료됐어요. 다시 로그인해 주세요.")
-                return _err(str(e) or "줄 나눔 코인 차감에 실패했어요.")
-            self._save_balance(charged.get("balance"))
-            line_split_coins = charged.get("coins", line_split_coins)
+        charged = self._charge_line_split(duration_us, "manual")
+        if not charged.get("ok"):
+            return charged
         return _ok(
             blocks=blocks,
             duration_us=duration_us,
-            line_split_coins=line_split_coins,
+            line_split_coins=charged.get("line_split_coins", 0),
+            split_mode="manual",
+            balance=charged.get("balance"),
         )
+
+    def scan_keyword(self, blocks: list[dict], keyword: str,
+                     mode: str = "exact") -> dict:
+        kw = str(keyword or "").strip()
+        if not kw:
+            return _err("키워드를 입력해 주세요.")
+        result = keyword_spans.scan_blocks(blocks or [], kw, mode)
+        return _ok(keyword=kw, mode=keyword_spans.normalize_match_mode(mode), **result)
+
+    def apply_keyword_highlight(
+        self,
+        blocks: list[dict],
+        keyword: str,
+        mode: str = "exact",
+        color: str | None = None,
+        bold: bool | None = None,
+        bold_width: float | None = None,
+        italic: bool | None = None,
+        italic_degree: float | None = None,
+    ) -> dict:
+        kw = str(keyword or "").strip()
+        if not kw:
+            return _err("키워드를 입력해 주세요.")
+        style = _normalize_keyword_style(
+            color=color, bold=bold, bold_width=bold_width,
+            italic=italic, italic_degree=italic_degree,
+        )
+        if not style:
+            return _err("색상·굵기·기울기 중 하나 이상을 선택해 주세요.")
+        patched, applied = keyword_spans.apply_keyword_spans(
+            blocks or [], kw, mode, style, merge=True)
+        # spans 정규화
+        for b in patched:
+            raw = str(b.get("text") or "")
+            if b.get("spans"):
+                b["spans"] = _clean_spans(b["spans"], raw)
+        scan = keyword_spans.scan_blocks(patched, kw, mode)
+        return _ok(
+            blocks=patched,
+            applied=applied,
+            count=scan["count"],
+            block_count=scan["block_count"],
+        )
+
+    def replace_keyword_text(
+        self,
+        blocks: list[dict],
+        keyword: str,
+        replacement: str,
+        mode: str = "exact",
+    ) -> dict:
+        kw = str(keyword or "").strip()
+        if not kw:
+            return _err("키워드를 입력해 주세요.")
+        patched, count = keyword_spans.replace_keyword_text(
+            blocks or [], kw, replacement or "", mode)
+        for b in patched:
+            raw = str(b.get("text") or "")
+            if b.get("spans"):
+                b["spans"] = _clean_spans(b["spans"], raw)
+        return _ok(blocks=patched, replaced=count)
+
+    def clear_keyword_highlight(self, blocks: list[dict], keyword: str,
+                                mode: str = "exact") -> dict:
+        kw = str(keyword or "").strip()
+        if not kw:
+            return _err("키워드를 입력해 주세요.")
+        patched = keyword_spans.clear_keyword_spans(blocks or [], kw, mode)
+        return _ok(blocks=patched)
+
+    # ------------------------------------------------------- 단어·스타일 편집 창
+    def sync_editor_blocks(self, blocks: list[dict]) -> dict:
+        self._editor_blocks = json.loads(json.dumps(blocks or []))
+        self._emit_editor("blocks_synced", {"blocks": self._editor_blocks})
+        return _ok()
+
+    def sync_editor_config(self, config: dict | None = None) -> dict:
+        self._editor_config = dict(config or {})
+        return _ok()
+
+    def get_editor_state(self) -> dict:
+        return _ok(blocks=self._editor_blocks, config=self._editor_config)
+
+    def push_editor_blocks(self, blocks: list[dict]) -> dict:
+        self._editor_blocks = json.loads(json.dumps(blocks or []))
+        self._emit("blocks_updated", {"blocks": self._editor_blocks})
+        return _ok()
+
+    def style_editor_is_open(self) -> dict:
+        return _ok(open=self._style_editor_window is not None)
+
+    def open_style_editor_window(self) -> dict:
+        if not self._editor_blocks:
+            return _err("편집할 자막 블록이 없어요.")
+        import webview
+
+        if self._style_editor_window is not None:
+            try:
+                self._style_editor_window.show()
+                self._emit_editor("blocks_synced", {"blocks": self._editor_blocks})
+                return _ok(open=True)
+            except Exception:
+                self._style_editor_window = None
+
+        if not self._style_editor_url:
+            return _err("편집 창 URL을 준비하지 못했어요.")
+
+        win = webview.create_window(
+            title=f"단어·스타일 편집 — {APP_NAME}",
+            url=self._style_editor_url,
+            js_api=self,
+            width=420,
+            height=680,
+            min_size=(360, 420),
+            background_color="#0B0C0E",
+            resizable=True,
+        )
+        win.events.closed += self._on_style_editor_closed
+        self._style_editor_window = win
+        return _ok(open=True)
+
+    def close_style_editor_window(self) -> dict:
+        win = self._style_editor_window
+        if win is None:
+            return _ok(open=False)
+        self._style_editor_window = None
+        try:
+            win.destroy()
+        except Exception:
+            pass
+        self._emit("style_editor_closed", {})
+        return _ok(open=False)
+
+    def toggle_style_editor_window(self) -> dict:
+        if self._style_editor_window is not None:
+            return self.close_style_editor_window()
+        return self.open_style_editor_window()
+
+    def _on_style_editor_closed(self) -> None:
+        if self._style_editor_window is None:
+            return
+        self._style_editor_window = None
+        self._emit("style_editor_closed", {})
 
     def import_srt(self, project_index: int) -> dict:
         """SRT 파일을 불러와 블록으로 사용 (인식 없이, 코인 차감 없음).
@@ -586,6 +843,12 @@ class Api:
         return _ok()
 
     def cleanup(self) -> None:
+        if self._style_editor_window is not None:
+            try:
+                self._style_editor_window.destroy()
+            except Exception:
+                pass
+            self._style_editor_window = None
         try:
             self._player.cleanup()
         except Exception:

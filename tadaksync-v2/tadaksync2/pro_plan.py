@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from difflib import SequenceMatcher
 
-from .transcribe import SubtitleLine, Word
+from .transcribe import SubtitleLine, Word, _SENTENCE_END
 
 
 _SPACE_RE = re.compile(r"\s+")
@@ -91,3 +91,81 @@ def build_lines_from_script(script: str, words: list[Word]) -> list[SubtitleLine
         if i + 1 < len(out) and line.end_us > out[i + 1].start_us:
             line.end_us = out[i + 1].start_us
     return [line for line in out if line.end_us > line.start_us and line.text.strip()]
+
+
+def _words_to_sentences(valid: list[Word]) -> list[list[Word]]:
+    """마침표·느낌표·침묵 갭 기준 문장 분리. 문장 간 병합 없음."""
+    sentences: list[list[Word]] = []
+    cur_sent: list[Word] = []
+    for w in valid:
+        if cur_sent and (w[1] - cur_sent[-1][2]) > 800_000:
+            sentences.append(cur_sent)
+            cur_sent = []
+        cur_sent.append(w)
+        if _SENTENCE_END.search(w[0].strip()):
+            sentences.append(cur_sent)
+            cur_sent = []
+    if cur_sent:
+        sentences.append(cur_sent)
+    return sentences
+
+
+def _clamp_word_range(min_words: int, max_words: int) -> tuple[int, int]:
+    """어절 수 범위 1~6, min <= max."""
+    max_w = max(1, min(6, int(max_words or 5)))
+    min_w = max(1, min(6, int(min_words or 1)))
+    if min_w > max_w:
+        min_w = max_w
+    return min_w, max_w
+
+
+def _chunk_sentence(sent: list[Word], min_words: int, max_words: int) -> list[list[Word]]:
+    """한 문장 안에서만 min~max 어절로 청크. 문장 경계를 넘지 않는다."""
+    min_w, max_w = _clamp_word_range(min_words, max_words)
+    if not sent:
+        return []
+    raw: list[list[Word]] = []
+    for i in range(0, len(sent), max_w):
+        raw.append(sent[i:i + max_w])
+    # 같은 문장 안에서만 짧은 꼬리 청크를 앞 청크와 병합
+    while len(raw) >= 2 and len(raw[-1]) < min_w:
+        if len(raw[-2]) + len(raw[-1]) <= max_w:
+            raw[-2] = raw[-2] + raw[-1]
+            raw.pop()
+        else:
+            break
+    return raw
+
+
+def build_lines_auto(
+    words: list[Word],
+    min_words_per_line: int = 1,
+    max_words_per_line: int = 5,
+) -> list[SubtitleLine]:
+    """Whisper 단어 타임스탬프 기준 자동 어절 분할 (문장 경계·어절 min/max)."""
+    valid = [w for w in (words or []) if (w[0] or "").strip() and w[2] > w[1]]
+    if not valid:
+        return []
+
+    min_w, max_w = _clamp_word_range(min_words_per_line, max_words_per_line)
+    sentences = _words_to_sentences(valid)
+
+    lines: list[SubtitleLine] = []
+    for sent in sentences:
+        for chunk in _chunk_sentence(sent, min_w, max_w):
+            text = "".join(w[0] for w in chunk).strip()
+            if not text:
+                continue
+            lines.append(SubtitleLine(
+                start_us=chunk[0][1],
+                end_us=max(chunk[-1][2], chunk[0][1] + 200_000),
+                text=text,
+                words=chunk,
+            ))
+
+    for i, line in enumerate(lines):
+        if line.end_us - line.start_us < 500_000:
+            line.end_us = line.start_us + 500_000
+        if i + 1 < len(lines) and line.end_us > lines[i + 1].start_us:
+            line.end_us = lines[i + 1].start_us
+    return [line for line in lines if line.text.strip()]

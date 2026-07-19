@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>단어·스타일 편집 — 타닥싱크 2</title>
+<link rel="stylesheet" href="style-editor.css">
+</head>
+<body>
+<div class="editor-shell">
+  <header class="editor-head">
+    <div>
+      <h1>단어·스타일 편집</h1>
+      <p class="sub">별도 창입니다. 메인 화면 자막을 보면서 검색·수정하세요.</p>
+    </div>
+    <button class="icon-btn" id="btn-style-editor-close" type="button" title="창 닫기">✕</button>
+  </header>
+
+  <section class="editor-section">
+    <div class="editor-row">
+      <input type="text" id="keyword-input" class="keyword-input" placeholder="검색할 단어 (예: 영상편집)" maxlength="80" />
+      <select id="keyword-mode" class="keyword-mode">
+        <option value="exact">완전 일치</option>
+        <option value="contains">포함</option>
+      </select>
+      <button type="button" class="btn btn-ghost" id="btn-keyword-scan">검색</button>
+    </div>
+    <span class="keyword-summary" id="keyword-summary">키워드를 검색해 주세요.</span>
+    <ul class="keyword-preview hidden" id="keyword-preview"></ul>
+  </section>
+
+  <section class="editor-section">
+    <b class="editor-label">스타일</b>
+    <div class="editor-row">
+      <label class="kw-toggle"><input type="checkbox" id="kw-use-color" checked> 색상</label>
+      <input type="color" id="highlight-color" value="#ffef3b" title="강조 색">
+      <label class="kw-toggle"><input type="checkbox" id="kw-use-bold"> 굵게</label>
+      <label class="field-label">크기</label>
+      <select id="kw-emphasis-size">
+        <option value="normal">보통</option>
+        <option value="medium" selected>약간 크게</option>
+        <option value="large">크게</option>
+      </select>
+      <label class="kw-toggle"><input type="checkbox" id="kw-use-italic"> 기울기</label>
+      <input type="range" id="kw-italic-degree" min="-30" max="30" value="10" title="기울기 각도" />
+    </div>
+    <div class="editor-actions">
+      <button type="button" class="btn btn-primary" id="btn-keyword-apply" disabled>스타일 적용</button>
+      <button type="button" class="btn btn-ghost" id="btn-keyword-clear">스타일 해제</button>
+      <button type="button" class="btn btn-ghost" id="btn-keyword-undo">되돌리기</button>
+    </div>
+  </section>
+
+  <section class="editor-section">
+    <b class="editor-label">단어 수정</b>
+    <div class="editor-row">
+      <span class="sub">찾은 단어를</span>
+      <input type="text" id="keyword-replace" class="keyword-input" placeholder="바꿀 텍스트" maxlength="80" />
+      <span class="sub">(으)로</span>
+      <button type="button" class="btn btn-ghost" id="btn-keyword-replace">일괄 바꾸기</button>
+    </div>
+  </section>
+</div>
+
+<div id="toast-root"></div>
+<script src="style-editor.js"></script>
+</body>
+</html>
