@@ -2,6 +2,7 @@ const express = require('express')
 const jwt = require('jsonwebtoken')
 const db = require('../db/schema')
 const { authMiddleware, subtitleAppAuth, clientIp } = require('../middleware/auth')
+const { recordLoginLog } = require('../utils/loginAudit')
 const { getSignedDownloadUrl } = require('../utils/storage')
 
 const router = express.Router()
@@ -382,6 +383,14 @@ router.post('/device/approve', authMiddleware, async (req, res) => {
       const status = approved.code === 'expired' || approved.code === 'invalid_code' ? 400 : 409
       return res.status(status).json(approved)
     }
+    await recordLoginLog(req, {
+      user_id: user.id,
+      email: user.email,
+      user_name: user.name,
+      method: 'subtitle_app',
+      success: true,
+      client: 'subtitle_app',
+    })
     res.json({
       success: true,
       already: !!approved.already,

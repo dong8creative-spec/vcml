@@ -7637,6 +7637,112 @@ const db = {
   normalizeEmail,
   normalizePhone,
   normalizePersonName,
+
+  // login_logs — 웹/앱 로그인 감사
+  async recordLoginLog({
+    user_id = null,
+    email = null,
+    user_name = null,
+    method = 'email',
+    success = true,
+    failure_reason = null,
+    ip = null,
+    user_agent = null,
+    client = 'web',
+    intent = null,
+  } = {}) {
+    const { kstDateKey } = require('../utils/kstDate')
+    const created_at = now()
+    const data = {
+      user_id: user_id || null,
+      email: email ? normalizeEmail(email) : null,
+      user_name: user_name ? String(user_name).slice(0, 80) : null,
+      method: String(method || 'email').slice(0, 32),
+      success: !!success,
+      failure_reason: failure_reason ? String(failure_reason).slice(0, 200) : null,
+      ip: ip ? String(ip).slice(0, 64) : null,
+      user_agent: user_agent ? String(user_agent).slice(0, 500) : null,
+      client: String(client || 'web').slice(0, 32),
+      intent: intent ? String(intent).slice(0, 32) : null,
+      kst_date: kstDateKey(new Date(created_at)),
+      sheets_synced: false,
+      created_at,
+    }
+    const ref = await fs.collection('login_logs').add(data)
+    return { id: ref.id, ...data }
+  },
+
+  async listLoginLogs({ limit = 150, from = null, to = null, method = null, success = null, email = null, userId = null } = {}) {
+    const cap = Math.min(500, Math.max(1, Number(limit) || 150))
+    const fetchLimit = Math.min(500, cap * 3)
+    let snap
+    if (userId) {
+      snap = await fs.collection('login_logs')
+        .where('user_id', '==', String(userId))
+        .orderBy('created_at', 'desc')
+        .limit(fetchLimit)
+        .get()
+    } else {
+      snap = await fs.collection('login_logs')
+        .orderBy('created_at', 'desc')
+        .limit(fetchLimit)
+        .get()
+    }
+    let items = snapToArr(snap)
+    if (from) items = items.filter((l) => (l.kst_date || '') >= from)
+    if (to) items = items.filter((l) => (l.kst_date || '') <= to)
+    if (method) items = items.filter((l) => l.method === method)
+    if (success === true || success === false) items = items.filter((l) => !!l.success === success)
+    if (email) {
+      const q = String(email).toLowerCase().trim()
+      items = items.filter((l) => (l.email || '').toLowerCase().includes(q))
+    }
+    return items.slice(0, cap)
+  },
+
+  async getLoginLogsForKstDate(dateKey, { unsyncedOnly = true } = {}) {
+    let q = fs.collection('login_logs').where('kst_date', '==', String(dateKey))
+    if (unsyncedOnly) q = q.where('sheets_synced', '==', false)
+    const snap = await q.get()
+    return snapToArr(snap).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+  },
+
+  async markLoginLogsSheetsSynced(ids, dateKey, meta = {}) {
+    const list = (ids || []).filter(Boolean)
+    if (list.length) {
+      const chunks = []
+      for (let i = 0; i < list.length; i += 400) chunks.push(list.slice(i, i + 400))
+      for (const chunk of chunks) {
+        const batch = fs.batch()
+        chunk.forEach((id) => {
+          batch.update(fs.collection('login_logs').doc(id), {
+            sheets_synced: true,
+            sheets_synced_at: now(),
+          })
+        })
+        await batch.commit()
+      }
+    }
+    await fs.collection('sync_state').doc(`login_logs_sheets_${dateKey}`).set({
+      date_key: dateKey,
+      row_count: meta.row_count ?? list.length,
+      synced_at: now(),
+    }, { merge: true })
+  },
+
+  async getLoginLogsSheetsSyncState(dateKey) {
+    const doc = await fs.collection('sync_state').doc(`login_logs_sheets_${dateKey}`).get()
+    return doc.exists ? { id: doc.id, ...doc.data() } : null
+  },
+
+  async listLoginLogsSheetsSyncStates(limit = 14) {
+    const snap = await fs.collection('sync_state').limit(120).get()
+    return snapToArr(snap)
+      .filter((d) => String(d.id || '').startsWith('login_logs_sheets_'))
+      .sort((a, b) => String(b.date_key || '').localeCompare(String(a.date_key || '')))
+      .slice(0, Math.min(60, limit))
+  },
+
   _cacheGet: cacheGet,
   _cacheSet: cacheSet,
   _cacheInvalidate: cacheInvalidate,

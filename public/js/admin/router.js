@@ -6,6 +6,7 @@
     programs: '수강생 프로그램',
     curriculum: '커리큘럼 편집',
     students: '수강생 목록',
+    'login-logs': '로그인 기록',
     orders: '결제 내역',
     coupons: '쿠폰 관리',
     refunds: '환불 요청',

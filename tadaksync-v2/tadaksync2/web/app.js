@@ -877,7 +877,7 @@ function makeMockApi() {
   return {
     get_state: async () => ({
       ok: true,
-      app: { name: "타닥싱크 2", version: "2.0.0-mock" },
+      app: { name: "타닥싱크 2", version: "2.16.0-mock" },
       auth: mockAuth,
       languages: ["자동 감지", "한국어", "일본어"],
       styles: [

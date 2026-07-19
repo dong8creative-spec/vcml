@@ -37,6 +37,9 @@
       <a href="#students" class="nav-item" data-section="students">
         <i class="ti ti-users"></i> 수강생 목록
       </a>
+      <a href="#login-logs" class="nav-item" data-section="login-logs">
+        <i class="ti ti-history"></i> 로그인 기록
+      </a>
       <a href="#orders" class="nav-item" data-section="orders">
         <i class="ti ti-receipt"></i> 결제 내역
       </a>
@@ -816,6 +819,65 @@
         <div id="student-modal-body" style="padding:0 22px 22px"></div>
       </div>
     </div>
+
+    <!-- ===== SECTION: LOGIN LOGS ===== -->
+    <section class="section" id="sec-login-logs">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">Google Sheets 일일 백업</div>
+        </div>
+        <div class="card-body">
+          <p class="sec-sub" id="login-log-sheets-status">상태 확인 중…</p>
+          <div class="filter-row" style="margin-top:10px">
+            <input type="date" id="login-log-sync-date">
+            <button class="btn-sm btn-primary-sm" type="button" onclick="syncLoginLogsSheets()"><i class="ti ti-cloud-upload"></i> 선택일 동기화</button>
+            <button class="btn-sm" type="button" onclick="loadLoginLogsSheetsStatus()"><i class="ti ti-refresh"></i> 상태 새로고침</button>
+          </div>
+          <p class="sec-sub" style="margin-top:10px">매일 KST 자동: <code>LOGIN_LOG_SHEETS_CRON=1</code> · 수동: <code>node scripts/sync-login-logs-to-sheets.js</code></p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">로그인 기록</div>
+          <div class="filter-row">
+            <input type="date" id="login-log-from" onchange="loadLoginLogs()">
+            <input type="date" id="login-log-to" onchange="loadLoginLogs()">
+            <select id="login-log-method" onchange="loadLoginLogs()">
+              <option value="">전체 방식</option>
+              <option value="email">이메일</option>
+              <option value="google">Google</option>
+              <option value="kakao">Kakao</option>
+              <option value="register">회원가입</option>
+              <option value="subtitle_app">타닥싱크 앱</option>
+            </select>
+            <select id="login-log-success" onchange="loadLoginLogs()">
+              <option value="">성공/실패 전체</option>
+              <option value="1">성공만</option>
+              <option value="0">실패만</option>
+            </select>
+            <input type="search" id="login-log-email" placeholder="이메일 검색" oninput="loadLoginLogs()" style="width:180px">
+            <button class="btn-sm" type="button" onclick="loadLoginLogs()"><i class="ti ti-refresh"></i></button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>일시 (KST)</th>
+              <th>이메일</th>
+              <th>이름</th>
+              <th>방식</th>
+              <th>결과</th>
+              <th>IP</th>
+              <th>클라이언트</th>
+              <th>비고</th>
+            </tr>
+          </thead>
+          <tbody id="login-logs-table-body">
+            <tr><td colspan="8" style="text-align:center;color:#888">로딩 중…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <!-- ===== SECTION: ORDERS ===== -->
     <section class="section" id="sec-orders">
@@ -3794,6 +3856,96 @@
       })
     }
 
+    const LOGIN_METHOD_LABEL = {
+      email: '이메일',
+      google: 'Google',
+      kakao: 'Kakao',
+      register: '회원가입',
+      subtitle_app: '타닥싱크 앱',
+    }
+
+    function formatLoginLogKst(iso) {
+      if (!iso) return '-'
+      const d = new Date(iso)
+      if (Number.isNaN(d.getTime())) return iso
+      const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000)
+      const pad = (n) => String(n).padStart(2, '0')
+      return `${kst.getUTCFullYear()}-${pad(kst.getUTCMonth() + 1)}-${pad(kst.getUTCDate())} ${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())}:${pad(kst.getUTCSeconds())}`
+    }
+
+    function todayKstDateInput() {
+      const kst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      return kst.toISOString().slice(0, 10)
+    }
+
+    async function loadLoginLogsSheetsStatus() {
+      const el = document.getElementById('login-log-sheets-status')
+      if (!el) return
+      try {
+        const st = await API.get('/admin/login-logs/sheets-status')
+        const syncDate = document.getElementById('login-log-sync-date')
+        if (syncDate && !syncDate.value) syncDate.value = todayKstDateInput()
+        const recent = (st.recent_sync || []).slice(0, 5).map((r) =>
+          `${esc(r.date_key || '-')} (${r.row_count ?? 0}행)`).join(', ') || '없음'
+        el.innerHTML = st.configured
+          ? `연동됨 · 시트 <code>${esc(st.spreadsheet_id || '')}</code> / 탭 <code>${esc(st.tab || '')}</code><br>오늘 미동기화 ${st.pending_today_count || 0}건 · 최근: ${recent}`
+          : 'Google Sheets env 미설정 (<code>GOOGLE_SHEETS_*</code> 확인)'
+      } catch (e) {
+        el.textContent = e.message || '상태를 불러오지 못했습니다.'
+      }
+    }
+
+    async function syncLoginLogsSheets() {
+      const date = document.getElementById('login-log-sync-date')?.value || todayKstDateInput()
+      if (!confirm(`${date} 로그인 기록을 Google Sheets에 동기화할까요?`)) return
+      try {
+        const res = await API.post('/admin/login-logs/sync-sheets', { date })
+        alert(`동기화 완료: ${res.appended ?? res.log_count ?? 0}행`)
+        await loadLoginLogsSheetsStatus()
+        await loadLoginLogs()
+      } catch (e) {
+        alert(e.message || '동기화 실패')
+      }
+    }
+
+    async function loadLoginLogs() {
+      const tbody = document.getElementById('login-logs-table-body')
+      if (!tbody) return
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888">로딩 중…</td></tr>'
+      try {
+        const params = new URLSearchParams()
+        const from = document.getElementById('login-log-from')?.value
+        const to = document.getElementById('login-log-to')?.value
+        const method = document.getElementById('login-log-method')?.value
+        const success = document.getElementById('login-log-success')?.value
+        const email = document.getElementById('login-log-email')?.value
+        if (from) params.set('from', from)
+        if (to) params.set('to', to)
+        if (method) params.set('method', method)
+        if (success) params.set('success', success)
+        if (email) params.set('email', email.trim())
+        params.set('limit', '200')
+        const logs = await API.get('/admin/login-logs?' + params.toString())
+        if (!logs.length) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888">기록이 없습니다.</td></tr>'
+          return
+        }
+        tbody.innerHTML = logs.map((log) => `
+          <tr>
+            <td>${esc(formatLoginLogKst(log.created_at))}</td>
+            <td>${esc(log.email || '-')}</td>
+            <td>${esc(log.user_name || '-')}</td>
+            <td>${esc(LOGIN_METHOD_LABEL[log.method] || log.method || '-')}</td>
+            <td>${log.success ? '<span class="badge ok">성공</span>' : '<span class="badge warn">실패</span>'}</td>
+            <td>${esc(log.ip || '-')}</td>
+            <td>${esc(log.client || '-')}</td>
+            <td class="td-sub">${esc(log.failure_reason || (log.sheets_synced ? 'Sheets ✓' : ''))}</td>
+          </tr>`).join('')
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#c44">${esc(e.message || '불러오기 실패')}</td></tr>`
+      }
+    }
+
     function getFilteredStudents() {
       const q = (document.getElementById('student-search')?.value || '').toLowerCase()
       const filtered = q
@@ -6242,6 +6394,7 @@
       'subtitle-coins': loadSubtitleCoins,
       curriculum: loadCurriculumAdmin,
       students: loadStudents,
+      'login-logs': () => { loadLoginLogsSheetsStatus(); return loadLoginLogs() },
       orders: loadOrders,
       coupons: loadCouponsAdmin,
       refunds: () => AdminOps.loadRefunds(),

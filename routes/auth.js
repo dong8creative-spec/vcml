@@ -4,8 +4,9 @@ const jwt = require('jsonwebtoken')
 const db = require('../db/schema')
 const userPayload = require('../db/schema').userPayload
 const { sendCouponIssuedMessage } = require('../utils/kakaoMessage')
-const { authMiddleware } = require('../middleware/auth')
+const { authMiddleware, clientIp } = require('../middleware/auth')
 const { isAllowedAdmin } = require('../utils/adminAccess')
+const { recordLoginLog } = require('../utils/loginAudit')
 
 const verificationCodes = new Map()
 
@@ -236,6 +237,15 @@ router.get('/kakao/callback', async (req, res) => {
     }
 
     const token = signUserToken(user, { profileComplete: true })
+    await recordLoginLog(req, {
+      user_id: user.id,
+      email: user.email,
+      user_name: user.name,
+      method: 'kakao',
+      success: true,
+      client: 'web',
+      intent,
+    })
     redirectOAuthLogin(res, { token, user, nextUrl, paramPrefix: 'kakao' })
   } catch (err) {
     console.error('카카오 로그인 오류:', err)
@@ -357,6 +367,15 @@ router.get('/google/callback', async (req, res) => {
     }
 
     const token = signUserToken(user, { profileComplete: true })
+    await recordLoginLog(req, {
+      user_id: user.id,
+      email: user.email,
+      user_name: user.name,
+      method: 'google',
+      success: true,
+      client: 'web',
+      intent,
+    })
     redirectOAuthLogin(res, { token, user, nextUrl, paramPrefix: 'google', welcome: false })
   } catch (err) {
     console.error('Google 로그인 오류:', err)
@@ -457,6 +476,14 @@ router.post('/register', async (req, res) => {
   })
   verificationCodes.delete(email)
   const token = jwt.sign({ id: user.id, email, name, role: 'student', member_type }, process.env.JWT_SECRET, { expiresIn: '7d' })
+  await recordLoginLog(req, {
+    user_id: user.id,
+    email: user.email,
+    user_name: user.name,
+    method: 'register',
+    success: true,
+    client: 'web',
+  })
   res.json({ token, user: clientUser(user) })
 })
 
@@ -471,6 +498,13 @@ router.post('/login', async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: '이메일과 비밀번호를 입력해주세요.' })
   const user = await db.findUserByEmail(email)
   if (!user || !user.password || !bcrypt.compareSync(password, user.password)) {
+    await recordLoginLog(req, {
+      email,
+      method: 'email',
+      success: false,
+      failure_reason: 'invalid_credentials',
+      client: 'web',
+    })
     return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' })
   }
   const token = jwt.sign(
@@ -478,6 +512,14 @@ router.post('/login', async (req, res) => {
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   )
+  await recordLoginLog(req, {
+    user_id: user.id,
+    email: user.email,
+    user_name: user.name,
+    method: 'email',
+    success: true,
+    client: 'web',
+  })
   res.json({ token, user: clientUser(user) })
 })
 

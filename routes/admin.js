@@ -1496,4 +1496,67 @@ router.post('/programs/ensure-subtitle', async (req, res) => {
   }
 })
 
+router.get('/login-logs', async (req, res) => {
+  try {
+    const successRaw = req.query.success
+    let success = null
+    if (successRaw === '1' || successRaw === 'true') success = true
+    if (successRaw === '0' || successRaw === 'false') success = false
+    const logs = await db.listLoginLogs({
+      limit: Number(req.query.limit) || 150,
+      from: req.query.from || null,
+      to: req.query.to || null,
+      method: req.query.method || null,
+      success,
+      email: req.query.email || null,
+      userId: req.query.user_id || null,
+    })
+    res.json(logs)
+  } catch (e) {
+    console.error('admin login-logs:', e)
+    res.status(500).json({ error: e.message || '로그인 기록을 불러오지 못했습니다.' })
+  }
+})
+
+router.get('/login-logs/sheets-status', async (req, res) => {
+  try {
+    const { isSheetsConfigured, sheetsConfig } = require('../utils/googleSheetsLoginSync')
+    const { kstDateKey } = require('../utils/kstDate')
+    const cfg = sheetsConfig()
+    const today = kstDateKey()
+    const [recentSync, pendingToday] = await Promise.all([
+      db.listLoginLogsSheetsSyncStates(14),
+      db.getLoginLogsForKstDate(today, { unsyncedOnly: true }),
+    ])
+    res.json({
+      configured: isSheetsConfigured(),
+      spreadsheet_id: cfg.spreadsheetId || null,
+      tab: cfg.tab || null,
+      recent_sync: recentSync,
+      pending_today_count: pendingToday.length,
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+router.post('/login-logs/sync-sheets', async (req, res) => {
+  try {
+    const { syncLoginLogsForKstDate, isSheetsConfigured } = require('../utils/googleSheetsLoginSync')
+    const { kstDateKey } = require('../utils/kstDate')
+    if (!isSheetsConfigured()) {
+      return res.status(400).json({ error: 'Google Sheets env가 설정되지 않았습니다.' })
+    }
+    const dateKey = String(req.body?.date || kstDateKey()).trim()
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+      return res.status(400).json({ error: 'date는 YYYY-MM-DD 형식이어야 합니다.' })
+    }
+    const result = await syncLoginLogsForKstDate(dateKey, db)
+    res.json({ ok: true, ...result })
+  } catch (e) {
+    console.error('admin login-logs sync-sheets:', e)
+    res.status(500).json({ error: e.message || '스프레드시트 동기화에 실패했습니다.' })
+  }
+})
+
 module.exports = router

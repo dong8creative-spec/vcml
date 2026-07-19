@@ -12,7 +12,8 @@
     "package:subtitle-tool": "node scripts/package-subtitle-tool.js",
     "upload:subtitle-tool": "node scripts/upload-subtitle-tool.js",
     "redeploy:subtitle-tool": "node scripts/package-subtitle-tool.js && node scripts/upload-subtitle-tool.js",
-    "release:subtitle-tool": "node scripts/build-subtitle-tool.js && node scripts/package-subtitle-tool.js && node scripts/upload-subtitle-tool.js"
+    "release:subtitle-tool": "node scripts/build-subtitle-tool.js && node scripts/package-subtitle-tool.js && node scripts/upload-subtitle-tool.js",
+    "sync:login-logs-sheets": "node scripts/sync-login-logs-to-sheets.js"
   },
   "engines": {
     "node": ">=18.0.0"

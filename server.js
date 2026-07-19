@@ -297,6 +297,25 @@ app.use('/api/anticipation', require('./routes/anticipation'))
 app.use('/api/subtitle', require('./routes/subtitle'))
 app.use('/api',          require('./routes/public'))
 
+app.post('/api/cron/sync-login-logs', async (req, res) => {
+  const secret = (process.env.CRON_SECRET || '').trim()
+  const header = String(req.headers['x-cron-secret'] || '').trim()
+  if (!secret || header !== secret) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+  try {
+    const { runDailySync } = require('./utils/loginLogSheetsCron')
+    const { yesterdayKstDateKey } = require('./utils/kstDate')
+    const dateKey = String(req.body?.date || req.query?.date || yesterdayKstDateKey()).trim()
+    const result = await runDailySync(dateKey)
+    if (!result) return res.status(400).json({ error: 'Google Sheets env 미설정' })
+    res.json({ ok: true, ...result })
+  } catch (e) {
+    console.error('cron sync-login-logs:', e)
+    res.status(500).json({ error: e.message || '동기화 실패' })
+  }
+})
+
 // SPA fallback — 없는 경로는 index.html로
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not found' })
@@ -306,7 +325,12 @@ app.get('*', (req, res) => {
 // 로컬 개발 시에만 listen
 if (require.main === module) {
   const PORT = process.env.PORT || 3300
-  app.listen(PORT, () => console.log(`✓ 타닥클래스 서버 실행 중: http://localhost:${PORT}`))
+  app.listen(PORT, () => {
+    console.log(`✓ 타닥클래스 서버 실행 중: http://localhost:${PORT}`)
+    if (process.env.LOGIN_LOG_SHEETS_CRON === '1') {
+      require('./utils/loginLogSheetsCron').scheduleLoginLogSheetsSync()
+    }
+  })
 }
 
 module.exports = app
