@@ -97,14 +97,19 @@ const SUBTITLE_COURSE_SLUG = 'capcut-pro-basic'
 const VIEWS_EDITING_COURSE_SLUG = '조회수-올리는-영상편집법-1783221046465'
 const SUBTITLE_INITIAL_COINS = 10
 const SUBTITLE_DAILY_LOGIN_COINS = 1
-/** 충전 참고 단가(종량제 1코인=15원). 인식 30초/1코인, 줄나눔 1회/1코인, 번역 20초/10코인 */
+const SUBTITLE_DAILY_LOGIN_COINS_CHANNEL_ADMIN = 20
+const SUBTITLE_BALANCE_CAP_CHANNEL_ADMIN = 1000
+const SUBTITLE_BALANCE_CAP_MEMBER = 500000
+/** 충전 참고 단가(종량제 1코인=15원). 인식 30초/1코인, 줄나눔 auto 1 / manual 2, 번역 20초/10코인 */
 const SUBTITLE_COIN_WON_REFERENCE = 15
 const SUBTITLE_RECOGNITION_BILLING_UNIT_SEC = 30
 const SUBTITLE_TRANSLATION_BILLING_UNIT_SEC = 20
 const SUBTITLE_BILLING_UNIT_SEC = SUBTITLE_TRANSLATION_BILLING_UNIT_SEC
 const SUBTITLE_RECOGNITION_COINS_PER_UNIT = 1
-const SUBTITLE_LINE_SPLIT_FLAT_COINS = 1
-const SUBTITLE_LINE_SPLIT_COINS_PER_UNIT = 1
+const SUBTITLE_LINE_SPLIT_AUTO_COINS = 1
+const SUBTITLE_LINE_SPLIT_MANUAL_COINS = 2
+const SUBTITLE_LINE_SPLIT_FLAT_COINS = SUBTITLE_LINE_SPLIT_AUTO_COINS
+const SUBTITLE_LINE_SPLIT_COINS_PER_UNIT = SUBTITLE_LINE_SPLIT_AUTO_COINS
 const SUBTITLE_TRANSLATION_COINS_PER_UNIT = 10
 const VIEWS_EDITING_INITIAL_COINS = 1000
 const SUBTITLE_REVIEW_BONUS_COINS = 50
@@ -147,8 +152,14 @@ function subtitleRecognitionCoins(durationUs) {
   return subtitleRecognitionBillingUnitsFromDurationUs(durationUs) * SUBTITLE_RECOGNITION_COINS_PER_UNIT
 }
 
-function subtitleLineSplitCoins(_durationUs) {
-  return SUBTITLE_LINE_SPLIT_FLAT_COINS
+function normalizeSubtitleLineSplitMode(mode) {
+  return String(mode || '').trim().toLowerCase() === 'manual' ? 'manual' : 'auto'
+}
+
+function subtitleLineSplitCoins(_durationUs, mode = 'auto') {
+  return normalizeSubtitleLineSplitMode(mode) === 'manual'
+    ? SUBTITLE_LINE_SPLIT_MANUAL_COINS
+    : SUBTITLE_LINE_SPLIT_AUTO_COINS
 }
 
 function subtitleTranslationCoins(durationUs) {
@@ -161,10 +172,48 @@ function getSubtitleBillingMeta() {
     recognition_billing_unit_sec: SUBTITLE_RECOGNITION_BILLING_UNIT_SEC,
     translation_billing_unit_sec: SUBTITLE_TRANSLATION_BILLING_UNIT_SEC,
     recognition_coins_per_unit: SUBTITLE_RECOGNITION_COINS_PER_UNIT,
+    line_split_auto_coins: SUBTITLE_LINE_SPLIT_AUTO_COINS,
+    line_split_manual_coins: SUBTITLE_LINE_SPLIT_MANUAL_COINS,
     line_split_flat_coins: SUBTITLE_LINE_SPLIT_FLAT_COINS,
     line_split_coins_per_unit: SUBTITLE_LINE_SPLIT_COINS_PER_UNIT,
     translation_coins_per_unit: SUBTITLE_TRANSLATION_COINS_PER_UNIT,
     coin_won_reference: SUBTITLE_COIN_WON_REFERENCE,
+    daily_login_coins: SUBTITLE_DAILY_LOGIN_COINS,
+    daily_login_coins_channel_admin: SUBTITLE_DAILY_LOGIN_COINS_CHANNEL_ADMIN,
+    balance_cap_member: SUBTITLE_BALANCE_CAP_MEMBER,
+    balance_cap_channel_admin: SUBTITLE_BALANCE_CAP_CHANNEL_ADMIN,
+  }
+}
+
+/** 채널 관리자: users.subtitle_channel_admin 플래그 */
+function isSubtitleChannelAdmin(user) {
+  if (!user) return false
+  return user.subtitle_channel_admin === true
+}
+
+function getSubtitleBalanceCap(user) {
+  return isSubtitleChannelAdmin(user)
+    ? SUBTITLE_BALANCE_CAP_CHANNEL_ADMIN
+    : SUBTITLE_BALANCE_CAP_MEMBER
+}
+
+function getSubtitleDailyLoginCoinsForUser(user) {
+  return isSubtitleChannelAdmin(user)
+    ? SUBTITLE_DAILY_LOGIN_COINS_CHANNEL_ADMIN
+    : SUBTITLE_DAILY_LOGIN_COINS
+}
+
+/** creditAmount만큼 지급 가능한 실제 증가분(상한 적용) */
+function subtitleCreditDelta(balance, creditAmount, cap) {
+  const bal = Math.max(0, Number(balance) || 0)
+  const want = Math.max(0, Number(creditAmount) || 0)
+  const room = Math.max(0, cap - bal)
+  const applied = Math.min(want, room)
+  return {
+    applied,
+    newBalance: bal + applied,
+    capped: applied < want,
+    cap,
   }
 }
 
@@ -6121,6 +6170,8 @@ const db = {
     if (await db.hasSubtitleInitialGrant(userId, course.id, course.slug)) {
       return { granted: false, amount: 0, reason: 'already' }
     }
+    const user = await db.findUserById(userId)
+    const cap = getSubtitleBalanceCap(user)
     await db.ensureSubtitleWallet(userId)
     const ledgerRef = fs.collection('subtitle_coin_ledger').doc(`initial:${course.id}`)
     const walletRef = fs.collection('subtitle_wallets').doc(userId)
@@ -6135,21 +6186,23 @@ const db = {
       if (!walletSnap.exists) return
       const data = walletSnap.data()
       const balance = data.balance || 0
-      const newBal = balance + amount
+      const { applied, newBalance, capped } = subtitleCreditDelta(balance, amount, cap)
       const ts = now()
-      const walletPatch = { balance: newBal, updated_at: ts }
+      const walletPatch = { balance: newBalance, updated_at: ts }
       if (!data.initial_granted_at) walletPatch.initial_granted_at = ts
       t.update(walletRef, walletPatch)
       t.set(ledgerRef, {
         user_id: userId,
-        delta: amount,
-        balance_after: newBal,
+        delta: applied,
+        balance_after: newBalance,
         reason: 'initial',
         ref: course.id,
         course_slug: course.slug,
         created_at: ts,
+        capped: capped || undefined,
+        balance_cap: cap,
       })
-      out = { granted: true, amount, balance: newBal, course_id: course.id }
+      out = { granted: true, amount: applied, balance: newBalance, course_id: course.id, capped, cap }
     })
     return out
   },
@@ -6184,6 +6237,8 @@ const db = {
     if (await db.hasSubtitleMemberWelcome(userId)) {
       return { granted: false, amount: 0, reason: 'already' }
     }
+    const user = await db.findUserById(userId)
+    const cap = getSubtitleBalanceCap(user)
     await db.ensureSubtitleWallet(userId)
     const ledgerRef = fs.collection('subtitle_coin_ledger').doc(`initial:member:${userId}`)
     const walletRef = fs.collection('subtitle_wallets').doc(userId)
@@ -6198,20 +6253,22 @@ const db = {
       if (!walletSnap.exists) return
       const data = walletSnap.data()
       const balance = data.balance || 0
-      const newBal = balance + amount
+      const { applied, newBalance, capped } = subtitleCreditDelta(balance, amount, cap)
       const ts = now()
-      const walletPatch = { balance: newBal, updated_at: ts }
+      const walletPatch = { balance: newBalance, updated_at: ts }
       if (!data.initial_granted_at) walletPatch.initial_granted_at = ts
       t.update(walletRef, walletPatch)
       t.set(ledgerRef, {
         user_id: userId,
-        delta: amount,
-        balance_after: newBal,
+        delta: applied,
+        balance_after: newBalance,
         reason: 'initial',
         ref: 'member',
         created_at: ts,
+        capped: capped || undefined,
+        balance_cap: cap,
       })
-      out = { granted: true, amount, balance: newBal }
+      out = { granted: true, amount: applied, balance: newBalance, capped, cap }
     })
     return out
   },
@@ -6226,8 +6283,10 @@ const db = {
   },
 
   async grantSubtitleDailyLoginBonus(userId) {
-    const amount = SUBTITLE_DAILY_LOGIN_COINS
-    if (amount <= 0) return { granted: false, amount: 0, reason: 'zero' }
+    const user = await db.findUserById(userId)
+    const amountRequested = getSubtitleDailyLoginCoinsForUser(user)
+    const cap = getSubtitleBalanceCap(user)
+    if (amountRequested <= 0) return { granted: false, amount: 0, reason: 'zero' }
     const dateKey = kstDateKey(new Date())
     if (await db.hasSubtitleDailyLoginToday(userId)) {
       return { granted: false, amount: 0, reason: 'already', date_key: dateKey }
@@ -6245,18 +6304,29 @@ const db = {
       const walletSnap = await t.get(walletRef)
       if (!walletSnap.exists) return
       const balance = walletSnap.data().balance || 0
-      const newBal = balance + amount
+      const { applied, newBalance, capped } = subtitleCreditDelta(balance, amountRequested, cap)
       const ts = now()
-      t.update(walletRef, { balance: newBal, updated_at: ts })
+      t.update(walletRef, { balance: newBalance, updated_at: ts })
       t.set(ledgerRef, {
         user_id: userId,
-        delta: amount,
-        balance_after: newBal,
+        delta: applied,
+        balance_after: newBalance,
         reason: 'daily_login',
         ref: dateKey,
         created_at: ts,
+        requested: amountRequested,
+        capped: capped || undefined,
+        balance_cap: cap,
       })
-      out = { granted: true, amount, balance: newBal, date_key: dateKey }
+      out = {
+        granted: true,
+        amount: applied,
+        requested: amountRequested,
+        balance: newBalance,
+        date_key: dateKey,
+        capped,
+        cap,
+      }
     })
     return out
   },
@@ -6358,6 +6428,9 @@ const db = {
       has_review: !!review,
       just_granted_initial: welcomeGrant.granted,
       just_granted_daily: dailyGrant.granted,
+      is_channel_admin: isSubtitleChannelAdmin(user),
+      balance_cap: getSubtitleBalanceCap(user),
+      daily_login_coins: getSubtitleDailyLoginCoinsForUser(user),
       download_available: true,
       program_id: program?.id || null,
       program_name: db.getDesktopProgramDisplayName(program),
@@ -6411,20 +6484,23 @@ const db = {
       if (!walletSnap.exists) return
       const data = walletSnap.data()
       const ts = now()
-      const newBal = (data.balance || 0) + bonusCoins
-      const walletPatch = { balance: newBal, updated_at: ts }
+      const cap = getSubtitleBalanceCap(user)
+      const { applied, newBalance, capped } = subtitleCreditDelta(data.balance || 0, bonusCoins, cap)
+      const walletPatch = { balance: newBalance, updated_at: ts }
       if (!data.review_bonus_granted_at) walletPatch.review_bonus_granted_at = ts
       t.update(walletRef, walletPatch)
       t.set(ledgerRef, {
         user_id: userId,
-        delta: bonusCoins,
-        balance_after: newBal,
+        delta: applied,
+        balance_after: newBalance,
         reason: 'review_bonus',
         ref: course.id,
         course_slug: course.slug,
         created_at: ts,
+        capped: capped || undefined,
+        balance_cap: cap,
       })
-      out = { granted: true, balance: newBal, amount: bonusCoins, course_id: course.id }
+      out = { granted: true, balance: newBalance, amount: applied, course_id: course.id, capped, cap }
     })
     return out
   },
@@ -6542,6 +6618,8 @@ const db = {
   },
 
   async grantSmartstoreReviewBonus(userId) {
+    const user = await db.findUserById(userId)
+    const cap = getSubtitleBalanceCap(user)
     await db.ensureSubtitleWallet(userId)
     const ledgerRef = fs.collection('subtitle_coin_ledger').doc(`smartstore_review:${userId}`)
     const walletRef = fs.collection('subtitle_wallets').doc(userId)
@@ -6558,17 +6636,26 @@ const db = {
         return
       }
       const ts = now()
-      const newBal = balance + SMARTSTORE_REVIEW_BONUS_COINS
-      t.update(walletRef, { balance: newBal, updated_at: ts })
+      const { applied, newBalance, capped } = subtitleCreditDelta(balance, SMARTSTORE_REVIEW_BONUS_COINS, cap)
+      t.update(walletRef, { balance: newBalance, updated_at: ts })
       t.set(ledgerRef, {
         user_id: userId,
-        delta: SMARTSTORE_REVIEW_BONUS_COINS,
-        balance_after: newBal,
+        delta: applied,
+        balance_after: newBalance,
         reason: 'smartstore_review',
         ref: userId,
         created_at: ts,
+        capped: capped || undefined,
+        balance_cap: cap,
       })
-      out = { granted: true, amount: SMARTSTORE_REVIEW_BONUS_COINS, balance: newBal, ledger_id: ledgerRef.id }
+      out = {
+        granted: true,
+        amount: applied,
+        balance: newBalance,
+        ledger_id: ledgerRef.id,
+        capped,
+        cap,
+      }
     })
     return out
   },
@@ -6641,6 +6728,172 @@ const db = {
     return { ok: true, status: 'rejected', reject_reason: rejectReason }
   },
 
+  async hasSubtitleCoinCreditHistory(userId) {
+    if (!userId) return false
+    const snap = await fs.collection('subtitle_coin_ledger')
+      .where('user_id', '==', userId)
+      .where('delta', '>', 0)
+      .limit(1)
+      .get()
+    return !snap.empty
+  },
+
+  async listSubtitleCoinWalletsForAdmin({ q = '', limit = 80 } = {}) {
+    const query = String(q || '').trim().toLowerCase()
+    const max = Math.max(1, Math.min(200, parseInt(limit, 10) || 80))
+    const walletSnap = await fs.collection('subtitle_wallets').get()
+    const rows = []
+    const historyChecks = []
+    for (const doc of walletSnap.docs) {
+      const data = doc.data()
+      const balance = Math.max(0, Number(data.balance) || 0)
+      const base = {
+        user_id: doc.id,
+        balance,
+        initial_granted_at: data.initial_granted_at || null,
+        review_bonus_granted_at: data.review_bonus_granted_at || null,
+        updated_at: data.updated_at || null,
+      }
+      if (balance > 0 || data.initial_granted_at || data.review_bonus_granted_at) {
+        rows.push(base)
+      } else {
+        historyChecks.push(base)
+      }
+    }
+    if (historyChecks.length) {
+      const withHistory = await Promise.all(historyChecks.map(async row => {
+        if (await db.hasSubtitleCoinCreditHistory(row.user_id)) return row
+        return null
+      }))
+      rows.push(...withHistory.filter(Boolean))
+    }
+    const userIds = [...new Set(rows.map(r => r.user_id))]
+    const users = await db.batchGetUsers(userIds)
+    let enriched = rows.map(r => {
+      const user = users[r.user_id] || {}
+      return {
+        ...r,
+        user_name: user.name || null,
+        user_email: user.email || null,
+        user_role: user.role || null,
+        is_channel_admin: isSubtitleChannelAdmin(user),
+        balance_cap: getSubtitleBalanceCap(user),
+        daily_login_coins: getSubtitleDailyLoginCoinsForUser(user),
+      }
+    })
+    if (query) {
+      enriched = enriched.filter(r => {
+        const name = String(r.user_name || '').toLowerCase()
+        const email = String(r.user_email || '').toLowerCase()
+        const id = String(r.user_id || '').toLowerCase()
+        return name.includes(query) || email.includes(query) || id.includes(query)
+      })
+    }
+    enriched.sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || '') || b.balance - a.balance)
+    return {
+      rows: enriched.slice(0, max),
+      meta: {
+        daily_login_coins: SUBTITLE_DAILY_LOGIN_COINS,
+        daily_login_coins_channel_admin: SUBTITLE_DAILY_LOGIN_COINS_CHANNEL_ADMIN,
+        balance_cap_member: SUBTITLE_BALANCE_CAP_MEMBER,
+        balance_cap_channel_admin: SUBTITLE_BALANCE_CAP_CHANNEL_ADMIN,
+      },
+    }
+  },
+
+  async listSubtitleCoinLedgerForAdmin(userId, limit = 40) {
+    const uid = String(userId || '').trim()
+    if (!uid) return []
+    const max = Math.max(1, Math.min(100, parseInt(limit, 10) || 40))
+    const snap = await fs.collection('subtitle_coin_ledger')
+      .where('user_id', '==', uid)
+      .get()
+    return snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      .slice(0, max)
+  },
+
+  async adjustSubtitleWalletByAdmin(userId, delta, adminId = null, note = '') {
+    const uid = String(userId || '').trim()
+    const d = parseInt(delta, 10)
+    if (!uid) return { ok: false, code: 'invalid_user', error: 'user_id가 필요합니다.' }
+    if (!Number.isFinite(d) || d === 0) {
+      return { ok: false, code: 'invalid_delta', error: '조정 코인은 0이 아닌 정수여야 합니다.' }
+    }
+    const user = await db.findUserById(uid)
+    if (!user) return { ok: false, code: 'not_found', error: '사용자를 찾을 수 없습니다.' }
+    const cap = getSubtitleBalanceCap(user)
+    await db.ensureSubtitleWallet(uid)
+    const walletRef = fs.collection('subtitle_wallets').doc(uid)
+    const ledgerRef = fs.collection('subtitle_coin_ledger').doc()
+    let out = null
+    await fs.runTransaction(async t => {
+      const walletSnap = await t.get(walletRef)
+      if (!walletSnap.exists) {
+        out = { ok: false, code: 'no_wallet', error: '코인 지갑이 없습니다.' }
+        return
+      }
+      const balance = Math.max(0, Number(walletSnap.data().balance) || 0)
+      const ts = now()
+      let applied = 0
+      let newBalance = balance
+      let capped = false
+      if (d > 0) {
+        const credit = subtitleCreditDelta(balance, d, cap)
+        applied = credit.applied
+        newBalance = credit.newBalance
+        capped = credit.capped
+      } else {
+        applied = -Math.min(Math.abs(d), balance)
+        newBalance = balance + applied
+      }
+      t.update(walletRef, { balance: newBalance, updated_at: ts })
+      t.set(ledgerRef, {
+        user_id: uid,
+        delta: applied,
+        balance_after: newBalance,
+        reason: 'admin_adjust',
+        ref: adminId || null,
+        note: String(note || '').trim().slice(0, 300) || null,
+        created_at: ts,
+        capped: capped || undefined,
+        balance_cap: cap,
+      })
+      out = {
+        ok: true,
+        balance: newBalance,
+        delta: applied,
+        requested: d,
+        capped,
+        cap,
+        ledger_id: ledgerRef.id,
+      }
+    })
+    return out
+  },
+
+  async updateUserSubtitleChannelAdmin(userId, enabled) {
+    const uid = String(userId || '').trim()
+    if (!uid) return { ok: false, code: 'invalid_user', error: 'user_id가 필요합니다.' }
+    const user = await db.findUserById(uid)
+    if (!user) return { ok: false, code: 'not_found', error: '사용자를 찾을 수 없습니다.' }
+    const ts = now()
+    await fs.collection('users').doc(uid).update({
+      subtitle_channel_admin: !!enabled,
+      updated_at: ts,
+    })
+    const updated = await db.findUserById(uid)
+    return {
+      ok: true,
+      user_id: uid,
+      subtitle_channel_admin: !!enabled,
+      is_channel_admin: isSubtitleChannelAdmin(updated),
+      balance_cap: getSubtitleBalanceCap(updated),
+      daily_login_coins: getSubtitleDailyLoginCoinsForUser(updated),
+    }
+  },
+
   async consumeSubtitleCoins(userId, jobId, durationUs) {
     const duration_us = Math.max(0, parseInt(durationUs, 10) || 0)
     const units = subtitleRecognitionBillingUnitsFromDurationUs(duration_us)
@@ -6704,6 +6957,8 @@ const db = {
     const jobKey = String(jobId || '').trim()
     if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
 
+    const user = await db.findUserById(userId)
+    const cap = getSubtitleBalanceCap(user)
     const consumeRef = fs.collection('subtitle_coin_ledger').doc(`consume:${jobKey}`)
     const refundRef = fs.collection('subtitle_coin_ledger').doc(`refund:${jobKey}`)
     const walletRef = fs.collection('subtitle_wallets').doc(userId)
@@ -6732,26 +6987,29 @@ const db = {
         return
       }
       const ts = now()
-      const newBal = balance + coins
-      t.update(walletRef, { balance: newBal, updated_at: ts })
+      const { applied, newBalance, capped } = subtitleCreditDelta(balance, coins, cap)
+      t.update(walletRef, { balance: newBalance, updated_at: ts })
       t.set(refundRef, {
         user_id: userId,
-        delta: coins,
-        balance_after: newBal,
+        delta: applied,
+        balance_after: newBalance,
         reason: 'refund',
         ref: jobKey,
         minutes: mins,
         created_at: ts,
+        capped: capped || undefined,
+        balance_cap: cap,
       })
-      out = { ok: true, balance: newBal, minutes: mins, coins, already: false }
+      out = { ok: true, balance: newBalance, minutes: mins, coins: applied, already: false, capped, cap }
     })
     return out
   },
 
-  async consumeSubtitleLineSplitCoins(userId, jobId, durationUs) {
+  async consumeSubtitleLineSplitCoins(userId, jobId, durationUs, splitMode = 'auto') {
     const duration_us = Math.max(0, parseInt(durationUs, 10) || 0)
+    const mode = normalizeSubtitleLineSplitMode(splitMode)
     const units = subtitleRecognitionBillingUnitsFromDurationUs(duration_us)
-    const coins = subtitleLineSplitCoins(duration_us)
+    const coins = subtitleLineSplitCoins(duration_us, mode)
     const mins = Math.max(1, Math.ceil(duration_us / 60_000_000))
     const jobKey = String(jobId || '').trim()
     if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
@@ -6780,6 +7038,7 @@ const db = {
           units: existing.data().units || units,
           coins: Math.abs(existing.data().delta || coins),
           duration_us: existing.data().duration_us || duration_us,
+          split_mode: existing.data().split_mode || mode,
           already: true,
         }
         return
@@ -6800,9 +7059,10 @@ const db = {
         minutes: mins,
         units,
         duration_us,
+        split_mode: mode,
         created_at: ts,
       })
-      out = { ok: true, balance: newBal, minutes: mins, units, coins, duration_us, already: false }
+      out = { ok: true, balance: newBal, minutes: mins, units, coins, duration_us, split_mode: mode, already: false }
     })
     return out
   },
@@ -6811,6 +7071,8 @@ const db = {
     const jobKey = String(jobId || '').trim()
     if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
 
+    const user = await db.findUserById(userId)
+    const cap = getSubtitleBalanceCap(user)
     const consumeRef = fs.collection('subtitle_coin_ledger').doc(`lines:${jobKey}`)
     const refundRef = fs.collection('subtitle_coin_ledger').doc(`lines_refund:${jobKey}`)
     const walletRef = fs.collection('subtitle_wallets').doc(userId)
@@ -6839,18 +7101,20 @@ const db = {
         return
       }
       const ts = now()
-      const newBal = balance + coins
-      t.update(walletRef, { balance: newBal, updated_at: ts })
+      const { applied, newBalance, capped } = subtitleCreditDelta(balance, coins, cap)
+      t.update(walletRef, { balance: newBalance, updated_at: ts })
       t.set(refundRef, {
         user_id: userId,
-        delta: coins,
-        balance_after: newBal,
+        delta: applied,
+        balance_after: newBalance,
         reason: 'line_split_refund',
         ref: jobKey,
         minutes: mins,
         created_at: ts,
+        capped: capped || undefined,
+        balance_cap: cap,
       })
-      out = { ok: true, balance: newBal, minutes: mins, coins, already: false }
+      out = { ok: true, balance: newBalance, minutes: mins, coins: applied, already: false, capped, cap }
     })
     return out
   },
@@ -6918,6 +7182,8 @@ const db = {
     const jobKey = String(jobId || '').trim()
     if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
 
+    const user = await db.findUserById(userId)
+    const cap = getSubtitleBalanceCap(user)
     const consumeRef = fs.collection('subtitle_coin_ledger').doc(`translate:${jobKey}`)
     const refundRef = fs.collection('subtitle_coin_ledger').doc(`translate_refund:${jobKey}`)
     const walletRef = fs.collection('subtitle_wallets').doc(userId)
@@ -6947,18 +7213,20 @@ const db = {
         return
       }
       const ts = now()
-      const newBal = balance + coins
-      t.update(walletRef, { balance: newBal, updated_at: ts })
+      const { applied, newBalance, capped } = subtitleCreditDelta(balance, coins, cap)
+      t.update(walletRef, { balance: newBalance, updated_at: ts })
       t.set(refundRef, {
         user_id: userId,
-        delta: coins,
-        balance_after: newBal,
+        delta: applied,
+        balance_after: newBalance,
         reason: 'translate_refund',
         ref: jobKey,
         minutes: mins,
         created_at: ts,
+        capped: capped || undefined,
+        balance_cap: cap,
       })
-      out = { ok: true, balance: newBal, minutes: mins, coins, already: false }
+      out = { ok: true, balance: newBalance, minutes: mins, coins: applied, already: false, capped, cap }
     })
     return out
   },
@@ -7386,6 +7654,9 @@ module.exports.SUBTITLE_PRICING_LAUNCH_AT_KST = SUBTITLE_PRICING_LAUNCH_AT_KST
 module.exports.isSubtitlePricingLaunched = isSubtitlePricingLaunched
 module.exports.subtitleDurationUsFromMinutes = subtitleDurationUsFromMinutes
 module.exports.getSubtitleBillingMeta = getSubtitleBillingMeta
+module.exports.isSubtitleChannelAdmin = isSubtitleChannelAdmin
+module.exports.getSubtitleBalanceCap = getSubtitleBalanceCap
+module.exports.getSubtitleDailyLoginCoinsForUser = getSubtitleDailyLoginCoinsForUser
 module.exports.getSubtitlePricingLaunchMeta = getSubtitlePricingLaunchMeta
 module.exports.courseAccess = courseAccess
 module.exports.parseLiveStart = parseLiveStart

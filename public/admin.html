@@ -29,6 +29,9 @@
       <a href="#programs" class="nav-item" data-section="programs">
         <i class="ti ti-package"></i> 수강생 프로그램
       </a>
+      <a href="#subtitle-coins" class="nav-item" data-section="subtitle-coins">
+        <i class="ti ti-coin"></i> 타닥싱크 코인
+      </a>
 
       <div class="nav-group-label">회원 관리</div>
       <a href="#students" class="nav-item" data-section="students">
@@ -1216,6 +1219,60 @@
             <tr><td colspan="6" style="text-align:center;color:#888">로딩 중...</td></tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: SUBTITLE COINS ===== -->
+    <section class="section" id="sec-subtitle-coins">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">타닥싱크 코인 관리</div>
+            <p class="sec-sub" id="subtitle-coins-meta">
+              코인을 지급받은 회원의 잔액을 조정하고, 채널 관리자(일일 +20, 상한 1,000)를 설정합니다. 일반 회원 상한 500,000.
+            </p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="search" id="subtitle-coins-search" placeholder="이름·이메일 검색" style="min-width:220px" />
+            <button class="btn-sm" id="subtitle-coins-search-btn">검색</button>
+            <button class="btn-sm" onclick="loadSubtitleCoins()">새로고침</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>회원</th>
+              <th>잔액</th>
+              <th>상한</th>
+              <th>일일 보충</th>
+              <th>채널 관리자</th>
+              <th>코인 조정</th>
+              <th>내역</th>
+            </tr>
+          </thead>
+          <tbody id="subtitle-coins-tbody">
+            <tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-overlay" id="subtitle-coins-ledger-modal" style="display:none">
+        <div class="modal" style="max-width:720px">
+          <div class="modal-header">
+            <div class="modal-title" id="subtitle-coins-ledger-title">코인 내역</div>
+            <button class="modal-close" onclick="document.getElementById('subtitle-coins-ledger-modal').style.display='none'">✕</button>
+          </div>
+          <div style="padding:0 20px 16px;max-height:420px;overflow:auto">
+            <table class="data-table">
+              <thead>
+                <tr><th>일시</th><th>증감</th><th>잔액</th><th>사유</th><th>메모</th></tr>
+              </thead>
+              <tbody id="subtitle-coins-ledger-tbody">
+                <tr><td colspan="5" style="text-align:center;color:#888">로딩 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -4181,6 +4238,142 @@
       }
     }
 
+    const subtitleCoinReasonLabel = {
+      initial: '최초 지급',
+      daily_login: '일일 로그인',
+      review_bonus: '후기 보너스',
+      smartstore_review: '스마트스토어 후기',
+      consume: '음성 인식',
+      refund: '환불',
+      line_split: '줄 나눔',
+      line_split_refund: '줄 나눔 환불',
+      translate: '번역',
+      translate_refund: '번역 환불',
+      admin_adjust: '관리자 조정',
+    }
+
+    async function loadSubtitleCoins() {
+      const tbody = document.getElementById('subtitle-coins-tbody')
+      const metaEl = document.getElementById('subtitle-coins-meta')
+      if (!tbody) return
+      const q = document.getElementById('subtitle-coins-search')?.value?.trim() || ''
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>'
+      try {
+        const data = await API.get('/admin/subtitle-coin-wallets?q=' + encodeURIComponent(q))
+        const rows = data.rows || []
+        const meta = data.meta || {}
+        if (metaEl && meta.balance_cap_member != null) {
+          metaEl.textContent = `일반 회원 상한 ${Number(meta.balance_cap_member).toLocaleString()}코인 · 채널 관리자 일일 +${meta.daily_login_coins_channel_admin} (상한 ${Number(meta.balance_cap_channel_admin).toLocaleString()}) · 일반 일일 +${meta.daily_login_coins}`
+        }
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">표시할 지갑이 없습니다.</td></tr>'
+          return
+        }
+        tbody.innerHTML = rows.map(r => {
+          const capLabel = Number(r.balance_cap || 0).toLocaleString()
+          const balLabel = Number(r.balance || 0).toLocaleString()
+          const dailyLabel = '+' + Number(r.daily_login_coins || 1)
+          const adminBadge = r.is_channel_admin
+            ? '<span class="badge-status paid">채널 관리자</span>'
+            : '<span class="td-sub">일반</span>'
+          const toggleLabel = r.is_channel_admin ? '해제' : '지정'
+          const toggleNext = r.is_channel_admin ? 'false' : 'true'
+          return `<tr>
+            <td>${esc(r.user_name || '-')}<br><span class="td-sub">${esc(r.user_email || r.user_id || '')}</span></td>
+            <td><strong>${balLabel}</strong></td>
+            <td>${capLabel}</td>
+            <td>${dailyLabel}</td>
+            <td>${adminBadge}<br>
+              <button class="btn-sm" onclick="toggleSubtitleChannelAdmin('${escAttr(r.user_id)}', ${toggleNext})">${toggleLabel}</button>
+            </td>
+            <td style="min-width:200px">
+              <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+                <input type="number" id="subtitle-delta-${escAttr(r.user_id)}" value="10" style="width:72px" />
+                <button class="btn-sm" onclick="adjustSubtitleCoins('${escAttr(r.user_id)}')">적용</button>
+              </div>
+              <span class="td-sub">+는 지급, −는 차감 (상한 적용)</span>
+            </td>
+            <td><button class="btn-sm" onclick="openSubtitleCoinLedger('${escAttr(r.user_id)}', '${escAttr(r.user_name || r.user_email || r.user_id)}')">내역</button></td>
+          </tr>`
+        }).join('')
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#e00">${esc(e.message || '불러오기 실패')}</td></tr>`
+      }
+    }
+
+    async function adjustSubtitleCoins(userId) {
+      const input = document.getElementById('subtitle-delta-' + userId)
+      const delta = parseInt(input?.value, 10)
+      if (!Number.isFinite(delta) || delta === 0) {
+        alert('0이 아닌 정수를 입력하세요.')
+        return
+      }
+      const note = prompt('조정 사유(선택, ledger에 기록됩니다)', '') ?? ''
+      if (note === null) return
+      const sign = delta > 0 ? '+' : ''
+      if (!confirm(`${sign}${delta}코인을 조정할까요?`)) return
+      try {
+        const result = await API.post('/admin/subtitle-coin-wallets/' + encodeURIComponent(userId) + '/adjust', { delta, note })
+        let msg = `적용 완료. 잔액 ${Number(result.balance || 0).toLocaleString()}코인`
+        if (result.capped) msg += ` (상한 ${Number(result.cap || 0).toLocaleString()} 적용)`
+        alert(msg)
+        loadSubtitleCoins()
+      } catch (e) {
+        alert(e.message || '조정 실패')
+      }
+    }
+
+    async function toggleSubtitleChannelAdmin(userId, enabled) {
+      const label = enabled ? '채널 관리자로 지정' : '채널 관리자 해제'
+      if (!confirm(`${label}할까요?`)) return
+      try {
+        await API.patch('/admin/users/' + encodeURIComponent(userId) + '/subtitle-channel-admin', { enabled: !!enabled })
+        alert('저장되었습니다.')
+        loadSubtitleCoins()
+      } catch (e) {
+        alert(e.message || '설정 실패')
+      }
+    }
+
+    async function openSubtitleCoinLedger(userId, label) {
+      const modal = document.getElementById('subtitle-coins-ledger-modal')
+      const title = document.getElementById('subtitle-coins-ledger-title')
+      const tbody = document.getElementById('subtitle-coins-ledger-tbody')
+      if (!modal || !tbody) return
+      title.textContent = `코인 내역 — ${label || userId}`
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888">로딩 중...</td></tr>'
+      modal.style.display = 'flex'
+      try {
+        const rows = await API.get('/admin/subtitle-coin-wallets/' + encodeURIComponent(userId) + '/ledger')
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888">내역이 없습니다.</td></tr>'
+          return
+        }
+        tbody.innerHTML = rows.map(row => {
+          const when = row.created_at ? row.created_at.slice(0, 16).replace('T', ' ') : '-'
+          const delta = Number(row.delta || 0)
+          const deltaLabel = (delta > 0 ? '+' : '') + delta.toLocaleString()
+          const bal = Number(row.balance_after || 0).toLocaleString()
+          const reason = subtitleCoinReasonLabel[row.reason] || row.reason || '-'
+          const note = row.note || row.ref || '-'
+          return `<tr>
+            <td class="td-date">${when}</td>
+            <td style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}">${deltaLabel}</td>
+            <td>${bal}</td>
+            <td>${esc(reason)}</td>
+            <td class="td-sub">${esc(String(note))}</td>
+          </tr>`
+        }).join('')
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#e00">${esc(e.message || '불러오기 실패')}</td></tr>`
+      }
+    }
+
+    document.getElementById('subtitle-coins-search-btn')?.addEventListener('click', () => loadSubtitleCoins())
+    document.getElementById('subtitle-coins-search')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') loadSubtitleCoins()
+    })
+
     // ── 편집자 신청 관리 ──
     const expLabel = { 0:'6개월~1년', 1:'1년↑', 2:'2년↑', 3:'3년↑', 5:'5년↑' }
     let currentAppId = null
@@ -6046,6 +6239,7 @@
       dashboard: loadDashboard,
       courses: loadCourses,
       programs: loadProgramsAdmin,
+      'subtitle-coins': loadSubtitleCoins,
       curriculum: loadCurriculumAdmin,
       students: loadStudents,
       orders: loadOrders,

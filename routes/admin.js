@@ -247,6 +247,64 @@ router.post('/smartstore-reviews/:userId/reject', async (req, res) => {
   }
 })
 
+router.get('/subtitle-coin-wallets', async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim()
+    const limit = parseInt(req.query.limit, 10) || 80
+    res.json(await db.listSubtitleCoinWalletsForAdmin({ q, limit }))
+  } catch (e) {
+    console.error('admin subtitle coin wallets:', e)
+    res.status(500).json({ error: '타닥싱크 코인 지갑 목록을 불러오지 못했습니다.' })
+  }
+})
+
+router.get('/subtitle-coin-wallets/:userId/ledger', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 40
+    res.json(await db.listSubtitleCoinLedgerForAdmin(req.params.userId, limit))
+  } catch (e) {
+    console.error('admin subtitle coin ledger:', e)
+    res.status(500).json({ error: '코인 내역을 불러오지 못했습니다.' })
+  }
+})
+
+router.post('/subtitle-coin-wallets/:userId/adjust', async (req, res) => {
+  try {
+    const delta = parseInt(req.body?.delta, 10)
+    const note = String(req.body?.note || '').trim()
+    const result = await db.adjustSubtitleWalletByAdmin(
+      req.params.userId,
+      delta,
+      req.user?.id || null,
+      note,
+    )
+    if (!result.ok) {
+      return res.status(result.code === 'not_found' ? 404 : 400).json(result)
+    }
+    res.json(result)
+  } catch (e) {
+    console.error('admin subtitle coin adjust:', e)
+    res.status(500).json({ error: '코인 조정에 실패했습니다.' })
+  }
+})
+
+router.patch('/users/:userId/subtitle-channel-admin', async (req, res) => {
+  try {
+    const enabled = req.body?.enabled
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ error: 'enabled(boolean) 값이 필요합니다.' })
+    }
+    const result = await db.updateUserSubtitleChannelAdmin(req.params.userId, enabled)
+    if (!result.ok) {
+      return res.status(result.code === 'not_found' ? 404 : 400).json(result)
+    }
+    res.json(result)
+  } catch (e) {
+    console.error('admin subtitle channel admin:', e)
+    res.status(500).json({ error: '채널 관리자 설정에 실패했습니다.' })
+  }
+})
+
 router.get('/courses', async (req, res) => {
   const { TARGET_SLUGS } = require('../db/course-catalog')
   const courses = await db.getCourses(false)

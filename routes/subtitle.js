@@ -475,7 +475,7 @@ router.post('/consume-lines', subtitleAppAuth, async (req, res) => {
     if (!durationUs) {
       return res.status(400).json({ ok: false, code: 'invalid_duration', error: 'duration_us가 필요합니다.' })
     }
-    const result = await db.consumeSubtitleLineSplitCoins(req.user.id, jobId, durationUs)
+    const result = await db.consumeSubtitleLineSplitCoins(req.user.id, jobId, durationUs, req.body?.split_mode)
     if (!result.ok) {
       const status = result.code === 'insufficient' ? 402 : result.code === 'invalid_job' ? 400 : 403
       return res.status(status).json(result)

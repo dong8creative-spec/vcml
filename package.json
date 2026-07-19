@@ -7,6 +7,8 @@
     "dev": "node --watch server.js",
     "migrate:course-images": "node scripts/migrate-course-images-to-storage.js",
     "build:subtitle-tool": "node scripts/build-subtitle-tool.js",
+    "dev:subtitle-tool": "node scripts/dev-subtitle-tool.js",
+    "smoke:subtitle-tool": "node scripts/smoke-subtitle-tool.js",
     "package:subtitle-tool": "node scripts/package-subtitle-tool.js",
     "upload:subtitle-tool": "node scripts/upload-subtitle-tool.js",
     "redeploy:subtitle-tool": "node scripts/package-subtitle-tool.js && node scripts/upload-subtitle-tool.js",
