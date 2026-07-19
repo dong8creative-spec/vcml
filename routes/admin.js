@@ -13,6 +13,10 @@ const upload = multer({
 
 router.use(adminMiddleware)
 
+router.get('/ad-library/ping', (_req, res) => {
+  res.json({ ok: true, feature: 'ad-library', status: 'draft' })
+})
+
 router.post('/uploads', upload.single('file'), async (req, res) => {
   try {
     const kind = String(req.body?.kind || '').trim()

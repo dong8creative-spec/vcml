@@ -1,8 +1,12 @@
 /** Admin 인증 가드 */
 ;(function (global) {
-  async function guardAdminAccess() {
+  async function guardAdminAccess(options) {
+    const opts = options && typeof options === 'object' ? options : {}
+    const next = String(opts.next || '/admin.html')
+    const loginUrl = `/login.html?next=${encodeURIComponent(next)}`
+
     if (!global.API?.isLoggedIn?.()) {
-      location.href = '/login.html?next=/admin.html'
+      location.href = loginUrl
       return false
     }
     try {
@@ -14,7 +18,7 @@
       }
       return true
     } catch {
-      location.href = '/login.html?next=/admin.html'
+      location.href = loginUrl
       return false
     }
   }

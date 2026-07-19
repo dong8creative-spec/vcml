@@ -962,11 +962,17 @@ img { display: block; max-width: 100%; }
 }
 
 /* Admin FAB — 관리자 전용 고정 버튼 */
-.site-admin-fab {
+.site-admin-dock {
   position: fixed;
   right: 22px;
   bottom: 22px;
   z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.site-admin-fab {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -999,17 +1005,26 @@ img { display: block; max-width: 100%; }
   display: block;
 }
 .site-admin-fab__label { line-height: 1; }
-body.has-mobile-nav .site-admin-fab {
+.site-admin-fab--ads {
+  background: #1a3a8f;
+}
+.site-admin-fab--ads:hover {
+  background: #244cad;
+}
+body.has-mobile-nav .site-admin-dock {
   bottom: calc(68px + env(safe-area-inset-bottom, 0px));
 }
 @media (max-width: 600px) {
-  .site-admin-fab {
+  .site-admin-dock {
     right: 16px;
     bottom: 16px;
+    gap: 8px;
+  }
+  .site-admin-fab {
     padding: 11px 15px;
     font-size: 13px;
   }
-  body.has-mobile-nav .site-admin-fab {
+  body.has-mobile-nav .site-admin-dock {
     bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 }

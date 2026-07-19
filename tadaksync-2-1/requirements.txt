@@ -1,0 +1,6 @@
+faster-whisper>=1.2
+numpy
+pywebview>=5
+# 맥 pywebview 백엔드(Cocoa + WebKit)
+pyobjc-framework-Cocoa>=10
+pyobjc-framework-WebKit>=10

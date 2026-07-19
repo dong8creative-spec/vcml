@@ -329,7 +329,7 @@ window.addEventListener('resize', () => scheduleFitOneLineTexts())
 })()
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/admin-fab.js?v=2'
+  s.src = '/js/admin-fab.js?v=3'
   s.defer = true
   document.head.appendChild(s)
 })()

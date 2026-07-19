@@ -449,9 +449,13 @@ router.post('/consume', subtitleAppAuth, async (req, res) => {
       return res.status(400).json({ ok: false, code: 'invalid_duration', error: 'duration_us가 필요합니다.' })
     }
     const result = await db.consumeSubtitleCoins(req.user.id, jobId, durationUs)
-    if (!result.ok) {
-      const status = result.code === 'insufficient' ? 402 : result.code === 'invalid_job' ? 400 : 403
-      return res.status(status).json(result)
+    if (!result || !result.ok) {
+      const status = !result ? 500
+        : result.code === 'insufficient' ? 402
+        : result.code === 'invalid_job' ? 400
+        : result.code === 'transaction_failed' ? 500
+        : 403
+      return res.status(status).json(result || { ok: false, code: 'server_error', error: '코인 차감에 실패했습니다.' })
     }
     res.json(result)
   } catch (e) {

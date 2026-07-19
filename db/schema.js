@@ -6370,6 +6370,25 @@ const db = {
     return coinCourses[0]?.course || null
   },
 
+  /** 코인 차감 전 가벼운 사전 확인 (일일 보너스·수강 목록 조회 없음) */
+  async prepareSubtitleConsume(userId) {
+    const user = await db.findUserById(userId)
+    if (!user) {
+      return { ok: false, code: 'not_found', error: '사용자를 찾을 수 없습니다.', balance: 0 }
+    }
+    if (!user.google_id) {
+      return {
+        ok: false,
+        code: 'google_required',
+        error: '타닥싱크는 구글 로그인 계정만 이용할 수 있습니다.',
+        balance: 0,
+      }
+    }
+    await db.ensureSubtitleWallet(userId)
+    const wallet = await db.getSubtitleWallet(userId)
+    return { ok: true, balance: wallet?.balance || 0 }
+  },
+
   async ensureSubtitleEntitlement(userId) {
     const user = await db.findUserById(userId)
     if (!user) {
@@ -6909,7 +6928,7 @@ const db = {
     const jobKey = String(jobId || '').trim()
     if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
 
-    const entitlement = await db.ensureSubtitleEntitlement(userId)
+    const entitlement = await db.prepareSubtitleConsume(userId)
     if (!entitlement.ok) {
       return { ok: false, code: entitlement.code, error: entitlement.error, balance: entitlement.balance || 0 }
     }
@@ -6957,6 +6976,9 @@ const db = {
       })
       out = { ok: true, balance: newBal, minutes: mins, units, coins, duration_us, already: false }
     })
+    if (!out) {
+      return { ok: false, code: 'transaction_failed', error: '코인 차감 트랜잭션이 완료되지 않았습니다.', balance: entitlement.balance || 0 }
+    }
     return out
   },
 
@@ -7021,7 +7043,7 @@ const db = {
     const jobKey = String(jobId || '').trim()
     if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
 
-    const entitlement = await db.ensureSubtitleEntitlement(userId)
+    const entitlement = await db.prepareSubtitleConsume(userId)
     if (!entitlement.ok) {
       return { ok: false, code: entitlement.code, error: entitlement.error, balance: entitlement.balance || 0 }
     }
@@ -7071,6 +7093,9 @@ const db = {
       })
       out = { ok: true, balance: newBal, minutes: mins, units, coins, duration_us, split_mode: mode, already: false }
     })
+    if (!out) {
+      return { ok: false, code: 'transaction_failed', error: '줄 나눔 코인 차감 트랜잭션이 완료되지 않았습니다.', balance: entitlement.balance || 0 }
+    }
     return out
   },
 
@@ -7134,7 +7159,7 @@ const db = {
     const jobKey = String(jobId || '').trim()
     if (!jobKey) return { ok: false, code: 'invalid_job', error: 'job_id가 필요합니다.' }
 
-    const entitlement = await db.ensureSubtitleEntitlement(userId)
+    const entitlement = await db.prepareSubtitleConsume(userId)
     if (!entitlement.ok) {
       return { ok: false, code: entitlement.code, error: entitlement.error, balance: entitlement.balance || 0 }
     }
@@ -7182,6 +7207,9 @@ const db = {
       })
       out = { ok: true, balance: newBal, minutes: mins, units, coins, duration_us, already: false }
     })
+    if (!out) {
+      return { ok: false, code: 'transaction_failed', error: '번역 코인 차감 트랜잭션이 완료되지 않았습니다.', balance: entitlement.balance || 0 }
+    }
     return out
   },
 

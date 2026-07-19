@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Meta 광고 라이브러리 — 타닥클래스 Admin</title>
+  <link rel="stylesheet" href="/css/style.css?v=20" />
+  <link rel="stylesheet" href="/css/common.css?v=3" />
+  <link rel="stylesheet" href="/css/ad-library.css?v=1" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+</head>
+<body class="ad-library-page ad-library-page--locked">
+
+<div data-site-header></div>
+
+<div class="ad-library-gate" id="ad-library-gate" aria-live="polite">
+  <div class="ad-library-gate__card">
+    <i class="ti ti-lock ad-library-gate__icon" aria-hidden="true"></i>
+    <p class="ad-library-gate__title">관리자 권한 확인 중</p>
+    <p class="ad-library-gate__sub">잠시만 기다려 주세요.</p>
+  </div>
+</div>
+
+<main class="ad-library-main" id="ad-library-main" hidden>
+  <header class="ad-library-hero">
+    <p class="ad-library-hero__eyebrow">Admin · Meta Ad Intelligence</p>
+    <h1 class="ad-library-hero__title">Meta 광고 라이브러리</h1>
+    <p class="ad-library-hero__lead">
+      경쟁사 모니터링 · 크리에이티브 분석 · EU 리포트 · 알림을 통합하는 내부 도구입니다.
+      현재 개발 초안 단계입니다.
+    </p>
+    <div class="ad-library-hero__links">
+      <a href="/admin.html" class="ad-library-link"><i class="ti ti-layout-dashboard"></i> 관리자 패널</a>
+      <a href="/" class="ad-library-link ad-library-link--ghost"><i class="ti ti-home"></i> 메인으로</a>
+    </div>
+  </header>
+
+  <section class="ad-library-shell" aria-label="Meta 광고 라이브러리 작업 영역">
+    <div class="ad-library-shell__card">
+      <div class="ad-library-shell__head">
+        <h2>작업 공간</h2>
+        <span class="ad-library-status" id="ad-library-status">준비 중</span>
+      </div>
+      <p class="ad-library-shell__empty">
+        수집·분석 UI는 다음 단계에서 이 영역에 추가됩니다.
+      </p>
+    </div>
+  </section>
+</main>
+
+<div data-chrome="footer"></div>
+
+<script src="/js/api.js?v=3"></script>
+<script src="/js/admin/auth.js?v=2"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=13"></script>
+<script src="/js/site-chrome.js"></script>
+<script src="/js/ad-library.js?v=1"></script>
+</body>
+</html>

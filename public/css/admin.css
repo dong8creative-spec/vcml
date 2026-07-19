@@ -132,6 +132,7 @@ button { cursor: pointer; }
   color: #818cf8;
 }
 .nav-item.active .ti { opacity: 1; color: #818cf8; }
+.nav-item--external { opacity: 0.92; }
 
 .badge-dot {
   margin-left: auto;

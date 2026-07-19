@@ -1,0 +1,144 @@
+.ad-library-page--locked .ad-library-main,
+.ad-library-page--locked [data-site-header],
+.ad-library-page--locked [data-chrome="footer"] {
+  visibility: hidden;
+}
+
+.ad-library-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 12, 14, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.ad-library-page:not(.ad-library-page--locked) .ad-library-gate {
+  display: none;
+}
+
+.ad-library-gate__card {
+  width: min(92vw, 360px);
+  padding: 28px 24px;
+  border-radius: 18px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+}
+
+.ad-library-gate__icon {
+  font-size: 28px;
+  color: #666;
+}
+
+.ad-library-gate__title {
+  margin: 12px 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.ad-library-gate__sub {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.ad-library-main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+}
+
+.ad-library-hero {
+  margin-bottom: 28px;
+}
+
+.ad-library-hero__eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #777;
+}
+
+.ad-library-hero__title {
+  margin: 0 0 10px;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.15;
+}
+
+.ad-library-hero__lead {
+  margin: 0;
+  max-width: 680px;
+  color: #444;
+  line-height: 1.65;
+}
+
+.ad-library-hero__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.ad-library-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ad-library-link--ghost {
+  background: #f3f3f3;
+  color: #111;
+}
+
+.ad-library-shell__card {
+  border: 1px solid #e6e6e6;
+  border-radius: 18px;
+  padding: 24px;
+  background: #fafafa;
+}
+
+.ad-library-shell__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ad-library-shell__head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.ad-library-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef8e8;
+  color: #2d6a1f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ad-library-status.is-error {
+  background: #fdecec;
+  color: #a12626;
+}
+
+.ad-library-shell__empty {
+  margin: 0;
+  color: #666;
+  line-height: 1.6;
+}

@@ -217,6 +217,8 @@
     bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 
+  body.has-mobile-nav .site-admin-dock ~ .test-room-fab,
+  .site-admin-dock ~ .test-room-fab,
   body.has-mobile-nav .site-admin-fab ~ .test-room-fab,
   .site-admin-fab ~ .test-room-fab {
     bottom: calc(132px + env(safe-area-inset-bottom, 0px));
