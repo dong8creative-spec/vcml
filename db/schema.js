@@ -2405,8 +2405,16 @@ const db = {
   // users
   async batchGetUsers(ids) {
     if (!ids.length) return {}
-    const docs = await fs.getAll(...ids.map(id => fs.collection('users').doc(id)))
-    return Object.fromEntries(docs.map(d => [d.id, d.exists ? d.data() : null]))
+    const uniq = [...new Set(ids.filter(Boolean))]
+    const out = {}
+    for (let i = 0; i < uniq.length; i += 100) {
+      const chunk = uniq.slice(i, i + 100)
+      const docs = await fs.getAll(...chunk.map(id => fs.collection('users').doc(id)))
+      for (const d of docs) {
+        out[d.id] = d.exists ? d.data() : null
+      }
+    }
+    return out
   },
   async batchGetCourses(ids) {
     if (!ids.length) return {}
@@ -6732,10 +6740,9 @@ const db = {
     if (!userId) return false
     const snap = await fs.collection('subtitle_coin_ledger')
       .where('user_id', '==', userId)
-      .where('delta', '>', 0)
-      .limit(1)
+      .limit(20)
       .get()
-    return !snap.empty
+    return snap.docs.some(d => (Number(d.data().delta) || 0) > 0)
   },
 
   async listSubtitleCoinWalletsForAdmin({ q = '', limit = 80 } = {}) {

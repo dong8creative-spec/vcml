@@ -114,6 +114,14 @@
         { "fieldPath": "phone_norm", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "subtitle_coin_ledger",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id", "order": "ASCENDING" },
+        { "fieldPath": "delta", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
