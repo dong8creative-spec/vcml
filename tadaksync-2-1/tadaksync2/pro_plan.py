@@ -86,6 +86,10 @@ def build_lines_from_script(script: str, words: list[Word]) -> list[SubtitleLine
 
     # 간격·겹침 보정. 사용자가 만든 줄 순서는 유지한다.
     for i, line in enumerate(out):
+        if line.words:
+            natural_end = line.words[-1][2]
+            if line.end_us < natural_end:
+                line.end_us = natural_end
         if line.end_us - line.start_us < 200_000:
             line.end_us = line.start_us + 200_000
         if i + 1 < len(out) and line.end_us > out[i + 1].start_us:
@@ -164,7 +168,14 @@ def build_lines_auto(
             ))
 
     for i, line in enumerate(lines):
-        if line.end_us - line.start_us < 500_000:
+        if line.words:
+            natural_end = line.words[-1][2]
+            if line.end_us < natural_end:
+                line.end_us = natural_end
+            min_us = max(200_000, line.words[-1][2] - line.words[0][1])
+            if line.end_us - line.start_us < min_us:
+                line.end_us = line.start_us + min_us
+        elif line.end_us - line.start_us < 500_000:
             line.end_us = line.start_us + 500_000
         if i + 1 < len(lines) and line.end_us > lines[i + 1].start_us:
             line.end_us = lines[i + 1].start_us

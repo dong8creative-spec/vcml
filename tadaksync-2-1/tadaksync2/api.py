@@ -30,7 +30,8 @@ from .dev_util import dev_log, is_dev_mode
 from .pro_plan import build_lines_auto, build_lines_from_script, _clamp_word_range
 from .transcribe import (LANGUAGE_CHOICES, MODEL, SR, FullScript,
                          SubtitleLine, Transcriber, _close_gaps,
-                         align_line_starts_to_audio, audio_has_speech)
+                         align_line_starts_to_audio, align_words_to_audio,
+                         audio_has_speech)
 
 
 def _ok(**kw) -> dict:
@@ -481,11 +482,21 @@ class Api:
                         raise RuntimeError("로그인이 만료됐어요. 다시 로그인해 주세요.") from e
                     if "코인이 부족" in str(e):
                         raise
-                    raise
+                    cached = self._balance
+                    if cached is not None and int(cached) < recognition_coin_cost:
+                        raise RuntimeError(
+                            f"코인이 부족해요. (필요 {recognition_coin_cost}개, 보유 "
+                            f"{int(cached)}개)") from e
+                    status(
+                        "서버에서 잔액을 확인하지 못했어요. 인식은 계속 진행합니다… "
+                        "(차감 단계에서 다시 확인돼요)")
             self._transcriber.load(MODEL, progress=status)
             script = self._transcriber.transcribe_full_script(
                 res.audio, language=language,
                 progress=status, progress_ratio=ratio)
+            if script.words and len(res.audio) > 0:
+                status("어절 단위 발화 시점을 맞추고 있어요…")
+                script.words = align_words_to_audio(script.words, res.audio)
             if not (script.text or "").strip():
                 raise RuntimeError(
                     "자막으로 인식된 내용이 없어요. 작업이 취소되었고 코인은 차감되지 않았어요.")

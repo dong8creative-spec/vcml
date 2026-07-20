@@ -217,6 +217,14 @@ function subtitleCreditDelta(balance, creditAmount, cap) {
   }
 }
 
+/** Firestore는 undefined 필드를 거부 — capped는 true일 때만 기록 */
+function subtitleLedgerMeta({ capped, cap } = {}) {
+  const meta = {}
+  if (capped) meta.capped = true
+  if (cap != null && Number.isFinite(Number(cap))) meta.balance_cap = Number(cap)
+  return meta
+}
+
 function getSubtitlePricingLaunchMeta() {
   return {
     launch_at: SUBTITLE_PRICING_LAUNCH_AT_KST,
@@ -6207,8 +6215,7 @@ const db = {
         ref: course.id,
         course_slug: course.slug,
         created_at: ts,
-        capped: capped || undefined,
-        balance_cap: cap,
+        ...subtitleLedgerMeta({ capped, cap }),
       })
       out = { granted: true, amount: applied, balance: newBalance, course_id: course.id, capped, cap }
     })
@@ -6273,8 +6280,7 @@ const db = {
         reason: 'initial',
         ref: 'member',
         created_at: ts,
-        capped: capped || undefined,
-        balance_cap: cap,
+        ...subtitleLedgerMeta({ capped, cap }),
       })
       out = { granted: true, amount: applied, balance: newBalance, capped, cap }
     })
@@ -6323,8 +6329,7 @@ const db = {
         ref: dateKey,
         created_at: ts,
         requested: amountRequested,
-        capped: capped || undefined,
-        balance_cap: cap,
+        ...subtitleLedgerMeta({ capped, cap }),
       })
       out = {
         granted: true,
@@ -6524,8 +6529,7 @@ const db = {
         ref: course.id,
         course_slug: course.slug,
         created_at: ts,
-        capped: capped || undefined,
-        balance_cap: cap,
+        ...subtitleLedgerMeta({ capped, cap }),
       })
       out = { granted: true, balance: newBalance, amount: applied, course_id: course.id, capped, cap }
     })
@@ -6672,8 +6676,7 @@ const db = {
         reason: 'smartstore_review',
         ref: userId,
         created_at: ts,
-        capped: capped || undefined,
-        balance_cap: cap,
+        ...subtitleLedgerMeta({ capped, cap }),
       })
       out = {
         granted: true,
@@ -6883,8 +6886,7 @@ const db = {
         ref: adminId || null,
         note: String(note || '').trim().slice(0, 300) || null,
         created_at: ts,
-        capped: capped || undefined,
-        balance_cap: cap,
+        ...subtitleLedgerMeta({ capped, cap }),
       })
       out = {
         ok: true,
@@ -7026,8 +7028,7 @@ const db = {
         ref: jobKey,
         minutes: mins,
         created_at: ts,
-        capped: capped || undefined,
-        balance_cap: cap,
+        ...subtitleLedgerMeta({ capped, cap }),
       })
       out = { ok: true, balance: newBalance, minutes: mins, coins: applied, already: false, capped, cap }
     })
@@ -7143,8 +7144,7 @@ const db = {
         ref: jobKey,
         minutes: mins,
         created_at: ts,
-        capped: capped || undefined,
-        balance_cap: cap,
+        ...subtitleLedgerMeta({ capped, cap }),
       })
       out = { ok: true, balance: newBalance, minutes: mins, coins: applied, already: false, capped, cap }
     })
@@ -7258,8 +7258,7 @@ const db = {
         ref: jobKey,
         minutes: mins,
         created_at: ts,
-        capped: capped || undefined,
-        balance_cap: cap,
+        ...subtitleLedgerMeta({ capped, cap }),
       })
       out = { ok: true, balance: newBalance, minutes: mins, coins: applied, already: false, capped, cap }
     })

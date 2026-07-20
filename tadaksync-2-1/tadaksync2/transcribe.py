@@ -517,29 +517,141 @@ def _block_speech_start(
     return start_us
 
 
+WORD_MIN_DUR_US = 35_000          # 어절 최소 35ms
+WORD_ONSET_BACK_SEC = 0.10        # Whisper 시작보다 최대 100ms 앞까지 온셋 탐색
+WORD_ONSET_AHEAD_SEC = 0.04       # Whisper 시작 이후 좁은 여유
+WORD_OFFSET_AHEAD_SEC = 0.12      # Whisper 끝 이후 발화 종료 탐색
+
+
+def _refine_word_boundary(
+    start_us: int,
+    end_us: int,
+    prev_end_us: int,
+    next_start_us: int,
+    audio: np.ndarray,
+    env: np.ndarray,
+    audio_dur: float,
+) -> tuple[int, int]:
+    """Whisper 어절 타임스탬프를 기준으로 좁은 창에서만 RMS 온셋/오프셋 보정."""
+    ws, we = start_us / US, end_us / US
+    prev = prev_end_us / US
+    next_s = next_start_us / US if next_start_us > 0 else audio_dur
+    min_dur = WORD_MIN_DUR_US / US
+
+    # 시작: Whisper 시각 우선, 늦을 때만 앞당김
+    new_s = max(ws, prev + 0.002)
+    lo = max(prev + 0.002, ws - WORD_ONSET_BACK_SEC)
+    hi = min(we - min_dur, ws + WORD_ONSET_AHEAD_SEC, next_s - min_dur, audio_dur)
+    if hi > lo + 0.012:
+        onset = find_onset(audio, lo, hi, env)
+        if onset is not None and onset <= ws + 0.025:
+            new_s = max(onset, prev + 0.002, ws - WORD_ONSET_BACK_SEC)
+
+    # 끝: Whisper 시각 우선, 짧게 늘릴 때만 오프셋
+    new_e = max(we, new_s + min_dur)
+    off_lo = max(new_s + min_dur, we - 0.025)
+    off_hi = min(we + WORD_OFFSET_AHEAD_SEC, next_s - 0.005, audio_dur)
+    if off_hi > off_lo + 0.012:
+        offset = find_offset(audio, off_lo, off_hi, env)
+        if offset is not None and offset >= we - 0.03:
+            new_e = min(max(offset, new_s + min_dur), next_s - 0.003, audio_dur)
+
+    if new_e <= new_s:
+        new_e = max(new_s + min_dur, we)
+    return int(new_s * US), int(new_e * US)
+
+
+def align_words_to_audio(words: list[Word], audio: np.ndarray) -> list[Word]:
+    """전체 대본의 어절 타임코드를 Whisper + 좁은 RMS 보정으로 맞춘다."""
+    if not words or audio is None or len(audio) == 0:
+        return words
+    env = _rms_envelope(audio)
+    audio_dur = len(audio) / SR
+    out: list[Word] = []
+    prev_end_us = 0
+    for i, (text, start_us, end_us) in enumerate(words):
+        if not (text or "").strip() or end_us <= start_us:
+            continue
+        next_start = words[i + 1][1] if i + 1 < len(words) else int(audio_dur * US)
+        ns, ne = _refine_word_boundary(
+            start_us, end_us, prev_end_us, next_start, audio, env, audio_dur)
+        out.append((text, ns, ne))
+        prev_end_us = ne
+    return out
+
+
+def _sync_line_from_words(line: SubtitleLine, prev_end_us: int = 0) -> int:
+    """라인 start/end를 어절 타임코드와 일치시킨다. 반환: line.end_us."""
+    if not line.words:
+        return line.end_us
+    line.start_us = max(line.words[0][1], prev_end_us)
+    line.end_us = line.words[-1][2]
+    if line.end_us <= line.start_us:
+        line.end_us = line.start_us + WORD_MIN_DUR_US
+    return line.end_us
+
+
 def align_line_starts_to_audio(lines: list[SubtitleLine],
                                audio: np.ndarray) -> list[SubtitleLine]:
-    """블록마다 동일 규칙으로 자막 시작을 실제 발화 온셋에 맞춘다."""
+    """자막 블록 타이밍 — 어절(words) 우선, 없을 때만 블록 온셋."""
     if not lines or len(audio) == 0:
+        return lines
+
+    env = _rms_envelope(audio)
+    audio_dur = len(audio) / SR
+
+    # 어절이 있는 줄: 줄 단위가 아니라 어절 단위로 연속 정렬
+    if any(line.words for line in lines):
+        flat: list[Word] = []
+        ranges: list[tuple[int, int]] = []
+        for line in lines:
+            if not line.words:
+                ranges.append((len(flat), len(flat)))
+                continue
+            i0 = len(flat)
+            flat.extend(line.words)
+            ranges.append((i0, len(flat)))
+        if flat:
+            aligned_flat = align_words_to_audio(flat, audio)
+            prev_end_us = 0
+            for line, (i0, i1) in zip(lines, ranges):
+                if i1 <= i0:
+                    whisper_us = line.words[0][1] if line.words else line.start_us
+                    line.start_us = _block_speech_start(
+                        whisper_us, line.end_us, prev_end_us,
+                        _detect_speech_regions_safe(audio), audio, env)
+                    prev_end_us = line.end_us
+                    continue
+                line.words = aligned_flat[i0:i1]
+                prev_end_us = _sync_line_from_words(line, prev_end_us)
         return lines
 
     try:
         regions = _detect_speech_regions(audio)
     except Exception:
         regions = []
-    env = _rms_envelope(audio)
-    audio_dur = len(audio) / SR
     if not regions:
         regions = _regions_from_energy(audio, env, audio_dur)
 
     prev_end_us = 0
     for line in lines:
-        whisper_us = line.words[0][1] if line.words else line.start_us
+        whisper_us = line.start_us
         line.start_us = _block_speech_start(
             whisper_us, line.end_us, prev_end_us, regions, audio, env)
         prev_end_us = line.end_us
 
     return lines
+
+
+def _detect_speech_regions_safe(audio: np.ndarray) -> list[tuple[float, float]]:
+    try:
+        regions = _detect_speech_regions(audio)
+    except Exception:
+        regions = []
+    if regions:
+        return regions
+    env = _rms_envelope(audio)
+    return _regions_from_energy(audio, env, len(audio) / SR)
 
 
 def _detect_speech_regions(audio: np.ndarray) -> list[tuple[float, float]]:
