@@ -5,5 +5,9 @@ import multiprocessing
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
+    from tadaksync2.dotnet_runtime import configure
+
+    configure()
     from tadaksync2.app import main
+
     main()

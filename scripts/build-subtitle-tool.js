@@ -15,6 +15,10 @@ if (!fs.existsSync(python)) {
   process.exit(1)
 }
 
+execSync(
+  `${JSON.stringify(python)} -m pip install -q pyinstaller pyinstaller-hooks-contrib`,
+  { cwd: appDir, stdio: 'inherit', shell: true },
+)
 execSync(`${JSON.stringify(python)} -m PyInstaller --noconfirm --clean TadakSync2.spec`, {
   cwd: appDir,
   stdio: 'inherit',
