@@ -66,7 +66,6 @@ jobs:
           retention-days: 30
 
       - name: Upload to Firebase Storage
-        if: ${{ vars.FIREBASE_UPLOAD_ENABLED == 'true' }}
         shell: pwsh
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
