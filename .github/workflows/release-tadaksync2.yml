@@ -1,0 +1,77 @@
+name: Release TadakSync2
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'tadaksync2-v*'
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: tadaksync-v2/requirements.txt
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        shell: pwsh
+        run: |
+          cd tadaksync-v2
+          python -m venv .venv
+          .\.venv\Scripts\python -m pip install --upgrade pip
+          .\.venv\Scripts\pip install -r requirements.txt
+
+      - name: Smoke test
+        shell: pwsh
+        run: npm run smoke:subtitle-tool
+
+      - name: Build and package
+        shell: pwsh
+        run: |
+          npm run build:subtitle-tool
+          npm run package:subtitle-tool
+
+      - name: Read app version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path tadaksync-v2/tadaksync2/__init__.py -Pattern 'VERSION = "([^"]+)"').Matches[0].Groups[1].Value
+          echo "value=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TadakSync2-v${{ steps.version.outputs.value }}
+          path: tadaksync-v2/dist/TadakSync2.zip
+          retention-days: 30
+
+      - name: Upload to Firebase Storage
+        if: ${{ vars.FIREBASE_UPLOAD_ENABLED == 'true' }}
+        shell: pwsh
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_DATABASE_ID: ${{ secrets.FIREBASE_DATABASE_ID }}
+        run: npm run upload:subtitle-tool
