@@ -72,6 +72,45 @@
     </section>
 
     <section class="st-guide-section">
+      <h3><span class="dot" style="background:#dc2626"></span> PC 필수 구성 요소</h3>
+      <div class="st-note-box">
+        타닥싱크 2는 <strong>Windows 전용</strong>입니다. zip에 포함된 <code>TadakSync2.exe</code>만으로 대부분 실행되지만,
+        PC에 아래가 없으면 <strong>.NET 런타임 오류</strong> 등으로 실행이 안 될 수 있습니다.
+      </div>
+      <div class="st-step-grid" style="margin-top:12px">
+        <div class="st-step st-step--blue">
+          <div class="st-step-num">필수</div>
+          <div class="st-step-body">
+            <b>.NET 6 Desktop Runtime (x64)</b>
+            <p>프로그램 UI 실행에 사용합니다. Windows 10/11에 없으면 별도 설치가 필요합니다.</p>
+            <p class="st-step-tip"><a href="https://dotnet.microsoft.com/download/dotnet/6.0" target="_blank" rel="noopener">다운로드 — Desktop Runtime</a></p>
+          </div>
+        </div>
+        <div class="st-step st-step--violet">
+          <div class="st-step-num">필수</div>
+          <div class="st-step-body">
+            <b>Microsoft Edge WebView2 Runtime</b>
+            <p>프로그램 화면 표시에 사용합니다. Windows 11은 대부분 기본 포함, Windows 10은 설치가 필요할 수 있습니다.</p>
+            <p class="st-step-tip"><a href="https://go.microsoft.com/fwlink/p/?LinkId=2124703" target="_blank" rel="noopener">WebView2 Runtime 다운로드</a></p>
+          </div>
+        </div>
+        <div class="st-step st-step--violet">
+          <div class="st-step-num">권장</div>
+          <div class="st-step-body">
+            <b>Visual C++ 재배포 패키지 (2015–2022)</b>
+            <p>음성 인식 엔진 등 네이티브 라이브러리 실행 시 일부 PC에서 필요합니다.</p>
+            <p class="st-step-tip"><a href="https://aka.ms/vs/17/release/vc_redist.x64.exe" target="_blank" rel="noopener">vc_redist.x64.exe 다운로드</a></p>
+          </div>
+        </div>
+      </div>
+      <div class="st-note-box" style="margin-top:12px">
+        <strong>설치 경로 팁</strong><br>
+        · 사용자 폴더·설치 경로에 <strong>한글</strong>이 있으면 .NET 6 Desktop Runtime이 특히 필요합니다.<br>
+        · 가능하면 <code>C:\TadakSync\</code>처럼 <strong>영문만 있는 폴더</strong>에 압축 해제하세요.
+      </div>
+    </section>
+
+    <section class="st-guide-section">
       <h3><span class="dot" style="background:#d97706"></span> 설치 전 확인</h3>
       <div class="st-note-box">
         · 타닥클래스 <strong>구글 로그인 회원</strong>이면 누구나 이용할 수 있습니다.<br>

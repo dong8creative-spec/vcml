@@ -1,4 +1,4 @@
-타닥싱크 2 사용법 v2.16.1
+타닥싱크 2 사용법 v2.16.2
 ================================
 
 캡컷 PC 프로젝트의 음성을 인식해 전문(全文)을 먼저 보여 주고,
@@ -25,6 +25,30 @@
 4. 연동 완료 후 프로젝트 선택·인식·삽입을 사용할 수 있습니다
 
 ※ 로그인 정보는 이 PC의 %APPDATA%\TadakSync 에 저장됩니다.
+
+
+■ PC 필수 구성 요소 (추가 설치)
+--------------------------------
+타닥싱크 2는 Windows 전용입니다. zip 안의 TadakSync2.exe만으로 대부분 실행되지만,
+아래가 PC에 없으면 「.NET 런타임 오류」 등으로 실행이 안 될 수 있습니다.
+
+【필수에 가까운 항목】
+· .NET 6 Desktop Runtime (x64)
+  https://dotnet.microsoft.com/download/dotnet/6.0  → 「Desktop Runtime」
+· Microsoft Edge WebView2 Runtime
+  https://go.microsoft.com/fwlink/p/?LinkId=2124703
+  (Windows 11은 대부분 기본 포함, Windows 10은 설치가 필요할 수 있음)
+
+【일부 PC에서 필요】
+· Visual C++ 재배포 패키지 2015–2022 (x64)
+  https://aka.ms/vs/17/release/vc_redist.x64.exe
+
+【기타】
+· 캡컷 PC (자막 삽입 대상)
+· 인터넷 (로그인·코인·음성 모델 약 3GB 다운로드)
+
+※ 사용자 폴더·설치 경로에 한글이 있으면 .NET 6 Desktop Runtime이 특히 필요합니다.
+  가능하면 C:\TadakSync\ 처럼 영문만 있는 폴더에 압축 해제하세요.
 
 
 ■ 코인 안내
