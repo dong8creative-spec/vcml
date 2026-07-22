@@ -68,6 +68,35 @@ def _ui_url(web_dir: Path) -> str:
     return _page_url(web_dir, "index.html")
 
 
+def _handle_gui_startup_error(exc: BaseException) -> None:
+    from .dotnet_runtime import (
+        format_prerequisite_message,
+        missing_prerequisites,
+        pick_runtime,
+        show_startup_error,
+    )
+
+    if is_dev_mode():
+        dev_log("APP", f"GUI startup failed: {exc!r}")
+        raise
+
+    missing = missing_prerequisites(runtime=pick_runtime())
+    detail = str(exc).strip()
+    if missing:
+        message = format_prerequisite_message(missing, runtime=pick_runtime())
+        if detail:
+            message = f"{detail}\n\n{message}"
+    else:
+        message = (
+            "프로그램 화면을 시작하지 못했습니다.\n\n"
+            f"{detail}\n\n"
+            "PC를 재시작한 뒤 다시 시도해 주세요. "
+            "문제가 계속되면 타닥클래스 고객센터로 문의해 주세요."
+        )
+    show_startup_error(message)
+    raise SystemExit(1) from exc
+
+
 def main() -> None:
     raw_api = Api()
     url = _ui_url(_web_dir())
@@ -100,7 +129,10 @@ def main() -> None:
         window.events.loaded += _on_loaded
 
     window.events.closed += raw_api.cleanup
-    webview.start(debug=is_dev_mode())
+    try:
+        webview.start(debug=is_dev_mode())
+    except Exception as exc:
+        _handle_gui_startup_error(exc)
 
 
 if __name__ == "__main__":
