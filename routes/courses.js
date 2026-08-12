@@ -3,6 +3,7 @@ const db = require('../db')
 const { mergeDetailIntroImages } = require('../utils/course-detail-assets')
 const jwt = require('jsonwebtoken')
 const { authMiddleware } = require('../middleware/auth')
+const { isAllowedAdmin } = require('../utils/adminAccess')
 const {
   ANTICIPATION_DISCOUNT_PERCENT,
   ANTICIPATION_MIN_LENGTH,
@@ -568,8 +569,10 @@ router.get('/:slug/chapters/:chapterId', authMiddleware, async (req, res) => {
   if (!course) return res.status(404).json({ error: '강의 없음' })
   const chapter = await db.getChapterById(req.params.chapterId)
   if (!chapter || chapter.course_id !== course.id) return res.status(404).json({ error: '챕터 없음' })
-  if (!chapter.is_free && !await db.isEnrolled(req.user.id, course.id)) return res.status(403).json({ error: '수강 신청이 필요합니다.' })
-  if (!chapter.is_free && !await db.canAccessPaidCourse(req.user.id, course)) {
+  const requester = await db.findUserById(req.user.id)
+  const isAdminViewer = isAllowedAdmin(requester)
+  if (!isAdminViewer && !chapter.is_free && !await db.isEnrolled(req.user.id, course.id)) return res.status(403).json({ error: '수강 신청이 필요합니다.' })
+  if (!isAdminViewer && !chapter.is_free && !await db.canAccessPaidCourse(req.user.id, course)) {
     return res.status(403).json({ error: '수강 기간(3개월)이 만료되었습니다.' })
   }
   const progress = await db.getProgress(req.user.id, chapter.id)

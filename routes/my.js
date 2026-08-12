@@ -2,6 +2,7 @@ const router = require('express').Router()
 const db = require('../db')
 const userPayload = require('../db/schema').userPayload
 const { authMiddleware } = require('../middleware/auth')
+const { isAllowedAdmin } = require('../utils/adminAccess')
 
 const MAX_BIO = 500
 const MAX_IMAGE_LEN = 480000
@@ -306,10 +307,14 @@ router.post('/progress', authMiddleware, async (req, res) => {
   const { chapter_id, completed, watched_sec } = req.body
   const chapter = await db.getChapterById(chapter_id)
   if (!chapter) return res.status(404).json({ error: '챕터 없음' })
-  if (!await db.isEnrolled(req.user.id, chapter.course_id)) return res.status(403).json({ error: '수강 신청 필요' })
-  const course = await db.getCourseById(chapter.course_id)
-  if (course && !await db.canAccessPaidCourse(req.user.id, course)) {
-    return res.status(403).json({ error: '수강 기간(3개월)이 만료되었습니다.' })
+  const requester = await db.findUserById(req.user.id)
+  const isAdminViewer = isAllowedAdmin(requester)
+  if (!isAdminViewer) {
+    if (!await db.isEnrolled(req.user.id, chapter.course_id)) return res.status(403).json({ error: '수강 신청 필요' })
+    const course = await db.getCourseById(chapter.course_id)
+    if (course && !await db.canAccessPaidCourse(req.user.id, course)) {
+      return res.status(403).json({ error: '수강 기간(3개월)이 만료되었습니다.' })
+    }
   }
   await db.upsertProgress(req.user.id, chapter_id, completed, watched_sec || 0)
   res.json({ success: true })
