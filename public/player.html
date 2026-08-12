@@ -144,7 +144,10 @@
           origin: window.location.origin,
         },
         events: {
-          onStateChange: (e) => showPauseShield(!YT_PLAYING_STATES.has(e.data)),
+          onStateChange: (e) => {
+            showPauseShield(!YT_PLAYING_STATES.has(e.data))
+            updatePlayPauseIcon(e.data === 1)
+          },
         },
       })
     }
@@ -184,6 +187,45 @@
       try { ytPlayer?.playVideo() } catch (_) {}
     }
 
+    function updatePlayPauseIcon(isPlaying) {
+      const btn = document.getElementById('play-pause-btn')
+      if (!btn) return
+      btn.innerHTML = isPlaying ? '<i class="ti ti-player-pause-filled"></i>' : '<i class="ti ti-player-play-filled"></i>'
+    }
+
+    function togglePlayPause(e) {
+      e?.stopPropagation()
+      if (!ytPlayer) return
+      try {
+        const state = ytPlayer.getPlayerState()
+        if (state === 1) ytPlayer.pauseVideo()
+        else ytPlayer.playVideo()
+      } catch (_) {}
+    }
+
+    function toggleFullscreen(e) {
+      e?.stopPropagation()
+      const el = document.getElementById('video-area')
+      if (!el) return
+      if (document.fullscreenElement) document.exitFullscreen?.()
+      else el.requestFullscreen?.()
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      const btn = document.getElementById('fullscreen-btn')
+      if (btn) btn.innerHTML = document.fullscreenElement ? '<i class="ti ti-minimize"></i>' : '<i class="ti ti-maximize"></i>'
+      if (!document.fullscreenElement) document.getElementById('timecode-panel')?.classList.remove('is-revealed')
+    })
+
+    /** 전체화면 상태에서 오른쪽 끝에 마우스를 대면 구간이동 패널이 슬라이드로 나타난다 */
+    function setupTimecodeHoverZone() {
+      const zone = document.getElementById('timecode-hover-zone')
+      const panel = document.getElementById('timecode-panel')
+      if (!zone || !panel) return
+      zone.addEventListener('mouseenter', () => panel.classList.add('is-revealed'))
+      panel.addEventListener('mouseleave', () => panel.classList.remove('is-revealed'))
+    }
+
     function seekTo(seconds) {
       try {
         ytPlayer?.seekTo(seconds, true)
@@ -211,6 +253,11 @@
       renderChapterList(courseData.chapters)
 
       const chapters = courseData.chapters || []
+      // 챕터가 1개뿐이면 챕터 목록 사이드바는 의미가 없어 완전히 숨기고 구간이동 목록만 남긴다
+      const singleChapter = chapters.length <= 1
+      document.getElementById('player-sidebar')?.classList.toggle('is-hidden', singleChapter)
+      document.getElementById('sidebar-toggle-btn')?.classList.toggle('is-hidden', singleChapter)
+
       const firstId = chapterParam === 'first' || !chapterParam
         ? chapters[0]?.id
         : chapterParam
@@ -307,11 +354,17 @@
                  </div>
                  <div class="yt-shield yt-shield-br"></div>
                  <div class="yt-shield yt-shield-tr"></div>
-                 <div class="yt-shield yt-shield-top"></div>`
+                 <div class="yt-shield yt-shield-top"></div>
+                 <div class="video-controls">
+                   <button type="button" id="play-pause-btn" onclick="togglePlayPause(event)" aria-label="재생/일시정지"><i class="ti ti-player-play-filled"></i></button>
+                   <span class="vc-spacer"></span>
+                   <button type="button" id="fullscreen-btn" onclick="toggleFullscreen(event)" aria-label="전체화면"><i class="ti ti-maximize"></i></button>
+                 </div>
+                 <div class="timecode-hover-zone" id="timecode-hover-zone"></div>`
               : `<iframe class="video-embed" src="${esc(src.embedUrl)}" title="${esc(ch.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`}
             <div class="video-watermark-layer" id="video-watermark-layer"></div>
           </div>${timecodes.length ? `
-          <div class="timecode-panel">
+          <div class="timecode-panel" id="timecode-panel">
             <div class="timecode-header"><i class="ti ti-clock"></i> 구간 이동</div>
             <div class="timecode-list">${timecodes.map((t) => `
               <div class="timecode-item" onclick="seekTo(${t.seconds})"><span class="timecode-badge">${esc(t.timeStr)}</span> ${esc(t.label)}</div>
@@ -350,6 +403,7 @@
         startWatermark()
         if (isYoutube) {
           setupClickShield()
+          setupTimecodeHoverZone()
           initYoutubePlayer(src.id)
         }
       }

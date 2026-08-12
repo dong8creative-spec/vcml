@@ -77,6 +77,39 @@ a { text-decoration: none; color: inherit; }
 }
 .yt-resume-btn:hover { background: #eee; }
 
+/* 커스텀 컨트롤(재생/일시정지 · 전체화면) — 일시정지 차단막보다도 위에 항상 접근 가능 */
+.video-controls {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 9;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+}
+.video-controls .vc-spacer { flex: 1; }
+.video-controls button {
+  background: rgba(255,255,255,0.16); border: none; color: #fff;
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px;
+}
+.video-controls button:hover { background: rgba(255,255,255,0.32); }
+
+/* 전체화면: #video-area 자체가 전체화면 대상. 구간이동 패널은 평소엔 곁에 항상 보이다가,
+   전체화면에서는 오른쪽 끝에 마우스를 올렸을 때만 슬라이드로 나타나는 오버레이로 바뀐다. */
+#video-area:fullscreen { height: 100%; }
+#video-area:fullscreen .video-area-main { aspect-ratio: unset; max-height: none; height: 100%; }
+#video-area:fullscreen .timecode-panel {
+  position: absolute; top: 0; right: 0; height: 100%; width: 280px;
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  z-index: 20;
+  box-shadow: -8px 0 24px rgba(0,0,0,0.4);
+}
+#video-area:fullscreen .timecode-panel.is-revealed { transform: translateX(0); }
+.timecode-hover-zone { display: none; }
+#video-area:fullscreen .timecode-hover-zone {
+  display: block; position: absolute; top: 0; right: 0; width: 28px; height: 100%; z-index: 19;
+}
+
 .timecode-panel { width: 260px; flex-shrink: 0; background: #161616; border-left: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; overflow: hidden; }
 .timecode-header { padding: 12px 14px; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
 .timecode-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px; }
@@ -170,6 +203,8 @@ a { text-decoration: none; color: inherit; }
 
 /* Sidebar */
 .player-sidebar { width: 300px; flex-shrink: 0; background: #161616; border-left: 0.5px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; overflow: hidden; }
+/* 챕터가 1개뿐인 강의는 챕터 목록이 의미가 없어 완전히 숨긴다 (구간이동 목록만 노출) */
+.player-sidebar.is-hidden, .sidebar-toggle-btn.is-hidden { display: none !important; }
 .sidebar-course-title { padding: 14px 16px; font-size: 20.4px; font-weight: 500; color: rgba(255,255,255,0.5); border-bottom: 0.5px solid rgba(255,255,255,0.07); }
 .chapter-list { flex: 1; overflow-y: auto; }
 .chapter-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; border-bottom: 0.5px solid rgba(255,255,255,0.04); transition: background 0.15s; }
