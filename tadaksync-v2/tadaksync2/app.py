@@ -59,8 +59,7 @@ def _page_url(web_dir: Path, page: str) -> str:
     target = web_dir / page
     if not target.is_file():
         raise FileNotFoundError(f"UI not found: {target}")
-    if getattr(sys, "frozen", False):
-        return target.as_uri()
+    # file:// + 한글(_MEIPASS 포함) 경로는 WebView2에서 실패할 수 있어 항상 로컬 HTTP 사용.
     q = "dev=1" if is_dev_mode() else ""
     return _local_http_url(web_dir, page, q)
 

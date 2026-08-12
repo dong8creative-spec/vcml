@@ -5,4 +5,4 @@
 
 APP_NAME = "타닥싱크 2"
 APP_NAME_EN = "TadakSync 2"
-VERSION = "2.16.0"
+VERSION = "2.16.1"
