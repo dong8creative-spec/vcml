@@ -150,19 +150,8 @@
           <p class="social-choice-desc"><strong id="su-type-label-2">수강생</strong>(으)로 이메일 가입합니다. 회원정보를 입력해 주세요.</p>
         <div class="form-field">
           <label>이메일</label>
-          <div class="code-row">
-            <input type="email" id="sru-email" placeholder="example@email.com" />
-            <button type="button" class="btn-send-code" id="sru-send" onclick="sruSendCode()">인증 발송</button>
-          </div>
+          <input type="email" id="sru-email" placeholder="example@email.com" />
         </div>
-        <div id="sru-code-field" class="form-field" hidden>
-          <label>인증 코드 <span class="hint" id="sru-code-timer"></span></label>
-          <div class="code-row">
-            <input type="text" id="sru-code" maxlength="6" inputmode="numeric" placeholder="6자리 숫자 입력" />
-            <button type="button" class="btn-send-code verify" id="sru-verify" onclick="sruVerifyCode()">확인</button>
-          </div>
-        </div>
-        <div id="sru-verified" class="verified-msg" hidden><i class="ti ti-circle-check"></i> 이메일 인증 완료</div>
         <div class="form-field">
           <label>비밀번호</label>
           <div class="pw-wrap">
@@ -544,54 +533,6 @@
       e.target.value = d.length < 4 ? d : d.length < 8 ? `${d.slice(0,3)}-${d.slice(3)}` : `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`
     })
 
-    let sruEmailVerified = false
-    let sruTimer = null
-    async function sruSendCode() {
-      const email = document.getElementById('sru-email').value.trim()
-      if (!email) { toast('이메일을 입력해주세요.', 'error'); return }
-      const btn = document.getElementById('sru-send')
-      btn.disabled = true; btn.textContent = '발송 중...'
-      try {
-        await API.post('/auth/send-code', { email })
-        document.getElementById('sru-code-field').hidden = false
-        toast('인증 코드를 발송했습니다.', 'success')
-        let left = 180
-        const timerEl = document.getElementById('sru-code-timer')
-        clearInterval(sruTimer)
-        sruTimer = setInterval(() => {
-          left--
-          if (timerEl) timerEl.textContent = `${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`
-          if (left <= 0) clearInterval(sruTimer)
-        }, 1000)
-        btn.textContent = '재발송'
-      } catch (e) {
-        if (e.status === 409) {
-          // 이미 가입된 이메일 → 로그인 모드로 전환하고 이메일 자동 입력
-          toast('이미 가입된 이메일입니다. 로그인해 주세요.', 'error')
-          showAuthMode('login')
-          const lf = document.getElementById('lf-email')
-          if (lf) { lf.value = email; document.getElementById('lf-pw')?.focus() }
-        } else {
-          toast(e.message || '발송 실패', 'error')
-        }
-        btn.textContent = '인증 발송'
-      } finally { btn.disabled = false }
-    }
-    async function sruVerifyCode() {
-      const email = document.getElementById('sru-email').value.trim()
-      const code = document.getElementById('sru-code').value.trim()
-      if (!code) { toast('인증 코드를 입력해주세요.', 'error'); return }
-      try {
-        await API.post('/auth/verify-code', { email, code })
-        sruEmailVerified = true
-        clearInterval(sruTimer)
-        document.getElementById('sru-verified').hidden = false
-        document.getElementById('sru-code-field').hidden = true
-        toast('이메일 인증이 완료되었습니다.', 'success')
-      } catch (e) {
-        toast(e.message || '인증 실패', 'error')
-      }
-    }
     async function sruRegister() {
       const mt = selectedMemberType()
       if (!mt) { toast('가입 유형을 선택해주세요.', 'error'); goSignupStep(1); return }
@@ -602,8 +543,8 @@
       if (consent.signup_method && consent.signup_method !== 'email') {
         toast('Google 가입을 선택하셨습니다. Google로 가입하기 버튼을 이용해주세요.', 'error'); goSignupStep(4); return
       }
-      if (!sruEmailVerified) { toast('이메일 인증을 완료해주세요.', 'error'); return }
       const email = document.getElementById('sru-email').value.trim()
+      if (!email) { toast('이메일을 입력해주세요.', 'error'); return }
       const pw = document.getElementById('sru-pw').value
       const pw2 = document.getElementById('sru-pw2').value
       const name = document.getElementById('sru-name').value.trim()
@@ -629,8 +570,6 @@
         btn.disabled = false; btn.textContent = '가입 완료'
       }
     }
-    window.sruSendCode = sruSendCode
-    window.sruVerifyCode = sruVerifyCode
     window.sruRegister = sruRegister
 
     // 통합 로그인 흐름의 이메일/비밀번호 로그인
