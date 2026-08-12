@@ -77,6 +77,8 @@
 
   function validateReviewConsent(idSuffix, rating) {
     if (Number(rating) !== 5) return true
+    const wrap = document.getElementById('reward-consent-wrap-' + idSuffix)
+    if (!wrap) return true // 안내 블록 자체가 없는 경우(이미 혜택이 고정된 후기의 내용만 수정) — 재동의 불필요
     const cb = document.getElementById('reward-consent-' + idSuffix)
     return !!(cb && cb.checked)
   }

@@ -2105,8 +2105,8 @@ function isLiveReviewOpen(course, at = new Date()) {
   return at.getTime() <= liveEndsAt + LIVE_REVIEW_WINDOW_MS
 }
 
-/** 별점 5점 + 120자 이상 실제 수강후기 작성 시 교육자료(강의와 별개의 다운로드 자료) 언락 */
-const MATERIALS_UNLOCK_MIN_LENGTH = 120
+/** 별점 5점 + 100자 이상 실제 수강후기 작성 시 교육자료(강의와 별개의 다운로드 자료) 언락 */
+const MATERIALS_UNLOCK_MIN_LENGTH = 100
 
 function isMaterialsUnlocked(review) {
   return !!review && Number(review.rating) === 5 && String(review.content || '').trim().length >= MATERIALS_UNLOCK_MIN_LENGTH
@@ -4149,7 +4149,11 @@ const db = {
     const numRating = Math.max(1, Math.min(5, parseInt(rating, 10) || 0))
 
     if (existing && await db.isCourseReviewRewardLocked(userId, courseId, existing)) {
-      throw new Error('5점 후기 혜택을 받은 후기는 수정할 수 없습니다.')
+      // 혜택(쿠폰 등)을 받은 후에는 별점 변경으로 혜택을 다시 타는 걸 막기 위해 별점만 고정하고,
+      // 후기 내용(글자 수 보완 등)은 자유롭게 수정할 수 있게 해준다.
+      if (numRating !== existing.rating) {
+        throw new Error('혜택을 받은 후기는 별점을 변경할 수 없습니다. 후기 내용은 수정할 수 있습니다.')
+      }
     }
 
     const ts = now()

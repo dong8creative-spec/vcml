@@ -350,7 +350,10 @@ router.post('/reviews', authMiddleware, async (req, res) => {
   const { course_id, rating, content } = req.body
   if (!course_id || !rating) return res.status(400).json({ error: '필수 항목 누락' })
   const numRating = Math.max(1, Math.min(5, parseInt(rating, 10) || 0))
-  if (numRating === 5 && !req.body.consent_review_reward_terms) {
+  const existingReview = await db.getReviewByUserAndCourse(req.user.id, course_id)
+  const alreadyRewardLocked = existingReview && await db.isCourseReviewRewardLocked(req.user.id, course_id, existingReview)
+  // 이미 혜택을 받아 별점이 고정된 후기는 재동의 없이 내용만 수정 가능
+  if (numRating === 5 && !alreadyRewardLocked && !req.body.consent_review_reward_terms) {
     return res.status(400).json({ error: '별점 5점 후기 혜택 안내에 동의해주세요.' })
   }
   if (!await db.isEnrolled(req.user.id, course_id)) return res.status(403).json({ error: '수강생만 후기를 작성할 수 있습니다.' })
