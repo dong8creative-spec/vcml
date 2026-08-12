@@ -144,9 +144,16 @@
           origin: window.location.origin,
         },
         events: {
+          onReady: (e) => {
+            try { e.target.unloadModule('captions') } catch (_) {}
+          },
+          onApiChange: (e) => {
+            try { e.target.unloadModule('captions') } catch (_) {}
+          },
           onStateChange: (e) => {
             showPauseShield(!YT_PLAYING_STATES.has(e.data))
             updatePlayPauseIcon(e.data === 1)
+            if (e.data === 1) { try { e.target.unloadModule('captions') } catch (_) {} }
           },
         },
       })
@@ -222,8 +229,18 @@
       const zone = document.getElementById('timecode-hover-zone')
       const panel = document.getElementById('timecode-panel')
       if (!zone || !panel) return
-      zone.addEventListener('mouseenter', () => panel.classList.add('is-revealed'))
-      panel.addEventListener('mouseleave', () => panel.classList.remove('is-revealed'))
+      const list = panel.querySelector('.timecode-list')
+      zone.addEventListener('mouseenter', () => {
+        panel.classList.add('is-revealed')
+        // 패널이 뜨면 hover-zone이 겹치는 영역의 휠/클릭을 가로채지 않도록 완전히 비활성화
+        zone.style.pointerEvents = 'none'
+      })
+      panel.addEventListener('mouseleave', () => {
+        panel.classList.remove('is-revealed')
+        zone.style.pointerEvents = ''
+      })
+      // 혹시 마우스가 hover-zone 위에 남아있는 순간에 휠을 굴려도 목록이 스크롤되도록 안전장치
+      zone.addEventListener('wheel', (e) => { list?.scrollBy({ top: e.deltaY }) }, { passive: true })
     }
 
     function seekTo(seconds) {
