@@ -1,0 +1,78 @@
+@import url("app.css");
+
+html, body {
+  height: auto;
+  min-height: 100%;
+  overflow: auto;
+  user-select: text;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.editor-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 18px 18px 28px;
+}
+
+.editor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.editor-head h1 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.editor-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.editor-section:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.editor-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+}
+
+.editor-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+#kw-emphasis-size {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}

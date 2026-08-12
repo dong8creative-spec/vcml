@@ -682,7 +682,7 @@ router.patch('/courses/:id', async (req, res) => {
     'title', 'description', 'category', 'price', 'sale_price', 'is_published',
     'course_type', 'delivery_mode', 'live_schedule', 'live_starts_at', 'live_ends_at', 'meet_code', 'live_status',
     'live_curriculum_text', 'live_curriculum_image', 'detail_intro_text', 'detail_intro_image', 'detail_intro_images', 'live_chat_url',
-    'live_replay_url', 'live_material_url', 'program_id',
+    'live_replay_url', 'live_material_url', 'materials_url', 'program_id',
     'badge', 'thumbnail_icon', 'thumb_style', 'thumbnail_url', 'hero_gallery', 'sort_order', 'is_offline', 'enrollment_limit', 'coupon_allowed',
     'checkout_provider', 'store_checkout_urls', 'checkout_starts_at', 'checkout_ends_at',
     'learning_outcomes', 'target_audience', 'instructor_name', 'instructor_role', 'instructor_bio', 'instructor_avatar',
@@ -712,7 +712,7 @@ router.patch('/courses/:id', async (req, res) => {
       update.hero_gallery = cleaned.length ? cleaned : null
     }
   }
-  for (const key of ['live_chat_url', 'live_replay_url', 'live_material_url']) {
+  for (const key of ['live_chat_url', 'live_replay_url', 'live_material_url', 'materials_url']) {
     if (update[key] === undefined) continue
     if (update[key] === null || update[key] === '') {
       update[key] = null
@@ -720,7 +720,7 @@ router.patch('/courses/:id', async (req, res) => {
     }
     const url = String(update[key]).trim()
     if (!/^https?:\/\/.+/i.test(url)) {
-      const label = key === 'live_chat_url' ? '단톡방' : key === 'live_replay_url' ? '다시보기' : '자료 다운로드'
+      const label = key === 'live_chat_url' ? '단톡방' : key === 'live_replay_url' ? '다시보기' : key === 'live_material_url' ? '자료 다운로드' : '교육자료'
       return res.status(400).json({ error: `${label} 링크는 http:// 또는 https:// 로 시작해야 합니다.` })
     }
     update[key] = url.slice(0, 500)
@@ -733,7 +733,7 @@ router.patch('/courses/:id', async (req, res) => {
       return res.status(400).json({ error: '상세 소개 이미지는 배열 형식이어야 합니다.' })
     } else {
       const cleaned = []
-      for (const item of update.detail_intro_images.slice(0, 10)) {
+      for (const item of update.detail_intro_images.slice(0, 30)) {
         const url = String(item || '').trim()
         if (!url) continue
         if (url.startsWith('data:') && url.length > MAX_DETAIL_INTRO_IMAGE_LEN) {
@@ -855,8 +855,9 @@ router.patch('/courses/:id', async (req, res) => {
 router.post('/courses', async (req, res) => {
   const {
     title, description, category, price, sale_price, thumbnail_icon, thumb_style,
-    badge, sort_order, is_published, checkout_provider, store_checkout_urls, coupon_allowed,
-    checkout_starts_at, checkout_ends_at,
+    badge, sort_order, is_published, checkout_provider, store_checkout_urls, store_checkout_url,
+    coupon_allowed, checkout_starts_at, checkout_ends_at, enrollment_limit, detail_intro_text,
+    detail_intro_images, thumbnail_url,
     live_starts_at, live_ends_at, live_schedule, meet_code,
     live_replay_url, live_material_url, live_chat_url, program_id, course_type,
     delivery_mode,
@@ -869,8 +870,11 @@ router.post('/courses', async (req, res) => {
   const provider = checkout_provider === 'site'
     ? 'site'
     : (checkout_provider === 'smartstore' || (!checkout_provider && sale > 0) ? 'smartstore' : 'site')
+  const resolvedStoreUrls = store_checkout_urls || (store_checkout_url
+    ? { none: String(store_checkout_url).trim() }
+    : {})
   if (provider === 'smartstore') {
-    const urls = db.normalizeStoreCheckoutUrls(store_checkout_urls || {})
+    const urls = db.normalizeStoreCheckoutUrls(resolvedStoreUrls)
     if (!urls.none && published) {
       return res.status(400).json({ error: '스마트스토어 결제 시 정가(쿠폰 없음) 링크는 필수입니다.' })
     }
@@ -897,10 +901,14 @@ router.post('/courses', async (req, res) => {
       sort_order,
       is_published: published,
       checkout_provider: provider,
-      store_checkout_urls,
+      store_checkout_urls: resolvedStoreUrls,
       coupon_allowed,
       checkout_starts_at,
       checkout_ends_at,
+      enrollment_limit,
+      detail_intro_text,
+      detail_intro_images,
+      thumbnail_url,
       live_starts_at: mode === 'live_first' ? live_starts_at : null,
       live_ends_at: mode === 'live_first' ? live_ends_at : null,
       live_schedule: mode === 'live_first' ? live_schedule : null,
@@ -938,6 +946,52 @@ router.post('/courses', async (req, res) => {
     res.json({ success: true, course })
   } catch (e) {
     res.status(500).json({ error: e.message })
+  }
+})
+
+// ── 선물코드 이벤트 관리 ──
+router.post('/gift-codes/generate', async (req, res) => {
+  try {
+    const { course_id, count, duration_days, note } = req.body
+    res.json(await db.generateAccessCodes({ course_id, count, duration_days, note }))
+  } catch (e) {
+    res.status(400).json({ error: e.message })
+  }
+})
+
+router.get('/gift-codes', async (req, res) => {
+  try {
+    const { course_id, status, batch_id } = req.query
+    res.json(await db.getAccessCodes({ course_id, status, batch_id }))
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+router.delete('/gift-codes/:id', async (req, res) => {
+  try {
+    await db.deleteAccessCode(req.params.id)
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// 신규가입 자동발급 선물코드 이벤트 설정 (강의 지정 + 정원)
+router.get('/gift-event', async (req, res) => {
+  try {
+    res.json(await db.getGiftEventConfig())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+router.patch('/gift-event', async (req, res) => {
+  try {
+    const { course_id, quota, duration_days, active } = req.body
+    res.json(await db.setGiftEventConfig({ course_id, quota, duration_days, active }))
+  } catch (e) {
+    res.status(400).json({ error: e.message })
   }
 })
 
@@ -1006,7 +1060,7 @@ const MAX_DETAIL_INTRO_IMAGE_LEN = 950000
 function normalizeDetailIntroImages(course) {
   if (!course) return []
   if (Array.isArray(course.detail_intro_images) && course.detail_intro_images.length) {
-    return course.detail_intro_images.filter(Boolean).slice(0, 10)
+    return course.detail_intro_images.filter(Boolean).slice(0, 30)
   }
   if (course.detail_intro_image) return [course.detail_intro_image]
   return []

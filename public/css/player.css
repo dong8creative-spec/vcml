@@ -22,7 +22,49 @@ a { text-decoration: none; color: inherit; }
 
 .player-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: #0d0d0d; }
 
-.video-area { background: #000; }
+.video-area { background: #000; position: relative; }
+
+.video-watermark-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
+.video-watermark-text {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  user-select: none;
+}
+
+#prtsc-blocker {
+  position: fixed;
+  inset: 0;
+  background: #d92b2b;
+  z-index: 99999;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  text-align: center;
+  gap: 8px;
+}
+#prtsc-blocker.is-visible { display: flex; }
+#prtsc-blocker .prtsc-title { font-size: 40px; font-weight: 900; }
+#prtsc-blocker .prtsc-sub { font-size: 16px; opacity: 0.9; }
+
+.video-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  gap: 14px;
+  padding: 40px 20px;
+  text-align: center;
+  background: #000;
+}
+.video-locked .vl-title { font-size: 20px; font-weight: 700; color: #ff6b6b; }
+.video-locked .vl-note { font-size: 14px; color: rgba(255, 255, 255, 0.55); line-height: 1.6; max-width: 360px; }
 .video-embed {
   display: block;
   width: 100%;

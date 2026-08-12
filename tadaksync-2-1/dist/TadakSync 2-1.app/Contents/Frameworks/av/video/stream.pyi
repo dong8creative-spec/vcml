@@ -1,0 +1,1 @@
+../../../Resources/av/video/stream.pyi

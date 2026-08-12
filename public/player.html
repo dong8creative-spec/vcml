@@ -41,6 +41,11 @@
     </aside>
   </div>
 
+  <div id="prtsc-blocker">
+    <div class="prtsc-title">⚠️ 보안 경고 ⚠️</div>
+    <div class="prtsc-sub">무단 화면 캡처가 감지되어 영상 재생을 중단합니다.</div>
+  </div>
+
   <script src="/js/api.js?v=3"></script>
   <script src="/js/site-layout.js"></script>
   <script src="/js/site-header.js?v=13"></script>
@@ -59,19 +64,34 @@
       return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
     }
 
+    function buildYoutubeEmbedUrl(vid) {
+      const p = new URLSearchParams({
+        rel: '0',
+        modestbranding: '1',
+        fs: '0',
+        playsinline: '1',
+        disablekb: '1',
+        iv_load_policy: '3',
+        cc_load_policy: '0',
+        controls: '1',
+        origin: window.location.origin,
+      })
+      return `https://www.youtube-nocookie.com/embed/${vid}?${p.toString()}`
+    }
+
     function toEmbedUrl(url) {
       if (!url) return null
       try {
         const u = new URL(url)
         if (u.hostname === 'youtu.be') {
           const id = u.pathname.replace(/^\//, '').split('/')[0]
-          return id ? `https://www.youtube.com/embed/${id}` : null
+          return id ? buildYoutubeEmbedUrl(id) : null
         }
         if (u.hostname.includes('youtube.com')) {
           const v = u.searchParams.get('v')
-          if (v) return `https://www.youtube.com/embed/${v}`
+          if (v) return buildYoutubeEmbedUrl(v)
           const m = u.pathname.match(/\/(embed|shorts|live)\/([^/?]+)/)
-          if (m) return `https://www.youtube.com/embed/${m[2]}`
+          if (m) return buildYoutubeEmbedUrl(m[2])
         }
         if (u.hostname.includes('vimeo.com')) {
           const parts = u.pathname.split('/').filter(Boolean)
@@ -199,7 +219,7 @@
             </div>`
 
       document.getElementById('player-main').innerHTML = `
-        <div class="video-area">${videoHtml}</div>
+        <div class="video-area" id="video-area">${videoHtml}${embed ? '<div class="video-watermark-layer" id="video-watermark-layer"></div>' : ''}</div>
         <div class="chapter-info">
           <div class="ci-header">
             <h2>${esc(ch.title)}</h2>
@@ -213,7 +233,89 @@
             ${ch.next_id ? `<button onclick="loadChapter('${esc(ch.next_id)}')" class="ci-btn next"><i class="ti ti-arrow-right"></i> 다음 강의</button>` : ''}
           </div>
         </div>`
+
+      stopWatermark()
+      if (embed) {
+        armVideoGuards()
+        startWatermark()
+      }
     }
+
+    // ── 영상 보호: 워터마크 · 우클릭/드래그 차단 · 프린트스크린 감지 ──
+
+    let clientIP = 'IP 확인 중'
+    fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => { clientIP = d.ip }).catch(() => {})
+
+    let watermarkTimer = null
+    function watermarkText() {
+      const u = API.user() || {}
+      return `${u.name || ''} / ${u.email || ''} / ${clientIP} / 무단 유출 금지`
+    }
+    function animateWatermarkEl(el) {
+      const area = document.getElementById('video-area')
+      if (!area) return
+      let x = Math.random() * Math.max(1, area.clientWidth - 260)
+      let y = Math.random() * Math.max(1, area.clientHeight - 30)
+      let dx = 0.6, dy = 0.6
+      function step() {
+        if (!document.body.contains(el)) return
+        const w = area.clientWidth, h = area.clientHeight
+        x += dx; y += dy
+        if (x <= 0 || x + el.offsetWidth >= w) dx = -dx
+        if (y <= 0 || y + el.offsetHeight >= h) dy = -dy
+        el.style.left = x + 'px'; el.style.top = y + 'px'
+        requestAnimationFrame(step)
+      }
+      step()
+    }
+    function startWatermark() {
+      const layer = document.getElementById('video-watermark-layer')
+      if (!layer) return
+      const text = watermarkText()
+      for (let i = 0; i < 2; i++) {
+        const el = document.createElement('div')
+        el.className = 'video-watermark-text'
+        el.textContent = text
+        layer.appendChild(el)
+        animateWatermarkEl(el)
+      }
+    }
+    function stopWatermark() {
+      const layer = document.getElementById('video-watermark-layer')
+      if (layer) layer.innerHTML = ''
+    }
+
+    function armVideoGuards() {
+      const area = document.getElementById('video-area')
+      if (!area) return
+      area.addEventListener('contextmenu', (e) => e.preventDefault())
+      area.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault() })
+      area.addEventListener('auxclick', (e) => e.preventDefault())
+      area.addEventListener('dragstart', (e) => e.preventDefault())
+    }
+
+    function lockCurrentVideo() {
+      const area = document.getElementById('video-area')
+      if (!area) return
+      stopWatermark()
+      const iframe = area.querySelector('.video-embed')
+      if (iframe) iframe.src = 'about:blank'
+      area.innerHTML = `
+        <div class="video-locked">
+          <div class="vl-title">⚠ 보안 정책 위반으로 재생이 중단되었습니다</div>
+          <div class="vl-note">화면 캡처가 감지되어 이 강의 영상 재생이 중단되었습니다.<br>다시 시청하시려면 강의 목록에서 챕터를 다시 선택해주세요.</div>
+        </div>`
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'PrintScreen') return
+      const blocker = document.getElementById('prtsc-blocker')
+      blocker?.classList.add('is-visible')
+      setTimeout(() => {
+        blocker?.classList.remove('is-visible')
+        lockCurrentVideo()
+      }, 1000)
+    })
 
     load()
   </script>

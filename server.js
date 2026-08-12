@@ -284,9 +284,11 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }))
 
 app.use('/api/auth',     require('./routes/auth'))
+app.use('/api/v2/courses', require('./routes/courses-v2'))
 app.use('/api/courses',  require('./routes/courses'))
 app.use('/api/orders',   require('./routes/orders'))
 app.use('/api/my',       require('./routes/my'))
+app.use('/api/admin/v2/courses', require('./routes/admin-courses-v2'))
 app.use('/api/admin',    require('./routes/admin'))
 app.use('/api/editor',   require('./routes/editor'))
 app.use('/api/projects', require('./routes/project'))

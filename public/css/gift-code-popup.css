@@ -1,0 +1,120 @@
+.gift-code-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: giftCodeFadeIn 0.2s ease;
+}
+
+@keyframes giftCodeFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.gift-code-popup {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: linear-gradient(165deg, var(--bg-soft) 0%, #fff 42%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+  animation: giftCodeSlideUp 0.25s ease;
+}
+
+@keyframes giftCodeSlideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.gift-code-popup-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  border: none;
+  background: none;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.gift-code-popup-close:hover { color: var(--text-primary); }
+
+.gift-code-popup h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin: 0 0 12px;
+  padding-right: 24px;
+}
+
+.gift-code-popup-body {
+  font-size: 14.5px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0 0 16px;
+}
+
+.gift-code-popup-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 20px;
+  letter-spacing: 0.3em;
+  text-align: center;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.gift-code-popup-error {
+  color: #e0453c;
+  font-size: 13px;
+  min-height: 18px;
+  margin-bottom: 8px;
+}
+
+.gift-code-popup-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.gift-code-popup-btn {
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: 0.15s;
+}
+
+.gift-code-popup-btn.primary {
+  background: var(--text-primary);
+  color: #fff;
+}
+
+.gift-code-popup-btn.primary:hover { background: var(--text-secondary); }
+.gift-code-popup-btn.primary:disabled { opacity: 0.6; cursor: default; }
+
+.gift-code-popup-btn.secondary {
+  background: #fff;
+  color: #555;
+  border: 1px solid #ddd;
+}
+
+.gift-code-popup-btn.secondary:hover { background: #f5f5f5; }

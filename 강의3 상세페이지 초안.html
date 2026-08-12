@@ -1,0 +1,3931 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>PLAN 과정 상세페이지</title>
+
+<style>
+
+:root{
+  --accent:#7857FF;
+  --accent-light:#F3EFFF;
+  --black:#111111;
+  --white:#ffffff;
+
+  --lime:#C8FF32;
+  --blue:#3157FF;
+  --purple:#7857FF;
+  --yellow:#FFD84A;
+
+  --light:#F4F4F1;
+  --blue-light:#EEF1FF;
+  --lime-light:#F4FFD7;
+  --purple-light:#F3EFFF;
+
+  --gray:#666666;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:#e9e9e9;
+
+  font-family:
+    Pretendard,
+    "Apple SD Gothic Neo",
+    "Noto Sans KR",
+    Arial,
+    sans-serif;
+
+  color:var(--black);
+}
+
+
+/* =========================
+   TOOLBAR
+========================= */
+
+.toolbar{
+  position:sticky;
+  top:0;
+  z-index:9999;
+
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:8px;
+
+  padding:12px;
+
+  background:var(--black);
+}
+
+.toolbar button{
+  border:1px solid #555;
+  background:#fff;
+  color:#111;
+
+  padding:11px 18px;
+
+  font-size:14px;
+  font-weight:800;
+
+  cursor:pointer;
+}
+
+.toolbar .save{
+  background:var(--accent);
+}
+
+.toolbar .reset{
+  background:#222;
+  color:#fff;
+}
+
+.toolbar .fmt-accent{
+  background:var(--accent);
+  border-color:var(--accent);
+}
+
+.format-toolbar{
+  display:none;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px 12px;
+  width:100%;
+  max-width:860px;
+  margin-top:6px;
+  padding:8px 10px;
+  background:#1a1a1a;
+  border:1px solid #444;
+  border-radius:6px;
+}
+
+body.edit-mode .format-toolbar{
+  display:flex;
+}
+
+.format-toolbar button{
+  padding:7px 12px;
+  font-size:12px;
+  font-weight:800;
+  border:1px solid #555;
+  border-radius:4px;
+  background:#333;
+  color:#fff;
+  cursor:pointer;
+}
+
+.format-toolbar button:hover{
+  background:#444;
+}
+
+.format-toolbar .fmt-hint{
+  font-size:11px;
+  color:#888;
+  font-weight:600;
+}
+
+
+.save-menu{
+  position:relative;
+}
+
+.save-panel{
+  display:none;
+  position:absolute;
+  top:calc(100% + 8px);
+  left:50%;
+  transform:translateX(-50%);
+  width:min(420px, 92vw);
+  max-height:360px;
+  overflow-y:auto;
+  padding:10px;
+  background:#fff;
+  border:1px solid #333;
+  border-radius:8px;
+  box-shadow:0 12px 32px rgba(0,0,0,.2);
+  z-index:10000;
+}
+
+.save-panel.open{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+}
+
+.save-panel-title{
+  grid-column:1 / -1;
+  padding:4px 6px 8px;
+  font-size:11px;
+  font-weight:900;
+  color:#666;
+  border-bottom:1px solid #eee;
+  margin-bottom:2px;
+}
+
+.save-panel button{
+  width:100%;
+  padding:8px 10px;
+  font-size:12px;
+  font-weight:700;
+  text-align:left;
+  background:#f7f7f7;
+  color:#111;
+  border:1px solid #ddd;
+  border-radius:5px;
+  cursor:pointer;
+}
+
+.save-panel button:hover{
+  background:#111;
+  color:#fff;
+  border-color:#111;
+}
+
+.save-panel button.save-all-btn{
+  grid-column:1 / -1;
+  margin-top:4px;
+  text-align:center;
+  background:#111;
+  color:#fff;
+  border-color:#111;
+}
+
+.save-panel button.save-all-btn:hover{
+  background:#333;
+}
+
+.export-block{
+  width:100%;
+}
+
+.export-shot{
+  position:fixed;
+  left:-10000px;
+  top:0;
+  width:860px;
+  background:#fff;
+  box-sizing:border-box;
+}
+
+.export-shot .media-drop-zone:not(.has-image),
+.export-shot .media-remove{
+  display:none !important;
+}
+
+.page-section.drag-over-block{
+  outline:3px dashed var(--accent);
+  outline-offset:-3px;
+}
+
+/* 이미지 슬롯 */
+.media-slot:not(.section-media),
+.media-drop-zone:not(.section-media){
+  aspect-ratio:9 / 16;
+  width:100%;
+  position:relative;
+  overflow:hidden;
+}
+
+.media-slot.section-media,
+.media-drop-zone.section-media{
+  aspect-ratio:auto;
+  width:100%;
+  min-height:120px;
+  height:auto;
+  position:relative;
+  overflow:visible;
+}
+
+.media-drop-zone{
+  display:none;
+  align-items:flex-start;
+  justify-content:flex-start;
+  padding:18px;
+  border:2px dashed #999;
+  background:var(--light);
+  color:#666;
+  font-size:17px;
+  font-weight:800;
+  line-height:1.5;
+  text-align:left;
+  cursor:pointer;
+  transition:border-color .15s, background .15s, color .15s;
+}
+
+body.edit-mode .media-drop-zone:not(.has-image){
+  display:flex;
+}
+
+.media-drop-zone.drag-over{
+  border-color:var(--accent);
+  background:var(--accent-light);
+  color:var(--accent);
+}
+
+.media-slot:not(.section-media){
+  border-bottom:1px solid #111;
+  background:var(--light);
+}
+
+.media-slot.section-media{
+  margin-top:36px;
+  border:1px solid #111;
+  background:#fff;
+  box-shadow:6px 6px 0 rgba(0,0,0,.03);
+}
+
+.media-slot:not(.section-media) img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  pointer-events:none;
+}
+
+.media-slot.section-media img{
+  width:100%;
+  height:auto;
+  display:block;
+  pointer-events:none;
+}
+
+.media-slot .media-remove{
+  display:none;
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:32px;
+  height:32px;
+  border:none;
+  border-radius:50%;
+  background:rgba(0,0,0,.65);
+  color:#fff;
+  font-size:20px;
+  line-height:1;
+  cursor:pointer;
+  z-index:2;
+}
+
+body.edit-mode .media-slot .media-remove{
+  display:block;
+}
+
+.hero-media{
+  margin-top:42px;
+  max-width:360px;
+}
+
+.ba-media,
+.compare-media{
+  margin-top:20px;
+}
+
+.section-media{
+  margin:36px 0 0;
+  max-width:100%;
+}
+
+.result-grid{
+  margin-top:42px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+
+.result{
+  border:2px solid #111;
+  background:#fff;
+}
+
+.result-image{
+  min-height:0;
+  padding:0;
+  border-bottom:1px solid #111;
+  background:var(--light);
+}
+
+.result:nth-child(2) .result-image{
+  background:var(--accent-light);
+}
+
+.result:nth-child(3) .result-image{
+  background:var(--accent-light);
+  opacity:.9;
+}
+
+.result-info{
+  padding:22px;
+}
+
+.result-type{
+  display:inline-block;
+  padding:5px 8px;
+  background:#111;
+  color:#fff;
+  font-size:17px;
+  font-weight:900;
+}
+
+.result-title{
+  margin-top:14px;
+  font-size:25px;
+  line-height:1.35;
+  font-weight:950;
+}
+
+.showcase-grid{
+  margin-top:42px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.showcase-grid .showcase-card{
+  border:2px solid #111;
+  padding:28px;
+  background:#fff;
+}
+
+.showcase-grid .showcase-card:first-child{
+  background:var(--light);
+}
+
+.showcase-grid .showcase-card:last-child{
+  background:var(--accent-light);
+}
+
+.showcase-label{
+  font-size:18px;
+  font-weight:950;
+}
+
+.showcase-title{
+  margin-top:14px;
+  font-size:34px;
+  line-height:1.3;
+  font-weight:950;
+}
+
+
+/* =========================
+   CAPTURE
+========================= */
+
+#capture{
+  width:860px;
+  margin:0 auto 60px;
+
+  background:#fff;
+
+  text-align:left;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  line-break:strict;
+}
+
+
+/* =========================
+   COMMON
+========================= */
+
+.section{
+  padding:90px 54px;
+
+  border-bottom:1px solid #111;
+
+  background:#fff;
+}
+
+.section.soft{
+  background:var(--light);
+}
+
+.section.blue-soft,
+.section.lime-soft{
+  background:var(--accent-light);
+}
+
+.section.purple-soft{
+  background:var(--accent-light);
+}
+
+.eyebrow{
+  display:inline-block;
+
+  margin-bottom:22px;
+
+  padding:7px 11px;
+
+  background:#111;
+  color:white;
+
+  font-size:18px;
+  line-height:1.1;
+
+  font-weight:900;
+}
+
+h1{
+  margin:0;
+
+  font-size:72px;
+  line-height:1.08;
+
+  letter-spacing:-4px;
+
+  font-weight:950;
+
+  word-break:keep-all;
+}
+
+h2{
+  margin:0;
+
+  font-size:56px;
+  line-height:1.16;
+
+  letter-spacing:-3px;
+
+  font-weight:950;
+
+  word-break:keep-all;
+}
+
+.body{
+  margin-top:28px;
+
+  font-size:25px;
+  line-height:1.65;
+
+  letter-spacing:-.7px;
+
+  color:#222;
+
+  word-break:keep-all;
+}
+
+.body strong{font-weight:950;}
+
+.small{
+  margin-top:20px;
+
+  font-size:18px;
+  line-height:1.6;
+
+  color:#555;
+}
+
+
+/* =========================
+   HERO
+========================= */
+
+.hero{
+  padding:110px 54px 100px;
+  border-bottom:2px solid #111;
+  background:var(--accent);
+  color:white;
+}
+
+.hero .eyebrow{
+  background:#111;
+  color:white;
+}
+
+.hero .sub{
+  margin-top:34px;
+
+  max-width:720px;
+
+  font-size:29px;
+  line-height:1.5;
+
+  letter-spacing:-1px;
+}
+
+.hero .sub strong{
+  display:inline;
+
+  background:var(--accent);
+  color:#111;
+
+  padding:2px 6px;
+}
+
+.hero .meta{
+  display:inline-block;
+
+  margin-top:42px;
+
+  padding:12px 15px;
+
+  border:2px solid white;
+
+  background:white;
+  color:#111;
+
+  font-size:19px;
+  font-weight:900;
+}
+
+
+/* =========================
+   PROBLEM
+========================= */
+
+.problem-list{
+  margin-top:42px;
+
+  border-top:2px solid #111;
+}
+
+.problem-row{
+  display:grid;
+
+  grid-template-columns:70px 1fr;
+
+  min-height:95px;
+
+  border-bottom:1px solid #111;
+}
+
+.problem-no{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  border-right:1px solid #111;
+
+  background:var(--accent);
+
+  font-size:22px;
+
+  font-weight:950;
+}
+
+.problem-text{
+  display:flex;
+  align-items:center;
+
+  padding:18px 22px;
+
+  font-size:24px;
+  line-height:1.45;
+
+  font-weight:750;
+}
+
+
+/* =========================
+   PLAN LOOP
+========================= */
+
+.loop{
+  margin-top:42px;
+
+  border:2px solid #111;
+
+  background:white;
+}
+
+.loop-row{
+  display:grid;
+
+  grid-template-columns:115px 1fr;
+
+  min-height:115px;
+
+  border-bottom:1px solid #111;
+}
+
+.loop-row:last-child{
+  border-bottom:none;
+}
+
+.loop-number{
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  border-right:1px solid #111;
+
+  background:var(--accent);
+
+  color:white;
+
+  font-size:24px;
+
+  font-weight:950;
+}
+
+.loop-content{
+  padding:22px 24px;
+}
+
+.loop-title{
+  font-size:29px;
+
+  font-weight:950;
+}
+
+.loop-desc{
+  margin-top:8px;
+
+  font-size:20px;
+  line-height:1.55;
+
+  color:#444;
+}
+
+
+/* =========================
+   TOPIC
+========================= */
+
+.topic-grid{
+  margin-top:42px;
+
+  display:grid;
+
+  grid-template-columns:repeat(2,1fr);
+
+  gap:12px;
+}
+
+.topic-card{
+  min-height:220px;
+
+  border:2px solid #111;
+
+  padding:26px;
+
+  background:white;
+}
+
+.topic-card:nth-child(2){
+  background:var(--accent-light);
+}
+
+.topic-card:nth-child(3){
+  background:var(--accent-light);
+}
+
+.topic-card:nth-child(4){
+  background:var(--accent-light);
+}
+
+.topic-label{
+  font-size:18px;
+
+  font-weight:950;
+}
+
+.topic-title{
+  margin-top:16px;
+
+  font-size:29px;
+  line-height:1.35;
+
+  font-weight:950;
+}
+
+.topic-desc{
+  margin-top:14px;
+
+  font-size:19px;
+  line-height:1.55;
+
+  color:#444;
+}
+
+
+/* =========================
+   CONTENT ANGLE
+========================= */
+
+.angle{
+  margin-top:42px;
+
+  border-top:2px solid #111;
+}
+
+.angle-row{
+  display:grid;
+
+  grid-template-columns:180px 1fr;
+
+  min-height:105px;
+
+  border-bottom:1px solid #111;
+}
+
+.angle-name{
+  display:flex;
+
+  align-items:center;
+
+  padding:20px;
+
+  border-right:1px solid #111;
+
+  background:var(--accent);
+
+  font-size:22px;
+
+  font-weight:950;
+}
+
+.angle-desc{
+  display:flex;
+
+  align-items:center;
+
+  padding:20px 24px;
+
+  font-size:21px;
+  line-height:1.5;
+
+  font-weight:700;
+}
+
+
+/* =========================
+   HOOK
+========================= */
+
+.hook-grid{
+  margin-top:42px;
+
+  display:grid;
+
+  grid-template-columns:repeat(2,1fr);
+
+  gap:12px;
+}
+
+.hook-card{
+  border:2px solid #111;
+
+  min-height:230px;
+
+  padding:26px;
+
+  background:white;
+}
+
+.hook-card:nth-child(2){
+  background:var(--accent-light);
+}
+
+.hook-card:nth-child(3){
+  background:var(--accent-light);
+}
+
+.hook-card:nth-child(4){
+  background:var(--accent-light);
+}
+
+.hook-type{
+  font-size:18px;
+
+  font-weight:950;
+}
+
+.hook-example{
+  margin-top:18px;
+
+  font-size:28px;
+  line-height:1.4;
+
+  font-weight:950;
+}
+
+.hook-desc{
+  margin-top:16px;
+
+  font-size:19px;
+  line-height:1.5;
+
+  color:#444;
+}
+
+
+/* =========================
+   ANALYSIS
+========================= */
+
+.analysis{
+  margin-top:42px;
+
+  border:2px solid #111;
+}
+
+.analysis-row{
+  display:grid;
+
+  grid-template-columns:190px 1fr;
+
+  min-height:100px;
+
+  border-bottom:1px solid #111;
+}
+
+.analysis-row:last-child{
+  border-bottom:none;
+}
+
+.analysis-title{
+  display:flex;
+
+  align-items:center;
+
+  padding:20px;
+
+  border-right:1px solid #111;
+
+  background:var(--accent);
+
+  color:white;
+
+  font-size:21px;
+
+  font-weight:950;
+}
+
+.analysis-value{
+  display:flex;
+
+  align-items:center;
+
+  padding:20px 24px;
+
+  font-size:20px;
+  line-height:1.55;
+
+  font-weight:700;
+}
+
+
+/* =========================
+   DECISION TABLE
+========================= */
+
+.decision{
+  margin-top:42px;
+
+  border:2px solid #111;
+}
+
+.decision-row{
+  display:grid;
+
+  grid-template-columns:190px 1fr;
+
+  min-height:115px;
+
+  border-bottom:1px solid #111;
+}
+
+.decision-row:last-child{
+  border-bottom:none;
+}
+
+.decision-state{
+  display:flex;
+
+  align-items:center;
+
+  padding:20px;
+
+  border-right:1px solid #111;
+
+  background:var(--accent);
+
+  font-size:21px;
+
+  font-weight:950;
+}
+
+.decision-action{
+  padding:22px 24px;
+
+  font-size:20px;
+  line-height:1.6;
+
+  font-weight:700;
+}
+
+
+/* =========================
+   CURRICULUM
+========================= */
+
+.curriculum{
+  margin-top:42px;
+
+  border-top:2px solid #111;
+
+  background:white;
+}
+
+.chapter{
+  display:grid;
+
+  grid-template-columns:165px 1fr;
+
+  min-height:150px;
+
+  border-bottom:1px solid #111;
+}
+
+.chapter-no{
+  padding:24px 18px;
+  border-right:1px solid #111;
+  background:var(--accent);
+  color:#111;
+  font-size:20px;
+  font-weight:950;
+}
+
+.chapter:nth-child(even) .chapter-no{
+  background:var(--accent);
+  color:#fff;
+  opacity:.85;
+}
+
+.chapter-body{
+  padding:24px;
+}
+
+.chapter-title{
+  font-size:29px;
+
+  font-weight:950;
+}
+
+.chapter-desc{
+  margin-top:12px;
+
+  font-size:20px;
+  line-height:1.6;
+
+  color:#333;
+}
+
+
+/* =========================
+   RESULT
+========================= */
+
+.result-list{
+  margin-top:42px;
+
+  border-top:2px solid #111;
+}
+
+.result-row{
+  display:grid;
+
+  grid-template-columns:70px 1fr;
+
+  min-height:100px;
+
+  border-bottom:1px solid #111;
+}
+
+.result-check{
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  border-right:1px solid #111;
+
+  background:var(--accent);
+
+  font-size:24px;
+
+  font-weight:950;
+}
+
+.result-text{
+  display:flex;
+
+  align-items:center;
+
+  padding:18px 22px;
+
+  font-size:23px;
+  line-height:1.45;
+
+  font-weight:750;
+}
+
+
+/* =========================
+   PROJECT
+========================= */
+
+.project{
+  margin-top:42px;
+
+  border:2px solid #111;
+}
+
+.project-row{
+  display:grid;
+
+  grid-template-columns:90px 1fr;
+
+  min-height:105px;
+
+  border-bottom:1px solid #111;
+}
+
+.project-row:last-child{
+  border-bottom:none;
+}
+
+.project-no{
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  border-right:1px solid #111;
+
+  background:#111;
+
+  color:var(--accent);
+
+  font-size:22px;
+
+  font-weight:950;
+}
+
+.project-text{
+  display:flex;
+
+  align-items:center;
+
+  padding:20px 22px;
+
+  font-size:23px;
+  line-height:1.45;
+
+  font-weight:800;
+}
+
+
+/* =========================
+   TARGET
+========================= */
+
+.target-list{
+  margin-top:42px;
+
+  border-top:2px solid #111;
+}
+
+.target-row{
+  display:grid;
+
+  grid-template-columns:60px 1fr;
+
+  min-height:95px;
+
+  border-bottom:1px solid #111;
+}
+
+.target-check{
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  border-right:1px solid #111;
+
+  background:var(--accent);
+
+  font-size:24px;
+
+  font-weight:950;
+}
+
+.target-text{
+  display:flex;
+
+  align-items:center;
+
+  padding:18px 22px;
+
+  font-size:23px;
+  line-height:1.45;
+
+  font-weight:750;
+}
+
+
+/* =========================
+   PRICE
+========================= */
+
+.price-box{
+  margin-top:42px;
+
+  border:2px solid #111;
+
+  background:var(--accent);
+
+  color:white;
+
+  padding:42px 36px;
+}
+
+.price-small{
+  font-size:18px;
+
+  font-weight:900;
+}
+
+.price-title{
+  margin-top:12px;
+
+  font-size:44px;
+  line-height:1.2;
+
+  font-weight:950;
+}
+
+.price{
+  margin-top:22px;
+
+  font-size:52px;
+
+  font-weight:950;
+}
+
+.price-copy{
+  margin-top:25px;
+
+  font-size:22px;
+  line-height:1.6;
+}
+
+
+/* =========================
+   FINAL
+========================= */
+
+.final-cta{
+  padding:110px 54px;
+  background:var(--accent);
+  text-align:left;
+  color:#fff;
+}
+
+.final-title{
+  font-size:58px;
+  line-height:1.17;
+
+  letter-spacing:-3px;
+
+  font-weight:950;
+}
+
+.final-copy{
+  margin-top:30px;
+
+  font-size:25px;
+  line-height:1.65;
+}
+
+.final-price{
+  display:inline-block;
+
+  margin-top:36px;
+
+  padding:19px 28px;
+
+  border:2px solid #111;
+
+  background:#111;
+
+  color:white;
+
+  font-size:26px;
+
+  font-weight:950;
+}
+
+
+/* =========================
+   NOTICE
+========================= */
+
+.notice{
+  padding:38px 54px 48px;
+
+  background:white;
+
+  border-top:1px solid #111;
+
+  font-size:16px;
+  line-height:1.7;
+
+  color:#555;
+}
+
+
+/* =========================
+   EDIT
+========================= */
+
+[contenteditable="true"]{
+  outline:2px dashed #ff4c36;
+
+  outline-offset:2px;
+
+  cursor:text;
+}
+
+[contenteditable="true"]:focus{
+  background:#fff4e8 !important;
+
+  color:#111 !important;
+}
+
+
+/* COUNT BOX — 정사각형 + 텍스트 0.3cm 간격 */
+:root{
+  --count-size:80px;
+  --count-gap:0.3cm;
+}
+
+.step-row,
+.flow-row,
+.loop-row,
+.target-row,
+.problem-row,
+.project-row,
+.result-row,
+.message-row{
+  grid-template-columns:auto 1fr !important;
+  column-gap:var(--count-gap) !important;
+  align-items:center !important;
+  min-height:unset !important;
+}
+
+.method-row{
+  grid-template-columns:auto 180px 1fr !important;
+  column-gap:var(--count-gap) !important;
+  align-items:center !important;
+  min-height:unset !important;
+}
+
+.chapter,
+.angle-row{
+  grid-template-columns:auto 1fr !important;
+  column-gap:var(--count-gap) !important;
+  align-items:stretch !important;
+  min-height:unset !important;
+}
+
+.step-no,
+.flow-number,
+.loop-number,
+.method-no,
+.problem-no,
+.project-no,
+.result-check,
+.target-check,
+.message-step,
+.chapter-no,
+.angle-name{
+  width:var(--count-size) !important;
+  height:var(--count-size) !important;
+  min-width:var(--count-size) !important;
+  min-height:var(--count-size) !important;
+  max-width:var(--count-size) !important;
+  aspect-ratio:1 / 1 !important;
+  box-sizing:border-box !important;
+  flex-shrink:0 !important;
+  padding:0 !important;
+  border-right:none !important;
+}
+
+.chapter-no{
+  font-size:14px !important;
+  line-height:1.15 !important;
+  padding:8px 4px !important;
+  text-align:center !important;
+  word-break:keep-all !important;
+}
+
+.message-step,
+.angle-name{
+  font-size:16px !important;
+  line-height:1.1 !important;
+  padding:8px 4px !important;
+  text-align:center !important;
+}
+
+.step-text,
+.flow-content,
+.method-name,
+.method-desc,
+.target-text,
+.problem-text,
+.project-text,
+.result-text,
+.message-content,
+.loop-content,
+.chapter-body,
+.angle-desc{
+  padding-left:0 !important;
+}
+
+
+
+/* POINT FILL — 포인트 컬러 배경 + 흰색 텍스트 */
+.ba-box:last-child,
+.showcase-card:last-child,
+.compare-card:first-child,
+.compare-card:last-child,
+.topic-card:nth-child(1),
+.topic-card:nth-child(2),
+.topic-card:nth-child(3),
+.cta-card:nth-child(1),
+.cta-card:nth-child(2),
+.cta-card:nth-child(3){
+  background:var(--primary,var(--accent)) !important;
+  border-color:var(--primary,var(--accent)) !important;
+  color:#fff !important;
+}
+
+.ba-box:last-child .ba-label,
+.ba-box:last-child .ba-title,
+.ba-box:last-child .ba-desc,
+.showcase-card:last-child .showcase-label,
+.showcase-card:last-child .showcase-title,
+.compare-card .compare-label,
+.compare-card .compare-title,
+.compare-card .compare-list,
+.topic-card:nth-child(1) .topic-label,
+.topic-card:nth-child(1) .topic-title,
+.topic-card:nth-child(1) .topic-desc,
+.topic-card:nth-child(2) .topic-label,
+.topic-card:nth-child(2) .topic-title,
+.topic-card:nth-child(2) .topic-desc,
+.topic-card:nth-child(3) .topic-label,
+.topic-card:nth-child(3) .topic-title,
+.topic-card:nth-child(3) .topic-desc,
+.cta-card:nth-child(1) .cta-name,
+.cta-card:nth-child(1) .cta-desc,
+.cta-card:nth-child(1) .cta-price,
+.cta-card:nth-child(2) .cta-name,
+.cta-card:nth-child(2) .cta-desc,
+.cta-card:nth-child(2) .cta-price,
+.cta-card:nth-child(3) .cta-name,
+.cta-card:nth-child(3) .cta-desc,
+.cta-card:nth-child(3) .cta-price{
+  color:#fff !important;
+}
+
+
+
+/* HOOK CARD — 라운드 포인트 박스 + 중앙정렬 */
+.hook-grid{
+  gap:18px !important;
+}
+
+.hook-card{
+  background:var(--primary,var(--accent)) !important;
+  border:none !important;
+  border-radius:20px !important;
+  padding:32px 28px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+  min-height:240px !important;
+  color:#fff !important;
+}
+
+.hook-card:nth-child(odd),
+.hook-card:nth-child(even){
+  border-left:none !important;
+  border-top:none !important;
+}
+
+.hook-type{
+  display:block !important;
+  align-self:center !important;
+  padding:0 !important;
+  background:transparent !important;
+  color:#fff !important;
+  font-size:14px !important;
+  font-weight:950 !important;
+  letter-spacing:0.1em !important;
+  line-height:1.2 !important;
+  opacity:0.9 !important;
+  text-align:center !important;
+}
+
+.hook-example{
+  margin-top:16px !important;
+  font-size:26px !important;
+  line-height:1.45 !important;
+  font-weight:900 !important;
+  color:#fff !important;
+  background:transparent !important;
+  text-align:center !important;
+}
+
+.hook-desc{
+  margin-top:14px !important;
+  padding-top:0 !important;
+  font-size:17px !important;
+  line-height:1.5 !important;
+  color:rgba(255,255,255,.85) !important;
+  background:transparent !important;
+  border-top:none !important;
+  text-align:center !important;
+}
+
+
+/* PLAN GRID — 3과정 비교 · 체크 리스트 · 트리 컬러 */
+:root{
+  --color-edit:#C8FF32;
+  --color-connect:#3157FF;
+  --color-plan:#7857FF;
+}
+
+.plan-grid{
+  gap:14px !important;
+}
+
+.plan{
+  min-height:520px !important;
+  padding:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  border-radius:16px !important;
+  overflow:hidden !important;
+  background:var(--surface-2,#fff) !important;
+  border:1px solid var(--border,#111) !important;
+  color:var(--text,#111) !important;
+}
+
+.plan-head{
+  padding:28px 22px;
+}
+
+.plan-step{
+  display:inline-flex !important;
+  padding:6px 12px !important;
+  font-size:13px !important;
+  font-weight:950 !important;
+  letter-spacing:0.06em !important;
+  border-radius:6px !important;
+}
+
+.plan-name{
+  margin-top:12px !important;
+  font-size:36px !important;
+  font-weight:950 !important;
+}
+
+.plan-price{
+  margin-top:16px !important;
+  font-size:34px !important;
+  font-weight:950 !important;
+}
+
+.plan-question{
+  margin-top:20px !important;
+  font-size:22px !important;
+  line-height:1.4 !important;
+  font-weight:900 !important;
+  color:inherit !important;
+}
+
+.plan hr{
+  margin:0 !important;
+  border:0 !important;
+  border-top:1px solid var(--border,rgba(0,0,0,.12)) !important;
+}
+
+.plan-features{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+}
+
+.plan-feature-row{
+  display:grid !important;
+  grid-template-columns:auto 1fr !important;
+  column-gap:0.3cm !important;
+  align-items:center !important;
+  border-bottom:1px solid var(--border,rgba(0,0,0,.08)) !important;
+  min-height:56px !important;
+}
+
+.plan-feature-row:last-child{
+  border-bottom:none !important;
+}
+
+.plan-check{
+  width:40px !important;
+  height:40px !important;
+  min-width:40px !important;
+  border-radius:50% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  font-size:16px !important;
+  font-weight:950 !important;
+  line-height:1 !important;
+  flex-shrink:0 !important;
+}
+
+.plan-feature-row .plan-feature{
+  margin:0 !important;
+  padding:14px 16px 14px 0 !important;
+  font-size:18px !important;
+  line-height:1.45 !important;
+  font-weight:700 !important;
+  background:transparent !important;
+  color:inherit !important;
+}
+
+.plan-feature-row .plan-feature::before{
+  content:none !important;
+  display:none !important;
+}
+
+.plan:nth-child(1){
+  border-top:4px solid var(--color-edit) !important;
+}
+.plan:nth-child(1) .plan-step{
+  background:var(--color-edit) !important;
+  color:#111 !important;
+}
+.plan:nth-child(1) .plan-check{
+  background:var(--color-edit) !important;
+  color:#111 !important;
+}
+
+.plan:nth-child(2){
+  border-top:4px solid var(--color-connect) !important;
+  background:var(--color-connect) !important;
+  border-color:var(--color-connect) !important;
+  color:#fff !important;
+}
+.plan:nth-child(2) .plan-step{
+  background:rgba(255,255,255,.18) !important;
+  color:#fff !important;
+}
+.plan:nth-child(2) .plan-check{
+  background:#fff !important;
+  color:var(--color-connect) !important;
+}
+.plan:nth-child(2) hr,
+.plan:nth-child(2) .plan-feature-row{
+  border-color:rgba(255,255,255,.22) !important;
+}
+
+.plan:nth-child(3){
+  border-top:4px solid var(--color-plan) !important;
+  background:var(--color-plan) !important;
+  border-color:var(--color-plan) !important;
+  color:#fff !important;
+}
+.plan:nth-child(3) .plan-step{
+  background:rgba(255,255,255,.18) !important;
+  color:#fff !important;
+}
+.plan:nth-child(3) .plan-check{
+  background:#fff !important;
+  color:var(--color-plan) !important;
+}
+.plan:nth-child(3) hr,
+.plan:nth-child(3) .plan-feature-row{
+  border-color:rgba(255,255,255,.22) !important;
+}
+
+@media(max-width:900px){
+
+  body{
+    overflow-x:auto;
+  }
+
+}
+
+
+.save-format-tabs{
+  grid-column:1/-1;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  margin-bottom:4px;
+}
+.save-format-btn{
+  font:inherit;
+  font-size:11px;
+  font-weight:800;
+  padding:8px 10px;
+  border:1px solid #ddd;
+  background:#f5f5f5;
+  cursor:pointer;
+  border-radius:4px;
+}
+.save-format-btn.active{
+  background:var(--accent,#111);
+  color:#fff;
+  border-color:var(--accent,#111);
+}
+.save-panel button.save-zip-jpg-btn{
+  margin-top:0;
+}
+
+
+.format-toolbar .fmt-group{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.format-toolbar .fmt-label{
+  font-size:11px;
+  font-weight:800;
+  color:#888;
+}
+.format-toolbar input[type="color"]{
+  width:28px;
+  height:28px;
+  padding:0;
+  border:1px solid #555;
+  border-radius:4px;
+  background:transparent;
+  cursor:pointer;
+}
+.format-toolbar .fmt-divider{
+  width:1px;
+  height:22px;
+  background:#444;
+  flex-shrink:0;
+}
+.text-highlight.accent-underline,
+span.accent-underline{
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+  box-shadow:inset 0 -0.45em 0 var(--accent-underline, var(--primary, var(--accent)));
+}
+
+</style>
+</head>
+
+
+<body>
+
+
+
+<div class="toolbar">
+
+  <button class="edit-btn" onclick="toggleEdit()">편집 모드 켜기</button>
+
+  <div class="save-menu">
+    <button class="save" type="button" onclick="toggleSavePanel()">섹션 저장 ▾</button>
+    <div class="save-panel" id="save-panel"></div>
+  </div>
+
+  <button class="reset" onclick="location.reload()">새로고침</button>
+
+  <div class="format-toolbar" id="format-toolbar">
+    <div class="fmt-group">
+      <span class="fmt-label">글자색</span>
+      <input type="color" id="text-color" value="#111111" title="글자색">
+      <button type="button" onclick="applyTextColor()">적용</button>
+    </div>
+    <div class="fmt-divider"></div>
+    <div class="fmt-group">
+      <span class="fmt-label">배경색</span>
+      <input type="color" id="bg-color" value="#fff3bf" title="배경색">
+      <button type="button" onclick="applyBgColor()">적용</button>
+    </div>
+    <div class="fmt-divider"></div>
+    <div class="fmt-group">
+      <button type="button" onclick="applyAccentUnderline()">포인트 밑줄</button>
+      <button type="button" onclick="clearTextFormat()">서식 지우기</button>
+    </div>
+    <div class="fmt-divider"></div>
+    <div class="fmt-group">
+      <button type="button" class="fmt-accent" onclick="addImageSlot()">이미지 슬롯 추가</button>
+    </div>
+    <span class="fmt-hint">텍스트 드래그 선택 → 글자색·배경·포인트 밑줄 · 9:16 슬롯·드래그 삽입</span>
+  </div>
+
+</div>
+
+
+<main id="capture">
+
+
+
+
+<section class="section page-section export-block" data-export-filename="00-과정-선택">
+
+  <div class="eyebrow editable">과정 선택</div>
+
+  <h2 class="editable">
+    어디까지 필요하신가요?
+  </h2>
+
+  <div class="plan-grid">
+
+    <div class="plan">
+      <div class="plan-head">
+        <div class="plan-step editable">STEP 01</div>
+        <div class="plan-name editable">EDIT</div>
+        <div class="plan-price editable">55,000원</div>
+        <div class="plan-question editable">
+          “일단 빠르게 편집하고 싶어요.”
+        </div>
+      </div>
+      <hr>
+      <div class="plan-features">
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">모바일 촬영·편집</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">말 많은 콘텐츠 편집</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">자막·강조</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">B-roll·자료</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">사운드</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">검수·내보내기</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="plan">
+      <div class="plan-head">
+        <div class="plan-step editable">STEP 02</div>
+        <div class="plan-name editable">CONNECT</div>
+        <div class="plan-price editable">220,000원</div>
+        <div class="plan-question editable">
+          “콘텐츠를 고객과 연결하고 싶어요.”
+        </div>
+      </div>
+      <hr>
+      <div class="plan-features">
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">EDIT 과정 전체</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">계정 운영 구조</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">프로필 동선</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">링크 페이지 구성</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">자동 메시지 연결</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">상품·서비스 CTA</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="plan">
+      <div class="plan-head">
+        <div class="plan-step editable">STEP 03</div>
+        <div class="plan-name editable">PLAN</div>
+        <div class="plan-price editable">330,000원</div>
+        <div class="plan-question editable">
+          “애초에 무엇을 만들어야 하나요?”
+        </div>
+      </div>
+      <hr>
+      <div class="plan-features">
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">CONNECT 과정 전체</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">콘텐츠 주제 발굴</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">검색·관심 데이터 확인</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">콘텐츠 반응 분석</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">후속 콘텐츠 판단</div>
+        </div>
+        <div class="plan-feature-row">
+          <div class="plan-check">✓</div>
+          <div class="plan-feature editable">반복 가능한 기획 루틴</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</section>
+
+<!-- =========================
+     HERO
+========================= -->
+
+<section class="hero page-section export-block" data-export-filename="01-도각쌤의-타닥클래스-PLAN">
+
+  <div class="eyebrow editable">
+    도각쌤의 타닥클래스 · PLAN
+  </div>
+
+  <h1 class="editable">
+
+    무엇을 만들지<br>
+
+    감으로 정하지 않습니다.
+
+  </h1>
+
+  <div class="sub editable">
+
+    주제를 찾고,<br>
+    콘텐츠를 만들고,<br>
+    게시한 뒤 반응을 확인하고,
+
+    <br><br>
+
+    <strong>
+      다음 콘텐츠를 결정하는 방법
+    </strong>
+
+    을 배웁니다.
+
+  </div>
+
+  <div class="meta editable">
+    PLAN COURSE · 330,000원
+  </div>
+
+
+  <div class="media-drop-zone hero-media" data-label="히어로 9:16 이미지">9:16 히어로 이미지<br>드래그하여 놓기</div>
+
+</section>
+
+
+
+<!-- =========================
+     01 PROBLEM
+========================= -->
+
+<section class="section page-section export-block" data-export-filename="01-다음-콘텐츠가-항상-막힌다면">
+
+  <div class="eyebrow editable">
+    01. 다음 콘텐츠가 항상 막힌다면
+  </div>
+
+  <h2 class="editable">
+
+    콘텐츠를 만들 때마다<br>
+
+    처음부터 다시 고민하고 있지는 않나요?
+
+  </h2>
+
+
+  <div class="problem-list">
+
+    <div class="problem-row">
+
+      <div class="problem-no">
+        01
+      </div>
+
+      <div class="problem-text editable">
+        오늘은 무엇을 올릴지 매번 새로 고민합니다.
+      </div>
+
+    </div>
+
+
+    <div class="problem-row">
+
+      <div class="problem-no">
+        02
+      </div>
+
+      <div class="problem-text editable">
+        사람들이 무엇에 관심 있는지 판단하기 어렵습니다.
+      </div>
+
+    </div>
+
+
+    <div class="problem-row">
+
+      <div class="problem-no">
+        03
+      </div>
+
+      <div class="problem-text editable">
+        조회수가 잘 나온 이유와 안 나온 이유를 모르겠습니다.
+      </div>
+
+    </div>
+
+
+    <div class="problem-row">
+
+      <div class="problem-no">
+        04
+      </div>
+
+      <div class="problem-text editable">
+        콘텐츠 성과를 봐도 다음에 무엇을 해야 할지 모르겠습니다.
+      </div>
+
+    </div>
+
+
+    <div class="problem-row">
+
+      <div class="problem-no">
+        05
+      </div>
+
+      <div class="problem-text editable">
+        잘 된 콘텐츠가 있어도 후속 콘텐츠로 연결하지 못합니다.
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     02 LOOP
+========================= -->
+
+<section class="section purple-soft page-section export-block" data-export-filename="02-PLAN의-전체-구조">
+
+  <div class="eyebrow editable">
+    02. PLAN의 전체 구조
+  </div>
+
+  <h2 class="editable">
+
+    기획 → 제작 → 게시 → 분석 → 다음 기획
+
+    <br><br>
+
+    이 과정을 반복합니다.
+
+  </h2>
+
+
+  <div class="loop">
+
+    <div class="loop-row">
+
+      <div class="loop-number">
+        01
+      </div>
+
+      <div class="loop-content">
+
+        <div class="loop-title editable">
+          FIND
+        </div>
+
+        <div class="loop-desc editable">
+          사람들이 관심을 보일 가능성이 있는 주제를 탐색합니다.
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="loop-row">
+
+      <div class="loop-number">
+        02
+      </div>
+
+      <div class="loop-content">
+
+        <div class="loop-title editable">
+          PLAN
+        </div>
+
+        <div class="loop-desc editable">
+          누구에게 어떤 문제를 어떤 관점으로 말할지 정합니다.
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="loop-row">
+
+      <div class="loop-number">
+        03
+      </div>
+
+      <div class="loop-content">
+
+        <div class="loop-title editable">
+          CREATE
+        </div>
+
+        <div class="loop-desc editable">
+          기획을 실제 숏폼 또는 정보형 콘텐츠로 제작합니다.
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="loop-row">
+
+      <div class="loop-number">
+        04
+      </div>
+
+      <div class="loop-content">
+
+        <div class="loop-title editable">
+          PUBLISH
+        </div>
+
+        <div class="loop-desc editable">
+          콘텐츠를 게시하고 실제 반응을 확인합니다.
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="loop-row">
+
+      <div class="loop-number">
+        05
+      </div>
+
+      <div class="loop-content">
+
+        <div class="loop-title editable">
+          REVIEW
+        </div>
+
+        <div class="loop-desc editable">
+          시청과 참여 반응을 확인합니다.
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="loop-row">
+
+      <div class="loop-number">
+        06
+      </div>
+
+      <div class="loop-content">
+
+        <div class="loop-title editable">
+          NEXT
+        </div>
+
+        <div class="loop-desc editable">
+          결과를 참고해 다음 콘텐츠 실험을 결정합니다.
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     03 TOPIC
+========================= -->
+
+<section class="section page-section export-block" data-export-filename="03-주제를-찾습니다">
+
+  <div class="eyebrow editable">
+    03. 주제를 찾습니다
+  </div>
+
+  <h2 class="editable">
+
+    “내가 하고 싶은 말”만으로<br>
+
+    콘텐츠를 정하지 않습니다.
+
+  </h2>
+
+  <div class="body editable">
+
+    사람들이 궁금해할 만한 문제와
+    실제로 내가 전달할 수 있는 내용을 함께 살펴봅니다.
+
+  </div>
+
+
+  <div class="topic-grid">
+
+    <div class="topic-card">
+
+      <div class="topic-label editable">
+        SEARCH
+      </div>
+
+      <div class="topic-title editable">
+        사람들이 찾는 주제
+      </div>
+
+      <div class="topic-desc editable">
+        검색 행동과 관련 주제를 참고합니다.
+      </div>
+
+    </div>
+
+
+    <div class="topic-card">
+
+      <div class="topic-label editable">
+        QUESTION
+      </div>
+
+      <div class="topic-title editable">
+        고객이 반복해서 묻는 질문
+      </div>
+
+      <div class="topic-desc editable">
+        문의, 상담, 댓글에서 반복되는 질문을 소재로 만듭니다.
+      </div>
+
+    </div>
+
+
+    <div class="topic-card">
+
+      <div class="topic-label editable">
+        PROBLEM
+      </div>
+
+      <div class="topic-title editable">
+        고객이 해결하고 싶은 문제
+      </div>
+
+      <div class="topic-desc editable">
+        단순 정보보다 실제 고민에서 콘텐츠를 찾습니다.
+      </div>
+
+    </div>
+
+
+    <div class="topic-card">
+
+      <div class="topic-label editable">
+        EXPERIENCE
+      </div>
+
+      <div class="topic-title editable">
+        내가 실제로 아는 것
+      </div>
+
+      <div class="topic-desc editable">
+        경험과 사례를 활용해 복제하기 어려운 콘텐츠를 만듭니다.
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     04 ANGLE
+========================= -->
+
+<section class="section lime-soft page-section export-block" data-export-filename="04-같은-주제도-관점을-바꿉니다">
+
+  <div class="eyebrow editable">
+    04. 같은 주제도 관점을 바꿉니다
+  </div>
+
+  <h2 class="editable">
+
+    주제만 정했다고<br>
+
+    콘텐츠 기획이 끝난 것은 아닙니다.
+
+  </h2>
+
+  <div class="body editable">
+
+    같은 내용도 어떤 관점으로 시작하느냐에 따라
+    전혀 다른 콘텐츠가 됩니다.
+
+  </div>
+
+
+  <div class="angle">
+
+    <div class="angle-row">
+
+      <div class="angle-name editable">
+        HOW
+      </div>
+
+      <div class="angle-desc editable">
+        “어떻게 해야 하나요?”에 답하는 방법형 콘텐츠
+      </div>
+
+    </div>
+
+
+    <div class="angle-row">
+
+      <div class="angle-name editable">
+        WHY
+      </div>
+
+      <div class="angle-desc editable">
+        “왜 이런 문제가 생길까요?”를 설명하는 원인형 콘텐츠
+      </div>
+
+    </div>
+
+
+    <div class="angle-row">
+
+      <div class="angle-name editable">
+        MISTAKE
+      </div>
+
+      <div class="angle-desc editable">
+        사람들이 자주 하는 실수를 짚는 콘텐츠
+      </div>
+
+    </div>
+
+
+    <div class="angle-row">
+
+      <div class="angle-name editable">
+        CASE
+      </div>
+
+      <div class="angle-desc editable">
+        실제 사례와 경험을 보여주는 콘텐츠
+      </div>
+
+    </div>
+
+
+    <div class="angle-row">
+
+      <div class="angle-name editable">
+        COMPARE
+      </div>
+
+      <div class="angle-desc editable">
+        두 방법이나 선택지를 비교하는 콘텐츠
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     05 HOOK
+========================= -->
+
+<section class="section page-section export-block" data-export-filename="05-첫-문장을-설계합니다">
+
+  <div class="eyebrow editable">
+    05. 첫 문장을 설계합니다
+  </div>
+
+  <h2 class="editable">
+
+    좋은 내용도<br>
+
+    처음부터 보지 않으면 전달되지 않습니다.
+
+  </h2>
+
+
+  <div class="hook-grid">
+
+    <div class="hook-card">
+
+      <div class="hook-type editable">
+        PROBLEM
+      </div>
+
+      <div class="hook-example editable">
+        “영상 하나 만드는 데 2시간씩 걸리나요?”
+      </div>
+
+      <div class="hook-desc editable">
+        시청자가 이미 겪고 있는 문제로 시작
+      </div>
+
+    </div>
+
+
+    <div class="hook-card">
+
+      <div class="hook-type editable">
+        MISTAKE
+      </div>
+
+      <div class="hook-example editable">
+        “초보자가 편집을 오래 하는 이유가 있습니다.”
+      </div>
+
+      <div class="hook-desc editable">
+        실수 또는 잘못된 방식으로 시작
+      </div>
+
+    </div>
+
+
+    <div class="hook-card">
+
+      <div class="hook-type editable">
+        RESULT
+      </div>
+
+      <div class="hook-example editable">
+        “저는 이 순서대로 편집합니다.”
+      </div>
+
+      <div class="hook-desc editable">
+        방법 또는 결과를 먼저 제시
+      </div>
+
+    </div>
+
+
+    <div class="hook-card">
+
+      <div class="hook-type editable">
+        CONTRAST
+      </div>
+
+      <div class="hook-example editable">
+        “빠른 편집은 손이 빠른 게 아닙니다.”
+      </div>
+
+      <div class="hook-desc editable">
+        기존 생각과 다른 관점으로 시작
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     06 REVIEW
+========================= -->
+
+<section class="section blue-soft page-section export-block" data-export-filename="06-게시-후-결과를-봅니다">
+
+  <div class="eyebrow editable">
+    06. 게시 후 결과를 봅니다
+  </div>
+
+  <h2 class="editable">
+
+    “조회수가 낮았다.”<br>
+
+    여기에서 끝내지 않습니다.
+
+  </h2>
+
+  <div class="body editable">
+
+    숫자를 보는 목적은
+    성적표를 받기 위해서가 아니라
+
+    <strong>
+      다음 콘텐츠를 결정하기 위해서
+    </strong>
+    입니다.
+
+  </div>
+
+  <div class="showcase-grid">
+
+    <div class="showcase-card">
+      <div class="showcase-label editable">BEFORE</div>
+      <div class="showcase-title editable">감으로 다음 콘텐츠 결정</div>
+      <div class="media-drop-zone ba-media compare-media" data-label="Before 9:16">9:16 Before 이미지<br>드래그하여 놓기</div>
+    </div>
+
+    <div class="showcase-card">
+      <div class="showcase-label editable">AFTER</div>
+      <div class="showcase-title editable">데이터로 다음 실험 결정</div>
+      <div class="media-drop-zone ba-media compare-media" data-label="After 9:16">9:16 After 이미지<br>드래그하여 놓기</div>
+    </div>
+
+  </div>
+
+
+
+  <div class="analysis">
+
+    <div class="analysis-row">
+
+      <div class="analysis-title editable">
+        초반 반응
+      </div>
+
+      <div class="analysis-value editable">
+        첫 부분에서 관심을 유지했는지 확인
+      </div>
+
+    </div>
+
+
+    <div class="analysis-row">
+
+      <div class="analysis-title editable">
+        시청 흐름
+      </div>
+
+      <div class="analysis-value editable">
+        어느 구간에서 이탈이 발생했는지 확인
+      </div>
+
+    </div>
+
+
+    <div class="analysis-row">
+
+      <div class="analysis-title editable">
+        저장
+      </div>
+
+      <div class="analysis-value editable">
+        다시 볼 가치가 있는 정보였는지 참고
+      </div>
+
+    </div>
+
+
+    <div class="analysis-row">
+
+      <div class="analysis-title editable">
+        댓글
+      </div>
+
+      <div class="analysis-value editable">
+        질문이나 추가 관심이 발생했는지 확인
+      </div>
+
+    </div>
+
+
+    <div class="analysis-row">
+
+      <div class="analysis-title editable">
+        공유
+      </div>
+
+      <div class="analysis-value editable">
+        다른 사람에게 전달할 가치가 있었는지 참고
+      </div>
+
+    </div>
+
+
+    <div class="analysis-row">
+
+      <div class="analysis-title editable">
+        다음 행동
+      </div>
+
+      <div class="analysis-value editable">
+        프로필·링크·상품 등 다음 단계로 이동했는지 확인
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     07 DECISION
+========================= -->
+
+<section class="section page-section export-block" data-export-filename="07-데이터를-다음-행동으로-바꿉니다">
+
+  <div class="eyebrow editable">
+    07. 데이터를 다음 행동으로 바꿉니다
+  </div>
+
+  <h2 class="editable">
+
+    숫자를 보는 것보다<br>
+
+    그다음에 무엇을 할지가 중요합니다.
+
+  </h2>
+
+
+  <div class="decision">
+
+    <div class="decision-row">
+
+      <div class="decision-state editable">
+        관심도 높음
+      </div>
+
+      <div class="decision-action editable">
+        같은 주제를 다른 사례·관점·난이도로 확장합니다.
+      </div>
+
+    </div>
+
+
+    <div class="decision-row">
+
+      <div class="decision-state editable">
+        저장 반응 높음
+      </div>
+
+      <div class="decision-action editable">
+        체크리스트·정리형·후속 정보 콘텐츠로 발전시킵니다.
+      </div>
+
+    </div>
+
+
+    <div class="decision-row">
+
+      <div class="decision-state editable">
+        댓글 질문 많음
+      </div>
+
+      <div class="decision-action editable">
+        질문 자체를 다음 콘텐츠 주제로 활용합니다.
+      </div>
+
+    </div>
+
+
+    <div class="decision-row">
+
+      <div class="decision-state editable">
+        초반 이탈 큼
+      </div>
+
+      <div class="decision-action editable">
+        주제를 버리기 전에 시작 문장과 전개 방식을 다시 실험합니다.
+      </div>
+
+    </div>
+
+
+    <div class="decision-row">
+
+      <div class="decision-state editable">
+        반응 약함
+      </div>
+
+      <div class="decision-action editable">
+        주제 · 타깃 · 훅 · 전달 방식 중 어느 요소를 바꿀지 결정합니다.
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     08 CURRICULUM
+========================= -->
+
+<section class="section soft page-section export-block" data-export-filename="08-PLAN-커리큘럼">
+
+  <div class="eyebrow editable">
+    08. PLAN 커리큘럼
+  </div>
+
+  <h2 class="editable">
+
+    무엇을 만들지부터<br>
+
+    다음 콘텐츠를 결정하는 것까지.
+
+  </h2>
+
+
+  <div class="curriculum">
+
+
+    <div class="chapter">
+
+      <div class="chapter-no editable">
+        CHAPTER 01
+      </div>
+
+      <div class="chapter-body">
+
+        <div class="chapter-title editable">
+          TOPIC DISCOVERY
+        </div>
+
+        <div class="chapter-desc editable">
+          검색 행동 · 반복 질문 · 고객 문제 · 실제 경험에서 콘텐츠 주제 찾기
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="chapter">
+
+      <div class="chapter-no editable">
+        CHAPTER 02
+      </div>
+
+      <div class="chapter-body">
+
+        <div class="chapter-title editable">
+          SEARCH & INTEREST
+        </div>
+
+        <div class="chapter-desc editable">
+          관련 주제 · 관심도 · 경쟁 콘텐츠를 참고해 아이디어 좁히기
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="chapter">
+
+      <div class="chapter-no editable">
+        CHAPTER 03
+      </div>
+
+      <div class="chapter-body">
+
+        <div class="chapter-title editable">
+          CONTENT ANGLE
+        </div>
+
+        <div class="chapter-desc editable">
+          방법 · 원인 · 실수 · 비교 · 사례 등 같은 주제를 다른 관점으로 기획
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="chapter">
+
+      <div class="chapter-no editable">
+        CHAPTER 04
+      </div>
+
+      <div class="chapter-body">
+
+        <div class="chapter-title editable">
+          HOOK DESIGN
+        </div>
+
+        <div class="chapter-desc editable">
+          문제 · 실수 · 결과 · 반전형 오프닝으로 첫 문장 구성
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="chapter">
+
+      <div class="chapter-no editable">
+        CHAPTER 05
+      </div>
+
+      <div class="chapter-body">
+
+        <div class="chapter-title editable">
+          CONTENT STRUCTURE
+        </div>
+
+        <div class="chapter-desc editable">
+          훅 → 문제 → 설명 → 사례 → CTA로 정보형 콘텐츠 흐름 구성
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="chapter">
+
+      <div class="chapter-no editable">
+        CHAPTER 06
+      </div>
+
+      <div class="chapter-body">
+
+        <div class="chapter-title editable">
+          PERFORMANCE REVIEW
+        </div>
+
+        <div class="chapter-desc editable">
+          게시 후 시청 · 저장 · 댓글 · 공유 · 다음 행동 등 반응 확인
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="chapter">
+
+      <div class="chapter-no editable">
+        CHAPTER 07
+      </div>
+
+      <div class="chapter-body">
+
+        <div class="chapter-title editable">
+          NEXT CONTENT
+        </div>
+
+        <div class="chapter-desc editable">
+          잘 된 요소와 개선할 요소를 구분해 다음 콘텐츠 결정
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="chapter">
+
+      <div class="chapter-no editable">
+        CHAPTER 08
+      </div>
+
+      <div class="chapter-body">
+
+        <div class="chapter-title editable">
+          CONTENT LOOP
+        </div>
+
+        <div class="chapter-desc editable">
+          기획 → 제작 → 게시 → 분석 → 다음 기획으로 이어지는 반복 구조 구축
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     09 RESULT
+========================= -->
+
+<section class="section purple-soft page-section export-block" data-export-filename="09-수강-후-남는-것">
+
+  <div class="eyebrow editable">
+    09. 수강 후 남는 것
+  </div>
+
+  <h2 class="editable">
+
+    “조회수를 올려드립니다”가 아니라,<br>
+
+    스스로 판단할 수 있는 구조를 만듭니다.
+
+  </h2>
+
+
+  <div class="result-grid">
+
+    <div class="result">
+      <div class="media-drop-zone result-image" data-label="결과 TYPE 01">9:16 결과 예시<br>드래그하여 놓기</div>
+      <div class="result-info">
+        <div class="result-type editable">TYPE 01</div>
+        <div class="result-title editable">주제·기획 화면</div>
+      </div>
+    </div>
+
+    <div class="result">
+      <div class="media-drop-zone result-image" data-label="결과 TYPE 02">9:16 결과 예시<br>드래그하여 놓기</div>
+      <div class="result-info">
+        <div class="result-type editable">TYPE 02</div>
+        <div class="result-title editable">훅·콘텐츠 예시</div>
+      </div>
+    </div>
+
+    <div class="result">
+      <div class="media-drop-zone result-image" data-label="결과 TYPE 03">9:16 결과 예시<br>드래그하여 놓기</div>
+      <div class="result-info">
+        <div class="result-type editable">TYPE 03</div>
+        <div class="result-title editable">데이터·분석 화면</div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <div class="result-list">
+
+    <div class="result-row">
+
+      <div class="result-check">
+        ✓
+      </div>
+
+      <div class="result-text editable">
+        콘텐츠 주제를 찾는 기준
+      </div>
+
+    </div>
+
+
+    <div class="result-row">
+
+      <div class="result-check">
+        ✓
+      </div>
+
+      <div class="result-text editable">
+        주제를 여러 각도로 풀어내는 기획 방식
+      </div>
+
+    </div>
+
+
+    <div class="result-row">
+
+      <div class="result-check">
+        ✓
+      </div>
+
+      <div class="result-text editable">
+        첫 문장을 설계하는 훅 구조
+      </div>
+
+    </div>
+
+
+    <div class="result-row">
+
+      <div class="result-check">
+        ✓
+      </div>
+
+      <div class="result-text editable">
+        게시 후 반응을 확인하는 기준
+      </div>
+
+    </div>
+
+
+    <div class="result-row">
+
+      <div class="result-check">
+        ✓
+      </div>
+
+      <div class="result-text editable">
+        데이터를 참고해 다음 콘텐츠를 결정하는 방법
+      </div>
+
+    </div>
+
+
+    <div class="result-row">
+
+      <div class="result-check">
+        ✓
+      </div>
+
+      <div class="result-text editable">
+        반복 가능한 콘텐츠 기획 루틴
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     10 PROJECT
+========================= -->
+
+<section class="section page-section export-block" data-export-filename="10-최종-프로젝트">
+
+  <div class="eyebrow editable">
+    10. 최종 프로젝트
+  </div>
+
+  <h2 class="editable">
+
+    하나의 콘텐츠가<br>
+
+    다음 콘텐츠를 만드는 근거가 되게 합니다.
+
+  </h2>
+
+
+  <div class="project">
+
+    <div class="project-row">
+      <div class="project-no">01</div>
+      <div class="project-text editable">주제 후보 찾기</div>
+    </div>
+
+    <div class="project-row">
+      <div class="project-no">02</div>
+      <div class="project-text editable">타깃과 문제 정의</div>
+    </div>
+
+    <div class="project-row">
+      <div class="project-no">03</div>
+      <div class="project-text editable">콘텐츠 각도 선택</div>
+    </div>
+
+    <div class="project-row">
+      <div class="project-no">04</div>
+      <div class="project-text editable">훅과 전체 구조 작성</div>
+    </div>
+
+    <div class="project-row">
+      <div class="project-no">05</div>
+      <div class="project-text editable">콘텐츠 제작 및 게시</div>
+    </div>
+
+    <div class="project-row">
+      <div class="project-no">06</div>
+      <div class="project-text editable">반응 데이터 확인</div>
+    </div>
+
+    <div class="project-row">
+      <div class="project-no">07</div>
+      <div class="project-text editable">다음 콘텐츠 기획</div>
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     11 TARGET
+========================= -->
+
+<section class="section lime-soft page-section export-block" data-export-filename="11-이런-분에게-맞습니다">
+
+  <div class="eyebrow editable">
+    11. 이런 분에게 맞습니다
+  </div>
+
+  <h2 class="editable">
+
+    만드는 방법은 알지만<br>
+
+    무엇을 만들지가 늘 막힌다면.
+
+  </h2>
+
+
+  <div class="target-list">
+
+    <div class="target-row">
+
+      <div class="target-check">
+        ✓
+      </div>
+
+      <div class="target-text editable">
+        매번 콘텐츠 주제를 새로 고민하는 분
+      </div>
+
+    </div>
+
+
+    <div class="target-row">
+
+      <div class="target-check">
+        ✓
+      </div>
+
+      <div class="target-text editable">
+        검색과 고객 관심을 참고해 기획하고 싶은 분
+      </div>
+
+    </div>
+
+
+    <div class="target-row">
+
+      <div class="target-check">
+        ✓
+      </div>
+
+      <div class="target-text editable">
+        게시 후 데이터를 봐도 무엇을 해야 할지 모르는 분
+      </div>
+
+    </div>
+
+
+    <div class="target-row">
+
+      <div class="target-check">
+        ✓
+      </div>
+
+      <div class="target-text editable">
+        잘 된 콘텐츠를 후속 콘텐츠로 확장하고 싶은 분
+      </div>
+
+    </div>
+
+
+    <div class="target-row">
+
+      <div class="target-check">
+        ✓
+      </div>
+
+      <div class="target-text editable">
+        반복 가능한 콘텐츠 제작 시스템이 필요한 분
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     12 PRICE
+========================= -->
+
+<section class="section page-section export-block" data-export-filename="12-PLAN">
+
+  <div class="eyebrow editable">
+    12. PLAN
+  </div>
+
+  <h2 class="editable">
+
+    편집과 운영을 넘어<br>
+
+    무엇을 만들지까지 결정합니다.
+
+  </h2>
+
+
+  <div class="price-box">
+
+    <div class="price-small editable">
+      PLAN COURSE
+    </div>
+
+    <div class="price-title editable">
+      콘텐츠 기획 · 분석 · 운영
+    </div>
+
+    <div class="price editable">
+      330,000원
+    </div>
+
+    <div class="price-copy editable">
+
+      EDIT의 모바일 제작 과정과
+      CONNECT의 고객 연결 과정을 포함하고,
+
+      <br><br>
+
+      콘텐츠 주제 발굴 · 기획 · 게시 후 반응 분석 ·
+      다음 콘텐츠 결정까지 다룹니다.
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =========================
+     FINAL CTA
+========================= -->
+
+<section class="final-cta page-section export-block" data-export-filename="14-감으로-하나-만들고-다시-처음부터-고민하는">
+
+  <div class="final-title editable">
+
+    감으로 하나 만들고<br>
+
+    다시 처음부터 고민하는 대신,
+
+    <br><br>
+
+    하나의 콘텐츠에서<br>
+
+    다음 콘텐츠의 근거를 찾으세요.
+
+  </div>
+
+  <div class="final-copy editable">
+
+    찾고 → 기획하고 → 만들고 → 게시하고 → 확인하고 → 다시 기획합니다.
+
+    <br><br>
+
+    반복 가능한 콘텐츠 기획 루프를 만드는 것이
+    PLAN 과정의 목표입니다.
+
+  </div>
+
+  <div class="final-price editable">
+    PLAN · 330,000원
+  </div>
+
+</section>
+
+
+
+<div class="notice editable export-block" data-export-filename="99-안내">
+
+  * 본 과정은 특정 조회수, 팔로워 증가, 문의 수, 판매량 또는 매출을 보장하지 않습니다.<br>
+
+  * 검색량, 관심도, 콘텐츠 반응 등은 콘텐츠 기획을 위한 참고 자료이며 특정 성과를 의미하지 않습니다.<br>
+
+  * 외부 서비스의 무료 기능 및 제공 범위는 서비스 제공사의 운영 정책에 따라 변경될 수 있습니다.<br>
+
+  * 세부 수강 방식, 제공 범위, 준비사항은 결제 전 상품 안내를 확인해 주세요.
+
+</div>
+
+
+</main>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+let editMode = false;
+let lastFocusedSection = null;
+
+function getSelectionRange() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+    return null;
+  }
+  const range = selection.getRangeAt(0);
+  const capture = document.getElementById("capture");
+  if (!capture || !capture.contains(range.commonAncestorContainer)) {
+    return null;
+  }
+  return range;
+}
+
+function wrapRangeWithSpan(range, options = {}) {
+  const { styles = {}, className = "text-highlight" } = options;
+  const span = document.createElement("span");
+  span.className = className;
+  Object.assign(span.style, styles);
+
+  try {
+    range.surroundContents(span);
+  } catch {
+    const fragment = range.extractContents();
+    span.appendChild(fragment);
+    range.insertNode(span);
+  }
+
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  selection.addRange(newRange);
+  return span;
+}
+
+function applyTextColor() {
+  const range = getSelectionRange();
+  if (!range) {
+    alert("글자색을 적용할 텍스트를 드래그하여 선택해 주세요.");
+    return;
+  }
+  const color = document.getElementById("text-color").value;
+  wrapRangeWithSpan(range, { styles: { color } });
+}
+
+function applyBgColor() {
+  const range = getSelectionRange();
+  if (!range) {
+    alert("배경색을 적용할 텍스트를 드래그하여 선택해 주세요.");
+    return;
+  }
+  const color = document.getElementById("bg-color").value;
+  wrapRangeWithSpan(range, { styles: { backgroundColor: color } });
+}
+
+function applyAccentUnderline() {
+  const range = getSelectionRange();
+  if (!range) {
+    alert("포인트 밑줄을 적용할 텍스트를 드래그하여 선택해 주세요.");
+    return;
+  }
+  wrapRangeWithSpan(range, { className: "text-highlight accent-underline" });
+}
+
+function clearTextFormat() {
+  const range = getSelectionRange();
+  if (!range) {
+    alert("서식을 지울 텍스트를 드래그하여 선택해 주세요.");
+    return;
+  }
+
+  const fragment = range.extractContents();
+  const walker = document.createTreeWalker(fragment, NodeFilter.SHOW_ELEMENT);
+  const styled = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (node.classList?.contains("text-highlight") || node.classList?.contains("accent-underline")) {
+      styled.push(node);
+    }
+  }
+
+  styled.forEach(node => {
+    const parent = node.parentNode;
+    while (node.firstChild) {
+      parent.insertBefore(node.firstChild, node);
+    }
+    parent.removeChild(node);
+  });
+
+  range.insertNode(fragment);
+  window.getSelection().removeAllRanges();
+}
+
+function setEditModeState(on) {
+  editMode = on;
+  document.body.classList.toggle("edit-mode", on);
+  document.querySelectorAll(".editable").forEach(el => {
+    el.contentEditable = on ? "true" : "false";
+  });
+  document.querySelector(".edit-btn").textContent =
+    on ? "편집 모드 끄기" : "편집 모드 켜기";
+}
+
+function exitEditMode() {
+  setEditModeState(false);
+}
+
+function toggleEdit() {
+  setEditModeState(!editMode);
+}
+
+function closestPageSection(node) {
+  const el = node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+  return el?.closest?.(".page-section") || null;
+}
+
+function readImageFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith("image/")) {
+      reject(new Error("이미지 파일만 삽입할 수 있습니다."));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function fillMediaSlot(slot, dataUrl) {
+  const keepClasses = [...slot.classList].filter(name =>
+    !["media-drop-zone", "drag-over", "media-slot", "has-image"].includes(name)
+  );
+  slot.className = ["media-slot", "has-image", ...keepClasses].join(" ");
+  slot.replaceChildren();
+
+  const img = document.createElement("img");
+  img.src = dataUrl;
+  img.alt = slot.dataset.label || "";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "media-remove";
+  btn.title = "이미지 삭제";
+  btn.textContent = "×";
+  btn.addEventListener("click", () => removeMediaSlot(btn));
+
+  if (slot.classList.contains("section-media")) {
+    img.style.width = "100%";
+    img.style.height = "auto";
+    img.style.objectFit = "contain";
+  }
+
+  slot.appendChild(img);
+  slot.appendChild(btn);
+}
+
+function createMediaDropZone(options = {}) {
+  const zone = document.createElement("div");
+  zone.className = "media-drop-zone section-media";
+  if (options.extraClass) {
+    zone.classList.add(...options.extraClass.split(" "));
+  }
+  zone.dataset.label = options.label || "추가 이미지";
+  zone.innerHTML = options.html || "이미지<br>드래그하여 놓기";
+  bindDropZone(zone);
+  return zone;
+}
+
+function bindDropZone(zone) {
+  if (!zone.dataset.dropBound) {
+    zone.dataset.dropBound = "1";
+    zone.addEventListener("click", () => openImagePicker(zone));
+  }
+
+  zone.addEventListener("dragover", event => {
+    if (!editMode) return;
+    event.preventDefault();
+    zone.classList.add("drag-over");
+  });
+
+  zone.addEventListener("dragleave", () => {
+    zone.classList.remove("drag-over");
+  });
+
+  zone.addEventListener("drop", async event => {
+    if (!editMode) return;
+    event.preventDefault();
+    zone.classList.remove("drag-over");
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await readImageFile(file);
+      fillMediaSlot(zone, dataUrl);
+    } catch (error) {
+      alert(error.message || "이미지를 불러오지 못했습니다.");
+    }
+  });
+}
+
+function openImagePicker(targetSlot) {
+  if (!editMode) return;
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await readImageFile(file);
+      fillMediaSlot(targetSlot, dataUrl);
+    } catch (error) {
+      alert(error.message || "이미지를 불러오지 못했습니다.");
+    }
+  };
+  input.click();
+}
+
+function defaultDropHint(slot) {
+  if (slot.classList.contains("hero-media")) {
+    return "9:16 히어로 이미지<br>드래그하여 놓기";
+  }
+  if (slot.classList.contains("ba-media") || slot.classList.contains("compare-media")) {
+    return `${slot.dataset.label || "9:16 이미지"}<br>드래그하여 놓기`;
+  }
+  if (slot.classList.contains("result-image")) {
+    return "9:16 결과 예시<br>드래그하여 놓기";
+  }
+  return "이미지<br>드래그하여 놓기";
+}
+
+function removeMediaSlot(button) {
+  const slot = button.closest(".media-slot");
+  if (!slot) return;
+
+  const label = slot.dataset.label || "9:16 이미지";
+  const classes = ["media-drop-zone"];
+  ["hero-media", "ba-media", "compare-media", "result-image", "section-media"].forEach(name => {
+    if (slot.classList.contains(name)) classes.push(name);
+  });
+
+  const zone = document.createElement("div");
+  zone.className = classes.join(" ");
+  zone.dataset.label = label;
+  zone.innerHTML = defaultDropHint(zone);
+  bindDropZone(zone);
+  slot.replaceWith(zone);
+
+  const section = zone.closest(".page-section");
+  if (section) lastFocusedSection = section;
+}
+
+function addImageSlot() {
+  if (!editMode) {
+    alert("편집 모드를 켠 뒤 슬롯을 추가해 주세요.");
+    return;
+  }
+
+  let section = lastFocusedSection;
+  if (!section) {
+    const selection = window.getSelection();
+    if (selection?.rangeCount) {
+      section = closestPageSection(selection.getRangeAt(0).commonAncestorContainer);
+    }
+  }
+  if (!section) {
+    section = document.querySelector("#capture .page-section");
+  }
+
+  const zone = createMediaDropZone({
+    label: "추가 이미지",
+    html: "이미지<br>드래그하여 놓기"
+  });
+  section.appendChild(zone);
+  zone.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function bindSectionDrop(section) {
+  section.addEventListener("dragover", event => {
+    if (!editMode) return;
+    if (!event.dataTransfer?.types?.includes("Files")) return;
+    event.preventDefault();
+    section.classList.add("drag-over-block");
+  });
+
+  section.addEventListener("dragleave", event => {
+    if (!section.contains(event.relatedTarget)) {
+      section.classList.remove("drag-over-block");
+    }
+  });
+
+  section.addEventListener("drop", async event => {
+    if (!editMode) return;
+    if (event.target.closest(".media-drop-zone, .media-slot")) return;
+    section.classList.remove("drag-over-block");
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) return;
+    event.preventDefault();
+
+    try {
+      const dataUrl = await readImageFile(file);
+      const zone = createMediaDropZone({
+        label: "추가 이미지",
+        html: "이미지<br>드래그하여 놓기"
+      });
+      section.appendChild(zone);
+      fillMediaSlot(zone, dataUrl);
+    } catch (error) {
+      alert(error.message || "이미지를 불러오지 못했습니다.");
+    }
+  });
+}
+
+document.getElementById("capture").addEventListener("focusin", event => {
+  const section = event.target.closest?.(".page-section");
+  if (section) lastFocusedSection = section;
+});
+
+document.getElementById("capture").addEventListener("click", event => {
+  const section = event.target.closest?.(".page-section");
+  if (section) lastFocusedSection = section;
+});
+
+document.querySelectorAll("#capture .media-drop-zone").forEach(bindDropZone);
+document.querySelectorAll("#capture .page-section").forEach(bindSectionDrop);
+
+document.addEventListener("dragover", event => {
+  if (editMode && event.dataTransfer?.types?.includes("Files")) {
+    event.preventDefault();
+  }
+});
+
+const SMARTSTORE_WIDTH = 860;
+const SMARTSTORE_MAX_HEIGHT = 5000;
+const SMARTSTORE_JPG_QUALITY = 0.92;
+const WEBP_CAPTURE_SCALE = 3;
+
+const EXPORT_PREFIX = "타닥클래스-PLAN-";
+
+function toggleSavePanel() {
+  document.getElementById("save-panel").classList.toggle("open");
+}
+
+function getSelectedExportFormat() {
+  return document.querySelector(".save-format-btn.active")?.dataset.format || "webp";
+}
+
+function getBlockLabel(block, filename) {
+  return block.querySelector(".section-title .editable")?.textContent?.trim()
+    || block.querySelector(".eyebrow")?.textContent?.trim().replace(/\s+/g, " ")
+    || block.querySelector("h1")?.textContent?.trim().replace(/\s+/g, " ")
+    || block.querySelector(".final-title")?.textContent?.trim().replace(/\s+/g, " ")
+    || block.querySelector(".cta-title")?.textContent?.trim().replace(/\s+/g, " ")
+    || filename.replace(/^\d+-/, "").replace(/-/g, " ");
+}
+
+function buildSavePanel() {
+  const panel = document.getElementById("save-panel");
+  const blocks = document.querySelectorAll("#capture .export-block");
+  panel.innerHTML = `<div class="save-panel-title">섹션별 저장 · 형식 선택</div>`;
+
+  const tabs = document.createElement("div");
+  tabs.className = "save-format-tabs";
+  [
+    { format: "webp", label: "WebP · 고화질" },
+    { format: "jpg", label: "JPG · 스마트스토어" }
+  ].forEach((item, index) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = `save-format-btn${index === 0 ? " active" : ""}`;
+    tab.dataset.format = item.format;
+    tab.textContent = item.label;
+    tab.onclick = () => {
+      tabs.querySelectorAll(".save-format-btn").forEach(btn => btn.classList.remove("active"));
+      tab.classList.add("active");
+    };
+    tabs.appendChild(tab);
+  });
+  panel.appendChild(tabs);
+
+  blocks.forEach((block, index) => {
+    const filename = block.dataset.exportFilename || `section-${String(index + 1).padStart(2, "0")}`;
+    const label = getBlockLabel(block, filename);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = `${filename.split("-")[0]} · ${String(label).slice(0, 28)}`;
+    btn.onclick = () => saveExportBlock(block, getSelectedExportFormat());
+    panel.appendChild(btn);
+  });
+
+  const webpZipBtn = document.createElement("button");
+  webpZipBtn.type = "button";
+  webpZipBtn.className = "save-all-btn save-zip-webp-btn";
+  webpZipBtn.textContent = "전체 WebP ZIP";
+  webpZipBtn.onclick = () => saveAllExportBlocks("webp");
+  panel.appendChild(webpZipBtn);
+
+  const jpgZipBtn = document.createElement("button");
+  jpgZipBtn.type = "button";
+  jpgZipBtn.className = "save-all-btn save-zip-jpg-btn";
+  jpgZipBtn.textContent = "전체 JPG ZIP · 스마트스토어";
+  jpgZipBtn.onclick = () => saveAllExportBlocks("jpg");
+  panel.appendChild(jpgZipBtn);
+}
+
+function canvasToWebP(canvas, quality = 1) {
+  const webp = canvas.toDataURL("image/webp", quality);
+  if (webp.startsWith("data:image/webp")) return webp;
+  console.warn("WebP 미지원 브라우저 — PNG로 대체 저장합니다.");
+  return canvas.toDataURL("image/png");
+}
+
+function canvasToJpg(canvas, quality = SMARTSTORE_JPG_QUALITY) {
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+function dataUrlToBytes(dataUrl) {
+  const [header, base64] = dataUrl.split(",");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  let ext = "png";
+  if (header.includes("image/webp")) ext = "webp";
+  else if (header.includes("image/jpeg")) ext = "jpg";
+  return { bytes, ext };
+}
+
+function optimizeCanvasForSmartstore(sourceCanvas) {
+  const targetWidth = SMARTSTORE_WIDTH;
+  let targetHeight = Math.round(sourceCanvas.height * (targetWidth / sourceCanvas.width));
+  if (targetHeight > SMARTSTORE_MAX_HEIGHT) {
+    targetHeight = SMARTSTORE_MAX_HEIGHT;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, targetWidth, targetHeight);
+  const drawHeight = Math.min(targetHeight, Math.round(sourceCanvas.height * (targetWidth / sourceCanvas.width)));
+  ctx.drawImage(sourceCanvas, 0, 0, targetWidth, drawHeight);
+  return canvas;
+}
+
+function getExportBackgroundColor(element) {
+  const bg = getComputedStyle(element).backgroundColor;
+  if (!bg || bg === "rgba(0, 0, 0, 0)" || bg === "transparent") return null;
+  return bg;
+}
+
+function prepareExportClone(clone, source) {
+  function syncNode(src, dest) {
+    if (!(src instanceof Element) || !(dest instanceof Element)) return;
+
+    const cs = getComputedStyle(src);
+    const bg = cs.backgroundColor;
+    if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+      dest.style.backgroundColor = bg;
+    }
+    if (cs.color) dest.style.color = cs.color;
+
+    const keepShadow =
+      src.classList.contains("accent-underline") ||
+      src.classList.contains("text-highlight");
+
+    if (keepShadow && cs.boxShadow && cs.boxShadow !== "none") {
+      dest.style.boxShadow = cs.boxShadow;
+      dest.style.boxDecorationBreak = cs.boxDecorationBreak || "clone";
+    } else if (cs.boxShadow && cs.boxShadow !== "none" && /inset/i.test(cs.boxShadow)) {
+      dest.style.boxShadow = "none";
+      if (
+        src.classList.contains("blue-soft") ||
+        src.classList.contains("lime-soft") ||
+        src.classList.contains("purple-soft")
+      ) {
+        const accent =
+          getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() ||
+          getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() ||
+          "#C8FF32";
+        dest.style.borderLeft = `4px solid ${accent}`;
+      }
+    }
+
+    if (cs.border && cs.border !== "none" && cs.borderWidth !== "0px") {
+      dest.style.border = cs.border;
+    }
+
+    const srcKids = src.children;
+    const destKids = dest.children;
+    for (let i = 0; i < srcKids.length; i++) {
+      syncNode(srcKids[i], destKids[i]);
+    }
+  }
+
+  syncNode(source, clone);
+  clone.querySelectorAll("[contenteditable]").forEach(el => el.removeAttribute("contenteditable"));
+}
+
+async function captureElementToCanvas(element, scale = WEBP_CAPTURE_SCALE) {
+  const shot = document.createElement("div");
+  shot.className = "export-shot";
+  const clone = element.cloneNode(true);
+  prepareExportClone(clone, element);
+  shot.appendChild(clone);
+  document.body.appendChild(shot);
+  try {
+    return await html2canvas(shot, {
+      scale,
+      backgroundColor: getExportBackgroundColor(element),
+      useCORS: true,
+      logging: false,
+      width: shot.scrollWidth,
+      height: shot.scrollHeight
+    });
+  } finally {
+    document.body.removeChild(shot);
+  }
+}
+
+async function captureBlockExport(block, format = "webp") {
+  if (format === "jpg") {
+    const canvas = await captureElementToCanvas(block, 1);
+    const optimized = optimizeCanvasForSmartstore(canvas);
+    return { dataUrl: canvasToJpg(optimized), ext: "jpg" };
+  }
+  const canvas = await captureElementToCanvas(block, WEBP_CAPTURE_SCALE);
+  const dataUrl = canvasToWebP(canvas, 1);
+  const { ext } = dataUrlToBytes(dataUrl);
+  return { dataUrl, ext };
+}
+
+function downloadDataUrl(dataUrl, filename) {
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+async function saveExportBlock(block, format = "webp") {
+  exitEditMode();
+  document.getElementById("save-panel")?.classList.remove("open");
+  const filename = block.dataset.exportFilename || "section";
+  const formatLabel = format === "jpg" ? "JPG" : "WebP";
+  try {
+    const { dataUrl, ext } = await captureBlockExport(block, format);
+    downloadDataUrl(dataUrl, `${EXPORT_PREFIX}${filename}.${ext}`);
+  } catch (error) {
+    console.error(error);
+    alert(`「${filename}」 ${formatLabel} 저장 중 오류가 발생했습니다.`);
+  }
+}
+
+async function saveAllExportBlocks(format = "webp") {
+  exitEditMode();
+  document.getElementById("save-panel")?.classList.remove("open");
+  const blocks = document.querySelectorAll("#capture .export-block");
+  if (!blocks.length) return;
+
+  const zipBtn = document.querySelector(format === "jpg" ? ".save-zip-jpg-btn" : ".save-zip-webp-btn");
+  const prevText = zipBtn?.textContent;
+  if (zipBtn) {
+    zipBtn.disabled = true;
+    zipBtn.textContent = "ZIP 생성 중…";
+  }
+
+  const formatLabel = format === "jpg" ? "JPG" : "WebP";
+  const zipSuffix = format === "jpg" ? "smartstore-jpg" : "webp";
+
+  try {
+    const zip = new JSZip();
+    for (const block of blocks) {
+      const filename = block.dataset.exportFilename || "section";
+      const { dataUrl, ext } = await captureBlockExport(block, format);
+      const { bytes } = dataUrlToBytes(dataUrl);
+      zip.file(`${EXPORT_PREFIX}${filename}.${ext}`, bytes);
+    }
+    const blob = await zip.generateAsync({ type: "blob", compression: "STORE" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${EXPORT_PREFIX}sections-${zipSuffix}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error(error);
+    alert(`전체 섹션 ${formatLabel} ZIP 저장 중 오류가 발생했습니다.`);
+  } finally {
+    if (zipBtn) {
+      zipBtn.disabled = false;
+      zipBtn.textContent = prevText;
+    }
+  }
+}
+
+
+
+document.addEventListener("click", event => {
+  const menu = document.querySelector(".save-menu");
+  if (menu && !menu.contains(event.target)) {
+    document.getElementById("save-panel")?.classList.remove("open");
+  }
+});
+
+buildSavePanel();
+
+</script>
+
+
+</body>
+</html>

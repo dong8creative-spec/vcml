@@ -622,6 +622,7 @@
         const { token, user } = await API.post('/auth/register', { email, password: pw, name, member_type: mt, phone, gender, birth_year })
         sessionStorage.removeItem('tc_signup_consent')
         API.login(token, user)
+        sessionStorage.setItem('tc_giftcode_prompt', '1')
         location.href = params.get('next') || '/'
       } catch (e) {
         toast(e.message || '가입 중 오류가 발생했습니다.', 'error')

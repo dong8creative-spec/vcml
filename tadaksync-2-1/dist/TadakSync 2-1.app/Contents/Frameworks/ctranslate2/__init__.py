@@ -1,0 +1,1 @@
+../../Resources/ctranslate2/__init__.py

@@ -8,8 +8,8 @@ datas = []
 binaries = []
 hiddenimports = []
 
-# Whisper 인식 엔진과 의존 라이브러리 전체 수집
-for pkg in ("ctranslate2", "faster_whisper", "av", "onnxruntime"):
+# Whisper 인식 엔진·webview와 의존 라이브러리 전체 수집
+for pkg in ("ctranslate2", "faster_whisper", "av", "onnxruntime", "webview"):
     d, b, h = collect_all(pkg)
     datas += d
     binaries += b
@@ -26,6 +26,7 @@ hiddenimports += [
     "Cocoa",
     "WebKit",
     "Foundation",
+    "AppKit",
 ]
 
 a = Analysis(
@@ -55,7 +56,7 @@ exe = EXE(
     upx=False,  # 맥에서 upx는 서명/실행 문제를 일으킬 수 있어 끔
     console=False,
     disable_windowed_traceback=False,
-    argv_emulation=False,
+    argv_emulation=True,  # 맥에서 더블클릭/문서 열기 인자 처리
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,

@@ -161,13 +161,14 @@ router.get('/courses', authMiddleware, async (req, res) => {
       access: db.getPaidCourseAccessMeta(c, {
         enrolledAt: e.enrolled_at,
         paidAt: order?.paid_at,
+        accessExpiresAt: e.access_expires_at || null,
       }),
       total_chapters: chapters.length,
       completed_chapters: completed,
       progress_pct: chapters.length > 0 ? Math.min(100, Math.round((completed / chapters.length) * 100)) : 0,
       certificate_eligible: chapters.length > 0
         && Math.round((completed / chapters.length) * 100) >= db.CERTIFICATE_THRESHOLD_PCT
-        && !db.getPaidCourseAccessMeta(c, { enrolledAt: e.enrolled_at, paidAt: order?.paid_at }).access_expired,
+        && !db.getPaidCourseAccessMeta(c, { enrolledAt: e.enrolled_at, paidAt: order?.paid_at, accessExpiresAt: e.access_expires_at || null }).access_expired,
       certificate_threshold_pct: db.CERTIFICATE_THRESHOLD_PCT,
       certificate_issued_at: e.certificate_issued_at || null,
       last_chapter_id: e.last_chapter_id || null,
@@ -182,7 +183,10 @@ router.get('/courses', authMiddleware, async (req, res) => {
         created_at: myReview.created_at || null,
         reward_locked: await db.isCourseReviewRewardLocked(req.user.id, c.id, myReview),
       } : null,
+      materials_configured: !!c.materials_url,
+      materials_unlocked: db.isMaterialsUnlocked(myReview),
     }
+    if (!row.materials_unlocked) delete row.materials_url
     if (db.courseSupportsLiveReplay(c)) {
       row.live_ended = db.isLiveCourseEnded(c)
       row.live_resources = db.getLiveResourceAccess(c, {

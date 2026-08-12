@@ -1,0 +1,1 @@
+../../../Resources/onnxruntime/capi/onnxruntime_collect_build_info.py

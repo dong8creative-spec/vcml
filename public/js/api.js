@@ -18,6 +18,7 @@ const API = {
   login(token, user) {
     localStorage.setItem('tc_token', token)
     localStorage.setItem('tc_user', JSON.stringify(user))
+    sessionStorage.setItem('tc_check_gift_access', '1')
     if (typeof renderHeaderAuth === 'function') renderHeaderAuth()
     if (typeof syncAdminFab === 'function') syncAdminFab().catch(() => {})
   },
@@ -336,6 +337,18 @@ window.addEventListener('resize', () => scheduleFitOneLineTexts())
 ;(function () {
   const s = document.createElement('script')
   s.src = '/js/live-reminder.js?v=18'
+  s.defer = true
+  document.head.appendChild(s)
+})()
+;(function () {
+  const s = document.createElement('script')
+  s.src = '/js/gift-code-popup.js'
+  s.defer = true
+  document.head.appendChild(s)
+})()
+;(function () {
+  const s = document.createElement('script')
+  s.src = '/js/gift-access-reminder.js'
   s.defer = true
   document.head.appendChild(s)
 })()

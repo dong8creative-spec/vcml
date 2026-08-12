@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타닥클래스 관리자</title>
   <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/admin.css?v=8" />
+  <link rel="stylesheet" href="css/admin.css?v=10" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -95,6 +95,11 @@
       <div class="nav-group-label">열람실</div>
       <a href="#institution" class="nav-item" data-section="institution">
         <i class="ti ti-building"></i> 열람실 관리
+      </a>
+
+      <div class="nav-group-label">이벤트</div>
+      <a href="#gift-codes" class="nav-item" data-section="gift-codes">
+        <i class="ti ti-gift"></i> 선물코드 이벤트
       </a>
 
       <div class="nav-group-label">내부 도구</div>
@@ -225,7 +230,7 @@
         <div class="card-header">
           <div>
             <div class="card-title">강의 목록 <span id="courses-count-label" class="td-sub fw-600"></span></div>
-            <p class="sec-sub">라이브 강의가 기본입니다. 종료 후 다시보기를 등록하고, VOD는 별도로 개설합니다.</p>
+            <p class="sec-sub">한 번에 등록하면 상세·결제·일정·정원까지 설정되고 바로 공개할 수 있습니다.</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto">
             <div class="filter-tabs" id="course-filter-tabs">
@@ -235,8 +240,7 @@
               <button type="button" class="filter-tab" data-course-filter="archived">구버전·비공개</button>
             </div>
             <button type="button" class="btn-sm" id="btn-sync-catalog"><i class="ti ti-refresh"></i> 카탈로그 동기화</button>
-            <button type="button" class="btn-sm" onclick="openVodCreateModal()"><i class="ti ti-video"></i> VOD 강의 개설</button>
-            <button class="btn-primary-sm" onclick="openCourseCreateModal()"><i class="ti ti-broadcast"></i> 라이브 강의 등록</button>
+            <button type="button" class="btn-primary-sm" onclick="openQuickCourseModal()"><i class="ti ti-plus"></i> 강의 등록</button>
           </div>
         </div>
         <table class="data-table">
@@ -425,6 +429,10 @@
               </label>
               <p class="sec-sub" id="cm-coupon-help" style="margin-top:8px;line-height:1.5">스마트스토어: 끄면 쿠폰 질문 없이 정가 링크만 안내합니다. 쿠폰 전액만: 사이트에서 0원일 때만 즉시 등록됩니다.</p>
               <div id="cm-purchase-links" class="sec-sub" style="margin-top:10px;line-height:1.6"></div>
+            </div>
+            <div class="form-group">
+              <label>교육자료 다운로드 링크 <span>선물코드 이벤트용 · 선택, 별점 5점+120자 이상 후기 작성 시 노출</span></label>
+              <input type="url" id="cm-materials-url" placeholder="https://..." maxlength="500" />
             </div>
             <div class="form-group">
               <label>썸네일 이미지</label>
@@ -669,7 +677,7 @@
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
               <div>
                 <h3 style="font-size:15px;font-weight:700;margin:0 0 4px">상세 소개 (커리큘럼 위)</h3>
-                <p class="sec-sub">강의 상세 페이지에서 커리큘럼 섹션 <strong>위</strong>에 표시됩니다. WebP 최대 10장 · 가로 1000px · 세로 5000px 이하.</p>
+                <p class="sec-sub">강의 상세 페이지에서 커리큘럼 섹션 <strong>위</strong>에 표시됩니다. WebP 최대 30장 · 가로 1000px · 세로 5000px 이하.</p>
               </div>
               <button type="button" class="btn-primary-sm" id="detail-intro-save-btn" onclick="saveDetailIntro()">상세 소개 저장</button>
             </div>
@@ -678,7 +686,7 @@
               <textarea id="detail-intro-text" rows="6" placeholder="강의 상세 설명, 진행 방식, 준비물 등"></textarea>
             </div>
             <div class="form-group">
-              <label>소개 이미지 <span style="font-size:12px;color:#888">WebP만 · 최대 10장 · 가로 1000px · 세로 5000px</span></label>
+              <label>소개 이미지 <span style="font-size:12px;color:#888">WebP만 · 최대 30장 · 가로 1000px · 세로 5000px</span></label>
               <div id="detail-intro-images-list" style="display:flex;flex-direction:column;gap:10px"></div>
               <button type="button" class="btn-sm" id="detail-intro-images-add" style="margin-top:10px">+ 이미지 추가</button>
             </div>
@@ -2196,6 +2204,100 @@
       </div>
     </section>
 
+    <!-- ===== SECTION: GIFT CODES ===== -->
+    <section class="section" id="sec-gift-codes">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">선물코드 이벤트</div>
+          <div class="sec-sub">신규 가입 회원에게 자동발급되는 8자리 개별 코드입니다. 가입 후 24시간 이내 코드가 발급되고, 발급 후 24시간 이내 기대평을 작성하면 3주간 무료로 강의를 열람할 수 있습니다.</div>
+        </div>
+      </div>
+
+      <!-- 자동발급 이벤트 설정 -->
+      <div class="card" style="margin-top:0">
+        <div style="font-size:14px;font-weight:700;color:#333;margin-bottom:4px">자동발급 이벤트 설정</div>
+        <div style="font-size:12.5px;color:#888;margin-bottom:14px">신규 가입자가 팝업을 열면 아래 설정된 강의로 코드가 자동 발급됩니다(정원 소진 시 중단).</div>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div style="flex:2;min-width:200px">
+            <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">대상 강의</label>
+            <select id="ge-course-select" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box"></select>
+          </div>
+          <div style="width:100px">
+            <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">정원(명)</label>
+            <input type="number" id="ge-quota" value="20" min="1" max="1000" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box">
+          </div>
+          <div style="width:110px">
+            <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">유효기간(일)</label>
+            <input type="number" id="ge-duration" value="21" min="1" max="365" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box">
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;padding-bottom:9px">
+            <input type="checkbox" id="ge-active"> 활성화
+          </label>
+          <button class="btn-save" id="ge-save-btn" onclick="geSaveConfig()" style="margin:0"><i class="ti ti-check"></i> 저장</button>
+        </div>
+        <p id="ge-status" style="font-size:13px;margin:10px 0 0"></p>
+        <p id="ge-summary" style="font-size:12.5px;color:#888;margin:6px 0 0"></p>
+      </div>
+
+      <!-- 코드 발급 -->
+      <div class="card" style="margin-top:0">
+        <div style="font-size:14px;font-weight:700;color:#333;margin-bottom:14px">새 코드 발급</div>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div style="flex:2;min-width:200px">
+            <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">강의</label>
+            <select id="gc-course-select" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box"></select>
+          </div>
+          <div style="width:100px">
+            <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">개수</label>
+            <input type="number" id="gc-count" value="10" min="1" max="500" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box">
+          </div>
+          <div style="width:110px">
+            <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">유효기간(일)</label>
+            <input type="number" id="gc-duration" value="21" min="1" max="365" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box">
+          </div>
+          <div style="flex:1;min-width:140px">
+            <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">메모</label>
+            <input type="text" id="gc-note" placeholder="예: 8월 이벤트" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;box-sizing:border-box">
+          </div>
+          <button class="btn-save" id="gc-generate-btn" onclick="gcGenerate()" style="margin:0"><i class="ti ti-plus"></i> 발급</button>
+        </div>
+        <p id="gc-generate-status" style="font-size:13px;color:#e74c3c;margin:10px 0 0"></p>
+        <div id="gc-generate-result" style="display:none;margin-top:16px;background:#f8f9fa;border-radius:10px;padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:600;color:#555">발급된 코드 <span id="gc-generate-count"></span>개</div>
+            <div style="display:flex;gap:8px">
+              <button onclick="gcCopyGenerated()" style="padding:6px 12px;border:1px solid #ddd;border-radius:6px;background:#fff;font-size:12.5px;cursor:pointer"><i class="ti ti-copy"></i> 복사</button>
+              <button onclick="gcDownloadCsv()" style="padding:6px 12px;border:1px solid #ddd;border-radius:6px;background:#fff;font-size:12.5px;cursor:pointer"><i class="ti ti-download"></i> CSV 다운로드</button>
+            </div>
+          </div>
+          <div id="gc-generate-list" style="display:flex;flex-wrap:wrap;gap:6px;font-family:monospace;font-size:13px"></div>
+        </div>
+      </div>
+
+      <!-- 코드 목록 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+          <div style="font-size:14px;font-weight:700;color:#333">발급된 코드 목록</div>
+          <div style="display:flex;gap:8px">
+            <select id="gc-filter-course" onchange="gcLoadList()" style="padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px">
+              <option value="">전체 강의</option>
+            </select>
+            <select id="gc-filter-status" onchange="gcLoadList()" style="padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px">
+              <option value="">전체 상태</option>
+              <option value="available">미사용</option>
+              <option value="reserved">예약중</option>
+              <option value="redeemed">사용완료</option>
+              <option value="expired">만료</option>
+              <option value="inactive">비활성</option>
+            </select>
+          </div>
+        </div>
+        <div id="gc-codes-table">
+          <div style="text-align:center;padding:40px;color:#aaa;font-size:14px">불러오는 중...</div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- 열람실 등록/편집 모달 -->
@@ -2286,134 +2388,118 @@
     </div>
   </div>
 
-  <!-- 라이브 강의 등록 모달 -->
-  <div id="recorded-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:16px;padding:28px;width:560px;max-width:92vw;max-height:90vh;overflow-y:auto">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-broadcast"></i> 라이브 강의 등록</div>
-        <button onclick="closeCourseCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
-      </div>
-      <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#555555;margin-bottom:20px;line-height:1.6">
-        <strong>운영 순서</strong><br>
-        1) 라이브 일정·Meet 등록 → 2) 강의 진행 → 3) 종료 후 「라이브·다시보기」에서 다시보기 링크 등록<br>
-        판매가 0원이면 무료 라이브로 저장됩니다. 다시보기는 이 화면이 아니라 종료 후에 등록하세요.
-      </div>
-      <div class="form-group">
-        <label>강의 제목 <span style="color:#111111">*</span></label>
-        <input type="text" id="rc-title" placeholder="예: 편집 초신속 스탠다드" />
-      </div>
-      <div class="form-group">
-        <label>카테고리 <span style="color:#111111">*</span></label>
-        <input type="text" id="rc-category" placeholder="캡컷 PRO" value="캡컷 PRO" />
-      </div>
-      <div class="form-group">
-        <label>강의 설명</label>
-        <textarea id="rc-desc" rows="3" placeholder="강의 내용을 간략히 설명해주세요" style="width:100%;padding:10px 14px;border:0.5px solid #ddd;border-radius:8px;font-size: 16.8px;resize:vertical;font-family:inherit"></textarea>
-      </div>
-      <div class="two-col">
-        <div class="form-group">
-          <label>정가 (원)</label>
-          <input type="number" id="rc-price" min="0" step="1000" placeholder="89000" />
+  <!-- 강의 빠른 등록 모달 -->
+  <div id="quick-course-overlay" class="quick-course-overlay" style="display:none">
+    <div class="quick-course-modal" role="dialog" aria-labelledby="quick-course-title">
+      <div class="quick-course-modal__head">
+        <div>
+          <div class="quick-course-modal__title" id="quick-course-title"><i class="ti ti-plus"></i> 강의 등록</div>
+          <p class="quick-course-modal__sub">필수 항목만 입력하면 상세 페이지에 바로 노출됩니다.</p>
         </div>
-        <div class="form-group">
-          <label>판매가 (원) <span style="font-size:13.2px;color:#aaa">0 = 무료 라이브</span></label>
-          <input type="number" id="rc-sale-price" min="0" step="1000" placeholder="69000" />
-        </div>
+        <button type="button" class="modal-close" onclick="closeQuickCourseModal()" aria-label="닫기">✕</button>
       </div>
-      <div class="two-col">
-        <div class="form-group">
-          <label>강의 시작 일시 <span style="color:#111111">*</span></label>
-          <input type="datetime-local" id="rc-live-starts" />
-        </div>
-        <div class="form-group">
-          <label>강의 종료 일시 <span style="font-size:13.2px;color:#aaa">미입력 시 시작+3시간</span></label>
-          <input type="datetime-local" id="rc-live-ends" />
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Google Meet 코드</label>
-        <input type="text" id="rc-meet-code" placeholder="abc-defg-hij 또는 전체 URL" />
-      </div>
-      <div class="form-group">
-        <label>강의 자료 다운로드 링크 <span style="font-size:13.2px;color:#aaa">시작 1시간 전 ~ 종료 후 1주일</span></label>
-        <input type="url" id="rc-material-url" placeholder="https://..." maxlength="500" />
-      </div>
-      <div class="form-group">
-        <label>수강생 단톡방 링크</label>
-        <input type="url" id="rc-chat-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
-      </div>
-      <div class="two-col">
-        <div class="form-group">
-          <label>노출 순서</label>
-          <input type="number" id="rc-sort-order" min="1" placeholder="999" />
-        </div>
-        <div class="form-group">
-          <label>공개 여부</label>
-          <select id="rc-published">
-            <option value="0">비공개 (준비 중)</option>
-            <option value="1">공개</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>썸네일 아이콘</label>
-        <input type="text" id="rc-icon" placeholder="ti-broadcast" value="ti-broadcast" />
-      </div>
-      <button class="btn-save" style="width:100%;margin-top:8px" onclick="createCourseFromForm()">라이브 강의 등록</button>
-    </div>
-  </div>
 
-  <!-- VOD 강의 개설 모달 -->
-  <div id="vod-create-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:16px;padding:28px;width:560px;max-width:92vw;max-height:90vh;overflow-y:auto">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <div style="font-size: 20.4px;font-weight:600;color:#111"><i class="ti ti-video"></i> VOD 강의 개설</div>
-        <button onclick="closeVodCreateModal()" style="background:none;border:none;font-size: 24px;color:#aaa;cursor:pointer"><i class="ti ti-x"></i></button>
-      </div>
-      <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;font-size: 15.6px;color:#555555;margin-bottom:20px;line-height:1.6">
-        라이브 없이 챕터·영상 URL로 운영하는 녹화 강의입니다.<br>
-        등록 후 <strong>커리큘럼</strong>에서 챕터와 영상 링크를 추가하세요.
+      <div class="form-group">
+        <label>강의 형태</label>
+        <select id="qc-kind">
+          <option value="live">라이브 (일정 후 다시보기)</option>
+          <option value="vod">VOD (녹화 강의)</option>
+        </select>
       </div>
       <div class="form-group">
-        <label>강의 제목 <span style="color:#111111">*</span></label>
-        <input type="text" id="vod-title" placeholder="예: 캡컷 기초 마스터" />
+        <label>강의 제목 <span class="req">*</span></label>
+        <input type="text" id="qc-title" placeholder="예: 편집 초신속 스탠다드" />
       </div>
       <div class="form-group">
-        <label>카테고리 <span style="color:#111111">*</span></label>
-        <input type="text" id="vod-category" placeholder="캡컷 PRO" value="캡컷 PRO" />
+        <label>카테고리 <span class="req">*</span></label>
+        <input type="text" id="qc-category" value="캡컷 PRO" />
       </div>
       <div class="form-group">
-        <label>강의 설명</label>
-        <textarea id="vod-desc" rows="3" placeholder="강의 내용을 간략히 설명해주세요" style="width:100%;padding:10px 14px;border:0.5px solid #ddd;border-radius:8px;font-size: 16.8px;resize:vertical;font-family:inherit"></textarea>
+        <label>짧은 설명 (목록·카드용)</label>
+        <textarea id="qc-desc" rows="2" placeholder="한 줄 소개"></textarea>
       </div>
+      <div class="form-group">
+        <label>상세 페이지 본문</label>
+        <textarea id="qc-detail" rows="5" placeholder="강의 상세에 표시될 소개글"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>목록 썸네일</label>
+        <div class="qc-media-row">
+          <div class="qc-thumb-preview" id="qc-thumb-preview">미리보기</div>
+          <div class="qc-media-controls">
+            <input type="file" id="qc-thumb-file" accept="image/jpeg,image/png,image/webp" />
+            <input type="url" id="qc-thumb-url" placeholder="또는 이미지 URL (https://...)" maxlength="500" />
+            <button type="button" class="btn-sm" id="qc-thumb-clear" style="display:none;width:fit-content">썸네일 제거</button>
+          </div>
+        </div>
+        <p class="field-hint">JPEG / PNG / WebP · 카드·목록에 표시됩니다.</p>
+      </div>
+
+      <div class="form-group">
+        <label>상세 페이지 이미지</label>
+        <div id="qc-detail-images" class="qc-detail-images"></div>
+        <button type="button" class="btn-sm" id="qc-detail-add" style="margin-top:8px">+ 이미지 추가</button>
+        <p class="field-hint">JPEG / PNG / WebP · 최대 30장 · 상세 소개 영역에 순서대로 표시됩니다.</p>
+      </div>
+
       <div class="two-col">
         <div class="form-group">
           <label>정가 (원)</label>
-          <input type="number" id="vod-price" min="0" step="1000" placeholder="89000" />
+          <input type="number" id="qc-price" min="0" step="1000" placeholder="89000" />
         </div>
         <div class="form-group">
-          <label>판매가 (원) <span style="font-size:13.2px;color:#aaa">0 = 무료</span></label>
-          <input type="number" id="vod-sale-price" min="0" step="1000" placeholder="69000" />
+          <label>판매가 (원) <span class="hint">0 = 무료</span></label>
+          <input type="number" id="qc-sale-price" min="0" step="1000" placeholder="69000" />
         </div>
       </div>
-      <div class="two-col">
+
+      <div id="qc-paid-fields">
         <div class="form-group">
-          <label>노출 순서</label>
-          <input type="number" id="vod-sort-order" min="1" placeholder="999" />
+          <label>스마트스토어 결제 링크 <span class="req">*</span></label>
+          <input type="url" id="qc-store-url" placeholder="https://smartstore.naver.com/..." maxlength="500" />
+          <p class="field-hint">유료 강의는 스마트스토어에서 결제합니다. 쿠폰 할인 링크는 나중에 「편집」에서 추가할 수 있습니다.</p>
         </div>
-        <div class="form-group">
-          <label>공개 여부</label>
-          <select id="vod-published">
-            <option value="0">비공개 (준비 중)</option>
-            <option value="1">공개</option>
-          </select>
+        <div class="two-col">
+          <div class="form-group">
+            <label>결제 시작 (선택)</label>
+            <input type="datetime-local" id="qc-checkout-starts" />
+          </div>
+          <div class="form-group">
+            <label>결제 마감 (선택)</label>
+            <input type="datetime-local" id="qc-checkout-ends" />
+          </div>
         </div>
       </div>
+
+      <div id="qc-live-fields">
+        <div class="two-col">
+          <div class="form-group">
+            <label>강의 시작 <span class="req">*</span></label>
+            <input type="datetime-local" id="qc-live-starts" />
+          </div>
+          <div class="form-group">
+            <label>강의 종료 <span class="hint">비우면 시작+3시간</span></label>
+            <input type="datetime-local" id="qc-live-ends" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>일정 표시 문구 (선택)</label>
+          <input type="text" id="qc-live-schedule" placeholder="예: 3월 15일(토) 14:00 ~ 17:00" />
+        </div>
+      </div>
+
       <div class="form-group">
-        <label>썸네일 아이콘</label>
-        <input type="text" id="vod-icon" placeholder="ti-video" value="ti-video" />
+        <label>모집 정원</label>
+        <input type="number" id="qc-enrollment-limit" min="0" step="1" placeholder="0 = 무제한" />
       </div>
-      <button class="btn-save" style="width:100%;margin-top:8px" onclick="createVodCourseFromForm()">VOD 강의 개설</button>
+
+      <label class="quick-course-check">
+        <input type="checkbox" id="qc-publish" checked />
+        등록 즉시 공개 (강의 목록·상세에 노출)
+      </label>
+
+      <button type="button" class="btn-save quick-course-submit" id="qc-submit-btn">등록하고 공개하기</button>
     </div>
   </div>
 
@@ -2423,21 +2509,28 @@
   <script src="/js/admin/utils.js?v=1"></script>
   <script src="/js/admin/images.js?v=1"></script>
   <script src="/js/admin/seq-nav.js?v=1"></script>
-  <script src="/js/admin/auth.js?v=1"></script>
+  <script src="/js/admin/auth.js?v=2"></script>
   <script src="/js/admin/router.js?v=1"></script>
   <script src="/js/admin/boot.js?v=1"></script>
   <script src="/js/admin/modules/support.js?v=1"></script>
   <script src="/js/admin/modules/blog.js?v=1"></script>
   <script src="/js/admin/modules/ops.js?v=1"></script>
   <script src="/js/admin/modules/instructor-portfolio.js?v=14"></script>
+  <script src="/js/admin/modules/courses-quick.js?v=2"></script>
+  <script src="/js/admin/modules/gift-codes.js?v=1"></script>
   <script>
     // ── 헬퍼 (AdminUtils 위임) ──
     const esc = (...a) => AdminUtils.esc(...a)
     const escAttr = (...a) => AdminUtils.escAttr(...a)
     const fmtD = (...a) => AdminUtils.fmtD(...a)
 
-    // ── 어드민 인증 체크 ──
-    AdminAuth.guardAdminAccess()
+    // ── 어드민 인증 체크 (통과 후에만 데이터 로드) ──
+    async function bootAdmin() {
+      const ok = await AdminAuth.guardAdminAccess()
+      if (!ok) return
+      loadDashboard()
+    }
+    bootAdmin().catch(() => {})
 
     // ── 데이터 로드 함수들 ──
     async function loadDashboard() {
@@ -2585,6 +2678,7 @@
       _courses = await API.get('/admin/courses')
       renderCoursesTable()
     }
+    window.loadCourses = loadCourses
 
     let _chapterEditId = null
     let _curriculumCourseMeta = null
@@ -2593,7 +2687,7 @@
     function normalizeDetailIntroImages(course) {
       if (!course) return []
       if (Array.isArray(course.detail_intro_images) && course.detail_intro_images.length) {
-        return course.detail_intro_images.filter(Boolean).slice(0, 10)
+        return course.detail_intro_images.filter(Boolean).slice(0, 30)
       }
       if (course.detail_intro_image) return [course.detail_intro_image]
       return []
@@ -2660,7 +2754,7 @@
           </div>`
         }).join('')
       }
-      if (addBtn) addBtn.style.display = _detailIntroImages.length >= 10 ? 'none' : ''
+      if (addBtn) addBtn.style.display = _detailIntroImages.length >= 30 ? 'none' : ''
     }
 
     function fillDetailIntroEditor(course) {
@@ -2722,7 +2816,7 @@
     }
 
     document.getElementById('detail-intro-images-add')?.addEventListener('click', () => {
-      if (_detailIntroImages.length >= 10) return
+      if (_detailIntroImages.length >= 30) return
       _detailIntroImages.push('')
       renderDetailIntroImagesList()
     })
@@ -3446,6 +3540,7 @@
       document.getElementById('cm-store-url-none').value = urls.none || ''
       document.getElementById('cm-store-url-10').value = urls.discount_10 || ''
       document.getElementById('cm-store-url-20').value = urls.discount_20 || ''
+      document.getElementById('cm-materials-url').value = c.materials_url || ''
       syncCmCheckoutFields()
       document.getElementById('cm-thumb-icon').value = c.thumbnail_icon || 'ti-video'
       document.getElementById('cm-thumb-style').value = c.thumb_style === 'dark' ? 'dark' : 'light'
@@ -3500,6 +3595,7 @@
         store_checkout_urls: storeUrls,
         thumbnail_icon: document.getElementById('cm-thumb-icon').value.trim() || 'ti-video',
         thumb_style: document.getElementById('cm-thumb-style').value === 'dark' ? 'dark' : 'light',
+        materials_url: document.getElementById('cm-materials-url').value.trim() || null,
       }
       const thumbUrl = document.getElementById('cm-thumb-url').value.trim()
       if (_cmThumbPending !== undefined) payload.thumbnail_url = _cmThumbPending
@@ -3623,6 +3719,7 @@
       onLiveTypeChange()
       document.getElementById('live-panel').scrollIntoView({ behavior: 'smooth' })
     }
+    window.openLivePanel = openLivePanel
 
     function toDatetimeLocalValue(value) {
       const d = value instanceof Date ? value : new Date(value)
@@ -6416,6 +6513,7 @@
       homepage: loadHomepage,
       settings: loadSettings,
       institution: typeof loadInstitutionCourses === 'function' ? loadInstitutionCourses : undefined,
+      'gift-codes': typeof loadGiftCodes === 'function' ? loadGiftCodes : undefined,
     })
     window.loadRefunds = () => AdminOps.loadRefunds()
     window.loadProjects = (status) => AdminOps.loadProjects(status)
@@ -6423,127 +6521,6 @@
     window.loadTickets = (status) => AdminSupport.loadTickets(status)
     window.loadFaqs = () => AdminSupport.loadFaqs()
     AdminRouter.bindNav()
-
-    function openCourseCreateModal() {
-      document.getElementById('recorded-create-overlay').style.display = 'flex'
-    }
-    function closeCourseCreateModal() {
-      document.getElementById('recorded-create-overlay').style.display = 'none'
-    }
-    function openRecordedCreateModal() { openCourseCreateModal() }
-    function closeRecordedCreateModal() { closeCourseCreateModal() }
-    function openLiveCreateModal() { openCourseCreateModal() }
-    function closeLiveCreateModal() { closeCourseCreateModal() }
-
-    function openVodCreateModal() {
-      document.getElementById('vod-create-overlay').style.display = 'flex'
-    }
-    function closeVodCreateModal() {
-      document.getElementById('vod-create-overlay').style.display = 'none'
-    }
-
-    async function createCourseFromForm() {
-      const title = document.getElementById('rc-title').value.trim()
-      const category = document.getElementById('rc-category').value.trim()
-      const description = document.getElementById('rc-desc').value.trim()
-      const price = parseInt(document.getElementById('rc-price').value, 10) || 0
-      const sale_price = parseInt(document.getElementById('rc-sale-price').value, 10)
-      const sale = Number.isFinite(sale_price) ? sale_price : price
-      const sort_order = parseInt(document.getElementById('rc-sort-order').value, 10) || undefined
-      const is_published = parseInt(document.getElementById('rc-published').value, 10)
-      const thumbnail_icon = document.getElementById('rc-icon').value.trim() || 'ti-broadcast'
-      const startsVal = document.getElementById('rc-live-starts').value
-      const endsVal = document.getElementById('rc-live-ends').value
-      if (!title) { alert('강의 제목을 입력해주세요.'); return }
-      if (!category) { alert('카테고리를 입력해주세요.'); return }
-      if (!startsVal) { alert('강의 시작 일시를 입력해주세요.'); return }
-      const live_starts_at = new Date(startsVal).toISOString()
-      const live_ends_at = endsVal ? new Date(endsVal).toISOString() : null
-      try {
-        const res = await API.post('/admin/courses', {
-          title,
-          category,
-          description,
-          price,
-          sale_price: sale,
-          sort_order,
-          is_published,
-          thumbnail_icon,
-          live_starts_at,
-          live_ends_at,
-          live_schedule: new Date(startsVal).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
-          meet_code: document.getElementById('rc-meet-code').value.trim() || null,
-          live_material_url: document.getElementById('rc-material-url').value.trim() || null,
-          live_chat_url: document.getElementById('rc-chat-url').value.trim() || null,
-          delivery_mode: 'live_first',
-          course_type: sale === 0 ? 'live' : 'recorded',
-          checkout_provider: sale > 0 ? 'smartstore' : 'site',
-        })
-        alert('라이브 강의가 등록되었습니다. 종료 후 「라이브·다시보기」에서 다시보기 링크를 등록하세요.')
-        closeCourseCreateModal()
-        await loadCourses()
-        if (res.course?.id) openLivePanel(res.course.id)
-        ;['rc-title', 'rc-desc', 'rc-price', 'rc-sale-price', 'rc-sort-order',
-          'rc-live-starts', 'rc-live-ends', 'rc-meet-code', 'rc-material-url',
-          'rc-chat-url'].forEach(id => {
-          const el = document.getElementById(id)
-          if (el) el.value = ''
-        })
-        document.getElementById('rc-category').value = '캡컷 PRO'
-        document.getElementById('rc-published').value = '0'
-        document.getElementById('rc-icon').value = 'ti-broadcast'
-      } catch (e) {
-        alert(e.message || '등록 중 오류가 발생했습니다.')
-      }
-    }
-
-    async function createVodCourseFromForm() {
-      const title = document.getElementById('vod-title').value.trim()
-      const category = document.getElementById('vod-category').value.trim()
-      const description = document.getElementById('vod-desc').value.trim()
-      const price = parseInt(document.getElementById('vod-price').value, 10) || 0
-      const sale_price = parseInt(document.getElementById('vod-sale-price').value, 10)
-      const sale = Number.isFinite(sale_price) ? sale_price : price
-      const sort_order = parseInt(document.getElementById('vod-sort-order').value, 10) || undefined
-      const is_published = parseInt(document.getElementById('vod-published').value, 10)
-      const thumbnail_icon = document.getElementById('vod-icon').value.trim() || 'ti-video'
-      if (!title) { alert('강의 제목을 입력해주세요.'); return }
-      if (!category) { alert('카테고리를 입력해주세요.'); return }
-      try {
-        const res = await API.post('/admin/courses', {
-          title,
-          category,
-          description,
-          price,
-          sale_price: sale,
-          sort_order,
-          is_published,
-          thumbnail_icon,
-          delivery_mode: 'vod_only',
-          course_type: 'recorded',
-          checkout_provider: sale > 0 ? 'smartstore' : 'site',
-        })
-        alert('VOD 강의가 개설되었습니다. 커리큘럼에서 챕터·영상 URL을 등록하세요.')
-        closeVodCreateModal()
-        await loadCourses()
-        if (res.course?.id) {
-          localStorage.setItem('admin_curriculum_course', res.course.id)
-          showSection('curriculum')
-        }
-        ;['vod-title', 'vod-desc', 'vod-price', 'vod-sale-price', 'vod-sort-order'].forEach(id => {
-          const el = document.getElementById(id)
-          if (el) el.value = ''
-        })
-        document.getElementById('vod-category').value = '캡컷 PRO'
-        document.getElementById('vod-published').value = '0'
-        document.getElementById('vod-icon').value = 'ti-video'
-      } catch (e) {
-        alert(e.message || '개설 중 오류가 발생했습니다.')
-      }
-    }
-
-    async function createRecordedCourse() { return createCourseFromForm() }
-    async function createLiveCourse() { return createCourseFromForm() }
 
     async function fillCmProgramSelect(selectedId) {
       const sel = document.getElementById('cm-program-id')
@@ -6568,9 +6545,6 @@
       const now = new Date()
       el.innerHTML = `<i class="ti ti-calendar"></i> ${now.getFullYear()}년 ${now.getMonth() + 1}월 기준`
     })()
-
-    // 초기 로드
-    loadDashboard();
 
     // ── 미션 제출 검수 ──
     let _subReviewId = null

@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>도각쌤의 타닥클래스 · 회차별 일정 안내</title>
+
+<style>
+  * { box-sizing: border-box; }
+
+  :root {
+    --black: #111111;
+    --gray-2: #666666;
+    --bg: #ffffff;
+    --soft: #f5f5f5;
+    --cell-shadow: 6px 6px 0 rgba(0, 0, 0, 0.03);
+    --color-edit: #C8FF32;
+    --color-connect: #3157FF;
+    --color-plan: #7857FF;
+  }
+
+  body {
+    margin: 0;
+    background: #ececec;
+    font-family: Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+    color: var(--black);
+  }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #111;
+  }
+
+  .toolbar button {
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 9px 15px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .edit-btn, .save-btn { background: #fff; color: #111; }
+  .reset-btn { background: #222; color: #fff; }
+
+  .save-menu { position: relative; }
+
+  .save-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(420px, 92vw);
+    max-height: 360px;
+    overflow-y: auto;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #333;
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+  }
+
+  .save-panel.open {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .save-panel-title {
+    grid-column: 1 / -1;
+    padding: 4px 6px 8px;
+    font-size: 11px;
+    font-weight: 900;
+    color: #666;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 2px;
+  }
+
+  .save-panel button {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+    background: #f7f7f7;
+    color: #111;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .save-panel button:hover {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+  }
+
+  .save-panel button.save-all-btn {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    text-align: center;
+    background: #111;
+    color: #fff;
+    border-color: #111;
+  }
+
+  .format-toolbar {
+    display: none;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    width: 100%;
+    max-width: 860px;
+    margin-top: 4px;
+    padding: 8px 10px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 6px;
+  }
+
+  body.edit-mode .format-toolbar { display: flex; }
+
+  .format-toolbar button {
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .format-toolbar .fmt-hint {
+    font-size: 11px;
+    color: #888;
+    font-weight: 600;
+  }
+
+  .format-toolbar .fmt-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .format-toolbar .fmt-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #aaa;
+  }
+
+  .format-toolbar input[type="color"] {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .format-toolbar .fmt-divider {
+    width: 1px;
+    height: 22px;
+    background: #444;
+  }
+
+  .text-highlight.accent-underline,
+  span.accent-underline {
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    box-shadow: inset 0 -0.45em 0 var(--accent-underline, #111);
+  }
+
+  #capture {
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto 60px;
+    background: var(--bg);
+    font-size: 22px;
+    line-height: 1.65;
+  }
+
+  .export-block { width: 100%; }
+
+  .export-shot {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 860px;
+    padding: 32px 24px 36px;
+    background: #fff;
+    box-sizing: border-box;
+    font-size: 22px;
+  }
+
+  .page-pad {
+    padding: 36px 28px 32px;
+  }
+
+  .official-notice {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+    padding: 16px 18px;
+    border-left: 4px solid #FEE500;
+    background: #FFFBE6;
+  }
+
+  .kakao-notice-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+  }
+
+  .kakao-notice-icon svg {
+    display: block;
+    width: 28px;
+    height: 28px;
+  }
+
+  .official-notice p {
+    margin: 0;
+    font-size: 21px;
+    line-height: 1.55;
+    font-weight: 700;
+    color: #3C1E1E;
+  }
+
+  .official-notice strong {
+    font-weight: 950;
+  }
+
+  .top-label {
+    display: inline-block;
+    padding: 12px 16px;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    border: 2px solid var(--black);
+    background: var(--soft);
+  }
+
+  h1 {
+    margin: 22px 0 0;
+    font-size: 44px;
+    line-height: 1.18;
+    font-weight: 950;
+    letter-spacing: -0.02em;
+  }
+
+  .intro {
+    margin-top: 22px;
+    font-size: 24px;
+    line-height: 1.65;
+    color: var(--gray-2);
+  }
+
+  .intro p { margin: 0 0 10px; }
+  .intro strong { color: var(--black); }
+
+  .section {
+    padding: 0 24px 28px;
+  }
+
+  .section-frame {
+    border: 2px solid var(--black);
+    background: #fff;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 24px 26px;
+    border-bottom: 2px solid var(--black);
+    font-size: 30px;
+    font-weight: 950;
+    line-height: 1.25;
+  }
+
+  .section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    height: 56px;
+    padding: 0 14px;
+    font-size: 20px;
+    font-weight: 950;
+    background: var(--black);
+    color: #fff;
+  }
+
+  .section-body {
+    padding: 28px 26px 32px;
+  }
+
+  .lead {
+    font-size: 24px;
+    line-height: 1.65;
+    color: var(--gray-2);
+  }
+
+  .weekend-box {
+    margin-top: 22px;
+    padding: 26px 24px;
+    border: 2px solid var(--black);
+    background: var(--soft);
+  }
+
+  .weekend-box-title {
+    font-size: 32px;
+    font-weight: 950;
+    line-height: 1.25;
+  }
+
+  .weekend-box-time {
+    margin-top: 14px;
+    font-size: 28px;
+    font-weight: 900;
+  }
+
+  .weekend-box-note {
+    margin-top: 14px;
+    font-size: 22px;
+    line-height: 1.6;
+    color: var(--gray-2);
+  }
+
+  .cohort-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .cohort-chip {
+    padding: 18px 20px;
+    border: 2px solid var(--black);
+    background: #fff;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+
+  .cohort-chip strong {
+    display: block;
+    font-size: 26px;
+    font-weight: 950;
+    margin-bottom: 6px;
+  }
+
+  .include-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 26px;
+  }
+
+  .include-arrow {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--gray-2);
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 20px;
+    font-size: 20px;
+    font-weight: 950;
+    letter-spacing: 0.04em;
+    border-radius: 10px;
+  }
+
+  .tag.edit { background: var(--color-edit); color: #111; }
+  .tag.connect { background: var(--color-connect); color: #fff; }
+  .tag.plan { background: var(--color-plan); color: #fff; }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .notice-box {
+    margin-top: 26px;
+    padding: 24px;
+    border: 2px solid var(--black);
+    background: #fff;
+    font-size: 22px;
+    line-height: 1.7;
+    color: var(--gray-2);
+  }
+
+  .notice-box strong { color: var(--black); }
+
+  .session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .session-card {
+    border: 2px solid var(--black);
+    padding: 28px 24px 30px;
+    background: #fff;
+  }
+
+  .session-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .session-no {
+    font-size: 38px;
+    font-weight: 950;
+    line-height: 1.1;
+  }
+
+  .session-schedule {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .schedule-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: 2px solid var(--black);
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .schedule-chip.year {
+    background: var(--black);
+    color: #fff;
+    font-weight: 950;
+    letter-spacing: 0.02em;
+  }
+
+  .schedule-chip.date {
+    background: var(--soft);
+    font-weight: 900;
+  }
+
+  .schedule-chip.date.sat { border-color: #111; }
+  .schedule-chip.date.sun { border-color: #555; background: #f5f5f5; }
+
+  .schedule-chip.time {
+    background: #fff;
+    font-weight: 950;
+    letter-spacing: 0.01em;
+  }
+
+  .schedule-chip.duration {
+    background: #fff;
+    border-color: #bbb;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-2);
+  }
+
+  .session-gear {
+    margin-top: 16px;
+    padding: 20px 22px;
+    border-radius: 16px;
+    border: 1.5px solid #e8e8e8;
+    background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
+  }
+
+  .session-gear.is-mobile-only {
+    border-color: rgba(200, 255, 50, 0.55);
+    background: linear-gradient(180deg, rgba(200, 255, 50, 0.14) 0%, rgba(200, 255, 50, 0.06) 100%);
+  }
+
+  .session-gear.is-desk {
+    border-color: #ccc;
+    background: linear-gradient(180deg, #f7f7f7 0%, #fff 100%);
+  }
+
+  .gear-label {
+    display: block;
+    margin-bottom: 14px;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gray-2);
+  }
+
+  .gear-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .gear-row + .gear-row { margin-top: 12px; }
+
+  .gear-icon {
+    font-size: 1.35em;
+    line-height: 1;
+    margin-right: 6px;
+  }
+
+  .gear-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+  }
+
+  .gear-chip.mobile-only {
+    padding: 12px 22px;
+    background: var(--color-edit);
+    color: #111;
+    border: 2px solid var(--black);
+    font-size: 22px;
+    font-weight: 950;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .gear-not {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1.5px dashed #999;
+    background: rgba(255, 255, 255, 0.7);
+    font-size: 19px;
+    font-weight: 800;
+    color: #666;
+  }
+
+  .gear-not-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ddd;
+    color: #444;
+    font-size: 14px;
+    font-weight: 950;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .gear-note {
+    margin-top: 14px;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gray-2);
+    line-height: 1.45;
+  }
+
+  .gear-chip.ai {
+    background: #fff;
+    border: 1.5px solid #ccc;
+    color: var(--black);
+  }
+
+  .gear-required-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .gear-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 18px 18px 16px;
+    border-radius: 14px;
+    border: 2px solid var(--black);
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gear-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: var(--black);
+  }
+
+  .gear-card.claude {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  }
+
+  .gear-card.claude::before { background: #C8FF32; width: 6px; }
+
+  .gear-card.device {
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  }
+
+  .gear-card.device::before { background: var(--color-connect); width: 6px; }
+
+  .gear-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    font-size: 36px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .gear-card-icon svg {
+    width: 40px;
+    height: 40px;
+    display: block;
+  }
+
+  .gear-card-icon.claude-icon svg {
+    fill: hsl(14.8, 63.1%, 59.6%);
+  }
+
+  .gear-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .gear-card-req {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 950;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .gear-card.claude .gear-card-req {
+    background: #C8FF32;
+    color: #111;
+  }
+
+  .gear-card.device .gear-card-req {
+    background: var(--color-connect);
+    color: #fff;
+  }
+
+  .gear-card-name {
+    font-size: 20px;
+    font-weight: 950;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+  }
+
+  .gear-card-sub {
+    font-size: 16px;
+    font-weight: 600;
+    opacity: 0.75;
+    line-height: 1.3;
+  }
+
+  .gear-card.claude .gear-card-sub { color: #ccc; }
+  .gear-card.device .gear-card-sub { color: var(--gray-2); }
+
+  @media (max-width: 640px) {
+    .gear-required-grid { grid-template-columns: 1fr; }
+  }
+
+  .session-title {
+    margin: 20px 0 0;
+    font-size: 30px;
+    font-weight: 950;
+    line-height: 1.35;
+  }
+
+  .session-sub {
+    margin-top: 10px;
+    font-size: 22px;
+    line-height: 1.55;
+    color: var(--gray-2);
+  }
+
+  .curriculum-list {
+    margin: 20px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .curriculum-list li {
+    position: relative;
+    padding: 16px 0 16px 22px;
+    border-top: 1px solid #e5e5e5;
+    font-size: 24px;
+    line-height: 1.55;
+    font-weight: 700;
+  }
+
+  .curriculum-list li:first-child { border-top: none; padding-top: 0; }
+
+  .curriculum-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 26px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--black);
+  }
+
+  .curriculum-list li:first-child::before { top: 10px; }
+
+  .curriculum-list em {
+    display: block;
+    margin-top: 6px;
+    font-style: normal;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gray-2);
+  }
+
+  .session-card.is-edit { border-left: 8px solid var(--color-edit); }
+  .session-card.is-connect { border-left: 8px solid var(--color-connect); }
+  .session-card.is-plan-only { border-left: 8px solid var(--color-plan); }
+
+  .plan-summary {
+    display: grid;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .plan-summary-item {
+    padding: 22px 22px 24px;
+    border: 2px solid var(--black);
+  }
+
+  .plan-summary-item.edit { background: rgba(200, 255, 50, 0.18); }
+  .plan-summary-item.connect { background: rgba(49, 87, 255, 0.08); }
+  .plan-summary-item.plan { background: rgba(120, 87, 255, 0.08); }
+
+  .plan-summary-name {
+    font-size: 28px;
+    font-weight: 950;
+  }
+
+  .plan-summary-desc {
+    margin-top: 10px;
+    font-size: 22px;
+    line-height: 1.6;
+    color: var(--gray-2);
+  }
+
+  .footer-note {
+    padding: 32px 28px 40px;
+    font-size: 22px;
+    line-height: 1.7;
+    color: var(--gray-2);
+    border-top: 2px solid #ddd;
+  }
+
+  [contenteditable="true"] {
+    outline: 2px dashed #111 !important;
+    outline-offset: 2px;
+    cursor: text;
+  }
+
+  @media (max-width: 640px) {
+    .page-pad, .section { padding-left: 20px; padding-right: 20px; }
+    .section-body { padding-left: 20px; padding-right: 20px; }
+    .cohort-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="toolbar">
+  <button class="edit-btn" onclick="toggleEdit()">편집 모드 켜기</button>
+  <div class="save-menu">
+    <button class="save-btn" type="button" onclick="toggleSavePanel()">섹션 저장 ▾</button>
+    <div class="save-panel" id="save-panel"></div>
+  </div>
+  <button class="reset-btn" onclick="location.reload()">새로고침</button>
+  <div class="format-toolbar" id="format-toolbar">
+    <div class="fmt-group">
+      <span class="fmt-label">글자색</span>
+      <input type="color" id="text-color" value="#111111" title="글자색">
+      <button type="button" onclick="applyTextColor()">적용</button>
+    </div>
+    <div class="fmt-divider"></div>
+    <div class="fmt-group">
+      <span class="fmt-label">배경색</span>
+      <input type="color" id="bg-color" value="#fff3bf" title="배경색">
+      <button type="button" onclick="applyBgColor()">적용</button>
+    </div>
+    <div class="fmt-divider"></div>
+    <div class="fmt-group">
+      <button type="button" onclick="applyAccentUnderline()">포인트 밑줄</button>
+      <button type="button" onclick="clearTextFormat()">서식 지우기</button>
+    </div>
+    <span class="fmt-hint">텍스트 드래그 선택 → 글자색·배경·포인트 밑줄</span>
+  </div>
+</div>
+
+<main id="capture">
+
+  <!-- 00 표지 -->
+  <div class="export-block page-pad" data-export-filename="00-표지-및-안내">
+    <div class="official-notice editable">
+      <span class="kakao-notice-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="24 24 208 172"><path fill="#3C1E1E" d="M128 36C70.562 36 24 72.713 24 118c0 29.279 19.466 54.97 48.748 69.477-1.593 5.494-10.237 35.344-10.581 37.689 0 0-.207 1.762.934 2.434s2.483.15 2.483.15c3.272-.457 37.943-24.811 43.944-29.04 5.995.849 12.168 1.29 18.472 1.29 57.438 0 104-36.712 104-82 0-45.287-46.562-82-104-82z"/></svg></span>
+      <p>강의 신청 후, 수강 안내를 위해 <strong>카카오톡 단체 채팅방 참여</strong>를 요청드립니다.</p>
+    </div>
+    <div class="top-label editable">도각쌤의 타닥클래스 · SCHEDULE</div>
+    <h1 class="editable">회차별 일정 · 커리큘럼</h1>
+    <div class="intro editable">
+      <p>2026년 8월 개강 · <strong>토·일 교차 주말반</strong> · 14:00 – 18:00</p>
+      <p>EDIT 1회 · CONNECT 3회 · PLAN 5회 — <strong>같은 수업 일정을 공유</strong>합니다.</p>
+    </div>
+  </div>
+
+  <!-- 01 주말반 -->
+  <section class="section export-block" data-export-filename="01-주말반-안내">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">01</span>
+        <span class="editable">주말반 안내</span>
+      </div>
+      <div class="section-body">
+        <div class="weekend-box">
+          <div class="weekend-box-title editable">토·일 교차 주말반</div>
+          <div class="weekend-box-time editable">매주 14:00 – 18:00</div>
+          <div class="weekend-box-note editable">1회차 토요일 → 2회차 일요일 … 토·일 교차 진행 · 단일 기수 · 단일 강사</div>
+          <div class="cohort-row">
+            <div class="cohort-chip editable"><strong>5회 일정</strong>토 8/8 → 일 8/9 → 토 8/15 → 일 8/16 → 토 8/22</div>
+          </div>
+        </div>
+        <div class="include-line editable">
+          <span class="tag edit">EDIT 1회</span>
+          <span class="include-arrow">⊂</span>
+          <span class="tag connect">CONNECT 3회</span>
+          <span class="include-arrow">⊂</span>
+          <span class="tag plan">PLAN 5회</span>
+        </div>
+        <div class="notice-box editable">
+          <strong>수강 범위</strong><br>
+          EDIT — 1회차만 (3시간) · CONNECT — 1~3회차 · PLAN — 1~5회차<br>
+          CONNECT 1회 = EDIT · PLAN 1~3회 = CONNECT · <strong>동일 수업 참석</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 회차별 커리큘럼 -->
+  <section class="section export-block" data-export-filename="02-회차별-커리큘럼">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">02</span>
+        <span class="editable">회차별 커리큘럼</span>
+      </div>
+      <div class="section-body">
+        <p class="lead editable">5회차는 토·일 교차로 진행합니다. 1~3회차는 3시간, 4~5회차는 4시간.</p>
+
+        <div class="session-list">
+
+          <article class="session-card is-edit">
+            <div class="session-card-head">
+              <div class="session-no editable">1회차</div>
+              <div class="tag-row">
+                <span class="tag edit editable">EDIT</span>
+                <span class="tag connect editable">CONNECT</span>
+                <span class="tag plan editable">PLAN</span>
+              </div>
+            </div>
+            <div class="session-schedule editable">
+              <span class="schedule-chip year">2026</span>
+              <span class="schedule-chip date sat">토 8/8</span>
+              <span class="schedule-chip time">14:00 – 18:00</span>
+              <span class="schedule-chip duration">3시간</span>
+            </div>
+            <div class="session-gear is-mobile-only editable">
+              <span class="gear-label">Device</span>
+              <div class="gear-row">
+                <span class="gear-chip mobile-only"><span class="gear-icon">📱</span>Only Mobile</span>
+                <span class="gear-not"><span class="gear-not-icon">✕</span>AI 불필요</span>
+                <span class="gear-not"><span class="gear-not-icon">✕</span>캡컷 불필요</span>
+              </div>
+            </div>
+            <h3 class="session-title editable">모바일 편집 · 영상 한 편 완성</h3>
+            <p class="session-sub editable">EDIT 단독 과정은 이번 회차로 종료 · CONNECT·PLAN도 동일 수업</p>
+            <ul class="curriculum-list editable">
+              <li>MOBILE SET-UP<em>촬영 준비 · 작업 환경 · 원본 관리</em></li>
+              <li>CUT<em>NG 제거 · 말 정리 · 러프컷</em></li>
+              <li>TEXT<em>자막 · 줄바꿈 · 핵심 강조</em></li>
+              <li>VISUAL · SOUND · FINISH<em>B-roll · 음량 · 검수 · 내보내기</em></li>
+            </ul>
+          </article>
+
+          <article class="session-card is-connect">
+            <div class="session-card-head">
+              <div class="session-no editable">2회차</div>
+              <div class="tag-row">
+                <span class="tag connect editable">CONNECT</span>
+                <span class="tag plan editable">PLAN</span>
+              </div>
+            </div>
+            <div class="session-schedule editable">
+              <span class="schedule-chip year">2026</span>
+              <span class="schedule-chip date sun">일 8/9</span>
+              <span class="schedule-chip time">14:00 – 18:00</span>
+              <span class="schedule-chip duration">3시간</span>
+            </div>
+            <div class="session-gear is-desk editable">
+              <span class="gear-label">수업 준비</span>
+              <div class="gear-row">
+                <span class="gear-chip ai"><span class="gear-icon">✦</span>AI 활용</span>
+              </div>
+              <div class="gear-required-grid">
+                <div class="gear-card claude">
+                  <span class="gear-card-icon claude-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"/></svg></span>
+                  <div class="gear-card-body">
+                    <span class="gear-card-req">필수</span>
+                    <span class="gear-card-name">Claude Code Pro</span>
+                    <span class="gear-card-sub">Pro 플랜 필수 · 사전 설치 · 로그인</span>
+                  </div>
+                </div>
+                <div class="gear-card device">
+                  <span class="gear-card-icon">💻</span>
+                  <div class="gear-card-body">
+                    <span class="gear-card-req">필수</span>
+                    <span class="gear-card-name">PC · 노트북</span>
+                    <span class="gear-card-sub">당일 지참 · 충전기 함께</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="session-title editable">계정 · 프로필 · 링크 설계</h3>
+            <p class="session-sub editable">콘텐츠 이후 고객이 어디로 가야 하는지 구조 잡기</p>
+            <ul class="curriculum-list editable">
+              <li>ACCOUNT ROLE<em>계정 목적 · 타깃 · 최종 고객 행동 정의</em></li>
+              <li>PROFILE<em>프로필 사진 · 소개 · 링크 · 고정 콘텐츠</em></li>
+              <li>LINK FLOW · CTA<em>무료자료 · 상품 · 상담 배치 · 행동 설계</em></li>
+            </ul>
+          </article>
+
+          <article class="session-card is-connect">
+            <div class="session-card-head">
+              <div class="session-no editable">3회차</div>
+              <div class="tag-row">
+                <span class="tag connect editable">CONNECT</span>
+                <span class="tag plan editable">PLAN</span>
+              </div>
+            </div>
+            <div class="session-schedule editable">
+              <span class="schedule-chip year">2026</span>
+              <span class="schedule-chip date sat">토 8/15</span>
+              <span class="schedule-chip time">14:00 – 18:00</span>
+              <span class="schedule-chip duration">3시간</span>
+            </div>
+            <div class="session-gear is-desk editable">
+              <span class="gear-label">수업 준비</span>
+              <div class="gear-row">
+                <span class="gear-chip ai"><span class="gear-icon">✦</span>AI 활용</span>
+              </div>
+              <div class="gear-required-grid">
+                <div class="gear-card claude">
+                  <span class="gear-card-icon claude-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"/></svg></span>
+                  <div class="gear-card-body">
+                    <span class="gear-card-req">필수</span>
+                    <span class="gear-card-name">Claude Code Pro</span>
+                    <span class="gear-card-sub">Pro 플랜 필수 · 사전 설치 · 로그인</span>
+                  </div>
+                </div>
+                <div class="gear-card device">
+                  <span class="gear-card-icon">💻</span>
+                  <div class="gear-card-body">
+                    <span class="gear-card-req">필수</span>
+                    <span class="gear-card-name">PC · 노트북</span>
+                    <span class="gear-card-sub">당일 지참 · 충전기 함께</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="session-title editable">메시지 · 상품 · 고객 동선 완성</h3>
+            <p class="session-sub editable">CONNECT 3회차 · CONNECT 과정 종료</p>
+            <ul class="curriculum-list editable">
+              <li>COMMENT → MESSAGE · MESSAGE FLOW<em>댓글 반응 · Give-Help-Connect 메시지</em></li>
+              <li>PRODUCT / SERVICE · MESSAGE MATCH<em>판매 동선 · 콘텐츠-링크-상품 연결</em></li>
+              <li>CONNECT PROJECT<em>콘텐츠 → 상품·상담까지 한 줄 동선 완성</em></li>
+            </ul>
+          </article>
+
+          <article class="session-card is-plan-only">
+            <div class="session-card-head">
+              <div class="session-no editable">4회차</div>
+              <div class="tag-row"><span class="tag plan editable">PLAN</span></div>
+            </div>
+            <div class="session-schedule editable">
+              <span class="schedule-chip year">2026</span>
+              <span class="schedule-chip date sun">일 8/16</span>
+              <span class="schedule-chip time">14:00 – 18:00</span>
+              <span class="schedule-chip duration">4시간</span>
+            </div>
+            <div class="session-gear is-desk editable">
+              <span class="gear-label">수업 준비</span>
+              <div class="gear-row">
+                <span class="gear-chip ai"><span class="gear-icon">✦</span>AI 활용</span>
+              </div>
+              <div class="gear-required-grid">
+                <div class="gear-card claude">
+                  <span class="gear-card-icon claude-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"/></svg></span>
+                  <div class="gear-card-body">
+                    <span class="gear-card-req">필수</span>
+                    <span class="gear-card-name">Claude Code Pro</span>
+                    <span class="gear-card-sub">Pro 플랜 필수 · 사전 설치 · 로그인</span>
+                  </div>
+                </div>
+                <div class="gear-card device">
+                  <span class="gear-card-icon">💻</span>
+                  <div class="gear-card-body">
+                    <span class="gear-card-req">필수</span>
+                    <span class="gear-card-name">PC · 노트북</span>
+                    <span class="gear-card-sub">당일 지참 · 충전기 함께</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="session-title editable">주제 · 관점 · 콘텐츠 구조</h3>
+            <p class="session-sub editable">PLAN 전용 · 무엇을 만들지부터 구조까지</p>
+            <ul class="curriculum-list editable">
+              <li>TOPIC DISCOVERY · SEARCH & INTEREST<em>주제 발굴 · 검색 · 관심도 좁히기</em></li>
+              <li>CONTENT ANGLE · HOOK DESIGN<em>관점 기획 · 오프닝·훅 설계</em></li>
+              <li>CONTENT STRUCTURE<em>훅 → 문제 → 설명 → 사례 → CTA 흐름</em></li>
+            </ul>
+          </article>
+
+          <article class="session-card is-plan-only">
+            <div class="session-card-head">
+              <div class="session-no editable">5회차</div>
+              <div class="tag-row"><span class="tag plan editable">PLAN</span></div>
+            </div>
+            <div class="session-schedule editable">
+              <span class="schedule-chip year">2026</span>
+              <span class="schedule-chip date sat">토 8/22</span>
+              <span class="schedule-chip time">14:00 – 18:00</span>
+              <span class="schedule-chip duration">4시간</span>
+            </div>
+            <div class="session-gear is-desk editable">
+              <span class="gear-label">수업 준비</span>
+              <div class="gear-row">
+                <span class="gear-chip ai"><span class="gear-icon">✦</span>AI 활용</span>
+              </div>
+              <div class="gear-required-grid">
+                <div class="gear-card claude">
+                  <span class="gear-card-icon claude-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"/></svg></span>
+                  <div class="gear-card-body">
+                    <span class="gear-card-req">필수</span>
+                    <span class="gear-card-name">Claude Code Pro</span>
+                    <span class="gear-card-sub">Pro 플랜 필수 · 사전 설치 · 로그인</span>
+                  </div>
+                </div>
+                <div class="gear-card device">
+                  <span class="gear-card-icon">💻</span>
+                  <div class="gear-card-body">
+                    <span class="gear-card-req">필수</span>
+                    <span class="gear-card-name">PC · 노트북</span>
+                    <span class="gear-card-sub">당일 지참 · 충전기 함께</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="session-title editable">성과 분석 · 다음 콘텐츠 · 루프</h3>
+            <p class="session-sub editable">PLAN 5회차 · PLAN 과정 종료</p>
+            <ul class="curriculum-list editable">
+              <li>PERFORMANCE REVIEW<em>시청 · 저장 · 댓글 · 다음 행동 확인</em></li>
+              <li>NEXT CONTENT<em>잘 된 요소 · 개선점 · 다음 기획 결정</em></li>
+              <li>CONTENT LOOP<em>기획 → 제작 → 게시 → 분석 반복 구조</em></li>
+            </ul>
+          </article>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 과정별 요약 -->
+  <section class="section export-block" data-export-filename="03-과정별-요약">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">03</span>
+        <span class="editable">과정별 요약</span>
+      </div>
+      <div class="section-body">
+        <div class="plan-summary">
+          <div class="plan-summary-item edit editable">
+            <div class="plan-summary-name">EDIT · 1회</div>
+            <div class="plan-summary-desc">1회차 모바일 편집 3시간 · 영상 1편 완성 · 이후 수업 없음</div>
+          </div>
+          <div class="plan-summary-item connect editable">
+            <div class="plan-summary-name">CONNECT · 3회</div>
+            <div class="plan-summary-desc">1~3회차 수강 · 1회차 = EDIT · 2~3회차 고객 연결</div>
+          </div>
+          <div class="plan-summary-item plan editable">
+            <div class="plan-summary-name">PLAN · 5회</div>
+            <div class="plan-summary-desc">1~5회차 수강 · 1~3회 = CONNECT · 4~5회 기획·분석·루프</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="export-block footer-note" data-export-filename="99-안내">
+    <div class="editable">
+      · 토·일 교차 진행 · 14:00 – 18:00<br>
+      · 일정은 인원에 따라 조정될 수 있으며, 확정 일정은 개강 전 안내<br>
+      · 문의: 도각쌤의 타닥클래스 · vcml.kr
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+let editMode = false;
+
+const SMARTSTORE_WIDTH = 860;
+const SMARTSTORE_MAX_HEIGHT = 5000;
+const SMARTSTORE_JPG_QUALITY = 0.92;
+const WEBP_CAPTURE_SCALE = 3;
+const EXPORT_PREFIX = "도각쌤의-타닥클래스-일정-";
+
+function setEditModeState(on) {
+  editMode = on;
+  document.body.classList.toggle("edit-mode", on);
+  document.querySelectorAll(".editable").forEach(el => {
+    el.contentEditable = on ? "true" : "false";
+  });
+  document.querySelector(".edit-btn").textContent = on ? "편집 모드 끄기" : "편집 모드 켜기";
+}
+
+function exitEditMode() { setEditModeState(false); }
+function toggleEdit() { setEditModeState(!editMode); }
+
+function getSelectionRange() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
+  const range = selection.getRangeAt(0);
+  if (!document.getElementById("capture").contains(range.commonAncestorContainer)) return null;
+  return range;
+}
+
+function wrapRangeWithSpan(range, options = {}) {
+  const { styles = {}, className = "text-highlight" } = options;
+  const span = document.createElement("span");
+  span.className = className;
+  Object.assign(span.style, styles);
+  try { range.surroundContents(span); }
+  catch {
+    const fragment = range.extractContents();
+    span.appendChild(fragment);
+    range.insertNode(span);
+  }
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  selection.addRange(newRange);
+}
+
+function applyTextColor() {
+  const range = getSelectionRange();
+  if (!range) { alert("글자색을 적용할 텍스트를 드래그하여 선택해 주세요."); return; }
+  wrapRangeWithSpan(range, { styles: { color: document.getElementById("text-color").value } });
+}
+
+function applyBgColor() {
+  const range = getSelectionRange();
+  if (!range) { alert("배경색을 적용할 텍스트를 드래그하여 선택해 주세요."); return; }
+  wrapRangeWithSpan(range, { styles: { backgroundColor: document.getElementById("bg-color").value } });
+}
+
+function applyAccentUnderline() {
+  const range = getSelectionRange();
+  if (!range) { alert("포인트 밑줄을 적용할 텍스트를 드래그하여 선택해 주세요."); return; }
+  wrapRangeWithSpan(range, { className: "text-highlight accent-underline" });
+}
+
+function clearTextFormat() {
+  const range = getSelectionRange();
+  if (!range) { alert("서식을 지울 텍스트를 드래그하여 선택해 주세요."); return; }
+  const fragment = range.extractContents();
+  const walker = document.createTreeWalker(fragment, NodeFilter.SHOW_ELEMENT);
+  const styled = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (node.classList?.contains("text-highlight") || node.classList?.contains("accent-underline")) {
+      styled.push(node);
+    }
+  }
+  styled.forEach(node => {
+    const parent = node.parentNode;
+    while (node.firstChild) parent.insertBefore(node.firstChild, node);
+    parent.removeChild(node);
+  });
+  range.insertNode(fragment);
+  window.getSelection().removeAllRanges();
+}
+
+function getExportLabel(block) {
+  return block.dataset.exportFilename || "section";
+}
+
+function buildSavePanel() {
+  const panel = document.getElementById("save-panel");
+  const blocks = document.querySelectorAll("#capture .export-block");
+  panel.innerHTML = `
+    <div class="save-panel-title">섹션별 저장 · WebP / JPG(860px)</div>
+    <div class="save-format-tabs">
+      <button type="button" class="save-format-btn active" data-format="webp">WebP</button>
+      <button type="button" class="save-format-btn" data-format="jpg">JPG 스마트스토어</button>
+    </div>`;
+
+  let currentFormat = "webp";
+  panel.querySelectorAll(".save-format-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentFormat = btn.dataset.format;
+      panel.querySelectorAll(".save-format-btn").forEach(b => b.classList.toggle("active", b === btn));
+    });
+  });
+
+  blocks.forEach(block => {
+    const label = getExportLabel(block);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = label;
+    btn.addEventListener("click", () => saveExportBlock(block, currentFormat));
+    panel.appendChild(btn);
+  });
+
+  const zipWebp = document.createElement("button");
+  zipWebp.type = "button";
+  zipWebp.className = "save-all-btn save-zip-webp-btn";
+  zipWebp.textContent = "전체 WebP ZIP";
+  zipWebp.addEventListener("click", () => saveAllExportBlocks("webp"));
+  panel.appendChild(zipWebp);
+
+  const zipJpg = document.createElement("button");
+  zipJpg.type = "button";
+  zipJpg.className = "save-all-btn save-zip-jpg-btn";
+  zipJpg.textContent = "전체 JPG ZIP";
+  zipJpg.addEventListener("click", () => saveAllExportBlocks("jpg"));
+  panel.appendChild(zipJpg);
+}
+
+function toggleSavePanel() {
+  const panel = document.getElementById("save-panel");
+  if (!panel.children.length) buildSavePanel();
+  panel.classList.toggle("open");
+}
+
+function canvasToWebP(canvas, quality = 1) {
+  return canvas.toDataURL("image/webp", quality);
+}
+
+function canvasToJpg(canvas, quality = SMARTSTORE_JPG_QUALITY) {
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+function dataUrlToBytes(dataUrl) {
+  const [header, base64] = dataUrl.split(",");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  let ext = "png";
+  if (header.includes("image/webp")) ext = "webp";
+  else if (header.includes("image/jpeg")) ext = "jpg";
+  return { bytes, ext };
+}
+
+function optimizeCanvasForSmartstore(sourceCanvas) {
+  const targetWidth = SMARTSTORE_WIDTH;
+  let targetHeight = Math.round(sourceCanvas.height * (targetWidth / sourceCanvas.width));
+  if (targetHeight > SMARTSTORE_MAX_HEIGHT) targetHeight = SMARTSTORE_MAX_HEIGHT;
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, targetWidth, targetHeight);
+  ctx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
+  return canvas;
+}
+
+function getExportBackgroundColor(element) {
+  const bg = getComputedStyle(element).backgroundColor;
+  if (!bg || bg === "rgba(0, 0, 0, 0)" || bg === "transparent") return "#ffffff";
+  return bg;
+}
+
+function prepareExportClone(clone, source) {
+  function syncNode(src, dest) {
+    if (!(src instanceof Element) || !(dest instanceof Element)) return;
+    const cs = getComputedStyle(src);
+    const bg = cs.backgroundColor;
+    if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+      dest.style.backgroundColor = bg;
+    }
+    if (cs.color) dest.style.color = cs.color;
+    if (cs.border && cs.border !== "none" && cs.borderWidth !== "0px") {
+      dest.style.border = cs.border;
+    }
+    const srcKids = src.children;
+    const destKids = dest.children;
+    for (let i = 0; i < srcKids.length; i++) syncNode(srcKids[i], destKids[i]);
+  }
+  syncNode(source, clone);
+  clone.querySelectorAll("[contenteditable]").forEach(el => el.removeAttribute("contenteditable"));
+}
+
+async function captureElementToCanvas(element, scale = WEBP_CAPTURE_SCALE) {
+  const shot = document.createElement("div");
+  shot.className = "export-shot";
+  const clone = element.cloneNode(true);
+  prepareExportClone(clone, element);
+  shot.appendChild(clone);
+  document.body.appendChild(shot);
+  try {
+    return await html2canvas(shot, {
+      scale,
+      backgroundColor: getExportBackgroundColor(element),
+      useCORS: true,
+      logging: false,
+      width: shot.scrollWidth,
+      height: shot.scrollHeight
+    });
+  } finally {
+    document.body.removeChild(shot);
+  }
+}
+
+async function captureBlockExport(block, format = "webp") {
+  if (format === "jpg") {
+    const canvas = await captureElementToCanvas(block, 1);
+    return { dataUrl: canvasToJpg(optimizeCanvasForSmartstore(canvas)), ext: "jpg" };
+  }
+  const canvas = await captureElementToCanvas(block, WEBP_CAPTURE_SCALE);
+  const dataUrl = canvasToWebP(canvas, 1);
+  return { dataUrl, ext: dataUrlToBytes(dataUrl).ext };
+}
+
+function downloadDataUrl(dataUrl, filename) {
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+async function saveExportBlock(block, format = "webp") {
+  exitEditMode();
+  document.getElementById("save-panel")?.classList.remove("open");
+  const filename = getExportLabel(block);
+  try {
+    const { dataUrl, ext } = await captureBlockExport(block, format);
+    downloadDataUrl(dataUrl, `${EXPORT_PREFIX}${filename}.${ext}`);
+  } catch (error) {
+    console.error(error);
+    alert(`「${filename}」 저장 중 오류가 발생했습니다.`);
+  }
+}
+
+async function saveAllExportBlocks(format = "webp") {
+  exitEditMode();
+  document.getElementById("save-panel")?.classList.remove("open");
+  const blocks = document.querySelectorAll("#capture .export-block");
+  const zipBtn = document.querySelector(format === "jpg" ? ".save-zip-jpg-btn" : ".save-zip-webp-btn");
+  const prevText = zipBtn?.textContent;
+  if (zipBtn) { zipBtn.disabled = true; zipBtn.textContent = "ZIP 생성 중…"; }
+  try {
+    const zip = new JSZip();
+    const suffix = format === "jpg" ? "smartstore-jpg" : "webp";
+    for (const block of blocks) {
+      const filename = getExportLabel(block);
+      const { dataUrl, ext } = await captureBlockExport(block, format);
+      zip.file(`${EXPORT_PREFIX}${filename}.${ext}`, dataUrlToBytes(dataUrl).bytes);
+    }
+    const blob = await zip.generateAsync({ type: "blob", compression: "STORE" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${EXPORT_PREFIX}sections-${suffix}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error(error);
+    alert("ZIP 생성 중 오류가 발생했습니다.");
+  } finally {
+    if (zipBtn) { zipBtn.disabled = false; zipBtn.textContent = prevText; }
+  }
+}
+
+document.addEventListener("click", event => {
+  const panel = document.getElementById("save-panel");
+  const menu = document.querySelector(".save-menu");
+  if (panel?.classList.contains("open") && menu && !menu.contains(event.target)) {
+    panel.classList.remove("open");
+  }
+});
+</script>
+</body>
+</html>

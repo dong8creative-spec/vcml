@@ -262,6 +262,14 @@ router.post('/:slug/anticipation-reviews', authMiddleware, async (req, res) => {
     const err = anticipationError(res, result)
     if (err) return err
 
+    let giftAccess = null
+    try {
+      const gift = await db.finalizeAccessCodeReservation(req.user.id, course.id)
+      if (gift.ok) giftAccess = { granted: true, access_expires_at: gift.access_expires_at || null, already_enrolled: !!gift.already_enrolled }
+    } catch (e) {
+      console.error('finalizeAccessCodeReservation:', e.message)
+    }
+
     const issuance = await db.resolveCouponIssuance(result.coupon)
     res.json({
       success: true,
@@ -276,6 +284,7 @@ router.post('/:slug/anticipation-reviews', authMiddleware, async (req, res) => {
         expires_at: result.coupon.expires_at || null,
         issuance,
       } : null,
+      gift_access: giftAccess,
     })
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -292,6 +301,62 @@ router.post('/:slug/enroll', authMiddleware, async (req, res) => {
     if (err) return err
 
     res.json({ success: true, enrolled: true, course_slug: course.slug })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// 선물코드(8자리) 입력 → 해당 코드에 연결된 강의로 예약(24시간 내 기대평 작성 시 무료 열람 확정)
+router.post('/reserve-code', authMiddleware, async (req, res) => {
+  try {
+    const { code } = req.body
+    if (!code) return res.status(400).json({ error: '코드를 입력하세요.' })
+    const result = await db.reserveAccessCode(req.user.id, code)
+    if (!result.ok) {
+      const messages = {
+        not_found: '올바르지 않은 코드입니다.',
+        inactive: '더 이상 사용할 수 없는 코드입니다.',
+        already_used: '이미 사용된 코드입니다.',
+        already_reserved: '다른 회원이 예약 중인 코드입니다.',
+        expired: '코드 사용 가능 시간이 지났습니다.',
+        not_eligible: '신규 가입 회원만 사용할 수 있는 코드입니다.',
+        already_enrolled: '이미 수강 중인 강의입니다.',
+        already_redeemed: '이미 다른 선물코드를 사용하셨습니다.',
+        user_not_found: '회원 정보를 확인할 수 없습니다.',
+      }
+      return res.status(400).json({ error: messages[result.reason] || '코드를 사용할 수 없습니다.' })
+    }
+    res.json(result)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// 신규가입 선물코드 이벤트 — 정원 내에서 코드를 자동 생성해 즉시 본인 앞으로 예약
+router.post('/claim-gift-code', authMiddleware, async (req, res) => {
+  try {
+    const result = await db.claimAutoGiftCode(req.user.id)
+    if (!result.ok) {
+      const messages = {
+        event_not_configured: '아직 준비 중인 이벤트입니다.',
+        event_full: '이벤트가 마감되었습니다.',
+        not_eligible: '신규 가입 회원만 참여할 수 있습니다.',
+        already_redeemed: '이미 다른 선물코드를 사용하셨습니다.',
+        user_not_found: '회원 정보를 확인할 수 없습니다.',
+      }
+      return res.status(400).json({ error: messages[result.reason] || '코드를 발급할 수 없습니다.', reason: result.reason })
+    }
+    res.json(result)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// 선물코드로 받은 무료 시청권이 아직 살아있는지 확인 (로그인 시 리마인더용)
+router.get('/gift-access-status', authMiddleware, async (req, res) => {
+  try {
+    const access = await db.getActiveGiftAccessForUser(req.user.id)
+    res.json(access ? { active: true, ...access } : { active: false })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -422,13 +487,14 @@ router.get('/:slug', async (req, res) => {
     const u = await optionalUser(req)
 
     // course.id가 확정된 후 나머지 쿼리를 모두 병렬로 실행
-    const [chapters, enrolledResult, myAnticipation, myCourseReview, enrollmentRecord, orderRecord] = await Promise.all([
+    const [chapters, enrolledResult, myAnticipation, myCourseReview, enrollmentRecord, orderRecord, giftReservation] = await Promise.all([
       db.getChaptersByCourse(course.id),
       u ? db.isEnrolled(u.id, course.id) : Promise.resolve(false),
       u ? db.getAnticipationReviewByUserAndCourse(u.id, course.id) : Promise.resolve(null),
       u ? db.getReviewByUserAndCourse(u.id, course.id) : Promise.resolve(null),
       u ? db.getEnrollmentRecord(u.id, course.id) : Promise.resolve(null),
       u ? db.getActiveOrderForCourse(u.id, course.id) : Promise.resolve(null),
+      u ? db.getPendingGiftReservation(u.id, course.id) : Promise.resolve(null),
     ])
 
     const enrolled = enrolledResult
@@ -441,6 +507,7 @@ router.get('/:slug', async (req, res) => {
       ? db.getPaidCourseAccessMeta(course, {
         enrolledAt: enrollmentRecord?.enrolled_at,
         paidAt: orderRecord?.paid_at,
+        accessExpiresAt: enrollmentRecord?.access_expires_at || null,
       })
       : null
     const my_anticipation = myAnticipation ? {
@@ -470,7 +537,11 @@ router.get('/:slug', async (req, res) => {
       } : null,
       anticipation_modify,
       live_ended: db.courseSupportsLiveReplay(course) ? db.isLiveCourseEnded(course) : false,
+      gift_reservation: giftReservation,
+      materials_configured: !!course.materials_url,
+      materials_unlocked: db.isMaterialsUnlocked(myCourseReview),
     }
+    if (!payload.materials_unlocked) delete payload.materials_url
     if (!enrolled) delete payload.live_chat_url
     if (db.courseSupportsLiveReplay(course)) {
       payload.live_resources = db.getLiveResourceAccess(course, {
