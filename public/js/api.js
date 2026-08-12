@@ -342,13 +342,13 @@ window.addEventListener('resize', () => scheduleFitOneLineTexts())
 })()
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/gift-code-popup.js'
+  s.src = '/js/gift-code-popup.js?v=1'
   s.defer = true
   document.head.appendChild(s)
 })()
 ;(function () {
   const s = document.createElement('script')
-  s.src = '/js/gift-access-reminder.js'
+  s.src = '/js/gift-access-reminder.js?v=1'
   s.defer = true
   document.head.appendChild(s)
 })()
