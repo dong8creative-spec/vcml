@@ -781,6 +781,10 @@
             <label>영상 링크 <span style="font-size:12px;color:#888">YouTube/Vimeo URL 등</span></label>
             <input type="url" id="ch-video-url" placeholder="https://..." maxlength="500" />
           </div>
+          <div class="form-group">
+            <label>타임코드 <span style="font-size:12px;color:#888">한 줄에 하나씩, "시:분:초 설명" 형식 — 재생 화면 오른쪽에 구간 이동 목록으로 표시됩니다</span></label>
+            <textarea id="ch-timestamps" rows="5" maxlength="4000" placeholder="0:00 인트로&#10;5:30 실습 시작&#10;12:15 마무리"></textarea>
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn-sm" onclick="closeChapterModal()">취소</button>
@@ -3003,6 +3007,7 @@
       document.getElementById('ch-order').value = ''
       document.getElementById('ch-is-free').checked = false
       document.getElementById('ch-video-url').value = ''
+      document.getElementById('ch-timestamps').value = ''
       if (chapterId) {
         API.get('/admin/courses/' + courseId + '/chapters').then(data => {
           const ch = (data.chapters || []).find(x => String(x.id) === String(chapterId))
@@ -3012,6 +3017,7 @@
           document.getElementById('ch-order').value = ch.order_num || ''
           document.getElementById('ch-is-free').checked = !!ch.is_free
           document.getElementById('ch-video-url').value = ch.video_url || ''
+          document.getElementById('ch-timestamps').value = ch.timestamps_text || ''
         }).catch(e => alert(e.message))
       }
       document.getElementById('chapter-modal').style.display = 'flex'
@@ -3030,6 +3036,7 @@
         duration: document.getElementById('ch-duration').value.trim(),
         is_free: document.getElementById('ch-is-free').checked,
         video_url: document.getElementById('ch-video-url').value.trim(),
+        timestamps_text: document.getElementById('ch-timestamps').value.trim(),
       }
       const orderVal = document.getElementById('ch-order').value.trim()
       if (orderVal) payload.order_num = parseInt(orderVal, 10)

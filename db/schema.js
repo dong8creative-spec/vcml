@@ -3407,6 +3407,7 @@ const db = {
       duration: String(data.duration || '').trim() || null,
       is_free: data.is_free ? 1 : 0,
       video_url: String(data.video_url || '').trim() || null,
+      timestamps_text: String(data.timestamps_text || '').trim() || null,
     }
     const ref = await fs.collection('chapters').add(payload)
     cacheInvalidate(`chapters:${courseId}`)
@@ -3424,6 +3425,7 @@ const db = {
     if (data.duration !== undefined) patch.duration = String(data.duration).trim() || null
     if (data.is_free !== undefined) patch.is_free = data.is_free ? 1 : 0
     if (data.video_url !== undefined) patch.video_url = String(data.video_url).trim() || null
+    if (data.timestamps_text !== undefined) patch.timestamps_text = String(data.timestamps_text).trim() || null
     if (data.order_num !== undefined) patch.order_num = Math.max(1, parseInt(data.order_num, 10) || 1)
     if (!Object.keys(patch).length) return chapter
     await fs.collection('chapters').doc(chapterId).update(patch)

@@ -360,6 +360,7 @@ async function createChapter(courseId, data = {}) {
     duration: String(data.duration || '').trim() || null,
     is_free: !!data.is_free,
     video_url: String(data.video_url || '').trim() || null,
+    timestamps_text: String(data.timestamps_text || '').trim() || null,
   }
   const ref = await fs.collection('chapters').add(payload)
   cacheInvalidate(`chapters:${courseId}`)
