@@ -11,7 +11,7 @@
   </script>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>수강 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=16" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css?v=4" />
+  <link rel="stylesheet" href="/css/style.css?v=16" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css?v=5" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -30,7 +30,7 @@
 
     <!-- 모바일 커리큘럼 토글 버튼 -->
     <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" aria-expanded="false" aria-controls="player-sidebar">
-      <span><i class="ti ti-list"></i> 강의 목록</span>
+      <span><i class="ti ti-list"></i> <span id="sidebar-toggle-label">강의 목록</span></span>
       <i class="ti ti-chevron-down"></i>
     </button>
 
@@ -272,15 +272,8 @@
 
     function startChapterPlayer() {
       document.getElementById('player-course-title').textContent = courseData.title
-      document.getElementById('sidebar-title').textContent = courseData.title
-      renderChapterList(courseData.chapters)
-
+      // 사이드바 내용(챕터 목록 vs 구간이동)은 챕터별 구간이동 유무에 따라 renderPlayer()에서 매번 다시 결정한다
       const chapters = courseData.chapters || []
-      // 챕터가 1개뿐이면 챕터 목록 사이드바는 의미가 없어 완전히 숨기고 구간이동 목록만 남긴다
-      const singleChapter = chapters.length <= 1
-      document.getElementById('player-sidebar')?.classList.toggle('is-hidden', singleChapter)
-      document.getElementById('sidebar-toggle-btn')?.classList.toggle('is-hidden', singleChapter)
-
       const firstId = chapterParam === 'first' || !chapterParam
         ? chapters[0]?.id
         : chapterParam
@@ -367,6 +360,10 @@
       const src = parseVideoSource(ch.video_url)
       const isYoutube = src?.type === 'youtube'
       const timecodes = isYoutube ? parseTimestampsText(ch.timestamps_text) : []
+      const chapters = courseData.chapters || []
+      // 챕터가 1개뿐이면서 구간이동이 있는 강의는, 비어있는 챕터 목록 사이드바 자리를
+      // 그대로 재활용해 구간이동 목록을 전체 높이로 보여준다(영상 옆 좁은 패널 대신).
+      const singleChapterWithTimecodes = chapters.length <= 1 && timecodes.length > 0
       const videoHtml = src
         ? `<div class="video-area-main">
             ${isYoutube
@@ -387,7 +384,7 @@
               : `<iframe class="video-embed" src="${esc(src.embedUrl)}" title="${esc(ch.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`}
             <div class="video-watermark-layer" id="video-watermark-layer"></div>
           </div>${timecodes.length ? `
-          <div class="timecode-panel" id="timecode-panel">
+          <div class="timecode-panel${singleChapterWithTimecodes ? ' is-sidebar-mode' : ''}" id="timecode-panel">
             <div class="timecode-header"><i class="ti ti-clock"></i> 구간 이동</div>
             <div class="timecode-list">${timecodes.map((t) => `
               <div class="timecode-item" onclick="seekTo(${t.seconds})"><span class="timecode-badge">${esc(t.timeStr)}</span> ${esc(t.label)}</div>
@@ -419,6 +416,31 @@
             ${ch.next_id ? `<button onclick="loadChapter('${esc(ch.next_id)}')" class="ci-btn next"><i class="ti ti-arrow-right"></i> 다음 강의</button>` : ''}
           </div>
         </div>`
+
+      const sidebarEl = document.getElementById('player-sidebar')
+      const toggleBtn = document.getElementById('sidebar-toggle-btn')
+      if (chapters.length <= 1 && !singleChapterWithTimecodes) {
+        // 챕터가 1개뿐이고 구간이동도 없으면 사이드바 자체가 의미 없어 숨긴다
+        sidebarEl?.classList.add('is-hidden')
+        toggleBtn?.classList.add('is-hidden')
+      } else {
+        sidebarEl?.classList.remove('is-hidden')
+        toggleBtn?.classList.remove('is-hidden')
+        const chapterListEl = document.getElementById('chapter-list')
+        if (singleChapterWithTimecodes) {
+          document.getElementById('sidebar-title').textContent = '구간 이동'
+          document.getElementById('sidebar-toggle-label').textContent = '구간 이동'
+          chapterListEl?.classList.add('is-timecode-mode')
+          chapterListEl.innerHTML = timecodes.map((t) => `
+            <div class="timecode-item" onclick="seekTo(${t.seconds})"><span class="timecode-badge">${esc(t.timeStr)}</span> ${esc(t.label)}</div>
+          `).join('')
+        } else {
+          document.getElementById('sidebar-title').textContent = courseData.title
+          document.getElementById('sidebar-toggle-label').textContent = '강의 목록'
+          chapterListEl?.classList.remove('is-timecode-mode')
+          renderChapterList(chapters)
+        }
+      }
 
       stopWatermark()
       if (src) {

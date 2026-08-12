@@ -111,6 +111,10 @@ a { text-decoration: none; color: inherit; }
 }
 
 .timecode-panel { width: 260px; flex-shrink: 0; background: #161616; border-left: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; overflow: hidden; }
+/* 단독 챕터: 구간이동 목록은 오른쪽 사이드바 자리로 옮겨서 전체 높이로 보여준다.
+   영상 옆의 이 패널은 평소엔 숨기고, 전체화면 호버 오버레이 용도로만 남겨둔다. */
+.timecode-panel.is-sidebar-mode { display: none; }
+#video-area:fullscreen .timecode-panel.is-sidebar-mode { display: flex; }
 .timecode-header { padding: 12px 14px; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
 .timecode-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px; }
 .timecode-item { display: flex; align-items: center; gap: 8px; width: 100%; background: #232323; color: #ccc; padding: 9px 10px; margin-bottom: 6px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; font-size: 12.5px; text-align: left; transition: 0.15s; }
@@ -208,6 +212,7 @@ a { text-decoration: none; color: inherit; }
 .player-sidebar.is-hidden, .sidebar-toggle-btn.is-hidden { display: none !important; }
 .sidebar-course-title { padding: 14px 16px; font-size: 20.4px; font-weight: 500; color: rgba(255,255,255,0.5); border-bottom: 0.5px solid rgba(255,255,255,0.07); }
 .chapter-list { flex: 1; overflow-y: auto; }
+.chapter-list.is-timecode-mode { padding: 8px; }
 .chapter-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; border-bottom: 0.5px solid rgba(255,255,255,0.04); transition: background 0.15s; }
 .chapter-item:hover { background: rgba(255,255,255,0.05); }
 .chapter-item.active { background: rgba(255,255,255,0.1); }
