@@ -795,7 +795,11 @@ function toggleReviewEdit(courseId) {
   if (!form) return
   form.style.display = form.style.display === 'none' ? '' : 'none'
   if (form.style.display !== 'none') {
-    const r = reviewRatings[courseId] || 0
+    // 별을 새로 클릭하지 않고 폼만 연 경우에도(기존에 이미 5점으로 작성된 후기),
+    // 화면에 미리 채워져 있는 별점을 그대로 읽어와야 동의 체크박스가 정확히 표시된다
+    const starsWrap = document.getElementById('review-stars-' + courseId)
+    const r = reviewRatings[courseId] ?? (starsWrap ? starsWrap.querySelectorAll('.lc-star.on').length : 0)
+    reviewRatings[courseId] = r
     if (typeof ReviewRewardNotice !== 'undefined') {
       ReviewRewardNotice.updateReviewConsentVisibility(courseId, r)
     }
