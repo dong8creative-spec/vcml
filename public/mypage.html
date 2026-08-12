@@ -22,7 +22,7 @@
   <title>마이페이지 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=16" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
-  <link rel="stylesheet" href="/css/mypage.css?v=11" />
+  <link rel="stylesheet" href="/css/mypage.css?v=12" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 
@@ -754,6 +754,9 @@ function renderCourseReviewBlock(c) {
         </div>
         ${editBtn}
       </div>
+      ${c.materials_configured ? (c.materials_unlocked && c.materials_url
+        ? `<a href="${escapeHtml(c.materials_url)}" target="_blank" rel="noopener noreferrer" class="lc-materials-dl"><i class="ti ti-file-download"></i> 교육자료 다운로드</a>`
+        : `<div class="lc-materials-hint">${materialsHint.html}</div>`) : ''}
       ${reviewOpen ? `<div class="lc-review-form" id="review-form-${escapeHtml(c.id)}" style="display:none">
         <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(rating, rewardLocked)}</div>
         ${rewardLocked ? `<div class="lc-review-rating-locked-note">별점 5점 혜택을 이미 받아 별점은 변경할 수 없어요.</div>` : ''}
