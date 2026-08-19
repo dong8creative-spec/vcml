@@ -29,6 +29,8 @@
 
 ## 개발 실행 (맥)
 
+**더블클릭:** `TadakSync 2-1.command` (바탕화면 바로가기 동일) — Finder에서 더블클릭하면 됩니다. Cursor/터미널 없이 실행 가능합니다.
+
 ```bash
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
@@ -41,10 +43,20 @@ python3 -m venv .venv
 
 ## 배포판 빌드 (맥, .app)
 
+한 번에 빌드 + `~/Applications` 설치 + 바탕화면 바로가기:
+
 ```bash
-./.venv/bin/pip install pyinstaller
-./.venv/bin/pyinstaller --noconfirm --clean TadakSync-2-1.spec
-# 결과물: dist/TadakSync 2-1.app
+chmod +x scripts/build_mac_app.sh
+./scripts/build_mac_app.sh
 ```
 
-서명·공증(애플 개발자 계정)은 이 범위에 포함하지 않습니다.
+- 결과물: `dist/TadakSync 2-1.app`
+- 설치 위치: `~/Applications/TadakSync 2-1.app`
+- 실행: 더블클릭 또는 `open ~/Applications/TadakSync\ 2-1.app`
+- 바탕화면 `TadakSync 2-1.command` / `.app` 바로가기도 동일하게 실행됩니다.
+
+처음 실행 시 “확인되지 않은 개발자” 경고가 뜨면 **우클릭 → 열기**로 1회 허용하면 됩니다.  
+애플 개발자 계정 서명·공증은 포함하지 않습니다 (로컬 ad-hoc 서명만).
+
+Whisper 모델은 첫 인식 시 자동 다운로드됩니다. 미리 받으려면 앱 옆(또는 `.app`과 같은 폴더)에  
+`models/faster-whisper-large-v3/` 를 두면 됩니다.

@@ -459,6 +459,36 @@ class Api:
             duration_us = res.duration_us or billing.duration_us_from_audio(
                 len(res.audio), SR)
             recognition_coin_cost = billing.recognition_coins(duration_us)
+            if token:
+                try:
+                    me = license_api.fetch_me(token)
+                    balance = int(me.get("balance") or 0)
+                    self._save_balance(balance)
+                    if balance < recognition_coin_cost:
+                        raise RuntimeError(
+                            f"코인이 부족해요. (필요 {recognition_coin_cost}개, 보유 {balance}개)")
+                except RuntimeError as e:
+                    payload = getattr(e, "payload", {}) or {}
+                    if payload.get("code") == "insufficient":
+                        raise RuntimeError(
+                            f"코인이 부족해요. (필요 {recognition_coin_cost}개, 보유 "
+                            f"{payload.get('balance', '?')}개)") from e
+                    if getattr(e, "status", None) in (401, 403):
+                        license_api.clear_auth()
+                        self._auth = None
+                        self._balance = None
+                        self._emit("auth", self._auth_state())
+                        raise RuntimeError("로그인이 만료됐어요. 다시 로그인해 주세요.") from e
+                    if "코인이 부족" in str(e):
+                        raise
+                    cached = self._balance
+                    if cached is not None and int(cached) < recognition_coin_cost:
+                        raise RuntimeError(
+                            f"코인이 부족해요. (필요 {recognition_coin_cost}개, 보유 "
+                            f"{int(cached)}개)") from e
+                    status(
+                        "서버에서 잔액을 확인하지 못했어요. 인식은 계속 진행합니다… "
+                        "(차감 단계에서 다시 확인돼요)")
             self._transcriber.load(MODEL, progress=status)
             script = self._transcriber.transcribe_full_script(
                 res.audio, language=language,
@@ -486,6 +516,11 @@ class Api:
                     self._balance = None
                     self._emit("auth", self._auth_state())
                     raise RuntimeError("로그인이 만료됐어요. 다시 로그인해 주세요.") from e
+                if getattr(e, "status", None) == 500:
+                    raise RuntimeError(
+                        "음성 인식은 완료됐지만 코인 차감 중 서버 오류가 발생했어요. "
+                        "캡컷 문제가 아닙니다. 잠시 후 다시 시도하거나 프로그램에서 다시 로그인해 보세요."
+                    ) from e
                 raise
             consumed = True
             script_committed = True

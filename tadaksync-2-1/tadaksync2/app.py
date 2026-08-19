@@ -59,7 +59,9 @@ def _page_url(web_dir: Path, page: str) -> str:
     target = web_dir / page
     if not target.is_file():
         raise FileNotFoundError(f"UI not found: {target}")
-    if getattr(sys, "frozen", False):
+    # 맥 .app(Cocoa)도 file:// 보다 로컬 HTTP가 js_api·상대경로에 안정적이다.
+    # 윈도우 frozen만 file:// 유지(기존 배포판 호환).
+    if getattr(sys, "frozen", False) and sys.platform != "darwin":
         return target.as_uri()
     q = "dev=1" if is_dev_mode() else ""
     return _local_http_url(web_dir, page, q)

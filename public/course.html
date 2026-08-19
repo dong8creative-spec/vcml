@@ -27,6 +27,21 @@
 <body>
   <div data-site-header></div>
 
+  <div id="gift-reservation-banner" class="gift-reservation-banner hidden">
+    <div class="container gift-reservation-banner-inner">
+      <span class="gift-reservation-icon">🎁</span>
+      <span class="gift-reservation-text" id="gift-reservation-text"></span>
+      <button type="button" class="gift-reservation-cta" onclick="openAnticipationModal()">기대평 작성하고 21일 무료 시작</button>
+    </div>
+  </div>
+
+  <div id="gift-access-countdown-banner" class="gift-reservation-banner hidden">
+    <div class="container gift-reservation-banner-inner">
+      <span class="gift-reservation-icon">⏳</span>
+      <span class="gift-reservation-text" id="gift-access-countdown-text"></span>
+    </div>
+  </div>
+
   <div id="course-wrap"><div class="spinner"></div></div>
 
   <!-- 기대평 작성 모달 -->
@@ -164,8 +179,8 @@
     </div>
   </div>
 
-  <script src="/js/api.js?v=3"></script>
-  <script src="/js/review-reward-notice.js?v=1"></script>
+  <script src="/js/api.js?v=4"></script>
+  <script src="/js/review-reward-notice.js?v=2"></script>
   <script src="/js/live-reminder.js?v=21"></script>
   <script src="/js/auth-redirect.js"></script>
   <script src="/js/site-layout.js"></script>
@@ -209,10 +224,52 @@
         anticipationReviews = []
         courseReviews = []
         render(courseData)
+        renderGiftReservationBanner(courseData)
+        renderGiftAccessCountdownBanner(courseData)
         loadCourseMedia()
         loadAnticipationReviews()
         loadCourseReviews()
       } catch { document.getElementById('course-wrap').innerHTML = '<p style="text-align:center;padding:60px;color:#aaa">강의를 찾을 수 없습니다.</p>' }
+    }
+
+    let giftReservationTimer = null
+    function renderGiftReservationBanner(c) {
+      const banner = document.getElementById('gift-reservation-banner')
+      if (!banner) return
+      clearInterval(giftReservationTimer)
+      if (!c.gift_reservation || c.enrolled) { banner.classList.add('hidden'); return }
+      const deadline = new Date(c.gift_reservation.review_deadline).getTime()
+      const tick = () => {
+        const ms = deadline - Date.now()
+        if (ms <= 0) { banner.classList.add('hidden'); clearInterval(giftReservationTimer); return }
+        const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000), s = Math.floor((ms % 60000) / 1000)
+        const textEl = document.getElementById('gift-reservation-text')
+        if (textEl) textEl.textContent = `선물코드로 예약되었습니다! ${h}시간 ${m}분 ${s}초 이내에 기대평을 작성하면 21일 무료 수강이 시작됩니다.`
+      }
+      tick()
+      banner.classList.remove('hidden')
+      giftReservationTimer = setInterval(tick, 1000)
+    }
+
+    let giftAccessCountdownTimer = null
+    function renderGiftAccessCountdownBanner(c) {
+      const banner = document.getElementById('gift-access-countdown-banner')
+      if (!banner) return
+      clearInterval(giftAccessCountdownTimer)
+      // 선물코드로 확정된 무료 시청권만 대상 (access_months가 null인 게 선물코드 접근권의 특징)
+      const isGiftAccess = c.enrolled && c.access?.access_ends_at && c.access?.access_months == null
+      if (!isGiftAccess) { banner.classList.add('hidden'); return }
+      const deadline = new Date(c.access.access_ends_at).getTime()
+      const tick = () => {
+        const ms = deadline - Date.now()
+        if (ms <= 0) { banner.classList.add('hidden'); clearInterval(giftAccessCountdownTimer); return }
+        const d = Math.floor(ms / 86400000), h = Math.floor((ms % 86400000) / 3600000), m = Math.floor((ms % 3600000) / 60000)
+        const textEl = document.getElementById('gift-access-countdown-text')
+        if (textEl) textEl.textContent = `선물코드 무료 시청 기간입니다. 종료까지 ${d}일 ${h}시간 ${m}분 남았습니다.`
+      }
+      tick()
+      banner.classList.remove('hidden')
+      giftAccessCountdownTimer = setInterval(tick, 60000)
     }
 
     async function loadCourseMedia() {
@@ -632,6 +689,14 @@
       return `<a href="${esc(pagePath)}" class="btn-enroll btn-enroll--secondary"><i class="ti ti-download"></i> ${esc(programName)} 다운로드</a>`
     }
 
+    function renderMaterialsBlock(c) {
+      if (!c?.enrolled || !c.materials_configured) return ''
+      if (c.materials_unlocked && c.materials_url) {
+        return `<a href="${esc(c.materials_url)}" target="_blank" rel="noopener noreferrer" class="btn-enroll btn-enroll--secondary"><i class="ti ti-file-download"></i> 교육자료 다운로드</a>`
+      }
+      return `<a href="/mypage.html?tab=courses&review_course=${encodeURIComponent(c.id)}" class="btn-enroll btn-enroll--secondary"><i class="ti ti-star"></i> 별점 5점+100자 후기 쓰고 교육자료 받기</a>`
+    }
+
     function isCourseEnded(c) {
       if (window.CourseEnrollmentUI?.isLiveEnded) return CourseEnrollmentUI.isLiveEnded(c)
       return c?.live_status === 'ended' || c?.live_ended === true || c?.live_resources?.live_ended === true
@@ -648,16 +713,26 @@
       return replay ? wrapBuyActions(replay) : ''
     }
 
+    function renderAdminPreviewLink(c) {
+      // 관리자는 구매/신청 여부와 무관하게 모든 강의를 전체 시청할 수 있다 (routes/courses.js 백엔드 우회와 짝)
+      if (c.enrolled || !API.isAdmin()) return ''
+      return `<div class="buy-actions buy-actions--admin"><a href="/player.html?slug=${c.slug}&chapter=first" class="btn-enroll btn-enroll--secondary"><i class="ti ti-eye"></i> 관리자: 전체 강의 보기</a></div>`
+    }
+
     function renderEnrollActions(c) {
+      return renderAdminPreviewLink(c) + renderEnrollActionsForBuyer(c)
+    }
+
+    function renderEnrollActionsForBuyer(c) {
       if (c.enrolled && c.access?.access_expired) {
         const until = c.access.access_ends_at ? formatDate(c.access.access_ends_at) : ''
-        return wrapBuyActions(`<div class="btn-enroll btn-enroll--expired" aria-disabled="true"><i class="ti ti-clock-off"></i> 수강 기간 만료${until ? ` (${until}까지)` : ''}</div>${renderAnticipationBtn(c)}${renderSubtitleToolBtn(c)}`)
+        return wrapBuyActions(`<div class="btn-enroll btn-enroll--expired" aria-disabled="true"><i class="ti ti-clock-off"></i> 수강 기간 만료${until ? ` (${until}까지)` : ''}</div>${renderAnticipationBtn(c)}${renderSubtitleToolBtn(c)}${renderMaterialsBlock(c)}`)
       }
       if (c.enrolled) {
         if (isLiveLikeCourse(c)) {
-          return wrapBuyActions(`${renderLiveEnrolledAction(c)}${renderAnticipationBtn(c)}${renderSubtitleToolBtn(c)}`)
+          return wrapBuyActions(`${renderLiveEnrolledAction(c)}${renderAnticipationBtn(c)}${renderSubtitleToolBtn(c)}${renderMaterialsBlock(c)}`)
         }
-        return wrapBuyActions(`<a href="/player.html?slug=${c.slug}&chapter=first" class="btn-enroll enrolled"><i class="ti ti-player-play"></i> 이어서 수강하기</a>${renderAnticipationBtn(c)}${renderSubtitleToolBtn(c)}`)
+        return wrapBuyActions(`<a href="/player.html?slug=${c.slug}&chapter=first" class="btn-enroll enrolled"><i class="ti ti-player-play"></i> 이어서 수강하기</a>${renderAnticipationBtn(c)}${renderSubtitleToolBtn(c)}${renderMaterialsBlock(c)}`)
       }
       if (isLiveLikeCourse(c)) {
         if (isCourseEnded(c)) {
@@ -979,6 +1054,9 @@
           let msg = '기대평 작성 완료!'
           if (res.coupon?.code) {
             msg += ` ${res.coupon.discount_percent || 10}% 할인 쿠폰이 발급되었습니다.`
+          }
+          if (res.gift_access?.granted) {
+            msg += ' 🎁 21일 무료 수강이 시작되었습니다!'
           }
           toast(msg, 'success')
         }

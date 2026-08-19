@@ -464,8 +464,6 @@ router.post('/register', async (req, res) => {
   const ageBucket = Math.floor((curYear - yearNum) / 10) * 10
   const ageRange = `${ageBucket}~${ageBucket + 9}`
 
-  const entry = verificationCodes.get(email)
-  if (!entry || !entry.verified) return res.status(400).json({ error: '이메일 인증이 완료되지 않았습니다.' })
   if (await db.findUserByEmail(email)) return res.status(409).json({ error: '이미 가입된 이메일입니다.' })
   const hash = bcrypt.hashSync(password, 10)
   const user = await db.createUser(email, hash, name, member_type, {
@@ -474,7 +472,6 @@ router.post('/register', async (req, res) => {
     birth_year: String(yearNum),
     age_range: ageRange,
   })
-  verificationCodes.delete(email)
   const token = jwt.sign({ id: user.id, email, name, role: 'student', member_type }, process.env.JWT_SECRET, { expiresIn: '7d' })
   await recordLoginLog(req, {
     user_id: user.id,

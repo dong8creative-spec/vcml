@@ -813,6 +813,38 @@ body.modal-open { overflow: hidden; }
   overscroll-behavior: contain;
 }
 .modal-overlay.hidden { display: none !important; }
+
+.gift-reservation-banner {
+  background: linear-gradient(90deg, #ff9f43, #ff6b6b);
+  color: #fff;
+}
+.gift-reservation-banner.hidden { display: none !important; }
+.gift-reservation-banner-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 24px;
+}
+.gift-reservation-icon { font-size: 20px; }
+.gift-reservation-text {
+  flex: 1;
+  min-width: 220px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.gift-reservation-cta {
+  border: none;
+  background: #fff;
+  color: #ff6b6b;
+  font-weight: 800;
+  font-size: 13.5px;
+  padding: 9px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gift-reservation-cta:hover { background: #fff5f0; }
 .modal {
   background: #fff;
   border-radius: 16px;

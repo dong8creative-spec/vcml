@@ -22,7 +22,7 @@
   <title>마이페이지 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=16" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
-  <link rel="stylesheet" href="/css/mypage.css?v=10" />
+  <link rel="stylesheet" href="/css/mypage.css?v=12" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 
@@ -141,8 +141,8 @@
   </main>
 </div>
 
-<script src="/js/api.js?v=3"></script>
-<script src="/js/review-reward-notice.js?v=1"></script>
+<script src="/js/api.js?v=4"></script>
+<script src="/js/review-reward-notice.js?v=2"></script>
 <script src="/js/live-reminder.js?v=24"></script>
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=13"></script>
@@ -711,9 +711,20 @@ async function cancelEnrollment(courseId) {
   }
 }
 
+const MATERIALS_UNLOCK_MIN_LENGTH = 100
+
+function materialsHintMarkup(len) {
+  if (len >= MATERIALS_UNLOCK_MIN_LENGTH) {
+    return { ok: true, html: `<i class="ti ti-circle-check"></i> ${MATERIALS_UNLOCK_MIN_LENGTH}자 이상 작성 완료 — 별점 5점으로 저장하시면 교육자료가 열립니다.` }
+  }
+  return { ok: false, html: `<i class="ti ti-info-circle"></i> 교육자료를 받으려면 별점 5점 + ${MATERIALS_UNLOCK_MIN_LENGTH}자 이상 후기가 필요해요. (현재 ${len}자 / ${MATERIALS_UNLOCK_MIN_LENGTH}자)` }
+}
+
 function renderCourseReviewBlock(c) {
   const rating = c.my_review?.rating || 0
-  const content = escapeHtml(c.my_review?.content || '')
+  const rawContent = c.my_review?.content || ''
+  const content = escapeHtml(rawContent)
+  const materialsHint = materialsHintMarkup(rawContent.trim().length)
   const reviewOpen = c.live_resources?.review_open !== false
     || (isLiveLikeCourse(c) && c.live_resources?.replay_available)
   const noticeHtml = (typeof ReviewRewardNotice !== 'undefined')
@@ -721,7 +732,7 @@ function renderCourseReviewBlock(c) {
     : ''
   const makeStars = (r, disabled) => [1,2,3,4,5].map(n =>
     disabled
-      ? `<span class="lc-star ${n <= r ? 'on' : ''}">★</span>`
+      ? `<span class="lc-star lc-star--readonly ${n <= r ? 'on' : ''}">★</span>`
       : `<button type="button" class="lc-star ${n <= r ? 'on' : ''}" data-star="${n}" onclick="setReviewStar('${c.id}',${n})">★</button>`
   ).join('')
 
@@ -731,24 +742,27 @@ function renderCourseReviewBlock(c) {
     }
 
     const rewardLocked = !!c.my_review.reward_locked
-    const editBtn = rewardLocked
-      ? `<span class="lc-review-locked-badge">혜택 수령 후 수정 불가</span>`
-      : (reviewOpen
-        ? `<button type="button" class="lc-edit-btn" onclick="toggleReviewEdit('${c.id}')">수정</button>`
-        : `<span class="lc-review-closed-badge">수정 기간 종료</span>`)
+    const editBtn = reviewOpen
+      ? `<button type="button" class="lc-edit-btn" onclick="toggleReviewEdit('${c.id}')">수정</button>`
+      : `<span class="lc-review-closed-badge">수정 기간 종료</span>`
     return `<div class="my-lc-review" id="review-course-${escapeHtml(c.id)}">
       <div class="lc-review-done">
         <div class="lc-review-done-left">
           <div class="lc-stars-row">${makeStars(rating, true)}</div>
           <span class="lc-review-done-txt">후기를 남겨주셨어요</span>
-          ${rewardLocked ? '<span class="lc-review-reward-note">5점 후기 혜택 수령 후 수정·삭제가 제한됩니다.</span>' : ''}
+          ${rewardLocked ? '<span class="lc-review-reward-note">5점 후기 혜택을 받아 별점은 고정되며, 후기 내용은 계속 수정할 수 있습니다.</span>' : ''}
         </div>
         ${editBtn}
       </div>
-      ${reviewOpen && !rewardLocked ? `<div class="lc-review-form" id="review-form-${escapeHtml(c.id)}" style="display:none">
-        <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(rating, false)}</div>
-        <textarea class="lc-review-ta" id="review-content-${c.id}" placeholder="수강 후기를 남겨주세요.">${content}</textarea>
-        ${noticeHtml}
+      ${c.materials_configured ? (c.materials_unlocked && c.materials_url
+        ? `<a href="${escapeHtml(c.materials_url)}" target="_blank" rel="noopener noreferrer" class="lc-materials-dl"><i class="ti ti-file-download"></i> 교육자료 다운로드</a>`
+        : `<div class="lc-materials-hint">${materialsHint.html}</div>`) : ''}
+      ${reviewOpen ? `<div class="lc-review-form" id="review-form-${escapeHtml(c.id)}" style="display:none">
+        <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(rating, rewardLocked)}</div>
+        ${rewardLocked ? `<div class="lc-review-rating-locked-note">별점 5점 혜택을 이미 받아 별점은 변경할 수 없어요.</div>` : ''}
+        <textarea class="lc-review-ta" id="review-content-${c.id}" placeholder="수강 후기를 남겨주세요." oninput="updateMaterialsHint('${c.id}')">${content}</textarea>
+        ${c.materials_configured ? `<div class="lc-materials-hint${materialsHint.ok ? ' is-ok' : ''}" id="review-materials-hint-${c.id}">${materialsHint.html}</div>` : ''}
+        ${rewardLocked ? '' : noticeHtml}
         <div class="lc-review-footer">
           <button type="button" class="lc-review-save" onclick="submitCourseReview('${c.id}')">후기 저장</button>
         </div>
@@ -769,7 +783,8 @@ function renderCourseReviewBlock(c) {
         <span class="lc-coupon-badge">후기 작성 시 10% 쿠폰 지급</span>
       </div>
       <div class="lc-stars-row" id="review-stars-${c.id}">${makeStars(0, false)}</div>
-      <textarea class="lc-review-ta" id="review-content-${c.id}" placeholder="자유롭게 작성해주세요. (선택)"></textarea>
+      <textarea class="lc-review-ta" id="review-content-${c.id}" placeholder="자유롭게 작성해주세요. (선택)" oninput="updateMaterialsHint('${c.id}')"></textarea>
+      ${c.materials_configured ? `<div class="lc-materials-hint" id="review-materials-hint-${c.id}">${materialsHintMarkup(0).html}</div>` : ''}
       ${noticeHtml}
       <div class="lc-review-footer">
         <button type="button" class="lc-review-save" onclick="submitCourseReview('${c.id}')">저장하기</button>
@@ -783,7 +798,11 @@ function toggleReviewEdit(courseId) {
   if (!form) return
   form.style.display = form.style.display === 'none' ? '' : 'none'
   if (form.style.display !== 'none') {
-    const r = reviewRatings[courseId] || 0
+    // 별을 새로 클릭하지 않고 폼만 연 경우에도(기존에 이미 5점으로 작성된 후기),
+    // 화면에 미리 채워져 있는 별점을 그대로 읽어와야 동의 체크박스가 정확히 표시된다
+    const starsWrap = document.getElementById('review-stars-' + courseId)
+    const r = reviewRatings[courseId] ?? (starsWrap ? starsWrap.querySelectorAll('.lc-star.on').length : 0)
+    reviewRatings[courseId] = r
     if (typeof ReviewRewardNotice !== 'undefined') {
       ReviewRewardNotice.updateReviewConsentVisibility(courseId, r)
     }
@@ -802,6 +821,15 @@ function setReviewStar(courseId, rating) {
   if (typeof ReviewRewardNotice !== 'undefined') {
     ReviewRewardNotice.updateReviewConsentVisibility(courseId, rating)
   }
+}
+
+function updateMaterialsHint(courseId) {
+  const hint = document.getElementById('review-materials-hint-' + courseId)
+  if (!hint) return
+  const len = (document.getElementById('review-content-' + courseId)?.value || '').trim().length
+  const { ok, html } = materialsHintMarkup(len)
+  hint.innerHTML = html
+  hint.classList.toggle('is-ok', ok)
 }
 
 async function submitCourseReview(courseId) {

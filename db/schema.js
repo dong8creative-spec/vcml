@@ -240,6 +240,20 @@ function addOneMonthFrom(iso) {
   return addMonthsFrom(iso, 1)
 }
 
+function addDaysFrom(iso, days) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  d.setDate(d.getDate() + days)
+  return d.toISOString()
+}
+
+function addHoursFrom(iso, hours) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  d.setTime(d.getTime() + hours * 60 * 60 * 1000)
+  return d.toISOString()
+}
+
 function addMonthsFrom(iso, months) {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return null
@@ -2091,6 +2105,13 @@ function isLiveReviewOpen(course, at = new Date()) {
   return at.getTime() <= liveEndsAt + LIVE_REVIEW_WINDOW_MS
 }
 
+/** 별점 5점 + 100자 이상 실제 수강후기 작성 시 교육자료(강의와 별개의 다운로드 자료) 언락 */
+const MATERIALS_UNLOCK_MIN_LENGTH = 100
+
+function isMaterialsUnlocked(review) {
+  return !!review && Number(review.rating) === 5 && String(review.content || '').trim().length >= MATERIALS_UNLOCK_MIN_LENGTH
+}
+
 function isMeetJoinAvailable(course, start, at = new Date()) {
   if (course?.live_status === 'ended' || isLiveCourseEnded(course, at)) return false
   if (!String(course?.meet_code || '').trim()) return false
@@ -3155,6 +3176,10 @@ const db = {
     coupon_allowed,
     checkout_starts_at,
     checkout_ends_at,
+    enrollment_limit,
+    detail_intro_text,
+    detail_intro_images,
+    thumbnail_url,
     live_starts_at,
     live_ends_at,
     live_schedule,
@@ -3222,8 +3247,16 @@ const db = {
       live_chat_url: mode === 'live_first' ? (live_chat_url || null) : null,
       live_status: mode === 'live_first' ? 'upcoming' : null,
       program_id: program_id || null,
+      enrollment_limit: Math.max(0, parseInt(enrollment_limit, 10) || 0),
+      detail_intro_text: detail_intro_text ? String(detail_intro_text).trim() : null,
+      detail_intro_images: Array.isArray(detail_intro_images)
+        ? detail_intro_images.map((u) => String(u || '').trim()).filter(Boolean).slice(0, 30)
+        : null,
+      thumbnail_url: thumbnail_url ? String(thumbnail_url).trim() : null,
       created_at: now(),
     }
+    if (!data.detail_intro_images?.length) data.detail_intro_images = null
+    if (!data.thumbnail_url) data.thumbnail_url = null
     const ref = await fs.collection('courses').add(data)
     await fs.collection('chapters').add({
       course_id: ref.id,
@@ -3374,6 +3407,7 @@ const db = {
       duration: String(data.duration || '').trim() || null,
       is_free: data.is_free ? 1 : 0,
       video_url: String(data.video_url || '').trim() || null,
+      timestamps_text: String(data.timestamps_text || '').trim() || null,
     }
     const ref = await fs.collection('chapters').add(payload)
     cacheInvalidate(`chapters:${courseId}`)
@@ -3391,6 +3425,7 @@ const db = {
     if (data.duration !== undefined) patch.duration = String(data.duration).trim() || null
     if (data.is_free !== undefined) patch.is_free = data.is_free ? 1 : 0
     if (data.video_url !== undefined) patch.video_url = String(data.video_url).trim() || null
+    if (data.timestamps_text !== undefined) patch.timestamps_text = String(data.timestamps_text).trim() || null
     if (data.order_num !== undefined) patch.order_num = Math.max(1, parseInt(data.order_num, 10) || 1)
     if (!Object.keys(patch).length) return chapter
     await fs.collection('chapters').doc(chapterId).update(patch)
@@ -3438,6 +3473,19 @@ const db = {
   async getCourseAccessMeta(userId, course, at = new Date()) {
     const enrollment = await db.getEnrollmentRecord(userId, course.id)
     if (!enrollment) return { enrolled: false, ...getPaidCourseAccessMeta(course, { at }) }
+    if (enrollment.access_expires_at) {
+      const endsMs = new Date(enrollment.access_expires_at).getTime()
+      const access_open = at.getTime() <= endsMs
+      return {
+        enrolled: true,
+        access_open,
+        access_expired: !access_open,
+        access_ends_at: enrollment.access_expires_at,
+        access_start_at: enrollment.enrolled_at,
+        access_days_left: access_open ? Math.max(0, Math.ceil((endsMs - at.getTime()) / 86400000)) : 0,
+        access_months: null,
+      }
+    }
     const order = await db.getActiveOrderForCourse(userId, course.id)
     return {
       enrolled: true,
@@ -3459,7 +3507,7 @@ const db = {
     await fs.collection('enrollments').add({ user_id: userId, course_id: courseId, enrolled_at: now() })
     cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data*')
   },
-  async enrollAtomically(userId, courseId, course) {
+  async enrollAtomically(userId, courseId, course, extra = {}) {
     const courseRef = fs.collection('courses').doc(courseId)
     const limit = Math.max(0, parseInt(course?.enrollment_limit, 10) || 0)
     let enrollmentFull = false
@@ -3474,7 +3522,12 @@ const db = {
       t.update(courseRef, { student_count: admin.firestore.FieldValue.increment(1) })
     })
     if (enrollmentFull) return { error: 'enrollment_full' }
-    await fs.collection('enrollments').add({ user_id: userId, course_id: courseId, enrolled_at: now() })
+    await fs.collection('enrollments').add({
+      user_id: userId,
+      course_id: courseId,
+      enrolled_at: now(),
+      ...(extra.access_expires_at ? { access_expires_at: extra.access_expires_at } : {}),
+    })
     cacheInvalidate(`enrollment_count:${courseId}`, 'admin:stats', 'admin:courseStats', 'homepage:data*')
     return { success: true }
   },
@@ -3485,6 +3538,30 @@ const db = {
   async getEnrollmentsByCourse(courseId) {
     const snap = await fs.collection('enrollments').where('course_id', '==', courseId).get()
     return snapToArr(snap)
+  },
+  /** 선물코드로 받은, 아직 만료되지 않은 무료 시청권이 있으면 반환 (로그인 시 리마인더용) */
+  async getActiveGiftAccessForUser(userId) {
+    const snap = await fs.collection('enrollments').where('user_id', '==', userId).get()
+    const nowMs = Date.now()
+    let best = null
+    for (const doc of snap.docs) {
+      const e = doc.data()
+      if (!e.access_expires_at) continue
+      const endsMs = new Date(e.access_expires_at).getTime()
+      if (Number.isNaN(endsMs) || endsMs <= nowMs) continue
+      if (!best || endsMs < new Date(best.access_expires_at).getTime()) best = e
+    }
+    if (!best) return null
+    const course = await db.getCourseById(best.course_id)
+    if (!course) return null
+    const endsMs = new Date(best.access_expires_at).getTime()
+    return {
+      course_id: course.id,
+      course_slug: course.slug,
+      course_title: course.title,
+      access_expires_at: best.access_expires_at,
+      access_days_left: Math.max(0, Math.ceil((endsMs - nowMs) / 86400000)),
+    }
   },
 
   // orders
@@ -4072,7 +4149,11 @@ const db = {
     const numRating = Math.max(1, Math.min(5, parseInt(rating, 10) || 0))
 
     if (existing && await db.isCourseReviewRewardLocked(userId, courseId, existing)) {
-      throw new Error('5점 후기 혜택을 받은 후기는 수정할 수 없습니다.')
+      // 혜택(쿠폰 등)을 받은 후에는 별점 변경으로 혜택을 다시 타는 걸 막기 위해 별점만 고정하고,
+      // 후기 내용(글자 수 보완 등)은 자유롭게 수정할 수 있게 해준다.
+      if (numRating !== existing.rating) {
+        throw new Error('혜택을 받은 후기는 별점을 변경할 수 없습니다. 후기 내용은 수정할 수 있습니다.')
+      }
     }
 
     const ts = now()
@@ -7644,6 +7725,7 @@ const db = {
   getReplayOpensAt,
   getLiveResourceAccess,
   stripLiveResourceUrls,
+  isMaterialsUnlocked,
   pickCourseCardFields,
   maskPublicName,
   isPublicReview,
@@ -7780,6 +7862,7 @@ const db = {
   _cacheGet: cacheGet,
   _cacheSet: cacheSet,
   _cacheInvalidate: cacheInvalidate,
+  _now: now,
 }
 
 seed().catch(console.error)
@@ -7957,3 +8040,351 @@ module.exports.getInstitutionCodesByCourse = getInstitutionCodesByCourse
 module.exports.validateInstitutionCode = validateInstitutionCode
 module.exports.redeemInstitutionCode = redeemInstitutionCode
 module.exports.getUserInstitutionAccess = getUserInstitutionAccess
+
+// ── 가입 선물코드 (access_codes) — 특정 강의를 N일간 무료로 열람할 수 있는 코드 ──
+
+async function createAccessCode({ course_id, code, duration_days, max_uses, note }) {
+  const normalizedCode = String(code || '').replace(/\D/g, '')
+  if (normalizedCode.length !== 8) throw new Error('코드는 8자리 숫자여야 합니다.')
+  if (!course_id) throw new Error('강의를 선택해주세요.')
+  const data = {
+    course_id,
+    code: normalizedCode,
+    duration_days: Math.max(1, parseInt(duration_days, 10) || 1),
+    max_uses: max_uses ? Math.max(1, parseInt(max_uses, 10)) : null,
+    active: true,
+    used_count: 0,
+    used_by: [],
+    note: note || null,
+    created_at: now(),
+  }
+  const ref = await fs.collection('access_codes').add(data)
+  return { id: ref.id, ...data }
+}
+
+async function getAccessCodes({ course_id, status, batch_id } = {}) {
+  const snap = await fs.collection('access_codes').orderBy('created_at', 'desc').get()
+  const nowMs = Date.now()
+  let codes = snap.docs.map(d => {
+    const c = { id: d.id, ...d.data() }
+    let effective = c.status || (c.used_count > 0 ? 'redeemed' : 'available')
+    if (effective === 'reserved' && c.review_deadline && new Date(c.review_deadline).getTime() < nowMs) effective = 'expired'
+    if (!c.active && effective !== 'redeemed') effective = 'inactive'
+    return { ...c, effective_status: effective }
+  })
+  if (course_id) codes = codes.filter(c => c.course_id === course_id)
+  if (batch_id) codes = codes.filter(c => c.batch_id === batch_id)
+  if (status) codes = codes.filter(c => c.effective_status === status)
+  const courses = await Promise.all(codes.map(c => db.getCourseById(c.course_id)))
+  return codes.map((c, i) => ({ ...c, course_title: courses[i]?.title || null }))
+}
+
+async function deleteAccessCode(id) {
+  await fs.collection('access_codes').doc(id).delete()
+}
+
+async function validateAccessCode(code) {
+  const normalizedCode = String(code || '').replace(/\D/g, '')
+  if (normalizedCode.length !== 8) return { ok: false, reason: 'not_found' }
+  const snap = await fs.collection('access_codes').where('code', '==', normalizedCode).limit(1).get()
+  if (snap.empty) return { ok: false, reason: 'not_found' }
+  const doc = snap.docs[0]
+  const data = doc.data()
+  if (!data.active) return { ok: false, reason: 'inactive' }
+  if (data.max_uses && data.used_count >= data.max_uses) return { ok: false, reason: 'limit_reached' }
+  return { ok: true, codeId: doc.id, courseId: data.course_id, durationDays: data.duration_days }
+}
+
+async function redeemAccessCode(userId, code) {
+  const result = await db.validateAccessCode(code)
+  if (!result.ok) return result
+  const course = await db.getCourseById(result.courseId)
+  if (!course) return { ok: false, reason: 'not_found' }
+  if (await db.isEnrolled(userId, result.courseId)) return { ok: false, reason: 'already_enrolled' }
+
+  const accessExpiresAt = addDaysFrom(now(), result.durationDays)
+  const enrollResult = await db.enrollAtomically(userId, result.courseId, course, { access_expires_at: accessExpiresAt })
+  if (enrollResult.error) return { ok: false, reason: enrollResult.error }
+
+  await fs.collection('access_codes').doc(result.codeId).update({
+    used_count: admin.firestore.FieldValue.increment(1),
+    used_by: admin.firestore.FieldValue.arrayUnion(userId),
+  })
+  await db.createOrder(userId, result.courseId, 0, '무료(코드)', 0).catch(() => {})
+  return { ok: true, course_id: result.courseId, course_title: course.title, access_expires_at: accessExpiresAt }
+}
+
+// ── 선물코드 예약(reserve) → 기대평 작성 시 확정(finalize) 2단계 흐름 ──
+// 24시간 내 기대평을 쓰지 않으면 예약이 자동 무효화됨(크론 없이, 조회 시점에 lazy 판정)
+
+const GIFT_CODE_SIGNUP_WINDOW_HOURS = 24
+const GIFT_CODE_REVIEW_WINDOW_HOURS = 24
+
+function isPastIso(iso) {
+  return !!iso && new Date(iso).getTime() < Date.now()
+}
+
+/** 가입 후 GIFT_CODE_SIGNUP_WINDOW_HOURS 이내에만 코드 등록 가능 */
+function isEligibleForGiftCode(user) {
+  const t = user?.created_at ? new Date(user.created_at).getTime() : NaN
+  return !Number.isNaN(t) && (Date.now() - t) <= GIFT_CODE_SIGNUP_WINDOW_HOURS * 60 * 60 * 1000
+}
+
+async function reserveAccessCode(userId, code) {
+  const normalizedCode = String(code || '').replace(/\D/g, '')
+  if (normalizedCode.length !== 8) return { ok: false, reason: 'not_found' }
+
+  const user = await db.findUserById(userId)
+  if (!user) return { ok: false, reason: 'user_not_found' }
+  if (!isEligibleForGiftCode(user)) return { ok: false, reason: 'not_eligible' }
+
+  // 한 사람당 하나의 선물코드만 예약/확정 가능
+  const mineSnap = await fs.collection('access_codes').where('reserved_by', '==', userId).get()
+  for (const d of mineSnap.docs) {
+    const m = d.data()
+    if (m.status === 'redeemed') return { ok: false, reason: 'already_redeemed' }
+    if (m.status === 'reserved' && !isPastIso(m.review_deadline)) {
+      const course = await db.getCourseById(m.course_id)
+      return { ok: true, resumed: true, course_id: m.course_id, course_slug: course?.slug, course_title: course?.title, review_deadline: m.review_deadline }
+    }
+  }
+
+  const snap = await fs.collection('access_codes').where('code', '==', normalizedCode).limit(1).get()
+  if (snap.empty) return { ok: false, reason: 'not_found' }
+  const codeRef = snap.docs[0].ref
+
+  const outcome = await fs.runTransaction(async t => {
+    const doc = await t.get(codeRef)
+    const data = doc.data()
+    if (!data.active) return { ok: false, reason: 'inactive' }
+    if (data.status === 'redeemed') return { ok: false, reason: 'already_used' }
+    if (data.status === 'reserved') {
+      if (isPastIso(data.review_deadline)) {
+        t.update(codeRef, { status: 'expired', active: false })
+        return { ok: false, reason: 'expired' }
+      }
+      return { ok: false, reason: 'already_reserved' }
+    }
+    if (data.status === 'expired') return { ok: false, reason: 'expired' }
+    const reservedAt = now()
+    const reviewDeadline = addHoursFrom(reservedAt, GIFT_CODE_REVIEW_WINDOW_HOURS)
+    t.update(codeRef, { status: 'reserved', reserved_by: userId, reserved_at: reservedAt, review_deadline: reviewDeadline })
+    return { ok: true, course_id: data.course_id, review_deadline: reviewDeadline }
+  })
+  if (!outcome.ok) return outcome
+
+  if (await db.isEnrolled(userId, outcome.course_id)) return { ok: false, reason: 'already_enrolled' }
+  const course = await db.getCourseById(outcome.course_id)
+  return { ok: true, resumed: false, course_id: outcome.course_id, course_slug: course?.slug, course_title: course?.title, review_deadline: outcome.review_deadline }
+}
+
+async function finalizeAccessCodeReservation(userId, courseId) {
+  const snap = await fs.collection('access_codes')
+    .where('reserved_by', '==', userId).where('course_id', '==', courseId).where('status', '==', 'reserved')
+    .limit(1).get()
+  if (snap.empty) return { ok: false, reason: 'no_reservation' }
+  const doc = snap.docs[0]
+  const data = doc.data()
+  if (isPastIso(data.review_deadline)) {
+    await doc.ref.update({ status: 'expired', active: false }).catch(() => {})
+    return { ok: false, reason: 'deadline_passed' }
+  }
+  const course = await db.getCourseById(courseId)
+  if (!course) return { ok: false, reason: 'course_not_found' }
+
+  if (!await db.isEnrolled(userId, courseId)) {
+    const accessExpiresAt = addDaysFrom(now(), data.duration_days || 21)
+    const enrollResult = await db.enrollAtomically(userId, courseId, course, { access_expires_at: accessExpiresAt })
+    if (enrollResult.error) return { ok: false, reason: enrollResult.error }
+    await db.createOrder(userId, courseId, 0, '무료(선물코드)', 0).catch(() => {})
+    await doc.ref.update({
+      status: 'redeemed',
+      redeemed_at: now(),
+      used_count: admin.firestore.FieldValue.increment(1),
+      used_by: admin.firestore.FieldValue.arrayUnion(userId),
+    })
+    return { ok: true, course_id: courseId, course_title: course.title, access_expires_at: accessExpiresAt }
+  }
+  await doc.ref.update({
+    status: 'redeemed',
+    redeemed_at: now(),
+    used_count: admin.firestore.FieldValue.increment(1),
+    used_by: admin.firestore.FieldValue.arrayUnion(userId),
+  })
+  return { ok: true, course_id: courseId, already_enrolled: true }
+}
+
+async function getPendingGiftReservation(userId, courseId) {
+  const snap = await fs.collection('access_codes')
+    .where('reserved_by', '==', userId).where('course_id', '==', courseId).where('status', '==', 'reserved')
+    .limit(1).get()
+  if (snap.empty) return null
+  const data = snap.docs[0].data()
+  if (isPastIso(data.review_deadline)) return null
+  return { review_deadline: data.review_deadline }
+}
+
+async function generateAccessCodes({ course_id, count, duration_days, note }) {
+  if (!course_id) throw new Error('강의를 선택해주세요.')
+  const n = Math.max(1, Math.min(500, parseInt(count, 10) || 0))
+  if (!n) throw new Error('생성할 코드 개수를 입력하세요.')
+  const days = Math.max(1, parseInt(duration_days, 10) || 21)
+  const batchId = nextId()
+
+  const existingSnap = await fs.collection('access_codes').select('code').get()
+  const existing = new Set(existingSnap.docs.map(d => d.data().code))
+  const codes = []
+  while (codes.length < n) {
+    const c = String(Math.floor(10000000 + Math.random() * 90000000))
+    if (existing.has(c)) continue
+    existing.add(c)
+    codes.push(c)
+  }
+
+  const batch = fs.batch()
+  const created = []
+  const createdAt = now()
+  for (const code of codes) {
+    const ref = fs.collection('access_codes').doc()
+    const data = {
+      course_id, code, duration_days: days, max_uses: 1, active: true, status: 'available',
+      used_count: 0, used_by: [],
+      reserved_by: null, reserved_at: null, review_deadline: null, redeemed_at: null,
+      note: note || null, batch_id: batchId, created_at: createdAt,
+    }
+    batch.set(ref, data)
+    created.push({ id: ref.id, ...data })
+  }
+  await batch.commit()
+  return { batch_id: batchId, codes: created }
+}
+
+// ── 자동발급 선물코드 이벤트 — 신규가입 시 정원(quota) 내에서 코드를 자동 생성해 즉시 예약 ──
+
+const GIFT_EVENT_DOC_ID = 'active'
+
+async function getGiftEventConfig() {
+  const doc = await fs.collection('gift_event_config').doc(GIFT_EVENT_DOC_ID).get()
+  if (!doc.exists) {
+    return { active: false, course_id: null, course_title: null, quota: 0, issued_count: 0, duration_days: 21 }
+  }
+  const data = doc.data()
+  const course = data.course_id ? await db.getCourseById(data.course_id) : null
+  return {
+    active: !!data.active,
+    course_id: data.course_id || null,
+    course_title: course?.title || null,
+    quota: Math.max(0, parseInt(data.quota, 10) || 0),
+    issued_count: Math.max(0, parseInt(data.issued_count, 10) || 0),
+    duration_days: Math.max(1, parseInt(data.duration_days, 10) || 21),
+  }
+}
+
+async function setGiftEventConfig({ course_id, quota, duration_days, active }) {
+  if (active && !course_id) throw new Error('강의를 선택해주세요.')
+  if (course_id) {
+    const course = await db.getCourseById(course_id)
+    if (!course) throw new Error('선택한 강의를 찾을 수 없습니다.')
+  }
+  const ref = fs.collection('gift_event_config').doc(GIFT_EVENT_DOC_ID)
+  const existing = await ref.get()
+  const data = {
+    course_id: course_id || null,
+    quota: Math.max(0, parseInt(quota, 10) || 0),
+    duration_days: Math.max(1, parseInt(duration_days, 10) || 21),
+    active: !!active,
+    updated_at: now(),
+  }
+  if (!existing.exists) {
+    data.issued_count = 0
+    data.created_at = now()
+  }
+  await ref.set(data, { merge: true })
+  return getGiftEventConfig()
+}
+
+/** 신규가입자 자동발급 청구 — 정원 내에서만 코드를 새로 만들어 즉시 본인 앞으로 예약한다 */
+async function claimAutoGiftCode(userId) {
+  const user = await db.findUserById(userId)
+  if (!user) return { ok: false, reason: 'user_not_found' }
+  if (!isEligibleForGiftCode(user)) return { ok: false, reason: 'not_eligible' }
+
+  // 이미 예약/확정된 코드가 있으면 재진입 시 같은 결과 반환 (중복 발급 방지)
+  const mineSnap = await fs.collection('access_codes').where('reserved_by', '==', userId).get()
+  for (const d of mineSnap.docs) {
+    const m = d.data()
+    if (m.status === 'redeemed') return { ok: false, reason: 'already_redeemed' }
+    if (m.status === 'reserved' && !isPastIso(m.review_deadline)) {
+      const course = await db.getCourseById(m.course_id)
+      return { ok: true, resumed: true, code: m.code, course_id: m.course_id, course_slug: course?.slug, course_title: course?.title, review_deadline: m.review_deadline }
+    }
+  }
+
+  const configRef = fs.collection('gift_event_config').doc(GIFT_EVENT_DOC_ID)
+  const outcome = await fs.runTransaction(async (t) => {
+    const configDoc = await t.get(configRef)
+    if (!configDoc.exists) return { ok: false, reason: 'event_not_configured' }
+    const config = configDoc.data()
+    if (!config.active || !config.course_id) return { ok: false, reason: 'event_not_configured' }
+    const issued = Math.max(0, parseInt(config.issued_count, 10) || 0)
+    const quota = Math.max(0, parseInt(config.quota, 10) || 0)
+    if (issued >= quota) return { ok: false, reason: 'event_full' }
+    t.update(configRef, { issued_count: admin.firestore.FieldValue.increment(1) })
+    return { ok: true, course_id: config.course_id, duration_days: config.duration_days || 21 }
+  })
+  if (!outcome.ok) return outcome
+
+  const course = await db.getCourseById(outcome.course_id)
+  if (!course) return { ok: false, reason: 'event_full' }
+
+  const existingSnap = await fs.collection('access_codes').select('code').get()
+  const existingCodes = new Set(existingSnap.docs.map((d) => d.data().code))
+  let code
+  do {
+    code = String(Math.floor(10000000 + Math.random() * 90000000))
+  } while (existingCodes.has(code))
+
+  const reservedAt = now()
+  const reviewDeadline = addHoursFrom(reservedAt, GIFT_CODE_REVIEW_WINDOW_HOURS)
+  await fs.collection('access_codes').add({
+    course_id: outcome.course_id,
+    code,
+    duration_days: outcome.duration_days,
+    max_uses: 1,
+    active: true,
+    used_count: 0,
+    used_by: [],
+    note: '자동발급(신규가입 이벤트)',
+    batch_id: null,
+    status: 'reserved',
+    reserved_by: userId,
+    reserved_at: reservedAt,
+    review_deadline: reviewDeadline,
+    redeemed_at: null,
+    created_at: reservedAt,
+  })
+
+  return {
+    ok: true,
+    resumed: false,
+    code,
+    course_id: outcome.course_id,
+    course_slug: course.slug,
+    course_title: course.title,
+    review_deadline: reviewDeadline,
+  }
+}
+
+module.exports.getGiftEventConfig = getGiftEventConfig
+module.exports.setGiftEventConfig = setGiftEventConfig
+module.exports.claimAutoGiftCode = claimAutoGiftCode
+
+module.exports.createAccessCode = createAccessCode
+module.exports.getAccessCodes = getAccessCodes
+module.exports.deleteAccessCode = deleteAccessCode
+module.exports.validateAccessCode = validateAccessCode
+module.exports.redeemAccessCode = redeemAccessCode
+module.exports.reserveAccessCode = reserveAccessCode
+module.exports.finalizeAccessCodeReservation = finalizeAccessCodeReservation
+module.exports.getPendingGiftReservation = getPendingGiftReservation
+module.exports.generateAccessCodes = generateAccessCodes

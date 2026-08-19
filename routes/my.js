@@ -2,6 +2,7 @@ const router = require('express').Router()
 const db = require('../db')
 const userPayload = require('../db/schema').userPayload
 const { authMiddleware } = require('../middleware/auth')
+const { isAllowedAdmin } = require('../utils/adminAccess')
 
 const MAX_BIO = 500
 const MAX_IMAGE_LEN = 480000
@@ -161,13 +162,14 @@ router.get('/courses', authMiddleware, async (req, res) => {
       access: db.getPaidCourseAccessMeta(c, {
         enrolledAt: e.enrolled_at,
         paidAt: order?.paid_at,
+        accessExpiresAt: e.access_expires_at || null,
       }),
       total_chapters: chapters.length,
       completed_chapters: completed,
       progress_pct: chapters.length > 0 ? Math.min(100, Math.round((completed / chapters.length) * 100)) : 0,
       certificate_eligible: chapters.length > 0
         && Math.round((completed / chapters.length) * 100) >= db.CERTIFICATE_THRESHOLD_PCT
-        && !db.getPaidCourseAccessMeta(c, { enrolledAt: e.enrolled_at, paidAt: order?.paid_at }).access_expired,
+        && !db.getPaidCourseAccessMeta(c, { enrolledAt: e.enrolled_at, paidAt: order?.paid_at, accessExpiresAt: e.access_expires_at || null }).access_expired,
       certificate_threshold_pct: db.CERTIFICATE_THRESHOLD_PCT,
       certificate_issued_at: e.certificate_issued_at || null,
       last_chapter_id: e.last_chapter_id || null,
@@ -182,7 +184,10 @@ router.get('/courses', authMiddleware, async (req, res) => {
         created_at: myReview.created_at || null,
         reward_locked: await db.isCourseReviewRewardLocked(req.user.id, c.id, myReview),
       } : null,
+      materials_configured: !!c.materials_url,
+      materials_unlocked: db.isMaterialsUnlocked(myReview),
     }
+    if (!row.materials_unlocked) delete row.materials_url
     if (db.courseSupportsLiveReplay(c)) {
       row.live_ended = db.isLiveCourseEnded(c)
       row.live_resources = db.getLiveResourceAccess(c, {
@@ -302,10 +307,14 @@ router.post('/progress', authMiddleware, async (req, res) => {
   const { chapter_id, completed, watched_sec } = req.body
   const chapter = await db.getChapterById(chapter_id)
   if (!chapter) return res.status(404).json({ error: '챕터 없음' })
-  if (!await db.isEnrolled(req.user.id, chapter.course_id)) return res.status(403).json({ error: '수강 신청 필요' })
-  const course = await db.getCourseById(chapter.course_id)
-  if (course && !await db.canAccessPaidCourse(req.user.id, course)) {
-    return res.status(403).json({ error: '수강 기간(3개월)이 만료되었습니다.' })
+  const requester = await db.findUserById(req.user.id)
+  const isAdminViewer = isAllowedAdmin(requester)
+  if (!isAdminViewer) {
+    if (!await db.isEnrolled(req.user.id, chapter.course_id)) return res.status(403).json({ error: '수강 신청 필요' })
+    const course = await db.getCourseById(chapter.course_id)
+    if (course && !await db.canAccessPaidCourse(req.user.id, course)) {
+      return res.status(403).json({ error: '수강 기간(3개월)이 만료되었습니다.' })
+    }
   }
   await db.upsertProgress(req.user.id, chapter_id, completed, watched_sec || 0)
   res.json({ success: true })
@@ -346,7 +355,10 @@ router.post('/reviews', authMiddleware, async (req, res) => {
   const { course_id, rating, content } = req.body
   if (!course_id || !rating) return res.status(400).json({ error: '필수 항목 누락' })
   const numRating = Math.max(1, Math.min(5, parseInt(rating, 10) || 0))
-  if (numRating === 5 && !req.body.consent_review_reward_terms) {
+  const existingReview = await db.getReviewByUserAndCourse(req.user.id, course_id)
+  const alreadyRewardLocked = existingReview && await db.isCourseReviewRewardLocked(req.user.id, course_id, existingReview)
+  // 이미 혜택을 받아 별점이 고정된 후기는 재동의 없이 내용만 수정 가능
+  if (numRating === 5 && !alreadyRewardLocked && !req.body.consent_review_reward_terms) {
     return res.status(400).json({ error: '별점 5점 후기 혜택 안내에 동의해주세요.' })
   }
   if (!await db.isEnrolled(req.user.id, course_id)) return res.status(403).json({ error: '수강생만 후기를 작성할 수 있습니다.' })

@@ -59,8 +59,14 @@ def bundled_model_dir() -> Optional[str]:
     """
     bases: list[Path] = []
     if getattr(sys, "frozen", False):
-        exe_dir = Path(sys.executable).resolve().parent
+        exe = Path(sys.executable).resolve()
+        exe_dir = exe.parent
         bases += [exe_dir, exe_dir.parent]
+        # macOS .app: App.app/Contents/MacOS/exe → Resources·앱 옆 폴더도 탐색
+        if exe_dir.name == "MacOS" and exe_dir.parent.name == "Contents":
+            contents = exe_dir.parent
+            app_bundle = contents.parent
+            bases += [contents / "Resources", app_bundle.parent, app_bundle]
     bases.append(Path(__file__).resolve().parent.parent)
     for base in bases:
         for name in (f"faster-whisper-{MODEL}", MODEL):

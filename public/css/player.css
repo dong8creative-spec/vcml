@@ -20,14 +20,160 @@ a { text-decoration: none; color: inherit; }
 
 .player-layout { display: flex; flex: 1; overflow: hidden; }
 
-.player-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: #0d0d0d; }
+/* 영상은 절대 스크롤에 밀려나지 않도록 player-main 자체는 스크롤하지 않고,
+   chapter-info(아래 정보)만 별도로 스크롤한다. 구간이동 목록도 자기 영역 안에서만 스크롤. */
+.player-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #0d0d0d; }
 
-.video-area { background: #000; }
-.video-embed {
-  display: block;
-  width: 100%;
+.video-area {
+  background: #000;
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+}
+.video-area-main {
+  flex: 1;
+  min-width: 0;
+  position: relative;
   aspect-ratio: 16 / 9;
   max-height: min(72vh, 820px);
+}
+
+/* YT IFrame API가 #yt-player-slot div를 자체 <iframe>으로 완전히 치환하므로,
+   생성된 iframe 자체를 부모(.video-area-main)에 꽉 채워야 한다 */
+.video-area-main iframe { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; border: 0; }
+
+/* 유튜브 로고/제목 클릭 차단막(2차 방어, 아래 전체 차단막에 가려 평소엔 안 쓰임) */
+.yt-shield { position: absolute; z-index: 6; background: transparent; pointer-events: auto; }
+.yt-shield-br { bottom: 0; right: 0; width: 130px; height: 58px; }
+.yt-shield-tr { top: 0; right: 0; width: 72px; height: 52px; }
+.yt-shield-top { top: 0; left: 0; right: 0; height: 36px; }
+
+/* 재생 중에도 영상 전체를 투명하게 덮어 클릭/우클릭을 전부 가로챈다 —
+   우클릭 시 유튜브의 "동영상 URL 복사" 메뉴 자체가 뜨는 것을 막기 위해 코너만으로는 부족함.
+   클릭은 재생/일시정지 토글로 우리 쪽에서 처리한다. */
+.yt-click-shield {
+  position: absolute; inset: 0; z-index: 7;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* 재생 중이 아닐 때(일시정지·종료·시작전) 영상 전체를 완전히 덮는 차단막 —
+   이 순간 유튜브 자체 UI(관련영상·워치온유튜브 등)가 노출될 수 있어 통째로 가린다 */
+.yt-pause-shield {
+  position: absolute; inset: 0; z-index: 8;
+  background: rgba(0, 0, 0, 0.82);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.yt-pause-shield.is-visible { display: flex; }
+.yt-resume-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; color: #111;
+  border: none; border-radius: 30px;
+  padding: 14px 26px;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer;
+}
+.yt-resume-btn:hover { background: #eee; }
+
+/* 커스텀 컨트롤(재생/일시정지 · 전체화면) — 일시정지 차단막보다도 위에 항상 접근 가능 */
+.video-controls {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 9;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+}
+.video-controls .vc-spacer { flex: 1; }
+.video-controls button {
+  background: rgba(255,255,255,0.16); border: none; color: #fff;
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px;
+}
+.video-controls button:hover { background: rgba(255,255,255,0.32); }
+
+/* 전체화면: #video-area 자체가 전체화면 대상. 구간이동 패널은 평소엔 곁에 항상 보이다가,
+   전체화면에서는 오른쪽 끝에 마우스를 올렸을 때만 슬라이드로 나타나는 오버레이로 바뀐다. */
+#video-area:fullscreen { height: 100%; }
+#video-area:fullscreen .video-area-main { aspect-ratio: unset; max-height: none; height: 100%; }
+#video-area:fullscreen .timecode-panel {
+  position: absolute; top: 0; right: 0; height: 100%; width: 280px;
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  z-index: 20;
+  box-shadow: -8px 0 24px rgba(0,0,0,0.4);
+}
+#video-area:fullscreen .timecode-panel.is-revealed { transform: translateX(0); }
+.timecode-hover-zone { display: none; }
+#video-area:fullscreen .timecode-hover-zone {
+  display: block; position: absolute; top: 0; right: 0; width: 28px; height: 100%; z-index: 19;
+}
+
+.timecode-panel { width: 260px; flex-shrink: 0; background: #161616; border-left: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; overflow: hidden; }
+/* 단독 챕터: 구간이동 목록은 오른쪽 사이드바 자리로 옮겨서 전체 높이로 보여준다.
+   영상 옆의 이 패널은 평소엔 숨기고, 전체화면 호버 오버레이 용도로만 남겨둔다. */
+.timecode-panel.is-sidebar-mode { display: none; }
+#video-area:fullscreen .timecode-panel.is-sidebar-mode { display: flex; }
+.timecode-header { padding: 12px 14px; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+.timecode-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px; }
+.timecode-item { display: flex; align-items: center; gap: 8px; width: 100%; background: #232323; color: #ccc; padding: 9px 10px; margin-bottom: 6px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; font-size: 12.5px; text-align: left; transition: 0.15s; }
+.timecode-item:hover { background: #e74c3c; color: #fff; border-color: #c0392b; }
+.timecode-badge { background: #000; color: #e74c3c; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.timecode-item:hover .timecode-badge { background: #fff; }
+@media (max-width: 900px) {
+  .video-area { flex-direction: column; }
+  .timecode-panel { width: 100%; max-height: 220px; border-left: none; border-top: 1px solid rgba(255,255,255,0.08); }
+  .video-watermark-text { color: rgba(255, 255, 255, 0.05); }
+}
+
+.video-watermark-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
+.video-watermark-text {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  user-select: none;
+}
+
+#prtsc-blocker {
+  position: fixed;
+  inset: 0;
+  background: #d92b2b;
+  z-index: 99999;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  text-align: center;
+  gap: 8px;
+}
+#prtsc-blocker.is-visible { display: flex; }
+#prtsc-blocker .prtsc-title { font-size: 40px; font-weight: 900; }
+#prtsc-blocker .prtsc-sub { font-size: 16px; opacity: 0.9; }
+
+.video-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  gap: 14px;
+  padding: 40px 20px;
+  text-align: center;
+  background: #000;
+}
+.video-locked .vl-title { font-size: 20px; font-weight: 700; color: #ff6b6b; }
+.video-locked .vl-note { font-size: 14px; color: rgba(255, 255, 255, 0.55); line-height: 1.6; max-width: 360px; }
+.video-embed {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border: 0;
   background: #000;
 }
@@ -49,7 +195,7 @@ a { text-decoration: none; color: inherit; }
 .vp-play-btn { margin-top: 6px; padding: 11px 22px; background: #fff; color: var(--text-primary); border: none; border-radius: 7px; font-size: 21.6px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: opacity 0.2s; }
 .vp-play-btn:hover { opacity: 0.88; }
 
-.chapter-info { padding: 24px 28px; background: #0d0d0d; border-top: 0.5px solid rgba(255,255,255,0.07); }
+.chapter-info { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 24px 28px; background: #0d0d0d; border-top: 0.5px solid rgba(255,255,255,0.07); }
 .ci-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .ci-header h2 { font-size: 27.6px; font-weight: 500; color: #fff; line-height: 1.35; }
 .ci-dur { font-size: 20.4px; color: rgba(255,255,255,0.3); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
@@ -62,8 +208,11 @@ a { text-decoration: none; color: inherit; }
 
 /* Sidebar */
 .player-sidebar { width: 300px; flex-shrink: 0; background: #161616; border-left: 0.5px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; overflow: hidden; }
+/* 챕터가 1개뿐인 강의는 챕터 목록이 의미가 없어 완전히 숨긴다 (구간이동 목록만 노출) */
+.player-sidebar.is-hidden, .sidebar-toggle-btn.is-hidden { display: none !important; }
 .sidebar-course-title { padding: 14px 16px; font-size: 20.4px; font-weight: 500; color: rgba(255,255,255,0.5); border-bottom: 0.5px solid rgba(255,255,255,0.07); }
 .chapter-list { flex: 1; overflow-y: auto; }
+.chapter-list.is-timecode-mode { padding: 8px; }
 .chapter-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; border-bottom: 0.5px solid rgba(255,255,255,0.04); transition: background 0.15s; }
 .chapter-item:hover { background: rgba(255,255,255,0.05); }
 .chapter-item.active { background: rgba(255,255,255,0.1); }

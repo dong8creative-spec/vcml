@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>도각쌤의 타닥클래스 · 취소 및 환불 안내</title>
+
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  :root {
+    --black: #111111;
+    --gray-1: #333333;
+    --gray-2: #666666;
+    --border-outer: #111111;
+    --bg: #ffffff;
+    --soft: #f5f5f5;
+    /* 외부 테두리 기준 45°(↘) 방향, 불투명도 3% — blur 없음 */
+    --cell-shadow: 6px 6px 0 rgba(0, 0, 0, 0.03);
+  }
+
+  body {
+    margin: 0;
+    background: #ececec;
+    font-family:
+      Pretendard,
+      "Apple SD Gothic Neo",
+      "Noto Sans KR",
+      Arial,
+      sans-serif;
+    color: var(--black);
+  }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #111;
+  }
+
+  .toolbar button {
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 9px 15px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .save-menu {
+    position: relative;
+  }
+
+  .save-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(420px, 92vw);
+    max-height: 360px;
+    overflow-y: auto;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #333;
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+  }
+
+  .save-panel.open {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .save-panel-title {
+    grid-column: 1 / -1;
+    padding: 4px 6px 8px;
+    font-size: 11px;
+    font-weight: 900;
+    color: #666;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 2px;
+  }
+
+  .save-panel button {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+    background: #f7f7f7;
+    color: #111;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+
+  .save-panel button:hover {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+  }
+
+  .save-panel button.save-all-btn {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    text-align: center;
+    background: #111;
+    color: #fff;
+    border-color: #111;
+  }
+
+  .save-panel button.save-all-btn:hover {
+    background: #333;
+  }
+
+  .export-block {
+    width: 100%;
+  }
+
+  .export-shot {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 860px;
+    padding: 32px 36px 36px;
+    background: #fff;
+    box-sizing: border-box;
+  }
+
+  .export-shot .export-block {
+    margin-top: 0 !important;
+  }
+
+  .export-shot .section {
+    margin-top: 0 !important;
+  }
+
+  .edit-btn,
+  .save-btn {
+    background: #fff;
+    color: #111;
+  }
+
+  .reset-btn {
+    background: #222;
+    color: #fff;
+  }
+
+  .format-toolbar {
+    display: none;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    width: 100%;
+    max-width: 860px;
+    margin-top: 4px;
+    padding: 8px 10px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 6px;
+  }
+
+  body.edit-mode .format-toolbar {
+    display: flex;
+  }
+
+  .format-toolbar .fmt-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .format-toolbar .fmt-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #aaa;
+  }
+
+  .format-toolbar input[type="color"] {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .format-toolbar button {
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 800;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .format-toolbar button:hover {
+    background: #444;
+  }
+
+  .format-toolbar button.fmt-accent {
+    background: #e1492d;
+    border-color: #e1492d;
+  }
+
+  .format-toolbar button.fmt-accent:hover {
+    background: #c93d24;
+  }
+
+  .format-toolbar .fmt-divider {
+    width: 1px;
+    height: 22px;
+    background: #444;
+  }
+
+
+.format-toolbar .fmt-group{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.format-toolbar .fmt-label{
+  font-size:11px;
+  font-weight:800;
+  color:#888;
+}
+.format-toolbar input[type="color"]{
+  width:28px;
+  height:28px;
+  padding:0;
+  border:1px solid #555;
+  border-radius:4px;
+  background:transparent;
+  cursor:pointer;
+}
+.format-toolbar .fmt-divider{
+  width:1px;
+  height:22px;
+  background:#444;
+  flex-shrink:0;
+}
+.text-highlight.accent-underline,
+span.accent-underline{
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+  box-shadow:inset 0 -0.45em 0 var(--accent-underline, var(--primary, var(--accent)));
+}
+
+  .format-toolbar .fmt-hint {
+    font-size: 10px;
+    color: #888;
+    font-weight: 600;
+  }
+
+  /* 9:16 이미지 슬롯 */
+  .media-slot,
+  .media-drop-zone {
+    aspect-ratio: 9 / 16;
+    width: min(320px, 72%);
+    margin: 14px auto;
+    position: relative;
+  }
+
+  .media-slot {
+    border: 1px solid var(--border-outer);
+    box-shadow: var(--cell-shadow);
+    overflow: hidden;
+    background: #fafafa;
+  }
+
+  .media-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+  }
+
+  .media-drop-zone {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    border: 2px dashed #ccc;
+    border-radius: 4px;
+    background: #fafafa;
+    color: #888;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.5;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  body.edit-mode .media-drop-zone:not(.has-image) {
+    display: flex;
+  }
+
+  .media-drop-zone.drag-over {
+    border-color: #e1492d;
+    background: #fff5f2;
+    color: #e1492d;
+  }
+
+  .media-slot .media-remove {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+  }
+
+  body.edit-mode .media-slot .media-remove {
+    display: block;
+  }
+
+  .export-block.drag-over-block {
+    outline: 2px dashed #e1492d;
+    outline-offset: 4px;
+  }
+
+  /* 편집 모드에서만 표시 */
+  .edit-only-slot {
+    display: none;
+  }
+
+  body.edit-mode .edit-only-slot {
+    display: block;
+  }
+
+  /* 텍스트 서식 span */
+  #capture .text-highlight {
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+
+  .export-shot .media-remove,
+  .export-shot .media-drop-zone:not(.has-image) {
+    display: none !important;
+  }
+
+  .export-shot .media-slot {
+    display: block;
+  }
+
+  #capture {
+    width: 860px;
+    margin: 0 auto 50px;
+    padding: 54px 48px 60px 42px;
+    background: var(--bg);
+    overflow: visible;
+    text-align: left;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    line-break: strict;
+  }
+
+  #capture h1 {
+    text-align: left;
+    word-break: keep-all;
+  }
+
+  /* 본문 텍스트 공통: 왼쪽 정렬 + 한글 자연 줄바꿈 */
+  #capture .text-block,
+  #capture .intro,
+  #capture .important-title,
+  #capture .important-body,
+  #capture .section-title,
+  #capture .cell-label,
+  #capture .cell-body,
+  #capture .cell-wide,
+  #capture .final-note,
+  #capture .footer,
+  #capture .course-name,
+  #capture .top-label {
+    text-align: left;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    line-break: strict;
+  }
+
+  /* 테두리 + 45° 그림자 공통 */
+  .cell-surface {
+    border: 1px solid var(--border-outer);
+    box-shadow: var(--cell-shadow);
+    background: #fff;
+  }
+
+  .top-label {
+    display: block;
+    width: 100%;
+    padding: 7px 11px;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .3px;
+  }
+
+  .top-label.cell-surface {
+    display: block;
+  }
+
+  h1 {
+    margin: 18px 0 0;
+    font-size: 38px;
+    line-height: 1.2;
+    letter-spacing: -1.8px;
+    font-weight: 950;
+  }
+
+  .course-name {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: var(--soft);
+    font-size: 15px;
+    line-height: 1.5;
+    font-weight: 800;
+    letter-spacing: -.2px;
+  }
+
+  .intro {
+    margin-top: 16px;
+    padding-bottom: 28px;
+    border-bottom: 3px solid var(--black);
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--gray-1);
+    letter-spacing: -.25px;
+  }
+
+  .intro p {
+    margin: 0 0 0.75em;
+  }
+
+  .intro p:last-child {
+    margin-bottom: 0;
+  }
+
+  .final-note p {
+    margin: 0 0 0.75em;
+  }
+
+  .final-note p:last-child {
+    margin-bottom: 0;
+  }
+
+  .important {
+    margin-top: 24px;
+    overflow: visible;
+  }
+
+  .important-title {
+    padding: 12px 15px;
+    background: var(--black);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 900;
+    border: 1px solid var(--border-outer);
+    box-shadow: var(--cell-shadow);
+  }
+
+  .important-body {
+    padding: 17px 18px;
+    font-size: 14px;
+    line-height: 1.7;
+    font-weight: 700;
+    background: #fff;
+    margin-top: 10px;
+    border: 1px solid var(--border-outer);
+    box-shadow: var(--cell-shadow);
+  }
+
+  .section {
+    margin-top: 31px;
+  }
+
+  /* ── 섹션: 제목 셀 + 본문 그리드 ── */
+  .section-frame {
+    overflow: visible;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 10px 12px;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: -.4px;
+    line-height: 1.45;
+    background: #fff;
+    margin: 0 0 10px;
+    border: 1px solid var(--border-outer);
+    box-shadow: var(--cell-shadow);
+  }
+
+  .section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 25px;
+    height: 25px;
+    margin-right: 9px;
+    border: 1px solid var(--border-outer);
+    font-size: 12px;
+    font-weight: 900;
+    background: #fff;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.03);
+    text-align: center;
+  }
+
+  /* ── 셀 그리드 (간격 = 45° 그림자 여유) ── */
+  .cell-panel {
+    display: grid;
+    gap: 10px;
+    overflow: visible;
+  }
+
+  .cell-panel--2col {
+    grid-template-columns: 190px 1fr;
+  }
+
+  .cell-panel--num {
+    grid-template-columns: 48px 1fr;
+  }
+
+  .cell-panel--quad {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cell {
+    border: 1px solid var(--border-outer);
+    background: #fff;
+    box-shadow: var(--cell-shadow);
+  }
+
+  .cell-label {
+    display: block;
+    padding: 16px 14px;
+    background: var(--soft);
+    font-size: 13px;
+    line-height: 1.55;
+    font-weight: 900;
+  }
+
+  .cell-label-dark {
+    background: #111;
+    color: #fff;
+  }
+
+  .cell-body {
+    padding: 15px 17px;
+    font-size: 13.5px;
+    line-height: 1.72;
+    color: #222;
+  }
+
+  .cell-body strong {
+    font-weight: 900;
+  }
+
+  .cell-body.danger {
+    color: #8b1a1a;
+    font-weight: 800;
+  }
+
+  .cell-num {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 17px;
+    background: var(--soft);
+    font-size: 12px;
+    font-weight: 900;
+    min-height: 52px;
+    text-align: center;
+  }
+
+  .cell-wide {
+    grid-column: 1 / -1;
+    padding: 16px 17px;
+    font-size: 13.5px;
+    line-height: 1.72;
+    background: #fafafa;
+  }
+
+  .cell-wide strong {
+    font-weight: 900;
+  }
+
+  .cell-contact {
+    min-height: 74px;
+    padding: 14px 15px;
+    text-align: center;
+  }
+
+  .cell-contact .request-label,
+  .cell-contact .request-value {
+    text-align: center;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    line-break: strict;
+  }
+
+  .request-label {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--gray-2);
+    margin-bottom: 7px;
+  }
+
+  .request-value {
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 800;
+  }
+
+  .final-note {
+    margin-top: 30px;
+    padding: 18px 19px;
+    font-size: 12.5px;
+    line-height: 1.72;
+    color: #333;
+    background: #fff;
+  }
+
+  .final-note.cell-surface {
+    display: block;
+  }
+
+  .footer {
+    margin-top: 19px;
+    padding-top: 14px;
+    border-top: 1px solid #ccc;
+    color: #777;
+    font-size: 10.5px;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  [contenteditable="true"] {
+    outline: 2px dashed #e1492d !important;
+    outline-offset: -2px;
+    cursor: text;
+  }
+
+  [contenteditable="true"]:focus {
+    background: #fff5f2 !important;
+  }
+
+.save-format-tabs{
+  grid-column:1/-1;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  margin-bottom:4px;
+}
+.save-format-btn{
+  font:inherit;
+  font-size:11px;
+  font-weight:800;
+  padding:8px 10px;
+  border:1px solid #ddd;
+  background:#f5f5f5;
+  cursor:pointer;
+  border-radius:4px;
+}
+.save-format-btn.active{
+  background:var(--accent,#111);
+  color:#fff;
+  border-color:var(--accent,#111);
+}
+.save-panel button.save-zip-jpg-btn{
+  margin-top:0;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="toolbar">
+  <button class="edit-btn" onclick="toggleEdit()">편집 모드 켜기</button>
+  <div class="save-menu">
+    <button class="save-btn" type="button" onclick="toggleSavePanel()">섹션 저장 ▾</button>
+    <div class="save-panel" id="save-panel"></div>
+  </div>
+  <button class="reset-btn" onclick="location.reload()">새로고침</button>
+  <div class="format-toolbar" id="format-toolbar">
+    <div class="fmt-group">
+      <span class="fmt-label">글자색</span>
+      <input type="color" id="text-color" value="#111111" title="글자색">
+      <button type="button" onclick="applyTextColor()">적용</button>
+    </div>
+    <div class="fmt-divider"></div>
+    <div class="fmt-group">
+      <span class="fmt-label">배경색</span>
+      <input type="color" id="bg-color" value="#fff3bf" title="텍스트 배경색">
+      <button type="button" onclick="applyBgColor()">적용</button>
+    </div>
+    <div class="fmt-divider"></div>
+    <div class="fmt-group">
+      <button type="button" onclick="applyAccentUnderline()">포인트 밑줄</button>
+      <button type="button" onclick="clearTextFormat()">서식 지우기</button>
+    </div>
+    <div class="fmt-divider"></div>
+    <div class="fmt-group">
+      <button type="button" class="fmt-accent" onclick="addImageSlot()">9:16 이미지 슬롯 추가</button>
+    </div>
+    <span class="fmt-hint">텍스트 드래그 선택 → 글자색·배경·포인트 밑줄 · 이미지 파일을 슬롯에 드래그</span>
+  </div>
+</div>
+
+<main id="capture">
+
+  <div class="export-block" data-export-filename="00-표지-및-안내">
+  <div class="top-label cell-surface editable">도각쌤의 타닥클래스 · REFUND POLICY</div>
+
+  <h1 class="editable">취소 및 환불 안내</h1>
+
+  <div class="course-name cell-surface editable">적용 범위: 「도각쌤의 타닥클래스」에서 제공하는 모든 강의에 동일하게 적용됩니다.</div>
+
+  <div class="intro editable">
+    <p>유료 강의 <strong>결제·환불·취소 신청</strong>은 <strong>네이버 스마트스토어</strong>에서 진행합니다. 강의 수강은 결제 확인 후 「<strong>도각쌤의 타닥클래스</strong>」 회원 계정(vcml.kr)으로 제공됩니다.</p>
+    <p>아래 환불·취소 기준(01~04)은 동일하게 적용되며, <strong>07. 환불 신청 및 처리</strong>에서 스마트스토어 절차를 확인해 주세요.</p>
+    <p>강의별 추가 혜택·사전예약 조건이 있는 경우, 결제 직전 안내 및 상품 페이지 표시 내용을 함께 확인합니다.</p>
+    <p><strong>결제 금액 0원인 무료 강의</strong>는 아래 <strong>08. 무료 강의</strong> 조항을 따릅니다.</p>
+  </div>
+
+  <div class="important">
+    <div class="important-title editable">구매 전 꼭 확인해 주세요.</div>
+    <div class="important-body editable">
+      본 취소·환불 기준은 「<strong>도각쌤의 타닥클래스</strong>」에서 제공하는 <strong>모든 강의에 동일하게</strong> 적용됩니다.
+      결제 완료 즉시 콘텐츠 이용 권한이 부여되며,
+      강의 영상을 <strong>1초 이상 재생</strong>한 경우 해당 강의를 수강한 것으로 간주합니다.
+      이후 환불 가능 금액·청약철회 가능 여부가 달라질 수 있습니다.
+    </div>
+  </div>
+
+  </div>
+
+  <!-- 01 -->
+  <section class="section export-block" data-export-filename="01-청약철회-전액환불">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">01</span>
+        <span class="editable">청약철회 (전액 환불)</span>
+      </div>
+      <div class="cell-panel cell-panel--2col">
+        <div class="cell cell-label cell-label-dark editable">전액 환불 조건</div>
+        <div class="cell cell-body editable">
+          <strong>결제일로부터 7일 이내 + 강의를 1강도 수강하지 않은 경우 → 결제금액 전액 환불</strong><br>
+          「전자상거래 등에서의 소비자보호에 관한 법률」 제17조에 따른 청약철회권입니다.
+        </div>
+        <div class="cell cell-label editable">7일 초과 · 미수강</div>
+        <div class="cell cell-body editable">
+          결제일로부터 7일을 초과하고 수강 이력이 없는 경우 환불이 불가합니다. (별도 협의 가능)
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 -->
+  <section class="section export-block" data-export-filename="02-부분환불">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">02</span>
+        <span class="editable">수강 시작 후 부분 환불</span>
+      </div>
+      <div class="cell-panel cell-panel--2col">
+        <div class="cell cell-label editable">1/3 미만 수강</div>
+        <div class="cell cell-body editable">결제금액의 <strong>2/3</strong> 환불</div>
+        <div class="cell cell-label editable">1/3 이상 ~ 1/2 미만</div>
+        <div class="cell cell-body editable">결제금액의 <strong>1/2</strong> 환불</div>
+        <div class="cell cell-label editable">1/2 이상 수강</div>
+        <div class="cell cell-body danger editable"><strong>환불 불가</strong></div>
+        <div class="cell cell-wide editable">
+          <strong>수강률 계산 기준</strong><br>
+          강의 영상을 1초 이상 재생한 경우 해당 강의를 「수강」한 것으로 간주합니다.
+          수강률은 전체 강의 수 대비 재생한 강의 수 기준으로 산정합니다.
+          (콘텐츠산업 진흥법 제28조 콘텐츠 이용자보호지침 준거)
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section class="section export-block" data-export-filename="03-쿠폰-할인">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">03</span>
+        <span class="editable">쿠폰·할인 적용 결제</span>
+      </div>
+      <div class="cell-panel cell-panel--num">
+        <div class="cell cell-num">01</div>
+        <div class="cell cell-body editable">쿠폰을 적용하여 결제한 경우, 환불 금액은 <strong>실제 결제금액(할인 후 금액)</strong> 기준으로 산정합니다.</div>
+        <div class="cell cell-num">02</div>
+        <div class="cell cell-body editable">환불 시 사용된 쿠폰은 <strong>원칙적으로 재발급되지 않습니다.</strong></div>
+        <div class="cell cell-num">03</div>
+        <div class="cell cell-body editable">마케팅 동의 쿠폰(5,000원)을 강의 결제에 사용한 경우, 환불 금액에서 해당 쿠폰 금액이 <strong>차감</strong>될 수 있습니다.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 -->
+  <section class="section export-block" data-export-filename="04-환불불가">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">04</span>
+        <span class="editable">환불 불가 사유</span>
+      </div>
+      <div class="cell-panel cell-panel--num">
+        <div class="cell cell-num">01</div>
+        <div class="cell cell-body editable">전체 강의의 1/2 이상 수강한 경우</div>
+        <div class="cell cell-num">02</div>
+        <div class="cell cell-body editable">결제일로부터 7일을 초과하고 수강 이력이 있는 경우</div>
+        <div class="cell cell-num">03</div>
+        <div class="cell cell-body editable">이용자의 단순 변심으로 7일 초과 후 환불을 요청하는 경우</div>
+        <div class="cell cell-num">04</div>
+        <div class="cell cell-body editable">강의 자료(PDF 등)를 다운로드한 경우 해당 자료 비용이 차감될 수 있습니다.</div>
+        <div class="cell cell-num">05</div>
+        <div class="cell cell-body editable">서비스 이용약관을 위반하여 이용이 제한된 경우</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 사전예약 -->
+  <section class="section export-block" data-export-filename="05-사전예약-프로모션">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">05</span>
+        <span class="editable">사전예약 및 프로모션 혜택</span>
+      </div>
+      <div class="cell-panel cell-panel--num">
+        <div class="cell cell-wide editable">
+          <strong>사전예약이란</strong><br>
+          강의 정식 오픈 전 또는 별도 안내 기간에 강의를 미리 신청·결제하는 방식입니다.
+          사전예약 기간, 할인율, 증정 자료, 인원 제한 등 조건은 <strong>강의·기간·판매 채널(「도각쌤의 타닥클래스」·네이버 스마트스토어 등)마다 다르며</strong>,
+          결제 직전 안내 화면 및 상품 페이지에 표시된 내용이 최종 기준입니다.
+        </div>
+        <div class="cell cell-num">01</div>
+        <div class="cell cell-body editable">
+          사전예약·기대평·수강 후기·외부 플랫폼 후기 등 모든 프로모션 혜택은
+          <strong>판매 촉진 목적의 이벤트</strong>이며, 회사가 사전에 고지한 조건을 충족하고
+          이용자가 해당 조건에 <strong>동의·확인한 경우에만</strong> 제공됩니다.
+        </div>
+        <div class="cell cell-num">02</div>
+        <div class="cell cell-body editable">
+          <strong>기대평 혜택:</strong> 강의 기대평을 최초 작성하고 조건에 동의한 경우,
+          해당 강의 최초 유료 결제 시 사용 가능한 10% 할인 쿠폰이 발급될 수 있습니다.
+          (유효기간: 발급일로부터 1개월) 기대평을 수정·삭제해도 이미 발급된 쿠폰은 유지되나,
+          <strong>추가 쿠폰은 발급되지 않습니다.</strong>
+        </div>
+        <div class="cell cell-num">03</div>
+        <div class="cell cell-body editable">
+          <strong>수강 후기 혜택:</strong> 해당 강의에 별점 5점 후기를 최초 작성하고 조건에 동의한 경우,
+          기대평 쿠폰과 중첩 사용 가능한 10% 할인 쿠폰이 발급될 수 있습니다.
+          별점 1~4점으로 최초 작성한 경우 쿠폰은 발급되지 않으며,
+          이후 5점으로 수정해도 <strong>추가 쿠폰은 발급되지 않습니다.</strong>
+          혜택 수령 후 해당 후기의 별점·내용 수정 및 삭제는 <strong>제한</strong>됩니다.
+        </div>
+        <div class="cell cell-num">04</div>
+        <div class="cell cell-body editable">
+          <strong>외부 플랫폼 후기 혜택:</strong> 네이버 스마트스토어 등 외부 채널 후기 혜택은
+          회원의 작성 완료 신고 후 회사가 실제 작성 여부를 확인한 뒤 지급될 수 있습니다.
+          확인되지 않거나 허위·부정 신고가 의심되는 경우
+          회사는 <strong>지급을 보류·거절</strong>하고 재작성을 요청할 수 있습니다.
+        </div>
+        <div class="cell cell-num">05</div>
+        <div class="cell cell-body editable">
+          프로모션 혜택은 <strong>현금·현물로 교환되지 않으며</strong>, 타인에게 양도·판매·대여할 수 없습니다.
+          허위 후기, 반복적·비정상적 혜택 취득, 부정 이용이 확인되는 경우
+          회사는 <strong>혜택 지급을 거절하거나 이미 지급된 혜택(쿠폰·코인 등)을 회수</strong>하고
+          서비스 이용을 제한할 수 있습니다.
+        </div>
+        <div class="cell cell-num">06</div>
+        <div class="cell cell-body editable">
+          <strong>환불·수강 취소 시:</strong> 작성한 기대평이 삭제되며,
+          해당 강의와 관련하여 발급된 기대평·후기 할인 쿠폰은 <strong>회수</strong>됩니다.
+          사전예약 전용 할인·증정 혜택을 받은 뒤 환불하는 경우,
+          해당 혜택은 함께 소멸하며 <strong>할인 전 정가 기준 환불을 요구할 수 없습니다.</strong>
+        </div>
+        <div class="cell cell-num">07</div>
+        <div class="cell cell-body editable">
+          회사는 운영상 필요에 따라 사전예약·프로모션 혜택의 내용, 기간, 대상, 지급 방식을
+          <strong>변경·종료</strong>할 수 있습니다.
+          단, <strong>이미 결제가 완료된 건</strong>에 대해서는 결제 시점에 고지된 조건을 따릅니다.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section class="section export-block" data-export-filename="06-회사귀책">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">06</span>
+        <span class="editable">회사 귀책 사유에 의한 환불</span>
+      </div>
+      <div class="cell-panel cell-panel--2col">
+        <div class="cell cell-label editable">강의 제공 불가</div>
+        <div class="cell cell-body editable">
+          구매한 강의가 사전 고지 없이 삭제·서비스 종료된 경우 전액 환불 및 필요 시 추가 조치를 진행합니다.
+        </div>
+        <div class="cell cell-label editable">표시 내용과 상이</div>
+        <div class="cell cell-body editable">
+          실제 제공되는 강의·서비스가 구매 당시 고지된 주요 내용과 현저히 다른 경우 전액 환불합니다.
+        </div>
+        <div class="cell cell-label editable">결제 오류</div>
+        <div class="cell cell-body editable">
+          중복 결제 등 결제 오류가 발생한 경우 전액 환불합니다.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 -->
+  <section class="section export-block" data-export-filename="07-스마트스토어-환불">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">07</span>
+        <span class="editable">환불 신청 및 처리 (네이버 스마트스토어)</span>
+      </div>
+      <div class="cell-panel cell-panel--num">
+        <div class="cell cell-wide editable">
+          <strong>결제·환불 채널</strong><br>
+          유료 강의는 <strong>네이버 스마트스토어</strong>에서 결제합니다.
+          취소·환불 역시 <strong>스마트스토어 주문 내역</strong>에서 신청하며,
+          환불 금액·가능 여부는 본 안내 <strong>01~04</strong> 기준에 따라 판매자가 확인·처리합니다.
+          결제 확인 후 「<strong>도각쌤의 타닥클래스</strong>」에 수강 등록된 경우, 환불 승인 시 수강 권한·기대평·발급 쿠폰 등이 함께 회수·정리될 수 있습니다.
+        </div>
+        <div class="cell cell-num">01</div>
+        <div class="cell cell-body editable">
+          <strong>네이버 앱</strong> 또는 <strong>smartstore.naver.com</strong>에 접속합니다.
+        </div>
+        <div class="cell cell-num">02</div>
+        <div class="cell cell-body editable">
+          <strong>마이페이지 → 주문내역</strong>에서 해당 강의 주문을 선택합니다.
+        </div>
+        <div class="cell cell-num">03</div>
+        <div class="cell cell-body editable">
+          <strong>주문취소</strong> 또는 <strong>반품·환불 신청</strong>을 선택하고, 환불 사유를 입력해 제출합니다.
+          (디지털 강의 특성상 수강을 시작한 경우, 신청 후 판매자 확인이 필요할 수 있습니다.)
+        </div>
+        <div class="cell cell-num">04</div>
+        <div class="cell cell-body editable">
+          「<strong>도각쌤의 타닥클래스</strong>」(판매자)가 주문·수강 이력을 확인한 뒤, 본 안내의 환불 기준에 따라 <strong>승인·환불 금액을 안내</strong>합니다.
+          승인 후 <strong>결제하신 수단</strong>(카드·계좌이체·네이버페이 등)으로 환불됩니다.
+        </div>
+        <div class="cell cell-num">05</div>
+        <div class="cell cell-body editable">
+          환불 완료 시점은 <strong>결제 수단·카드사</strong>에 따라 다를 수 있습니다.
+          카드 결제 취소는 보통 <strong>영업일 3~5일</strong> 내 반영되는 경우가 많습니다.
+          (스마트스토어·금융사 사정에 따라 달라질 수 있습니다.)
+        </div>
+        <div class="cell cell-wide editable">
+          <strong>스마트스토어에서 신청이 어렵거나, 수강 등록·환불 금액 문의</strong><br>
+          주문번호, 결제일, 강의명, 「<strong>도각쌤의 타닥클래스</strong>」 가입 이메일(또는 회원명)을 적어 아래로 문의해 주세요.
+          판매자 확인 후 안내드립니다.
+        </div>
+      </div>
+      <div class="cell-panel cell-panel--quad" style="margin-top:10px">
+        <div class="cell cell-contact">
+          <div class="request-label editable">문의 이메일</div>
+          <div class="request-value editable">dong8creative@gmail.com</div>
+        </div>
+        <div class="cell cell-contact">
+          <div class="request-label editable">고객센터</div>
+          <div class="request-value editable">010-4850-6946</div>
+        </div>
+        <div class="cell cell-contact">
+          <div class="request-label editable">운영시간</div>
+          <div class="request-value editable">평일 10:00 - 18:00<br>(주말·공휴일 제외)</div>
+        </div>
+        <div class="cell cell-contact">
+          <div class="request-label editable">판매자 확인</div>
+          <div class="request-value editable">영업일 기준 3~5일 이내 안내</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section class="section export-block" data-export-filename="08-무료강의">
+    <div class="section-frame">
+      <div class="section-title">
+        <span class="section-number">08</span>
+        <span class="editable">무료 강의 (결제 금액 0원)</span>
+      </div>
+      <div class="cell-panel cell-panel--2col">
+        <div class="cell cell-wide editable">
+          결제 금액이 <strong>0원인 무료 강의</strong>는 위 유료 강의의 7일·수강률·부분 환불 기준이
+          <strong>적용되지 않습니다.</strong> 결제가 없으므로 환불금 산정·환불 계좌 접수 등
+          <strong>유료 환불 절차는 필요하지 않으며</strong>, 마이페이지에서
+          <strong>수강·신청 취소를 비교적 자유롭게</strong> 진행하실 수 있습니다.
+        </div>
+        <div class="cell cell-label cell-label-dark editable">무료 VOD 강의</div>
+        <div class="cell cell-body editable">
+          <strong>마이페이지에서 언제든 수강 취소 가능</strong>합니다.
+          수강률·기간 제한 없이 신청을 철회할 수 있으며, 별도 환불 신청(이메일·전화)은 필요하지 않습니다.
+        </div>
+        <div class="cell cell-label editable">무료 라이브 강의</div>
+        <div class="cell cell-body editable">
+          결제·환불 대상이 아니며, <strong>강의 시작 전까지 마이페이지에서 신청 취소</strong>가 가능합니다.
+          다만 <strong>라이브 진행 중</strong>이거나 <strong>이미 종료된 강의</strong>,
+          또는 <strong>시작 1시간 전부터</strong>는 운영상 신청 취소가 제한될 수 있습니다.
+        </div>
+        <div class="cell cell-wide editable">
+          무료 강의에서도 기대평·후기 작성으로 받은 쿠폰 등 프로모션 혜택이 있는 경우,
+          취소·환불(유료 전환·수강 취소 등) 시 <strong>05. 사전예약 및 프로모션 혜택</strong> 조항을 따릅니다.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="export-block" data-export-filename="09-법적안내">
+  <div class="final-note cell-surface editable">
+    <p><strong>법정 소비자 권리가 우선합니다.</strong> 본 안내는 공정거래위원회 고시 「소비자분쟁해결기준」 및 「콘텐츠이용자보호지침」을 준수합니다. 본 안내 내용이 관련 법령 또는 소비자 보호 기준과 상충하는 경우에는 관계 법령 및 적용 가능한 분쟁해결기준을 우선 적용합니다.</p>
+    <p>상세 환불정책: <strong>vcml.kr/policy/refund</strong> · 이용약관: <strong>vcml.kr/policy/terms</strong></p>
+  </div>
+
+  <div class="footer editable">
+    「도각쌤의 타닥클래스」 전 강의 공통 취소·환불 안내<br>
+    본 안내문은 구매·사전예약 전 수강 조건 확인을 위한 것입니다.
+  </div>
+  </div>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+let editMode = false;
+let lastFocusedBlock = null;
+
+const SMARTSTORE_WIDTH = 860;
+const SMARTSTORE_MAX_HEIGHT = 5000;
+const SMARTSTORE_JPG_QUALITY = 0.92;
+const WEBP_CAPTURE_SCALE = 3;
+
+const EXPORT_PREFIX = "도각쌤의-타닥클래스-환불-";
+
+function setEditModeState(on) {
+  editMode = on;
+  document.body.classList.toggle("edit-mode", on);
+  document.querySelectorAll(".editable").forEach(element => {
+    element.contentEditable = on ? "true" : "false";
+  });
+  document.querySelector(".edit-btn").textContent =
+    on ? "편집 모드 끄기" : "편집 모드 켜기";
+}
+
+function exitEditMode() {
+  setEditModeState(false);
+}
+
+function toggleEdit() {
+  setEditModeState(!editMode);
+}
+
+function getSelectionRange() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+    return null;
+  }
+  const range = selection.getRangeAt(0);
+  const capture = document.getElementById("capture");
+  if (!capture.contains(range.commonAncestorContainer)) {
+    return null;
+  }
+  return range;
+}
+
+function wrapRangeWithSpan(range, options = {}) {
+  const { styles = {}, className = "text-highlight" } = options;
+  const span = document.createElement("span");
+  span.className = className;
+  Object.assign(span.style, styles);
+
+  try {
+    range.surroundContents(span);
+  } catch {
+    const fragment = range.extractContents();
+    span.appendChild(fragment);
+    range.insertNode(span);
+  }
+
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  selection.addRange(newRange);
+  return span;
+}
+
+function applyTextColor() {
+  const range = getSelectionRange();
+  if (!range) {
+    alert("글자색을 적용할 텍스트를 드래그하여 선택해 주세요.");
+    return;
+  }
+  const color = document.getElementById("text-color").value;
+  wrapRangeWithSpan(range, { styles: { color } });
+}
+
+function applyBgColor() {
+  const range = getSelectionRange();
+  if (!range) {
+    alert("배경색을 적용할 텍스트를 드래그하여 선택해 주세요.");
+    return;
+  }
+  const color = document.getElementById("bg-color").value;
+  wrapRangeWithSpan(range, { styles: { backgroundColor: color } });
+}
+
+function applyAccentUnderline() {
+  const range = getSelectionRange();
+  if (!range) {
+    alert("포인트 밑줄을 적용할 텍스트를 드래그하여 선택해 주세요.");
+    return;
+  }
+  wrapRangeWithSpan(range, { className: "text-highlight accent-underline" });
+}
+
+function clearTextFormat() {
+  const range = getSelectionRange();
+  if (!range) {
+    alert("서식을 지울 텍스트를 드래그하여 선택해 주세요.");
+    return;
+  }
+
+  const fragment = range.extractContents();
+  const walker = document.createTreeWalker(fragment, NodeFilter.SHOW_ELEMENT);
+  const styled = [];
+  while (walker.nextNode()) {
+    if (walker.currentNode.classList?.contains("text-highlight") || walker.currentNode.classList?.contains("accent-underline")) {
+      styled.push(walker.currentNode);
+    }
+  }
+
+  styled.forEach(node => {
+    const parent = node.parentNode;
+    while (node.firstChild) {
+      parent.insertBefore(node.firstChild, node);
+    }
+    parent.removeChild(node);
+  });
+
+  range.insertNode(fragment);
+  window.getSelection().removeAllRanges();
+}
+
+function readImageFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith("image/")) {
+      reject(new Error("이미지 파일만 삽입할 수 있습니다."));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function closestExportBlock(node) {
+  const el = node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+  return el?.closest?.(".export-block") || null;
+}
+
+function fillMediaSlot(slot, dataUrl) {
+  slot.classList.remove("media-drop-zone", "drag-over");
+  slot.classList.add("media-slot", "has-image");
+  slot.replaceChildren();
+
+  const img = document.createElement("img");
+  img.src = dataUrl;
+  img.alt = "";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "media-remove";
+  btn.title = "이미지 삭제";
+  btn.textContent = "×";
+  btn.addEventListener("click", () => removeMediaSlot(btn));
+
+  slot.appendChild(img);
+  slot.appendChild(btn);
+}
+
+function createMediaDropZone() {
+  const zone = document.createElement("div");
+  zone.className = "media-drop-zone edit-only-slot";
+  zone.innerHTML = "9:16 이미지를<br>드래그하여 놓기";
+  zone.addEventListener("click", () => openImagePicker(zone));
+  bindDropZone(zone);
+  return zone;
+}
+
+function bindDropZone(zone) {
+  zone.addEventListener("dragover", (event) => {
+    if (!editMode) return;
+    event.preventDefault();
+    zone.classList.add("drag-over");
+  });
+
+  zone.addEventListener("dragleave", () => {
+    zone.classList.remove("drag-over");
+  });
+
+  zone.addEventListener("drop", async (event) => {
+    if (!editMode) return;
+    event.preventDefault();
+    zone.classList.remove("drag-over");
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await readImageFile(file);
+      fillMediaSlot(zone, dataUrl);
+    } catch (error) {
+      alert(error.message || "이미지를 불러오지 못했습니다.");
+    }
+  });
+}
+
+function openImagePicker(targetSlot) {
+  if (!editMode) return;
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await readImageFile(file);
+      fillMediaSlot(targetSlot, dataUrl);
+    } catch (error) {
+      alert(error.message || "이미지를 불러오지 못했습니다.");
+    }
+  };
+  input.click();
+}
+
+function removeMediaSlot(button) {
+  const slot = button.closest(".media-slot");
+  if (!slot) return;
+  const block = slot.closest(".export-block");
+  const zone = createMediaDropZone();
+  slot.replaceWith(zone);
+  if (block) lastFocusedBlock = block;
+}
+
+function addImageSlot() {
+  if (!editMode) {
+    alert("편집 모드를 켠 뒤 슬롯을 추가해 주세요.");
+    return;
+  }
+
+  let block = lastFocusedBlock;
+  if (!block) {
+    const selection = window.getSelection();
+    if (selection?.rangeCount) {
+      block = closestExportBlock(selection.getRangeAt(0).commonAncestorContainer);
+    }
+  }
+  if (!block) {
+    block = document.querySelector("#capture .export-block");
+  }
+
+  const zone = createMediaDropZone();
+  block.appendChild(zone);
+  zone.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function bindExportBlockDrop(block) {
+  block.addEventListener("dragover", (event) => {
+    if (!editMode) return;
+    if (!event.dataTransfer?.types?.includes("Files")) return;
+    event.preventDefault();
+    block.classList.add("drag-over-block");
+  });
+
+  block.addEventListener("dragleave", (event) => {
+    if (!block.contains(event.relatedTarget)) {
+      block.classList.remove("drag-over-block");
+    }
+  });
+
+  block.addEventListener("drop", async (event) => {
+    if (!editMode) return;
+    block.classList.remove("drag-over-block");
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) return;
+    event.preventDefault();
+
+    try {
+      const dataUrl = await readImageFile(file);
+      const zone = createMediaDropZone();
+      block.appendChild(zone);
+      fillMediaSlot(zone, dataUrl);
+    } catch (error) {
+      alert(error.message || "이미지를 불러오지 못했습니다.");
+    }
+  });
+}
+
+document.getElementById("capture").addEventListener("focusin", (event) => {
+  const block = event.target.closest?.(".export-block");
+  if (block) lastFocusedBlock = block;
+});
+
+document.getElementById("capture").addEventListener("click", (event) => {
+  const block = event.target.closest?.(".export-block");
+  if (block) lastFocusedBlock = block;
+});
+
+document.querySelectorAll("#capture .export-block").forEach(bindExportBlockDrop);
+document.querySelectorAll("#capture .media-drop-zone").forEach(bindDropZone);
+
+document.getElementById("text-color").addEventListener("input", () => {
+  if (getSelectionRange()) applyTextColor();
+});
+
+document.getElementById("bg-color").addEventListener("input", () => {
+  if (getSelectionRange()) applyBgColor();
+});
+
+document.addEventListener("dragover", (event) => {
+  if (editMode && event.dataTransfer?.types?.includes("Files")) {
+    event.preventDefault();
+  }
+});
+
+function toggleSavePanel() {
+  document.getElementById("save-panel").classList.toggle("open");
+}
+
+function getSelectedExportFormat() {
+  return document.querySelector(".save-format-btn.active")?.dataset.format || "webp";
+}
+
+function getBlockLabel(block, filename) {
+  return block.querySelector(".section-title .editable")?.textContent?.trim()
+    || block.querySelector(".eyebrow")?.textContent?.trim().replace(/\s+/g, " ")
+    || block.querySelector("h1")?.textContent?.trim().replace(/\s+/g, " ")
+    || block.querySelector(".final-title")?.textContent?.trim().replace(/\s+/g, " ")
+    || block.querySelector(".cta-title")?.textContent?.trim().replace(/\s+/g, " ")
+    || filename.replace(/^\d+-/, "").replace(/-/g, " ");
+}
+
+function buildSavePanel() {
+  const panel = document.getElementById("save-panel");
+  const blocks = document.querySelectorAll("#capture .export-block");
+  panel.innerHTML = `<div class="save-panel-title">섹션별 저장 · 형식 선택</div>`;
+
+  const tabs = document.createElement("div");
+  tabs.className = "save-format-tabs";
+  [
+    { format: "webp", label: "WebP · 고화질" },
+    { format: "jpg", label: "JPG · 스마트스토어" }
+  ].forEach((item, index) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = `save-format-btn${index === 0 ? " active" : ""}`;
+    tab.dataset.format = item.format;
+    tab.textContent = item.label;
+    tab.onclick = () => {
+      tabs.querySelectorAll(".save-format-btn").forEach(btn => btn.classList.remove("active"));
+      tab.classList.add("active");
+    };
+    tabs.appendChild(tab);
+  });
+  panel.appendChild(tabs);
+
+  blocks.forEach((block, index) => {
+    const filename = block.dataset.exportFilename || `section-${String(index + 1).padStart(2, "0")}`;
+    const label = getBlockLabel(block, filename);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = `${filename.split("-")[0]} · ${String(label).slice(0, 28)}`;
+    btn.onclick = () => saveExportBlock(block, getSelectedExportFormat());
+    panel.appendChild(btn);
+  });
+
+  const webpZipBtn = document.createElement("button");
+  webpZipBtn.type = "button";
+  webpZipBtn.className = "save-all-btn save-zip-webp-btn";
+  webpZipBtn.textContent = "전체 WebP ZIP";
+  webpZipBtn.onclick = () => saveAllExportBlocks("webp");
+  panel.appendChild(webpZipBtn);
+
+  const jpgZipBtn = document.createElement("button");
+  jpgZipBtn.type = "button";
+  jpgZipBtn.className = "save-all-btn save-zip-jpg-btn";
+  jpgZipBtn.textContent = "전체 JPG ZIP · 스마트스토어";
+  jpgZipBtn.onclick = () => saveAllExportBlocks("jpg");
+  panel.appendChild(jpgZipBtn);
+}
+
+function canvasToWebP(canvas, quality = 1) {
+  const webp = canvas.toDataURL("image/webp", quality);
+  if (webp.startsWith("data:image/webp")) return webp;
+  console.warn("WebP 미지원 브라우저 — PNG로 대체 저장합니다.");
+  return canvas.toDataURL("image/png");
+}
+
+function canvasToJpg(canvas, quality = SMARTSTORE_JPG_QUALITY) {
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+function dataUrlToBytes(dataUrl) {
+  const [header, base64] = dataUrl.split(",");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  let ext = "png";
+  if (header.includes("image/webp")) ext = "webp";
+  else if (header.includes("image/jpeg")) ext = "jpg";
+  return { bytes, ext };
+}
+
+function optimizeCanvasForSmartstore(sourceCanvas) {
+  const targetWidth = SMARTSTORE_WIDTH;
+  let targetHeight = Math.round(sourceCanvas.height * (targetWidth / sourceCanvas.width));
+  if (targetHeight > SMARTSTORE_MAX_HEIGHT) {
+    targetHeight = SMARTSTORE_MAX_HEIGHT;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, targetWidth, targetHeight);
+  const drawHeight = Math.min(targetHeight, Math.round(sourceCanvas.height * (targetWidth / sourceCanvas.width)));
+  ctx.drawImage(sourceCanvas, 0, 0, targetWidth, drawHeight);
+  return canvas;
+}
+
+function getExportBackgroundColor(element) {
+  const bg = getComputedStyle(element).backgroundColor;
+  if (!bg || bg === "rgba(0, 0, 0, 0)" || bg === "transparent") return null;
+  return bg;
+}
+
+function prepareExportClone(clone, source) {
+  function syncNode(src, dest) {
+    if (!(src instanceof Element) || !(dest instanceof Element)) return;
+
+    const cs = getComputedStyle(src);
+    const bg = cs.backgroundColor;
+    if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+      dest.style.backgroundColor = bg;
+    }
+    if (cs.color) dest.style.color = cs.color;
+
+    const keepShadow =
+      src.classList.contains("accent-underline") ||
+      src.classList.contains("text-highlight");
+
+    if (keepShadow && cs.boxShadow && cs.boxShadow !== "none") {
+      dest.style.boxShadow = cs.boxShadow;
+      dest.style.boxDecorationBreak = cs.boxDecorationBreak || "clone";
+    } else if (cs.boxShadow && cs.boxShadow !== "none" && /inset/i.test(cs.boxShadow)) {
+      dest.style.boxShadow = "none";
+      if (
+        src.classList.contains("blue-soft") ||
+        src.classList.contains("lime-soft") ||
+        src.classList.contains("purple-soft")
+      ) {
+        const accent =
+          getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() ||
+          getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() ||
+          "#C8FF32";
+        dest.style.borderLeft = `4px solid ${accent}`;
+      }
+    }
+
+    if (cs.border && cs.border !== "none" && cs.borderWidth !== "0px") {
+      dest.style.border = cs.border;
+    }
+
+    const srcKids = src.children;
+    const destKids = dest.children;
+    for (let i = 0; i < srcKids.length; i++) {
+      syncNode(srcKids[i], destKids[i]);
+    }
+  }
+
+  syncNode(source, clone);
+  clone.querySelectorAll("[contenteditable]").forEach(el => el.removeAttribute("contenteditable"));
+}
+
+async function captureElementToCanvas(element, scale = WEBP_CAPTURE_SCALE) {
+  const shot = document.createElement("div");
+  shot.className = "export-shot";
+  const clone = element.cloneNode(true);
+  prepareExportClone(clone, element);
+  shot.appendChild(clone);
+  document.body.appendChild(shot);
+  try {
+    return await html2canvas(shot, {
+      scale,
+      backgroundColor: getExportBackgroundColor(element),
+      useCORS: true,
+      logging: false,
+      width: shot.scrollWidth,
+      height: shot.scrollHeight
+    });
+  } finally {
+    document.body.removeChild(shot);
+  }
+}
+
+async function captureBlockExport(block, format = "webp") {
+  if (format === "jpg") {
+    const canvas = await captureElementToCanvas(block, 1);
+    const optimized = optimizeCanvasForSmartstore(canvas);
+    return { dataUrl: canvasToJpg(optimized), ext: "jpg" };
+  }
+  const canvas = await captureElementToCanvas(block, WEBP_CAPTURE_SCALE);
+  const dataUrl = canvasToWebP(canvas, 1);
+  const { ext } = dataUrlToBytes(dataUrl);
+  return { dataUrl, ext };
+}
+
+function downloadDataUrl(dataUrl, filename) {
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+async function saveExportBlock(block, format = "webp") {
+  exitEditMode();
+  document.getElementById("save-panel")?.classList.remove("open");
+  const filename = block.dataset.exportFilename || "section";
+  const formatLabel = format === "jpg" ? "JPG" : "WebP";
+  try {
+    const { dataUrl, ext } = await captureBlockExport(block, format);
+    downloadDataUrl(dataUrl, `${EXPORT_PREFIX}${filename}.${ext}`);
+  } catch (error) {
+    console.error(error);
+    alert(`「${filename}」 ${formatLabel} 저장 중 오류가 발생했습니다.`);
+  }
+}
+
+async function saveAllExportBlocks(format = "webp") {
+  exitEditMode();
+  document.getElementById("save-panel")?.classList.remove("open");
+  const blocks = document.querySelectorAll("#capture .export-block");
+  if (!blocks.length) return;
+
+  const zipBtn = document.querySelector(format === "jpg" ? ".save-zip-jpg-btn" : ".save-zip-webp-btn");
+  const prevText = zipBtn?.textContent;
+  if (zipBtn) {
+    zipBtn.disabled = true;
+    zipBtn.textContent = "ZIP 생성 중…";
+  }
+
+  const formatLabel = format === "jpg" ? "JPG" : "WebP";
+  const zipSuffix = format === "jpg" ? "smartstore-jpg" : "webp";
+
+  try {
+    const zip = new JSZip();
+    for (const block of blocks) {
+      const filename = block.dataset.exportFilename || "section";
+      const { dataUrl, ext } = await captureBlockExport(block, format);
+      const { bytes } = dataUrlToBytes(dataUrl);
+      zip.file(`${EXPORT_PREFIX}${filename}.${ext}`, bytes);
+    }
+    const blob = await zip.generateAsync({ type: "blob", compression: "STORE" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${EXPORT_PREFIX}sections-${zipSuffix}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error(error);
+    alert(`전체 섹션 ${formatLabel} ZIP 저장 중 오류가 발생했습니다.`);
+  } finally {
+    if (zipBtn) {
+      zipBtn.disabled = false;
+      zipBtn.textContent = prevText;
+    }
+  }
+}
+
+
+
+document.addEventListener("click", (event) => {
+  const menu = document.querySelector(".save-menu");
+  if (menu && !menu.contains(event.target)) {
+    document.getElementById("save-panel")?.classList.remove("open");
+  }
+});
+
+buildSavePanel();
+</script>
+
+</body>
+</html>

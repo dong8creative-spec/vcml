@@ -17,7 +17,11 @@
         return false
       }
       return true
-    } catch {
+    } catch (e) {
+      if (e?.status === 401) {
+        localStorage.removeItem('tc_token')
+        localStorage.removeItem('tc_user')
+      }
       location.href = loginUrl
       return false
     }

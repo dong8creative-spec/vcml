@@ -11,7 +11,7 @@
   </script>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>수강 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=16" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css?v=3" />
+  <link rel="stylesheet" href="/css/style.css?v=16" /><link rel="stylesheet" href="/css/common.css" /><link rel="stylesheet" href="/css/player.css?v=5" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -30,7 +30,7 @@
 
     <!-- 모바일 커리큘럼 토글 버튼 -->
     <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" aria-expanded="false" aria-controls="player-sidebar">
-      <span><i class="ti ti-list"></i> 강의 목록</span>
+      <span><i class="ti ti-list"></i> <span id="sidebar-toggle-label">강의 목록</span></span>
       <i class="ti ti-chevron-down"></i>
     </button>
 
@@ -41,10 +41,16 @@
     </aside>
   </div>
 
-  <script src="/js/api.js?v=3"></script>
+  <div id="prtsc-blocker">
+    <div class="prtsc-title">⚠️ 보안 경고 ⚠️</div>
+    <div class="prtsc-sub">무단 화면 캡처가 감지되어 영상 재생을 중단합니다.</div>
+  </div>
+
+  <script src="/js/api.js?v=4"></script>
   <script src="/js/site-layout.js"></script>
   <script src="/js/site-header.js?v=13"></script>
   <script src="/js/auth-redirect.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     if (!requireLogin()) { /* 리다이렉트 중 */ }
 
@@ -59,27 +65,195 @@
       return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
     }
 
-    function toEmbedUrl(url) {
+    /** "5:30 실습 시작" / "1:05:30 마무리" 형식 텍스트를 초 단위 타임코드 목록으로 파싱 */
+    function parseTimestampsText(text) {
+      const lines = String(text || '').split('\n')
+      const items = []
+      for (const raw of lines) {
+        const line = raw.trim()
+        if (!line) continue
+        const m = line.match(/^(\d{1,2}(?::\d{2}){1,2})\s+(.+)$/)
+        if (!m) continue
+        const parts = m[1].split(':').map((n) => parseInt(n, 10))
+        let seconds = 0
+        if (parts.length === 3) seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]
+        else seconds = parts[0] * 60 + parts[1]
+        if (Number.isNaN(seconds) || seconds < 0) continue
+        items.push({ seconds, label: m[2].trim(), timeStr: m[1] })
+      }
+      items.sort((a, b) => a.seconds - b.seconds)
+      return items
+    }
+
+    /** 유튜브면 videoId만, 그 외(Vimeo 등)는 embed URL을 돌려준다 */
+    function parseVideoSource(url) {
       if (!url) return null
       try {
         const u = new URL(url)
         if (u.hostname === 'youtu.be') {
           const id = u.pathname.replace(/^\//, '').split('/')[0]
-          return id ? `https://www.youtube.com/embed/${id}` : null
+          return id ? { type: 'youtube', id } : null
         }
         if (u.hostname.includes('youtube.com')) {
           const v = u.searchParams.get('v')
-          if (v) return `https://www.youtube.com/embed/${v}`
+          if (v) return { type: 'youtube', id: v }
           const m = u.pathname.match(/\/(embed|shorts|live)\/([^/?]+)/)
-          if (m) return `https://www.youtube.com/embed/${m[2]}`
+          if (m) return { type: 'youtube', id: m[2] }
         }
         if (u.hostname.includes('vimeo.com')) {
           const parts = u.pathname.split('/').filter(Boolean)
           const id = parts[parts.length - 1]
-          return id ? `https://player.vimeo.com/video/${id}` : null
+          return id ? { type: 'vimeo', embedUrl: `https://player.vimeo.com/video/${id}` } : null
         }
       } catch (_) {}
       return null
+    }
+
+    // ── 유튜브 공식 IFrame Player API로 재생 상태를 직접 감지해서, 재생 중이 아닐 때는
+    //    (일시정지/종료/시작전 등 유튜브 자체 UI·관련영상이 노출될 수 있는 모든 순간)
+    //    영상 전체를 우리 화면으로 완전히 덮는다 — 코너만 가리는 방식보다 확실하게 차단. ──
+
+    let ytPlayer = null
+    let ytApiReady = false
+    let pendingVideoId = null
+    const YT_PLAYING_STATES = new Set([1, 3]) // 1=재생중, 3=버퍼링(재생 시도 중)
+
+    window.onYouTubeIframeAPIReady = function () {
+      ytApiReady = true
+      if (pendingVideoId) {
+        const vid = pendingVideoId
+        pendingVideoId = null
+        createYtPlayer(vid)
+      }
+    }
+
+    function createYtPlayer(videoId) {
+      if (ytPlayer) { try { ytPlayer.destroy() } catch (_) {} ytPlayer = null }
+      if (!document.getElementById('yt-player-slot')) return
+      ytPlayer = new YT.Player('yt-player-slot', {
+        videoId,
+        host: 'https://www.youtube-nocookie.com',
+        playerVars: {
+          rel: 0,
+          modestbranding: 1,
+          fs: 0,
+          disablekb: 1,
+          iv_load_policy: 3,
+          cc_load_policy: 0,
+          playsinline: 1,
+          origin: window.location.origin,
+        },
+        events: {
+          onReady: (e) => {
+            try { e.target.unloadModule('captions') } catch (_) {}
+          },
+          onApiChange: (e) => {
+            try { e.target.unloadModule('captions') } catch (_) {}
+          },
+          onStateChange: (e) => {
+            showPauseShield(!YT_PLAYING_STATES.has(e.data))
+            updatePlayPauseIcon(e.data === 1)
+            if (e.data === 1) { try { e.target.unloadModule('captions') } catch (_) {} }
+          },
+        },
+      })
+    }
+
+    function initYoutubePlayer(videoId) {
+      showPauseShield(true)
+      if (ytApiReady && window.YT && window.YT.Player) createYtPlayer(videoId)
+      else pendingVideoId = videoId
+    }
+
+    function destroyYtPlayer() {
+      pendingVideoId = null
+      if (ytPlayer) { try { ytPlayer.destroy() } catch (_) {} ytPlayer = null }
+    }
+
+    function showPauseShield(show) {
+      const el = document.getElementById('yt-pause-shield')
+      if (el) el.classList.toggle('is-visible', !!show)
+    }
+
+    /** 재생 중에도 영상 전체를 가로채서 우클릭(동영상 URL 복사 등)을 원천 차단, 클릭은 재생/일시정지 토글로 처리 */
+    function setupClickShield() {
+      const shield = document.getElementById('yt-click-shield')
+      if (!shield) return
+      shield.addEventListener('contextmenu', (e) => e.preventDefault())
+      shield.addEventListener('click', () => {
+        if (!ytPlayer) return
+        try {
+          const state = ytPlayer.getPlayerState()
+          if (state === 1) ytPlayer.pauseVideo()
+          else ytPlayer.playVideo()
+        } catch (_) {}
+      })
+    }
+
+    function resumeYtPlayer() {
+      try { ytPlayer?.playVideo() } catch (_) {}
+    }
+
+    function updatePlayPauseIcon(isPlaying) {
+      const btn = document.getElementById('play-pause-btn')
+      if (!btn) return
+      btn.innerHTML = isPlaying ? '<i class="ti ti-player-pause-filled"></i>' : '<i class="ti ti-player-play-filled"></i>'
+    }
+
+    function togglePlayPause(e) {
+      e?.stopPropagation()
+      if (!ytPlayer) return
+      try {
+        const state = ytPlayer.getPlayerState()
+        if (state === 1) ytPlayer.pauseVideo()
+        else ytPlayer.playVideo()
+      } catch (_) {}
+    }
+
+    function toggleFullscreen(e) {
+      e?.stopPropagation()
+      const el = document.getElementById('video-area')
+      if (!el) return
+      if (document.fullscreenElement) document.exitFullscreen?.()
+      else el.requestFullscreen?.()
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      const btn = document.getElementById('fullscreen-btn')
+      if (btn) btn.innerHTML = document.fullscreenElement ? '<i class="ti ti-minimize"></i>' : '<i class="ti ti-maximize"></i>'
+      if (!document.fullscreenElement) document.getElementById('timecode-panel')?.classList.remove('is-revealed')
+    })
+
+    /** 전체화면 상태에서 오른쪽 끝에 마우스를 대면 구간이동 패널이 슬라이드로 나타난다 */
+    function setupTimecodeHoverZone() {
+      const zone = document.getElementById('timecode-hover-zone')
+      const panel = document.getElementById('timecode-panel')
+      if (!panel) return
+      const list = panel.querySelector('.timecode-list')
+      // 오버레이/스택 구조와 무관하게 항상 휠로 스크롤되도록 직접 처리
+      if (list) {
+        list.addEventListener('wheel', (e) => {
+          list.scrollTop += e.deltaY
+          e.preventDefault()
+        }, { passive: false })
+      }
+      if (!zone) return
+      zone.addEventListener('mouseenter', () => {
+        panel.classList.add('is-revealed')
+        // 패널이 뜨면 hover-zone이 겹치는 영역의 클릭/휠을 가로채지 않도록 완전히 비활성화
+        zone.style.pointerEvents = 'none'
+      })
+      panel.addEventListener('mouseleave', () => {
+        panel.classList.remove('is-revealed')
+        zone.style.pointerEvents = ''
+      })
+    }
+
+    function seekTo(seconds) {
+      try {
+        ytPlayer?.seekTo(seconds, true)
+        ytPlayer?.playVideo()
+      } catch (_) {}
     }
 
     function showLiveOnlyNotice() {
@@ -98,9 +272,7 @@
 
     function startChapterPlayer() {
       document.getElementById('player-course-title').textContent = courseData.title
-      document.getElementById('sidebar-title').textContent = courseData.title
-      renderChapterList(courseData.chapters)
-
+      // 사이드바 내용(챕터 목록 vs 구간이동)은 챕터별 구간이동 유무에 따라 renderPlayer()에서 매번 다시 결정한다
       const chapters = courseData.chapters || []
       const firstId = chapterParam === 'first' || !chapterParam
         ? chapters[0]?.id
@@ -170,6 +342,7 @@
         btn.setAttribute('aria-expanded', 'false')
       }
 
+      destroyYtPlayer()
       document.getElementById('player-main').innerHTML = '<div class="spinner"></div>'
       try {
         const ch = await API.get(`/courses/${slug}/chapters/${id}`)
@@ -184,9 +357,39 @@
 
     function renderPlayer(ch) {
       const isCompleted = ch.progress?.completed === 1
-      const embed = toEmbedUrl(ch.video_url)
-      const videoHtml = embed
-        ? `<iframe class="video-embed" src="${esc(embed)}" title="${esc(ch.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`
+      const src = parseVideoSource(ch.video_url)
+      const isYoutube = src?.type === 'youtube'
+      const timecodes = isYoutube ? parseTimestampsText(ch.timestamps_text) : []
+      const chapters = courseData.chapters || []
+      // 챕터가 1개뿐이면서 구간이동이 있는 강의는, 비어있는 챕터 목록 사이드바 자리를
+      // 그대로 재활용해 구간이동 목록을 전체 높이로 보여준다(영상 옆 좁은 패널 대신).
+      const singleChapterWithTimecodes = chapters.length <= 1 && timecodes.length > 0
+      const videoHtml = src
+        ? `<div class="video-area-main">
+            ${isYoutube
+              ? `<div id="yt-player-slot"></div>
+                 <div id="yt-click-shield" class="yt-click-shield"></div>
+                 <div id="yt-pause-shield" class="yt-pause-shield is-visible">
+                   <button type="button" class="yt-resume-btn" onclick="resumeYtPlayer()"><i class="ti ti-player-play-filled"></i> 영상 재생</button>
+                 </div>
+                 <div class="yt-shield yt-shield-br"></div>
+                 <div class="yt-shield yt-shield-tr"></div>
+                 <div class="yt-shield yt-shield-top"></div>
+                 <div class="video-controls">
+                   <button type="button" id="play-pause-btn" onclick="togglePlayPause(event)" aria-label="재생/일시정지"><i class="ti ti-player-play-filled"></i></button>
+                   <span class="vc-spacer"></span>
+                   <button type="button" id="fullscreen-btn" onclick="toggleFullscreen(event)" aria-label="전체화면"><i class="ti ti-maximize"></i></button>
+                 </div>
+                 <div class="timecode-hover-zone" id="timecode-hover-zone"></div>`
+              : `<iframe class="video-embed" src="${esc(src.embedUrl)}" title="${esc(ch.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`}
+            <div class="video-watermark-layer" id="video-watermark-layer"></div>
+          </div>${timecodes.length ? `
+          <div class="timecode-panel${singleChapterWithTimecodes ? ' is-sidebar-mode' : ''}" id="timecode-panel">
+            <div class="timecode-header"><i class="ti ti-clock"></i> 구간 이동</div>
+            <div class="timecode-list">${timecodes.map((t) => `
+              <div class="timecode-item" onclick="seekTo(${t.seconds})"><span class="timecode-badge">${esc(t.timeStr)}</span> ${esc(t.label)}</div>
+            `).join('')}</div>
+          </div>` : ''}`
         : ch.video_url
           ? `<div class="video-external">
               <p class="video-external-note">등록된 영상 링크에서 재생됩니다.</p>
@@ -199,7 +402,7 @@
             </div>`
 
       document.getElementById('player-main').innerHTML = `
-        <div class="video-area">${videoHtml}</div>
+        <div class="video-area" id="video-area">${videoHtml}</div>
         <div class="chapter-info">
           <div class="ci-header">
             <h2>${esc(ch.title)}</h2>
@@ -213,7 +416,120 @@
             ${ch.next_id ? `<button onclick="loadChapter('${esc(ch.next_id)}')" class="ci-btn next"><i class="ti ti-arrow-right"></i> 다음 강의</button>` : ''}
           </div>
         </div>`
+
+      const sidebarEl = document.getElementById('player-sidebar')
+      const toggleBtn = document.getElementById('sidebar-toggle-btn')
+      if (chapters.length <= 1 && !singleChapterWithTimecodes) {
+        // 챕터가 1개뿐이고 구간이동도 없으면 사이드바 자체가 의미 없어 숨긴다
+        sidebarEl?.classList.add('is-hidden')
+        toggleBtn?.classList.add('is-hidden')
+      } else {
+        sidebarEl?.classList.remove('is-hidden')
+        toggleBtn?.classList.remove('is-hidden')
+        const chapterListEl = document.getElementById('chapter-list')
+        if (singleChapterWithTimecodes) {
+          document.getElementById('sidebar-title').textContent = '구간 이동'
+          document.getElementById('sidebar-toggle-label').textContent = '구간 이동'
+          chapterListEl?.classList.add('is-timecode-mode')
+          chapterListEl.innerHTML = timecodes.map((t) => `
+            <div class="timecode-item" onclick="seekTo(${t.seconds})"><span class="timecode-badge">${esc(t.timeStr)}</span> ${esc(t.label)}</div>
+          `).join('')
+        } else {
+          document.getElementById('sidebar-title').textContent = courseData.title
+          document.getElementById('sidebar-toggle-label').textContent = '강의 목록'
+          chapterListEl?.classList.remove('is-timecode-mode')
+          renderChapterList(chapters)
+        }
+      }
+
+      stopWatermark()
+      if (src) {
+        armVideoGuards()
+        startWatermark()
+        if (isYoutube) {
+          setupClickShield()
+          setupTimecodeHoverZone()
+          initYoutubePlayer(src.id)
+        }
+      }
     }
+
+    // ── 영상 보호: 워터마크 · 우클릭/드래그 차단 · 프린트스크린 감지 ──
+
+    let clientIP = 'IP 확인 중'
+    fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => { clientIP = d.ip }).catch(() => {})
+
+    let watermarkTimer = null
+    function watermarkText() {
+      const u = API.user() || {}
+      return `${u.name || ''} / ${u.email || ''} / ${clientIP} / 무단 유출 금지`
+    }
+    function animateWatermarkEl(el) {
+      const area = document.querySelector('.video-area-main')
+      if (!area) return
+      let x = Math.random() * Math.max(1, area.clientWidth - 260)
+      let y = Math.random() * Math.max(1, area.clientHeight - 30)
+      let dx = 0.6, dy = 0.6
+      function step() {
+        if (!document.body.contains(el)) return
+        const w = area.clientWidth, h = area.clientHeight
+        x += dx; y += dy
+        if (x <= 0 || x + el.offsetWidth >= w) dx = -dx
+        if (y <= 0 || y + el.offsetHeight >= h) dy = -dy
+        el.style.left = x + 'px'; el.style.top = y + 'px'
+        requestAnimationFrame(step)
+      }
+      step()
+    }
+    function startWatermark() {
+      const layer = document.getElementById('video-watermark-layer')
+      if (!layer) return
+      const text = watermarkText()
+      for (let i = 0; i < 2; i++) {
+        const el = document.createElement('div')
+        el.className = 'video-watermark-text'
+        el.textContent = text
+        layer.appendChild(el)
+        animateWatermarkEl(el)
+      }
+    }
+    function stopWatermark() {
+      const layer = document.getElementById('video-watermark-layer')
+      if (layer) layer.innerHTML = ''
+    }
+
+    function armVideoGuards() {
+      const area = document.getElementById('video-area')
+      if (!area) return
+      area.addEventListener('contextmenu', (e) => e.preventDefault())
+      area.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault() })
+      area.addEventListener('auxclick', (e) => e.preventDefault())
+      area.addEventListener('dragstart', (e) => e.preventDefault())
+    }
+
+    function lockCurrentVideo() {
+      const area = document.getElementById('video-area')
+      if (!area) return
+      stopWatermark()
+      destroyYtPlayer()
+      const iframe = area.querySelector('.video-embed')
+      if (iframe) iframe.src = 'about:blank'
+      area.innerHTML = `
+        <div class="video-locked">
+          <div class="vl-title">⚠ 보안 정책 위반으로 재생이 중단되었습니다</div>
+          <div class="vl-note">화면 캡처가 감지되어 이 강의 영상 재생이 중단되었습니다.<br>다시 시청하시려면 강의 목록에서 챕터를 다시 선택해주세요.</div>
+        </div>`
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'PrintScreen') return
+      const blocker = document.getElementById('prtsc-blocker')
+      blocker?.classList.add('is-visible')
+      setTimeout(() => {
+        blocker?.classList.remove('is-visible')
+        lockCurrentVideo()
+      }, 1000)
+    })
 
     load()
   </script>
