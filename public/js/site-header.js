@@ -90,16 +90,25 @@
     'a',
     '.no-readable-break',
     '[data-no-readable-break]',
+    '.st-filename',
   ].join(',')
 
   // 링크(<a>) 안 설명 문구 등 — 제외 규칙보다 우선 적용
   const TEXT_FORCE_SELECTOR = '.sg-card-desc, [data-readable-break]'
+
+  function isFileExtensionDot(text, idx) {
+    if (text[idx] !== '.') return false
+    const prev = text[idx - 1] || ''
+    if (!/[A-Za-z0-9]/.test(prev)) return false
+    return /^[A-Za-z]{1,5}(?=$|[^A-Za-z])/.test(text.slice(idx + 1))
+  }
 
   function shouldSplitAt(text, idx) {
     const ch = text[idx]
     const prev = text[idx - 1] || ''
     const next = text[idx + 1] || ''
     if ((ch === '.' || ch === ',') && /\d/.test(prev) && /\d/.test(next)) return false
+    if (isFileExtensionDot(text, idx)) return false
     return ch === ',' || ch === '，' || ch === '、' || ch === '.' || ch === '。'
   }
 
@@ -107,16 +116,15 @@
     const chunks = []
     let buf = ''
     for (let i = 0; i < text.length; i++) {
+      buf += text[i]
       if (shouldSplitAt(text, i)) {
         const part = buf.trim()
         if (part) chunks.push(part)
         buf = ''
-      } else {
-        buf += text[i]
       }
     }
-    const tail = buf.trim()
-    if (tail) chunks.push(tail)
+    const tail = buf.replace(/^\s+/, '')
+    if (tail.trim()) chunks.push(tail)
     return chunks
   }
 
@@ -142,7 +150,7 @@
       if (chunks.length <= 1) return
       const frag = document.createDocumentFragment()
       chunks.forEach((chunk, idx) => {
-        if (idx > 0) frag.appendChild(document.createElement('br'))
+        if (idx > 0) frag.appendChild(document.createTextNode(' '))
         const span = document.createElement('span')
         span.className = 'readable-chunk'
         span.textContent = chunk

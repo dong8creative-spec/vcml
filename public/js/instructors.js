@@ -127,13 +127,6 @@
         <h2 class="instructor-section-title instructor-section-title--flush">${esc(intro?.timeline_heading || '주요 경력')}</h2>
       </div>
       <ol class="instructor-timeline">${items}</ol>
-      <div class="instructor-history__footer">
-        <a href="/instructor-portfolio.html" class="instructor-history__portfolio-link">
-          <i class="ti ti-briefcase" aria-hidden="true"></i>
-          <span>포트폴리오에서 상세 사례 보기</span>
-          <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
-        </a>
-      </div>
     </section>`
   }
 
@@ -163,7 +156,7 @@
       ].join('')
     } catch (e) {
       console.error(e)
-      main.innerHTML = '<p class="instructor-loading instructor-loading--error">강사 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>'
+      main.innerHTML = '<p class="instructor-loading instructor-loading--error">강사 소개를 잠깐 못 불러왔어요. 조금 뒤에 다시 열어 주세요.</p>'
     }
   }
 

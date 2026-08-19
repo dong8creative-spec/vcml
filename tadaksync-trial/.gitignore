@@ -1,0 +1,5 @@
+runtime/
+models/
+*.pyc
+__pycache__/
+last_error.txt

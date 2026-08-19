@@ -109,7 +109,7 @@
   function renderQuoteGroups(container, groups) {
     const visibleGroups = (groups || []).filter((group) => group.items?.length)
     if (!visibleGroups.length) {
-      container.innerHTML = '<p class="portfolio-empty">등록된 견적 항목이 없습니다.</p>'
+      container.innerHTML = '<p class="portfolio-empty">아직 견적 항목이 없어요.</p>'
       return
     }
     container.innerHTML = visibleGroups.map((group) => `
@@ -215,7 +215,7 @@
   async function copyQuote() {
     const text = buildQuoteText()
     const ok = await copyText(text)
-    notify(ok ? '견적 내용을 복사했습니다.' : '복사에 실패했습니다.', ok ? 'success' : 'error')
+    notify(ok ? '견적 내용을 복사했어요.' : '복사가 잠깐 안 됐어요.', ok ? 'success' : 'error')
   }
 
   function resetQuote() {

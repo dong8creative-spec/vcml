@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>타닥싱크 2 정식 — 타닥클래스</title>
+  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <link rel="stylesheet" href="/css/common.css?v=3" />
+  <link rel="stylesheet" href="/css/subtitle-tool.css?v=8" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+</head>
+<body data-st-active="home">
+<script src="/js/subtitle-pricing-launch.js?v=3"></script>
+<div data-site-header></div>
+
+<div class="st-wrap">
+  <div class="st-hero">
+    <p class="st-back-link"><a href="/subtitle-tool.html"><i class="ti ti-arrow-left"></i> 돌아가기</a></p>
+    <h1>타닥싱크 2 <span style="font-weight:600;font-size:0.72em;color:#888">정식</span></h1>
+    <p>
+      말한 걸 더 정확하게 알아듣고, 자막 모양도 원하는 대로 바꿀 수 있어서, 익숙해지시면 자막 만드는 시간이 확 줄어들어요.
+    </p>
+  </div>
+
+  <div data-st-subnav></div>
+
+  <div id="st-msg"></div>
+
+  <div class="st-card hidden" id="card-device">
+    <h2>이 컴퓨터랑 연결하기</h2>
+    <p class="st-meta" style="margin-bottom:10px">
+      프로그램에 뜬 번호가 아래와 같은지 보시고 버튼을 눌러주세요. 한 계정에 컴퓨터 1대만 연결되고, 나중에 다른 컴퓨터에서 연결하시면 자동으로 옮겨져요.
+    </p>
+    <div class="st-code" id="device-code-label">————</div>
+    <div class="st-actions">
+      <button type="button" class="st-btn" id="btn-approve" disabled>이 컴퓨터로 연결하기</button>
+    </div>
+  </div>
+
+  <div class="st-card st-download-card" id="card-main">
+    <h2>정식 버전 받기</h2>
+    <div id="st-balance-wrap" class="hidden">
+      <div class="st-balance"><span class="num" id="st-balance-num">0</span><span class="unit">코인</span></div>
+    </div>
+    <div class="st-meta" id="st-pricing-meta">
+      <div data-pricing-prelaunch>처음 오시면 10코인을 드리고, 로그인만 하셔도 매일 1코인씩 쌓여요.</div>
+      <div data-pricing-live>처음 오시면 10코인을 드리고, 로그인만 하셔도 매일 1코인씩 쌓여요.</div>
+    </div>
+    <div class="st-actions" id="st-download-actions">
+      <div class="spinner" id="st-loading"></div>
+    </div>
+    <p class="st-meta st-meta--fine" style="margin-top:12px">
+      처음 자막을 만들 때 목소리를 알아듣는 파일을 알아서 받아 두니, 그때만 잠시 기다려 주세요. 설치가 헷갈리시면 <a href="/subtitle-tool/start.html">설치하는 법</a>을 보시면 돼요.
+    </p>
+  </div>
+
+  <div class="st-card">
+    <p class="st-meta" style="margin:0">
+      아직 망설여지시면 <a href="/subtitle-tool/trial.html">먼저 써보기</a>로 가볍게 확인하고 오셔도 돼요.
+    </p>
+  </div>
+</div>
+
+<script src="/js/api.js?v=3"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=16"></script>
+<script src="/js/subtitle-tool-nav.js?v=3"></script>
+<script>
+const params = new URLSearchParams(location.search)
+const deviceCode = (params.get('code') || '').trim().toLowerCase()
+const nextPath = deviceCode
+  ? `/subtitle-tool/full.html?code=${encodeURIComponent(deviceCode)}`
+  : '/subtitle-tool/full.html'
+
+const msgEl = document.getElementById('st-msg')
+const actionsEl = document.getElementById('st-download-actions')
+const loadingEl = document.getElementById('st-loading')
+const balanceWrap = document.getElementById('st-balance-wrap')
+const balanceNum = document.getElementById('st-balance-num')
+const deviceCard = document.getElementById('card-device')
+const approveBtn = document.getElementById('btn-approve')
+
+function showMsg(html, kind = 'info') {
+  msgEl.innerHTML = html ? `<div class="st-banner ${kind}">${html}</div>` : ''
+}
+
+function googleLoginBtn(label) {
+  return `<a class="st-btn google" href="${buildGoogleAuthUrl(nextPath, 'student', 'login')}">${GOOGLE_ICON_SVG} ${label}</a>`
+}
+
+function renderDownloadActions(html) {
+  loadingEl?.remove()
+  actionsEl.innerHTML = html
+}
+
+async function downloadZip() {
+  const btn = document.getElementById('btn-download')
+  if (btn) btn.disabled = true
+  try {
+    const data = await API.get('/subtitle/download')
+    if (!data.url) throw new Error('받으실 주소를 가져오지 못했어요. 잠시 뒤에 다시 눌러주세요.')
+    location.href = data.url
+  } catch (e) {
+    showMsg(e.message || '잠깐 문제가 생겼어요. 다시 한 번 눌러주시면 됩니다.', 'err')
+  } finally {
+    if (btn) btn.disabled = false
+  }
+}
+
+async function approveDevice() {
+  if (!deviceCode) return
+  approveBtn.disabled = true
+  try {
+    const res = await API.post('/subtitle/device/approve', { code: deviceCode })
+    const msg = res?.replaced
+      ? '이 컴퓨터로 옮겼어요. 프로그램으로 돌아가시면 됩니다.'
+      : '연결됐어요. 프로그램으로 돌아가시면 됩니다.'
+    showMsg(msg, 'ok')
+    approveBtn.textContent = '연결 완료'
+  } catch (e) {
+    showMsg(e.message || '연결이 잠깐 안 됐어요. 다시 한 번 눌러주시면 됩니다.', 'err')
+    approveBtn.disabled = false
+  }
+}
+
+function renderLoggedOut() {
+  balanceWrap.classList.add('hidden')
+  renderDownloadActions(`${googleLoginBtn('구글 계정으로 시작하기')}`)
+  showMsg(deviceCode
+    ? '먼저 구글 계정으로 들어와 주시면 컴퓨터를 연결해 드릴게요.'
+    : '구글 계정으로 한 번만 로그인해 주시면 바로 받으실 수 있어요.', 'info')
+}
+
+function renderDenied(data) {
+  balanceWrap.classList.add('hidden')
+  if (data.code === 'google_required') {
+    renderDownloadActions(`${googleLoginBtn('구글 계정으로 다시 로그인')}`)
+    showMsg('구글 계정으로 다시 들어와 주시면 바로 받으실 수 있어요.', 'warn')
+    return
+  }
+  renderDownloadActions('')
+  showMsg('지금은 준비가 조금 더 필요해요. 잠시 뒤에 다시 들러주세요.', 'warn')
+}
+
+function renderEntitled(data) {
+  balanceWrap.classList.remove('hidden')
+  balanceNum.textContent = data.balance ?? 0
+  renderDownloadActions(`
+    <button type="button" class="st-btn" id="btn-download" onclick="downloadZip()"><i class="ti ti-download"></i> 정식 버전 받기</button>
+  `)
+  if (data.just_granted_initial) {
+    showMsg('오신 걸 환영해요. 연습해 보시라고 10코인을 넣어드렸습니다.', 'ok')
+  } else if (data.just_granted_daily) {
+    showMsg('오늘도 오셨네요. 1코인 더 넣어드렸어요.', 'ok')
+  }
+  if (typeof SubtitlePricingLaunch !== 'undefined') {
+    SubtitlePricingLaunch.applyGates(document.getElementById('card-main'))
+  }
+}
+
+async function load() {
+  if (!API.isLoggedIn()) {
+    renderLoggedOut()
+    return
+  }
+
+  try {
+    const data = await API.get('/subtitle/entitlement')
+    renderEntitled(data)
+
+    if (deviceCode) {
+      deviceCard.classList.remove('hidden')
+      document.getElementById('device-code-label').textContent = deviceCode.toUpperCase()
+      approveBtn.disabled = false
+      approveBtn.onclick = approveDevice
+    }
+  } catch (e) {
+    renderDenied({ code: e.code, error: e.message })
+  }
+}
+
+load()
+</script>
+</body>
+</html>

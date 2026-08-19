@@ -42,13 +42,13 @@ const API = {
       data = await res.json()
     } catch {
       if (!res.ok) {
-        const err = new Error(res.status === 413 ? '요청 용량이 너무 큽니다. 이미지 크기를 줄여주세요.' : '오류가 발생했습니다.')
+        const err = new Error(res.status === 413 ? '사진이 조금 커서 안 들어갔어요. 크기를 줄여 다시 올려주세요.' : '잠깐 문제가 생겼어요. 다시 한 번 눌러주시면 됩니다.')
         err.status = res.status
         throw err
       }
     }
     if (!res.ok) {
-      const err = new Error(data.error || '오류가 발생했습니다.')
+      const err = new Error(data.error || '잠깐 문제가 생겼어요. 다시 한 번 눌러주시면 됩니다.')
       err.status = res.status
       if (data.timed_out) err.timed_out = true
       if (data.code) err.code = data.code
@@ -81,10 +81,10 @@ const API = {
     try {
       data = await res.json()
     } catch {
-      if (!res.ok) throw new Error('업로드에 실패했습니다.')
+      if (!res.ok) throw new Error('사진이 올라가지 않았어요. 잠시 뒤에 다시 올려주세요.')
     }
     if (!res.ok) {
-      const err = new Error(data.error || '업로드에 실패했습니다.')
+      const err = new Error(data.error || '사진이 올라가지 않았어요. 잠시 뒤에 다시 올려주세요.')
       err.status = res.status
       throw err
     }
@@ -200,18 +200,18 @@ function showGoogleMemberTypeModal(nextPath) {
     overlay.innerHTML = `
       <div class="google-member-dialog" role="dialog" aria-labelledby="google-member-title">
         <button type="button" class="google-member-close" aria-label="닫기">&times;</button>
-        <div class="google-member-title" id="google-member-title">가입 유형 선택</div>
-        <div class="google-member-sub">Google 계정 연결 전에 선택해주세요. <span class="hint">(가입 후 변경 불가)</span></div>
+        <div class="google-member-title" id="google-member-title">어떻게 이용하실 건가요?</div>
+        <div class="google-member-sub">구글 계정으로 들어오기 전에 하나만 골라주세요. 나중에 바꾸고 싶으시면 말씀해 주세요.</div>
         <div class="google-member-type-row">
           <label class="google-member-type-card">
             <input type="radio" name="google-member-modal-type" value="student" checked />
-            <div class="google-member-type-title">수강생</div>
-            <div class="google-member-type-desc">온라인 강의 수강·학습</div>
+            <div class="google-member-type-title">강의를 들을게요</div>
+            <div class="google-member-type-desc">온라인 강의를 듣고 싶어요</div>
           </label>
           <label class="google-member-type-card">
             <input type="radio" name="google-member-modal-type" value="client" />
-            <div class="google-member-type-title">의뢰인</div>
-            <div class="google-member-type-desc">클라이언츠 · 매칭</div>
+            <div class="google-member-type-title">편집을 맡길게요</div>
+            <div class="google-member-type-desc">영상 편집을 의뢰하고 싶어요</div>
           </label>
         </div>
         <button type="button" class="google-member-continue btn-google">Google 계정 선택하기</button>
@@ -224,11 +224,11 @@ function showGoogleMemberTypeModal(nextPath) {
     overlay.querySelector('.google-member-continue').onclick = () => {
       const mt = overlay.querySelector('input[name="google-member-modal-type"]:checked')?.value
       if (!mt) {
-        toast('가입 유형을 선택해주세요.', 'error')
+        toast('하나를 골라주시면 됩니다.', 'error')
         return
       }
       if (detectInAppBrowser()) {
-        toast('Google 로그인은 Safari 또는 Chrome에서만 가능합니다. 주소를 복사해 외부 브라우저에서 열어주세요.', 'error')
+        toast('구글 로그인은 Safari 또는 Chrome에서만 돼요. 주소를 복사해 그 브라우저에서 열어주세요.', 'error')
         copyPageUrlForExternalBrowser()
         return
       }

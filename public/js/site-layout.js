@@ -25,9 +25,9 @@
     },
     copy: {
       all_courses: { title: '전체 강의' },
-      free_courses: { title: '무료강의', subtitle: '무료지만 기본기를 탄탄하게!', more_label: '전부보기' },
-      new_courses: { title: '최신 강의', subtitle: '새롭게 업데이트된 강의', more_label: '전부보기' },
-      reviews: { title: '실시간 후기', subtitle: '실제 회원 후기를 실시간으로 확인하세요' },
+      free_courses: { title: '무료강의', subtitle: '공짜지만 기본은 확실히 챙겨드려요', more_label: '전부보기' },
+      new_courses: { title: '새로 올라온 강의', subtitle: '최근에 새로 준비한 수업이에요', more_label: '전부보기' },
+      reviews: { title: '먼저 배운 분들 이야기', subtitle: '저처럼 처음이었던 분들이 남겨주신 말들이에요' },
       purchase_ticker: { label: '⚡ 구매현황', live_text: 'LIVE' },
     },
     categories: [

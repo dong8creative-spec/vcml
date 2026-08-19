@@ -13,6 +13,9 @@
     "upload:subtitle-tool": "node scripts/upload-subtitle-tool.js",
     "redeploy:subtitle-tool": "node scripts/package-subtitle-tool.js && node scripts/upload-subtitle-tool.js",
     "release:subtitle-tool": "node scripts/build-subtitle-tool.js && node scripts/package-subtitle-tool.js && node scripts/upload-subtitle-tool.js",
+    "package:subtitle-trial": "node scripts/package-tadaksync-trial.js",
+    "upload:subtitle-trial": "node scripts/upload-tadaksync-trial.js",
+    "release:subtitle-trial": "node scripts/package-tadaksync-trial.js && node scripts/upload-tadaksync-trial.js",
     "sync:login-logs-sheets": "node scripts/sync-login-logs-to-sheets.js"
   },
   "engines": {

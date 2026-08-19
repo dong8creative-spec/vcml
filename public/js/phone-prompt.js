@@ -42,8 +42,8 @@
       overlay.className = 'phone-prompt-overlay'
       overlay.innerHTML = `
         <div class="phone-prompt" role="dialog">
-          <h3>${title || '휴대폰 번호 등록'}</h3>
-          <p>${message || '라이브 강의 안내·알림톡 수신을 위해 휴대폰 번호가 필요합니다.'}</p>
+          <h3>${title || '휴대폰 번호'}</h3>
+          <p>${message || '라이브 강의 안내를 받으시려면 번호가 필요해요. 나중에 마이페이지에서 바꾸셔도 됩니다.'}</p>
           <input type="tel" id="phone-prompt-input" placeholder="010-0000-0000" maxlength="13" autocomplete="tel" />
           <div class="phone-prompt-actions">
             ${required ? '' : '<button type="button" class="secondary" data-act="skip">나중에</button>'}
@@ -58,7 +58,7 @@
       async function save() {
         const digits = input.value.replace(/\D/g, '')
         if (!/^010\d{8}$/.test(digits)) {
-          toast('010으로 시작하는 11자리 번호를 입력해주세요.', 'error')
+          toast('010으로 시작하는 번호 11자리를 적어 주세요.', 'error')
           return
         }
         try {
@@ -100,10 +100,11 @@
     if (phone) return
     sessionStorage.setItem('tc_phone_prompted', '1')
     setTimeout(() => {
+      if (document.getElementById('welcome-popup-overlay') || document.getElementById('coupon-guide-overlay')) return
       showPhoneModal({
         required: false,
-        title: '알림을 받으려면 번호가 필요해요',
-        message: '라이브 강의 일정·카카오 알림톡 안내를 받으시려면 휴대폰 번호를 등록해주세요. 마이페이지에서도 변경할 수 있습니다.',
+        title: '라이브 안내를 받으시겠어요?',
+        message: '번호를 남겨 주시면 강의 시작 전에 알려드려요. 지금은 넘어가셔도 되고, 나중에 마이페이지에서 적으셔도 됩니다.',
       })
     }, 1200)
   }

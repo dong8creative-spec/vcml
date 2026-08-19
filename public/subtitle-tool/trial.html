@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>먼저 써보기 — 타닥싱크</title>
+  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <link rel="stylesheet" href="/css/common.css?v=3" />
+  <link rel="stylesheet" href="/css/subtitle-tool.css?v=8" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
+</head>
+<body data-st-active="home">
+<div data-site-header></div>
+
+<div class="st-wrap">
+  <div class="st-hero">
+    <p class="st-back-link"><a href="/subtitle-tool.html"><i class="ti ti-arrow-left"></i> 돌아가기</a></p>
+    <h1>먼저 써보기</h1>
+    <p>
+      바로 결제부터 하라고 하면 부담스러우시죠. 그래서 내 컴퓨터에서 잘 돌아가는지, 손에 맞는지만 먼저 편하게 확인해 보시라고 준비했어요.
+    </p>
+  </div>
+
+  <div data-st-subnav></div>
+
+  <div id="st-msg"></div>
+
+  <div class="st-card st-download-card">
+    <h2>받아서 열어보기</h2>
+    <p class="st-meta" style="margin-bottom:16px">
+      받은 파일은 압축을 푼 다음, 폴더 안의 <strong class="st-filename">run.bat</strong>을 2번 누르면 바로 열려요. 파이썬 같은 건 따로 설치하지 않으셔도 돼요.
+    </p>
+    <div class="st-actions" id="st-download-actions">
+      <div class="spinner" id="st-loading"></div>
+    </div>
+  </div>
+
+  <div class="st-card st-trial-pick st-trial-pick--page">
+    <span class="st-trial-pick__badge">먼저 알려드릴 것</span>
+    <h2>부담 없이 써보셔도 괜찮아요</h2>
+    <p class="st-trial-pick__lead">
+      10번까지 써보실 수 있고, 퀴즈를 맞히면 10번씩 더 드려요. 쓰다가 마음에 안 드시면 폴더만 지우시면 되고, 익숙해지신 다음에 <a href="/subtitle-tool/full.html">정식 버전</a>을 보셔도 늦지 않아요.
+    </p>
+    <div class="st-trial-pick__facts">
+      <span>로그인 없이 바로</span>
+      <span>결제 없이 10번</span>
+      <span>윈도우 · 캡컷 PC 필요</span>
+    </div>
+    <p class="st-meta st-meta--fine" style="margin-top:14px">
+      실행이 잘 안 되시면 <a href="/subtitle-tool/start.html">설치하는 법</a>을 한번 봐 주시고, 그래도 안 되면 <a href="/inquiry.html">말씀해 주시면</a> 같이 찾아볼게요.
+    </p>
+  </div>
+</div>
+
+<script src="/js/api.js?v=3"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=16"></script>
+<script src="/js/subtitle-tool-nav.js?v=3"></script>
+<script>
+const nextPath = '/subtitle-tool/trial.html'
+
+const msgEl = document.getElementById('st-msg')
+const actionsEl = document.getElementById('st-download-actions')
+const loadingEl = document.getElementById('st-loading')
+
+function showMsg(html, kind = 'info') {
+  msgEl.innerHTML = html ? `<div class="st-banner ${kind}">${html}</div>` : ''
+}
+
+function googleLoginBtn(label) {
+  return `<a class="st-btn google" href="${buildGoogleAuthUrl(nextPath, 'student', 'login')}">${GOOGLE_ICON_SVG} ${label}</a>`
+}
+
+function renderDownloadActions(html) {
+  loadingEl?.remove()
+  actionsEl.innerHTML = html
+}
+
+async function downloadTrialZip() {
+  const btn = document.getElementById('btn-download-trial')
+  if (btn) btn.disabled = true
+  try {
+    const data = await API.get('/subtitle/download-trial')
+    if (!data.url) throw new Error('받으실 주소를 가져오지 못했어요. 잠시 뒤에 다시 눌러주세요.')
+    location.href = data.url
+  } catch (e) {
+    showMsg(e.message || '잠깐 문제가 생겼어요. 다시 한 번 눌러주시면 됩니다.', 'err')
+  } finally {
+    if (btn) btn.disabled = false
+  }
+}
+
+function renderLoggedOut() {
+  renderDownloadActions(`
+    ${googleLoginBtn('구글 계정으로 시작하기')}
+  `)
+  showMsg('구글 계정으로 한 번만 로그인해 주시면 바로 받으실 수 있어요.', 'info')
+}
+
+function renderDenied(data) {
+  if (data.code === 'google_required') {
+    renderDownloadActions(`${googleLoginBtn('구글 계정으로 다시 로그인')}`)
+    showMsg('구글 계정으로 다시 들어와 주시면 바로 받으실 수 있어요.', 'warn')
+    return
+  }
+  renderDownloadActions('')
+  showMsg('지금은 준비가 조금 더 필요해요. 잠시 뒤에 다시 들러주세요.', 'warn')
+}
+
+function renderReady() {
+  renderDownloadActions(`
+    <button type="button" class="st-btn st-btn--trial" id="btn-download-trial" onclick="downloadTrialZip()">
+      <i class="ti ti-download"></i> 먼저 써보기 (약 225MB)
+    </button>
+  `)
+}
+
+async function load() {
+  if (!API.isLoggedIn()) {
+    renderLoggedOut()
+    return
+  }
+
+  try {
+    await API.get('/subtitle/entitlement')
+    renderReady()
+  } catch (e) {
+    renderDenied({ code: e.code, error: e.message })
+  }
+}
+
+load()
+</script>
+</body>
+</html>

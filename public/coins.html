@@ -6,7 +6,7 @@
   <title>코인 관리 — 타닥클래스</title>
   <link rel="stylesheet" href="/css/style.css?v=16" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
-  <link rel="stylesheet" href="/css/subtitle-tool.css?v=4" />
+  <link rel="stylesheet" href="/css/subtitle-tool.css?v=8" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
   <style>
@@ -83,118 +83,97 @@
 
 <main class="coin-wrap">
   <section class="coin-hero">
-    <h1>코인 · 요금제</h1>
+    <h1>내 코인</h1>
     <p data-pricing-prelaunch>
-      요금·구독 안내는 <strong data-pricing-launch-label>2026년 8월 1일</strong> 정식 개시와 함께 공개됩니다.
-      지금은 기본 <strong>10코인</strong> · 매일 출석 <strong>+1코인</strong>으로 이용할 수 있습니다.
+      처음 오시면 10코인을 드리고, 들어오시기만 해도 매일 1코인씩 쌓여요.
+      지금은 그 코인으로 마음 편히 연습해 보시면 됩니다.
     </p>
     <p data-pricing-live>
-      타닥싱크는 <strong>종량제(코인 충전)</strong>와 <strong>월 구독 PRO</strong>를 함께 제공합니다.
-      기본 10코인 · 매일 출석 +1 · 인식 <strong>30초/1코인</strong> · 줄나눔 <strong>자동 1 / 엔터 2</strong> · 번역 <strong>20초/10코인</strong>
+      코인은 자막 만들 때 쓰는 횟수예요.
+      1분짜리 영상이면 대략 2코인쯤 듭니다.
     </p>
   </section>
 
   <section class="coin-card st-prelaunch-card" data-pricing-prelaunch style="margin-bottom:18px;text-align:left">
     <span class="st-launch-icon" aria-hidden="true">📅</span>
-    <b style="display:block;text-align:center;font-size:17px;color:#64748b">요금 정책 공개 예정</b>
+    <b style="display:block;text-align:center;font-size:17px;color:#64748b">지금은 연습하셔도 됩니다</b>
     <span class="st-launch-date" data-pricing-launch-label style="text-align:center">2026년 8월 1일</span>
     <p style="text-align:center">
-      종량제·월 구독·코인 충전 가격은 정식 개시일에 안내됩니다.<br>
-      <a href="/subtitle-tool/pricing.html">요금 안내 페이지</a>에서도 같은 날짜에 공개됩니다.
+      자세한 요금은 위 날짜에 알려드릴게요.<br>
+      그전까지는 드리는 코인으로 자막을 만들어 보세요.
     </p>
     <div class="st-prelaunch-note">
-      현재는 코인 잔액 확인·사용 로그만 이용하시면 됩니다.
+      남은 코인과 쓴 기록만 보시면 충분해요.
     </div>
   </section>
 
   <section class="coin-card" data-pricing-live style="margin-bottom:18px">
-    <h2>요금제 비교</h2>
+    <h2>어떤 쪽이 편할까요?</h2>
     <p class="coin-meta" style="margin-bottom:12px">
-      종량제 <strong>1코인 15원</strong> · PRO <strong>월 11,000원 = 1,100코인</strong> (33%↓)
-      · <a href="/subtitle-tool/pricing.html">전체 요금 안내</a>
+      가끔 쓰시면 쓰는 만큼, 자주 쓰시면 매달 받는 쪽이 편해요.
     </p>
-    <div class="coin-plan-toggle" id="coin-plan-toggle">
-      <button type="button" class="on" data-bill="monthly">월 결제</button>
-      <button type="button" data-bill="annual">연 결제 <span class="badge">20%↓</span></button>
-    </div>
     <div class="coin-plans coin-plans--duo" id="coin-plans">
       <div class="coin-plan">
-        <strong>종량제</strong>
+        <strong>쓰는 만큼</strong>
         <div class="price">15<small>원/코인</small></div>
-        <span class="bill">300~1,000코인 · 15원 / 3,000코인 · 14원</span>
+        <span class="bill">필요할 때만 채우시면 됩니다</span>
         <ul>
-          <li>· 인식 · 줄나눔(자동1·엔터2) · 번역</li>
-          <li>· 캡컷 직접 삽입 · SRT보내기</li>
-          <li>· 스타일 프리셋 제한</li>
+          <li>· 말한 걸 자막으로</li>
+          <li>· 캡컷에 바로 넣기</li>
         </ul>
       </div>
       <div class="coin-plan pick" data-plan="pro">
-        <span class="pick-badge">33%↓</span>
-        <strong>월 구독 PRO</strong>
-        <div class="price" data-monthly="11,000" data-annual-monthly="8,800">11,000<small>원/월</small></div>
-        <span class="bill" data-monthly="매월 1,100코인 · 16,500원 상당" data-annual="연 105,600원 · 월 8,800원 상당">매월 1,100코인 · 16,500원 상당</span>
+        <span class="pick-badge">자주 쓰실 때</span>
+        <strong>매달 받기</strong>
+        <div class="price">11,000<small>원/월</small></div>
+        <span class="bill">매월 1,100코인</span>
         <ul>
-          <li>· 캡컷 직접 삽입 (공통)</li>
-          <li>· 스타일·위치 프리셋</li>
-          <li>· 추가 코인 할인</li>
+          <li>· 쓰는 만큼의 모든 기능</li>
+          <li>· 자막 모양을 원하는 대로</li>
         </ul>
       </div>
     </div>
     <p class="coin-meta" style="margin-top:14px">
-      구독·충전 결제는 정식 개시(<span data-pricing-launch-label>2026년 8월 1일</span>) 이후 오픈됩니다.
+      채우기는 <span data-pricing-launch-label>2026년 8월 1일</span> 이후에 열립니다.
     </p>
     <div class="coin-actions">
-      <a class="coin-btn secondary" href="/inquiry.html?type=coin"><i class="ti ti-message-circle"></i> 요금 문의하기</a>
-      <a class="coin-btn secondary" href="/subtitle-tool/pricing.html"><i class="ti ti-info-circle"></i> 요금 안내</a>
+      <a class="coin-btn secondary" href="/inquiry.html?type=coin"><i class="ti ti-message-circle"></i> 궁금한 점 묻기</a>
     </div>
   </section>
 
   <section class="coin-grid">
     <div class="coin-card">
-      <h2>잔여 코인</h2>
+      <h2>남은 코인</h2>
       <div class="coin-balance"><span class="num" id="coin-balance">-</span><span class="unit">코인</span></div>
-      <div class="coin-meta" id="coin-updated">정보를 불러오는 중입니다.</div>
+      <div class="coin-meta" id="coin-updated">가져오는 중이에요</div>
       <div class="coin-actions">
         <a class="coin-btn" href="/subtitle-tool.html"><i class="ti ti-download"></i> 타닥싱크 열기</a>
-        <a class="coin-btn secondary" href="/mypage.html"><i class="ti ti-book"></i> 내 강의</a>
       </div>
     </div>
 
     <div class="coin-card" data-pricing-prelaunch>
-      <h2>이용 안내</h2>
-      <p class="coin-meta">정식 요금은 <span data-pricing-launch-label>2026년 8월 1일</span>에 공개됩니다. 코인 차감 기준도 함께 안내됩니다.</p>
-      <div class="coin-actions">
-        <a class="coin-btn secondary" href="/subtitle-tool/pricing.html"><i class="ti ti-info-circle"></i> 요금 안내</a>
-      </div>
+      <h2>지금 알려드릴 것</h2>
+      <p class="coin-meta">자세한 요금은 <span data-pricing-launch-label>2026년 8월 1일</span>에 알려드릴게요. 지금은 드리는 코인으로 연습해 보세요.</p>
     </div>
 
     <div class="coin-card" data-pricing-live>
-      <h2>종량제 (코인)</h2>
-      <p class="coin-meta">구독 없이 쓰거나, 포함 코인 초과 시 적용됩니다.</p>
-      <div class="coin-ppu-grid">
-        <div class="coin-ppu"><b>30초/1코인</b><span>인식 · 1분=2코인</span></div>
-        <div class="coin-ppu"><b>1~2코인/회</b><span>줄나눔 · 자동1·엔터2</span></div>
-        <div class="coin-ppu"><b>20초/10코인</b><span>번역 · 1분=30코인</span></div>
-      </div>
-      <p class="coin-meta" style="margin-top:12px">예: 1분 인식+자동 줄나눔+번역 = 33코인 · 엔터 줄나눔 시 +1코인 (종량제 약 495~510원)</p>
-      <p class="coin-meta" style="margin-top:8px">
-        코인 충전(300코인 4,500원 등)은 정식 개시 이후 오픈됩니다.
-      </p>
+      <h2>코인은 이렇게 써요</h2>
+      <p class="coin-meta">1분짜리 영상 자막이면 대략 2코인쯤 듭니다. 말이 없는 구간은 쓰지 않아요.</p>
       <div class="coin-actions">
-        <a class="coin-btn secondary" href="/inquiry.html?type=coin"><i class="ti ti-coin"></i> 충전 문의하기</a>
+        <a class="coin-btn secondary" href="/inquiry.html?type=coin"><i class="ti ti-message-circle"></i> 궁금한 점 묻기</a>
       </div>
     </div>
   </section>
 
   <section class="coin-card coin-log">
-    <h2>사용 로그</h2>
+    <h2>쓴 기록</h2>
     <div id="coin-history"><div class="spinner"></div></div>
   </section>
 </main>
 
 <script src="/js/api.js?v=3"></script>
 <script src="/js/site-layout.js"></script>
-<script src="/js/site-header.js?v=13"></script>
+<script src="/js/site-header.js?v=15"></script>
 <script>
   if (!API.isLoggedIn()) {
     location.href = '/login.html?next=' + encodeURIComponent('/coins.html')
@@ -220,15 +199,15 @@
 
   function reasonLabel(reason) {
     const map = {
-      initial: '기본 지급',
-      daily_login: '일일 로그인 지급',
-      review_bonus: '수강 후기 보너스',
-      smartstore_review: '스마트스토어 후기 보너스',
-      consume: '자막 생성 사용',
-      refund: '작업 실패 환불',
+      initial: '처음 오신 선물',
+      daily_login: '오늘 들어오셔서 받은 코인',
+      review_bonus: '후기를 남겨주셔서 받은 코인',
+      smartstore_review: '스토어 후기를 남겨주셔서 받은 코인',
+      consume: '자막 만들기',
+      refund: '작업이 안 되어 돌려드림',
       translate: '자막 번역',
-      translate_refund: '번역 실패 환불',
-      purchase: '코인 충전',
+      translate_refund: '번역이 안 되어 돌려드림',
+      purchase: '코인 채우기',
     }
     return map[reason] || reason || '-'
   }
@@ -236,7 +215,7 @@
   function renderHistory(history) {
     const wrap = document.getElementById('coin-history')
     if (!history.length) {
-      wrap.innerHTML = '<div class="coin-empty">아직 코인 사용 로그가 없습니다.</div>'
+      wrap.innerHTML = '<div class="coin-empty">아직 쓴 기록이 없어요. 자막을 만들면 여기에 보여드려요.</div>'
       return
     }
     wrap.innerHTML = `<table class="coin-log-table">
@@ -261,12 +240,12 @@
       document.getElementById('coin-balance').textContent = Number(data.balance || 0).toLocaleString()
       document.getElementById('coin-updated').textContent = data.updated_at
         ? `마지막 갱신: ${formatDate(data.updated_at)}`
-        : '아직 코인 지갑 갱신 내역이 없습니다.'
+        : '아직 코인을 쓰신 기록이 없어요.'
       renderHistory(Array.isArray(data.history) ? data.history : [])
       if (typeof renderHeaderAuth === 'function') renderHeaderAuth()
     } catch (e) {
-      document.getElementById('coin-history').innerHTML = '<div class="coin-empty">코인 정보를 불러오지 못했습니다.</div>'
-      document.getElementById('coin-updated').textContent = e.message || '코인 정보를 불러오지 못했습니다.'
+      document.getElementById('coin-history').innerHTML = '<div class="coin-empty">코인 정보를 가져오지 못했어요. 잠시 뒤에 다시 열어주세요.</div>'
+      document.getElementById('coin-updated').textContent = e.message || '코인 정보를 가져오지 못했어요.'
     }
   }
 

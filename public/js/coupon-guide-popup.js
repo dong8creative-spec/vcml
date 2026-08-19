@@ -55,41 +55,14 @@
     overlay.innerHTML = `
       <div class="coupon-guide" role="dialog" aria-labelledby="coupon-guide-title">
         <button type="button" class="coupon-guide-close" aria-label="닫기" onclick="CouponGuidePopup.close()">&times;</button>
-        <div class="coupon-guide-badge"><i class="ti ti-gift"></i> 수강 혜택</div>
+        <div class="coupon-guide-badge"><i class="ti ti-gift"></i> 작은 선물</div>
         <h2 id="coupon-guide-title">
-          <span class="coupon-guide-title-line">기대평·후기 남겨주시면</span>
-          <span class="coupon-guide-title-line">제가 쿠폰 챙겨드릴게요</span>
+          <span class="coupon-guide-title-line">짧은 한마디 남겨 주시면</span>
+          <span class="coupon-guide-title-line">할인 쿠폰을 챙겨드릴게요</span>
         </h2>
         <p class="coupon-guide-lead">
-          타닥클래스는 여러분의 응원 한마디를 보면서 강의를 더 좋게 다듬고 있습니다.<br>
-          짧은 기대평과 후기를 남겨주시면, 강의 결제에 사용할 수 있는 할인 쿠폰을 드려요.
-        </p>
-        <div class="coupon-guide-steps">
-          <div class="coupon-guide-step">
-            <div class="coupon-guide-step-num">1</div>
-            <div class="coupon-guide-step-body">
-              <div class="coupon-guide-step-title">강의 듣기 전, 기대평 남기기</div>
-              <p>강의 상세페이지에서 <strong>「기대평 작성하고 쿠폰 받기」</strong>를 눌러<br>기대평을 남겨주시면 <strong>10% 할인 쿠폰</strong>을 드립니다.</p>
-              <p class="coupon-guide-step-note">수강 신청과는 별도이며, 「이 강의 기대돼요」 정도의 짧은 한마디도 괜찮습니다.<br>
-              쿠폰은 최초 유료 강의 결제 시 사용할 수 있고, 발급처·경로가 함께 표시됩니다.<br>
-              사용 기간은 발급일로부터 1개월입니다.</p>
-            </div>
-          </div>
-          <div class="coupon-guide-step">
-            <div class="coupon-guide-step-num">2</div>
-            <div class="coupon-guide-step-body">
-              <div class="coupon-guide-step-title">수강 후, 5점 후기 남기기</div>
-              <p>강의를 들어보신 뒤<br>
-              마이페이지 &gt; 내 강의에서 5점 후기를 남겨주시면<br><strong>10% 추가 쿠폰</strong>을 드립니다.</p>
-              <p class="coupon-guide-step-note">기대평 쿠폰과 함께 사용하면<br>
-              최대 20%까지 할인받을 수 있어요.<br>
-              사용 기간은 발급일로부터 1개월입니다.</p>
-            </div>
-          </div>
-        </div>
-        <p class="coupon-guide-tip">
-          발급된 쿠폰은 <strong>마이페이지 &gt; 내 쿠폰</strong>에서 확인하실 수 있습니다.<br>
-          유료 강의 결제 시 보유 쿠폰이 자동으로 적용됩니다.
+          강의 듣기 전에 기대평을 남기시면 10% 쿠폰을 드려요.
+          듣고 나서 후기를 남겨 주시면 1장 더 드려요.
         </p>
         <div class="coupon-guide-actions">
           <a href="/" class="coupon-guide-btn primary">강의 둘러보기</a>
@@ -119,7 +92,12 @@
 
   async function boot() {
     if (!window.API?.isLoggedIn?.()) return
-    setTimeout(show, 400)
+    setTimeout(() => {
+      if (sessionStorage.getItem('tc_welcome') === '1') return
+      if (document.getElementById('welcome-popup-overlay')) return
+      if (document.querySelector('.phone-prompt-overlay')) return
+      show()
+    }, 400)
   }
 
   window.CouponGuidePopup = { close: closePopup, dismiss: dismissForever, show, goCourses }

@@ -8,6 +8,7 @@ const { getSignedDownloadUrl } = require('../utils/storage')
 const router = express.Router()
 
 const SUBTITLE_ZIP_PATH = process.env.SUBTITLE_TOOL_STORAGE_PATH || 'subtitle-tool/TadakSync.zip'
+const SUBTITLE_TRIAL_ZIP_PATH = process.env.SUBTITLE_TRIAL_STORAGE_PATH || 'subtitle-tool/TadakSyncTrial.zip'
 const SUBTITLE_MODEL_ZIP_PATH = process.env.SUBTITLE_MODEL_STORAGE_PATH || 'subtitle-tool/whisper-model-large-v3.zip'
 const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://vcml.kr'
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions'
@@ -305,6 +306,27 @@ router.get('/download', authMiddleware, async (req, res) => {
   }
 })
 
+/** GET /api/subtitle/download-trial — 구글 로그인 회원용 체험판 서명 URL */
+router.get('/download-trial', authMiddleware, async (req, res) => {
+  try {
+    const result = await db.ensureSubtitleEntitlement(req.user.id)
+    if (!result.ok) {
+      return res.status(403).json(result)
+    }
+    const url = await getSignedDownloadUrl(SUBTITLE_TRIAL_ZIP_PATH, 15 * 60 * 1000)
+    const filename = SUBTITLE_TRIAL_ZIP_PATH.split('/').pop() || 'TadakSyncTrial.zip'
+    res.json({ url, filename, expires_in: 900 })
+  } catch (e) {
+    console.error('subtitle trial download:', e)
+    const missing = /찾을 수 없습니다/.test(e.message || '')
+    res.status(missing ? 404 : 500).json({
+      error: missing
+        ? '테스트 버전 다운로드 파일이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'
+        : '테스트 버전 다운로드 링크를 만들지 못했습니다.',
+    })
+  }
+})
+
 /** GET /api/subtitle/download-model — 음성인식 모델 zip 서명 URL
  * (자동 다운로드가 안 되는 환경용. 프로그램 폴더의 models\faster-whisper-large-v3 에 압축 해제) */
 router.get('/download-model', authMiddleware, async (req, res) => {
@@ -337,7 +359,7 @@ router.post('/device/start', async (req, res) => {
     res.json({
       code,
       expires_at,
-      verify_url: `${SITE_ORIGIN}/subtitle-tool.html?code=${encodeURIComponent(code)}`,
+      verify_url: `${SITE_ORIGIN}/subtitle-tool/full.html?code=${encodeURIComponent(code)}`,
     })
   } catch (e) {
     console.error('subtitle device start:', e)

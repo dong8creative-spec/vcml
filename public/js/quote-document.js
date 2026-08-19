@@ -248,7 +248,7 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(collectForm()))
       flashStatus('초안이 이 브라우저에 저장되었습니다.')
     } catch {
-      flashStatus('저장에 실패했습니다.', true)
+      flashStatus('저장이 잠깐 안 됐어요.', true)
     }
   }
 
@@ -262,7 +262,7 @@
       applyForm(JSON.parse(raw))
       flashStatus('저장된 초안을 불러왔습니다.')
     } catch {
-      flashStatus('불러오기에 실패했습니다.', true)
+      flashStatus('불러오기가 잠깐 안 됐어요.', true)
     }
   }
 

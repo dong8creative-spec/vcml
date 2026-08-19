@@ -4,10 +4,10 @@
  */
 (function () {
   const TABS = [
-    { key: 'home', href: '/subtitle-tool.html', label: '홈', icon: 'ti-home' },
-    { key: 'start', href: '/subtitle-tool/start.html', label: '시작하기', icon: 'ti-download' },
-    { key: 'pricing', href: '/subtitle-tool/pricing.html', label: '요금', icon: 'ti-coin' },
-    { key: 'guide', href: '/subtitle-tool/guide.html', label: '사용법', icon: 'ti-book' },
+    { key: 'home', href: '/subtitle-tool.html', label: '타닥싱크', icon: 'ti-home' },
+    { key: 'start', href: '/subtitle-tool/start.html', label: '설치하는 법', icon: 'ti-download' },
+    { key: 'guide', href: '/subtitle-tool/guide.html', label: '쓰는 법', icon: 'ti-book' },
+    { key: 'pricing', href: '/subtitle-tool/pricing.html', label: '코인 이야기', icon: 'ti-coin' },
   ]
 
   function renderSubnav() {

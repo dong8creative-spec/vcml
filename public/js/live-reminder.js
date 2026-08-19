@@ -253,7 +253,7 @@ if (!window.LiveSession) (function () {
     }
     const tab = window.open('about:blank', '_blank')
     if (!tab) {
-      const blocked = '새 탭을 열 수 없습니다. 브라우저 팝업 차단을 해제해 주세요.'
+      const blocked = '새 창이 안 열렸어요. 브라우저가 팝업을 막고 있는지 한 번만 봐주세요.'
       if (typeof toast === 'function') toast(blocked, 'error')
       else alert(blocked)
       return
@@ -273,14 +273,14 @@ if (!window.LiveSession) (function () {
     const path = slug
       ? '/courses/' + encodeURIComponent(slug) + '/live-replay'
       : '/my/courses/' + encodeURIComponent(courseId) + '/live-replay'
-    openExternalResource(path, '다시보기를 열 수 없습니다.', { requireLogin: true })
+    openExternalResource(path, '다시보기를 열지 못했어요. 잠시 뒤에 다시 눌러주세요.', { requireLogin: true })
   }
 
   function openMaterial(courseId) {
     API.get('/my/courses/' + encodeURIComponent(courseId) + '/live-material')
       .then(({ url }) => { location.href = url })
       .catch((e) => {
-        const msg = e.message || '자료를 다운로드할 수 없습니다.'
+        const msg = e.message || '자료를 받지 못했어요. 잠시 뒤에 다시 눌러주세요.'
         if (typeof toast === 'function') toast(msg, 'error')
         else alert(msg)
       })

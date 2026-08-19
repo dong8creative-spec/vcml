@@ -2,7 +2,7 @@
 
   const DEFAULT_FOOTER = {
     brand_name: '타닥클래스',
-    tagline: '현업 전문가에게 배우는 실무 중심 영상 강의',
+    tagline: '영상편집, 처음이어도 같이 만들어 봐요',
     columns: [
       { title: '강의', links: [
         { label: '전체 강의', href: '/courses' },
@@ -13,7 +13,7 @@
       ]},
       { title: '고객지원', links: [
         { label: '강의 기대평 남기기', href: '/#all' },
-        { label: '1:1 문의하기', href: '/inquiry.html' },
+        { label: '직접 물어보기', href: '/inquiry.html' },
         { label: '자주 묻는 질문', href: '/faq' },
         { label: '환불 및 취소 정책', href: '/policy/refund' },
       ]},
