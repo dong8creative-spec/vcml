@@ -41,8 +41,8 @@ if (-not (Test-Path (Join-Path $Runtime "Scripts\pip.exe")) -and -not (Test-Path
   Remove-Item $GetPip -Force -ErrorAction SilentlyContinue
 }
 
-Write-Host "Installing faster-whisper + numpy + pywebview ..."
-& $py -m pip install --no-warn-script-location "faster-whisper>=1.2" "numpy" "pywebview>=5"
+Write-Host "Installing faster-whisper + numpy + pywebview + pythonnet ..."
+& $py -m pip install --no-warn-script-location "faster-whisper>=1.2" "numpy" "pywebview>=5" "pythonnet>=3"
 
 $DotnetDir = Join-Path $Root "dotnet"
 if (-not (Test-Path (Join-Path $DotnetDir "dotnet.exe"))) {

@@ -22,6 +22,7 @@ REQUIRED_PACKAGES = {
     "webview": "pywebview",
     "faster_whisper": "faster-whisper",
     "numpy": "numpy",
+    "pythonnet": "pythonnet",
 }
 
 INCOMPLETE_UNZIP_MESSAGE = (
@@ -44,8 +45,8 @@ def _show_error(message: str) -> None:
     if "FrameworkMissingFailure" in message or "Python.Runtime" in message or "pythonnet" in message or "ClrError" in message:
         shown = (
             "창을 여는 구성 요소를 불러오지 못했습니다.\n"
-            "일반 .NET Runtime이 아니라 Windows Desktop Runtime x64가 필요합니다.\n"
-            "https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe\n"
+            ".NET Framework 4.8이 필요합니다. (Windows 10/11에는 보통 기본 설치되어 있습니다)\n"
+            "https://dotnet.microsoft.com/download/dotnet-framework/net48\n"
             "설치 후 받은 폴더를 지우고 zip을 다시 받아 run.bat을 눌러 주세요.\n\n"
             + message
         )
