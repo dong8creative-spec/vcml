@@ -16,9 +16,11 @@ const SOURCE_DIR = path.join(ROOT, 'tadaksync-trial-mac')
 const DIST_DIR = path.join(SOURCE_DIR, 'dist')
 const ZIP_PATH = path.join(DIST_DIR, 'TadakSyncTrial-mac.zip')
 const LAUNCHER = '타닥싱크 체험 실행.command'
+const ASCII_LAUNCHER = 'run.command'
 
 const REQUIRED_FILES = [
   LAUNCHER,
+  ASCII_LAUNCHER,
   'run.py',
   'requirements.txt',
   'web/index.html',
@@ -60,6 +62,7 @@ function createZip(stageDir) {
 function main() {
   verifyBundle(SOURCE_DIR)
   fs.chmodSync(path.join(SOURCE_DIR, LAUNCHER), 0o755)
+  fs.chmodSync(path.join(SOURCE_DIR, ASCII_LAUNCHER), 0o755)
   fs.rmSync(DIST_DIR, { recursive: true, force: true })
   fs.mkdirSync(DIST_DIR, { recursive: true })
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tadaksync-trial-mac-'))
@@ -70,6 +73,7 @@ function main() {
       filter: shouldCopy,
     })
     fs.chmodSync(path.join(stageDir, LAUNCHER), 0o755)
+    fs.chmodSync(path.join(stageDir, ASCII_LAUNCHER), 0o755)
     verifyBundle(stageDir)
     createZip(stageDir)
 

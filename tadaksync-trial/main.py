@@ -21,12 +21,12 @@ def _show_error(message: str) -> None:
     except OSError:
         pass
     shown = message
-    if "Python.Runtime" in message or "pythonnet" in message:
+    if "FrameworkMissingFailure" in message or "Python.Runtime" in message or "pythonnet" in message or "ClrError" in message:
         shown = (
             "창을 여는 구성 요소를 불러오지 못했습니다.\n"
-            "Windows용 .NET 데스크톱 런타임 6 이상이 필요할 수 있습니다.\n"
-            "https://dotnet.microsoft.com/download/dotnet/6.0\n"
-            "에서 Desktop Runtime x64를 설치한 뒤 run.bat을 다시 눌러 주세요.\n\n"
+            "일반 .NET Runtime이 아니라 Windows Desktop Runtime x64가 필요합니다.\n"
+            "https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe\n"
+            "설치 후 받은 폴더를 지우고 zip을 다시 받아 run.bat을 눌러 주세요.\n\n"
             + message
         )
     if sys.platform == "win32":

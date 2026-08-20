@@ -44,6 +44,23 @@ if (-not (Test-Path (Join-Path $Runtime "Scripts\pip.exe")) -and -not (Test-Path
 Write-Host "Installing faster-whisper + numpy + pywebview ..."
 & $py -m pip install --no-warn-script-location "faster-whisper>=1.2" "numpy" "pywebview>=5"
 
+$DotnetDir = Join-Path $Root "dotnet"
+if (-not (Test-Path (Join-Path $DotnetDir "dotnet.exe"))) {
+  $RuntimeZipName = "dotnet-runtime-8.0.22-win-x64.zip"
+  $DesktopZipName = "windowsdesktop-runtime-8.0.22-win-x64.zip"
+  $RuntimeUrl = "https://builds.dotnet.microsoft.com/dotnet/Runtime/8.0.22/$RuntimeZipName"
+  $DesktopUrl = "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.22/$DesktopZipName"
+  New-Item -ItemType Directory -Force -Path $DotnetDir | Out-Null
+  Write-Host "Downloading $RuntimeZipName ..."
+  Invoke-WebRequest -Uri $RuntimeUrl -OutFile (Join-Path $Root $RuntimeZipName)
+  Expand-Archive -Path (Join-Path $Root $RuntimeZipName) -DestinationPath $DotnetDir -Force
+  Remove-Item (Join-Path $Root $RuntimeZipName) -Force
+  Write-Host "Downloading $DesktopZipName ..."
+  Invoke-WebRequest -Uri $DesktopUrl -OutFile (Join-Path $Root $DesktopZipName)
+  Expand-Archive -Path (Join-Path $Root $DesktopZipName) -DestinationPath $DotnetDir -Force
+  Remove-Item (Join-Path $Root $DesktopZipName) -Force
+}
+
 New-Item -ItemType Directory -Force -Path $Models | Out-Null
 Write-Host "Downloading Whisper base into models\ ..."
 $env:HF_HUB_DISABLE_SYMLINKS = "1"

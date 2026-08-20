@@ -1,10 +1,8 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-ChildItem -LiteralPath '%~dp0runtime' -Recurse -Include *.dll,*.exe -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue" >nul 2>&1
 if not exist "runtime\python.exe" (
-  echo Python 실행 파일이 이 폴더에 없습니다.
-  echo 만든 쪽에서 prepare_bundle.ps1 을 먼저 실행해 runtime 과 models 를 넣어 주세요.
+  echo Python runtime is missing from this folder.
+  echo Unzip the whole TadakSyncTrial folder, then run this file again.
   pause
   exit /b 1
 )

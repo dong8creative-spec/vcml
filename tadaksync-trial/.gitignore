@@ -1,5 +1,7 @@
 runtime/
 models/
+dotnet/
 *.pyc
 __pycache__/
 last_error.txt
+
