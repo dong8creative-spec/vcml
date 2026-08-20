@@ -22,6 +22,7 @@ REQUIRED_PACKAGES = {
     "webview": "pywebview",
     "faster_whisper": "faster-whisper",
     "numpy": "numpy",
+    "pythonnet": "pythonnet",
 }
 
 INCOMPLETE_UNZIP_MESSAGE = (
