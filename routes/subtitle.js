@@ -9,6 +9,19 @@ const router = express.Router()
 
 const SUBTITLE_ZIP_PATH = process.env.SUBTITLE_TOOL_STORAGE_PATH || 'subtitle-tool/TadakSync.zip'
 const SUBTITLE_TRIAL_ZIP_PATH = process.env.SUBTITLE_TRIAL_STORAGE_PATH || 'subtitle-tool/TadakSyncTrial.zip'
+const SUBTITLE_TRIAL_MAC_ZIP_PATH = process.env.SUBTITLE_TRIAL_MAC_STORAGE_PATH || 'subtitle-tool/TadakSyncTrial-mac.zip'
+const TRIAL_DOWNLOADS = {
+  win: {
+    path: SUBTITLE_TRIAL_ZIP_PATH,
+    filename: 'TadakSyncTrial.zip',
+    launcher: 'run.bat',
+  },
+  mac: {
+    path: SUBTITLE_TRIAL_MAC_ZIP_PATH,
+    filename: 'TadakSyncTrial-mac.zip',
+    launcher: '타닥싱크 체험 실행.command',
+  },
+}
 const SUBTITLE_MODEL_ZIP_PATH = process.env.SUBTITLE_MODEL_STORAGE_PATH || 'subtitle-tool/whisper-model-large-v3.zip'
 const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://vcml.kr'
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions'
@@ -306,16 +319,28 @@ router.get('/download', authMiddleware, async (req, res) => {
   }
 })
 
-/** GET /api/subtitle/download-trial — 구글 로그인 회원용 체험판 서명 URL */
+/** GET /api/subtitle/download-trial?os=win|mac — 구글 로그인 회원용 체험판 서명 URL */
 router.get('/download-trial', authMiddleware, async (req, res) => {
+  const osKey = String(req.query.os || 'win').trim().toLowerCase()
+  const pack = TRIAL_DOWNLOADS[osKey]
+  if (!pack) {
+    return res.status(400).json({ error: 'os는 win 또는 mac만 가능합니다.' })
+  }
   try {
     const result = await db.ensureSubtitleEntitlement(req.user.id)
     if (!result.ok) {
       return res.status(403).json(result)
     }
-    const url = await getSignedDownloadUrl(SUBTITLE_TRIAL_ZIP_PATH, 15 * 60 * 1000)
-    const filename = SUBTITLE_TRIAL_ZIP_PATH.split('/').pop() || 'TadakSyncTrial.zip'
-    res.json({ url, filename, expires_in: 900 })
+    const storagePath = pack.path
+    const url = await getSignedDownloadUrl(storagePath, 15 * 60 * 1000)
+    const filename = storagePath.split('/').pop() || pack.filename
+    res.json({
+      url,
+      filename,
+      os: osKey,
+      launcher: pack.launcher,
+      expires_in: 900,
+    })
   } catch (e) {
     console.error('subtitle trial download:', e)
     const missing = /찾을 수 없습니다/.test(e.message || '')

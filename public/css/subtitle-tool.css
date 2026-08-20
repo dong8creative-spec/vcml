@@ -80,6 +80,19 @@
   color: #fff;
 }
 .st-btn.st-btn--trial:hover { background: #1d4ed8; }
+.st-os-other {
+  align-self: center;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.st-os-other:hover { color: #1d4ed8; }
 .st-trial-pick__actions { align-items: center; }
 .st-trial-pick__help {
   color: #1d4ed8;

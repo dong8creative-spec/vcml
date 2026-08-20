@@ -6,7 +6,7 @@
   <title>먼저 써보기 — 타닥싱크</title>
   <link rel="stylesheet" href="/css/style.css?v=16" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
-  <link rel="stylesheet" href="/css/subtitle-tool.css?v=8" />
+  <link rel="stylesheet" href="/css/subtitle-tool.css?v=9" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -28,8 +28,8 @@
 
   <div class="st-card st-download-card">
     <h2>받아서 열어보기</h2>
-    <p class="st-meta" style="margin-bottom:16px">
-      받은 파일은 압축을 푼 다음, 폴더 안의 <strong class="st-filename">run.bat</strong>을 2번 누르면 바로 열려요. 파이썬 같은 건 따로 설치하지 않으셔도 돼요.
+    <p class="st-meta" id="st-download-hint" style="margin-bottom:16px">
+      받은 파일은 압축을 푼 다음, 폴더 안의 실행 파일을 누르면 열려요.
     </p>
     <div class="st-actions" id="st-download-actions">
       <div class="spinner" id="st-loading"></div>
@@ -45,7 +45,7 @@
     <div class="st-trial-pick__facts">
       <span>로그인 없이 바로</span>
       <span>결제 없이 10번</span>
-      <span>윈도우 · 캡컷 PC 필요</span>
+      <span>윈도우 또는 맥 · 캡컷 필요</span>
     </div>
     <p class="st-meta st-meta--fine" style="margin-top:14px">
       실행이 잘 안 되시면 <a href="/subtitle-tool/start.html">설치하는 법</a>을 한번 봐 주시고, 그래도 안 되면 <a href="/inquiry.html">말씀해 주시면</a> 같이 찾아볼게요.
@@ -63,6 +63,32 @@ const nextPath = '/subtitle-tool/trial.html'
 const msgEl = document.getElementById('st-msg')
 const actionsEl = document.getElementById('st-download-actions')
 const loadingEl = document.getElementById('st-loading')
+const hintEl = document.getElementById('st-download-hint')
+
+const TRIAL_OS = {
+  win: {
+    otherLabel: '맥용 받기',
+    button: '윈도우용 먼저 써보기 (약 225MB)',
+    hint: '받은 파일은 압축을 푼 다음, 폴더 안의 <strong class="st-filename">run.bat</strong>을 2번 누르면 바로 열려요. 파이썬 같은 건 따로 설치하지 않으셔도 돼요.',
+  },
+  mac: {
+    otherLabel: '윈도우용 받기',
+    button: '맥용 먼저 써보기',
+    hint: '받은 파일은 압축을 푼 다음, 폴더 안의 <strong class="st-filename">타닥싱크 체험 실행.command</strong>를 더블클릭하세요. 처음만 설치가 조금 걸리고, 맥이 막으면 우클릭 후 「열기」를 눌러 주세요. 이 맥에 Python 3가 있어야 해요.',
+  },
+}
+
+function detectClientOs() {
+  const uaDataPlatform = ((navigator.userAgentData && navigator.userAgentData.platform) || '').toLowerCase()
+  const platform = (navigator.platform || '').toLowerCase()
+  const ua = navigator.userAgent || ''
+  if (uaDataPlatform.includes('mac') || platform.includes('mac') || /macintosh|mac os x/i.test(ua)) return 'mac'
+  if (uaDataPlatform.includes('win') || platform.includes('win') || /windows/i.test(ua)) return 'win'
+  return 'win'
+}
+
+let selectedOs = detectClientOs()
+let canDownload = false
 
 function showMsg(html, kind = 'info') {
   msgEl.innerHTML = html ? `<div class="st-banner ${kind}">${html}</div>` : ''
@@ -77,11 +103,19 @@ function renderDownloadActions(html) {
   actionsEl.innerHTML = html
 }
 
+function otherOs(os) {
+  return os === 'mac' ? 'win' : 'mac'
+}
+
+function applyHint() {
+  if (hintEl) hintEl.innerHTML = TRIAL_OS[selectedOs].hint
+}
+
 async function downloadTrialZip() {
   const btn = document.getElementById('btn-download-trial')
   if (btn) btn.disabled = true
   try {
-    const data = await API.get('/subtitle/download-trial')
+    const data = await API.get('/subtitle/download-trial?os=' + encodeURIComponent(selectedOs))
     if (!data.url) throw new Error('받으실 주소를 가져오지 못했어요. 잠시 뒤에 다시 눌러주세요.')
     location.href = data.url
   } catch (e) {
@@ -91,14 +125,24 @@ async function downloadTrialZip() {
   }
 }
 
+function chooseOtherOs() {
+  selectedOs = otherOs(selectedOs)
+  if (canDownload) renderReady()
+  else applyHint()
+  if (!API.isLoggedIn()) renderLoggedOut()
+}
+
 function renderLoggedOut() {
+  applyHint()
   renderDownloadActions(`
     ${googleLoginBtn('구글 계정으로 시작하기')}
+    <button type="button" class="st-os-other" onclick="chooseOtherOs()">${TRIAL_OS[selectedOs].otherLabel}</button>
   `)
   showMsg('구글 계정으로 한 번만 로그인해 주시면 바로 받으실 수 있어요.', 'info')
 }
 
 function renderDenied(data) {
+  applyHint()
   if (data.code === 'google_required') {
     renderDownloadActions(`${googleLoginBtn('구글 계정으로 다시 로그인')}`)
     showMsg('구글 계정으로 다시 들어와 주시면 바로 받으실 수 있어요.', 'warn')
@@ -109,14 +153,18 @@ function renderDenied(data) {
 }
 
 function renderReady() {
+  applyHint()
+  const pack = TRIAL_OS[selectedOs]
   renderDownloadActions(`
     <button type="button" class="st-btn st-btn--trial" id="btn-download-trial" onclick="downloadTrialZip()">
-      <i class="ti ti-download"></i> 먼저 써보기 (약 225MB)
+      <i class="ti ti-download"></i> ${pack.button}
     </button>
+    <button type="button" class="st-os-other" onclick="chooseOtherOs()">${pack.otherLabel}</button>
   `)
 }
 
 async function load() {
+  applyHint()
   if (!API.isLoggedIn()) {
     renderLoggedOut()
     return
@@ -124,6 +172,7 @@ async function load() {
 
   try {
     await API.get('/subtitle/entitlement')
+    canDownload = true
     renderReady()
   } catch (e) {
     renderDenied({ code: e.code, error: e.message })

@@ -16,6 +16,9 @@
     "package:subtitle-trial": "node scripts/package-tadaksync-trial.js",
     "upload:subtitle-trial": "node scripts/upload-tadaksync-trial.js",
     "release:subtitle-trial": "node scripts/package-tadaksync-trial.js && node scripts/upload-tadaksync-trial.js",
+    "package:subtitle-trial-mac": "node scripts/package-tadaksync-trial-mac.js",
+    "upload:subtitle-trial-mac": "node scripts/upload-tadaksync-trial-mac.js",
+    "release:subtitle-trial-mac": "node scripts/package-tadaksync-trial-mac.js && node scripts/upload-tadaksync-trial-mac.js",
     "sync:login-logs-sheets": "node scripts/sync-login-logs-to-sheets.js"
   },
   "engines": {

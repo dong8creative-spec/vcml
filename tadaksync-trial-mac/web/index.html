@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>타닥싱크 체험</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div id="shell" class="shell">
+  <aside class="sidebar">
+    <div class="brand-mark">
+      <span class="brand-dot"></span>
+      <span class="brand-name">TADAKSYNC<em>체험</em></span>
+    </div>
+
+    <nav class="steps" id="step-nav">
+      <div class="step active" data-step="1"><span class="step-num">1</span><span class="step-label">프로젝트 선택</span></div>
+      <div class="step" data-step="2"><span class="step-num">2</span><span class="step-label">전문 인식</span></div>
+      <div class="step" data-step="3"><span class="step-num">3</span><span class="step-label">엔터로 줄 나누기</span></div>
+      <div class="step" data-step="4"><span class="step-num">4</span><span class="step-label">스타일 · 삽입</span></div>
+    </nav>
+
+    <div class="account-card">
+      <div class="account-row">
+        <div class="account-name">체험 횟수</div>
+      </div>
+      <div class="coin-chip"><span class="coin-dot"></span><span id="acc-remaining">—</span></div>
+      <p class="trial-note">로그인·코인 없이 사용할 수 있어요. 10회마다 퀴즈로 연장됩니다.</p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="view" id="view-1">
+      <header class="view-head">
+        <div>
+          <h2>캡컷 프로젝트를 선택하세요</h2>
+          <p class="sub">자막을 넣을 초안을 고르세요. <b>캡컷에서 해당 프로젝트는 닫아두세요.</b></p>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-ghost" id="btn-add-root">폴더 지정</button>
+          <button class="btn btn-ghost" id="btn-reload-projects">새로고침</button>
+        </div>
+      </header>
+      <div class="banner warn hidden" id="capcut-warn">
+        캡컷이 실행 중이에요. 프로그램은 켜져 있어도 되지만, <b>작업할 프로젝트는 캡컷에서 닫아야</b> 해요.
+      </div>
+      <div class="project-grid" id="project-grid"></div>
+      <div class="empty hidden" id="project-empty">
+        <p>캡컷 프로젝트를 찾지 못했어요.</p>
+        <p class="sub">캡컷 초안 위치를 옮겼다면 [폴더 지정]으로 직접 알려주세요.</p>
+      </div>
+      <footer class="action-bar hidden" id="start-bar">
+        <div class="selected-info">선택: <b id="sel-project-name">—</b></div>
+        <div class="bar-right">
+          <button class="btn btn-primary" id="btn-start-transcribe">① 전문 인식 시작</button>
+        </div>
+      </footer>
+    </section>
+
+    <section class="view hidden" id="view-2">
+      <div class="progress-stage">
+        <div class="pulse-ring"><div class="pulse-core"></div></div>
+        <h2>전문을 인식하고 있어요</h2>
+        <p class="sub" id="progress-msg">준비 중…</p>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <p class="progress-note">체험판은 Whisper base 모델이라 정식판보다 인식이 조금 낮을 수 있어요.</p>
+      </div>
+    </section>
+
+    <section class="view hidden" id="view-3">
+      <header class="view-head">
+        <div>
+          <h2>엔터로 자막을 나누세요</h2>
+          <p class="sub"><b>Enter 한 번 = 자막 블록 하나</b>. 잘못 들은 단어는 그냥 고쳐 쓰면 돼요. 빈 줄은 무시됩니다.</p>
+        </div>
+        <div class="head-actions">
+          <span class="line-count"><b id="line-count">0</b>개 블록</span>
+          <button class="btn btn-ghost" id="btn-back-projects">← 프로젝트로</button>
+          <button class="btn btn-primary" id="btn-build-blocks">② 자막 블록 만들기</button>
+        </div>
+      </header>
+      <textarea id="script-editor" class="script-editor" spellcheck="false"
+        placeholder="인식된 전문이 여기에 표시됩니다. 엔터로 줄을 나누세요."></textarea>
+    </section>
+
+    <section class="view hidden" id="view-4">
+      <header class="view-head">
+        <div>
+          <h2>자막 스타일을 고르세요</h2>
+          <p class="sub">선택한 스타일이 캡컷의 <b>캡션 트랙</b>으로 들어가요. 캡컷에서도 언제든 다시 바꿀 수 있어요.</p>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-ghost" id="btn-back-script">← 줄 나누기로</button>
+        </div>
+      </header>
+
+      <div class="style-grid" id="style-grid"></div>
+
+      <div class="style-options">
+        <div class="opt-group">
+          <span class="field-label">글자 크기</span>
+          <div class="segmented" id="seg-size">
+            <button data-v="small">작게</button>
+            <button data-v="medium" class="on">보통</button>
+            <button data-v="large">크게</button>
+          </div>
+        </div>
+        <div class="opt-group">
+          <span class="field-label">위치</span>
+          <div class="segmented" id="seg-position">
+            <button data-v="bottom" class="on">하단</button>
+            <button data-v="middle">중앙</button>
+            <button data-v="top">상단</button>
+            <button data-v="pos_1075">인스타그램</button>
+            <button data-v="pos_minus_465">유튜브</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="action-bar">
+        <div class="selected-info"><b id="inject-summary">—</b></div>
+        <button class="btn btn-primary btn-lg" id="btn-inject">③ 캡컷 프로젝트에 삽입</button>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<div id="done-overlay" class="overlay hidden">
+  <div class="overlay-card">
+    <div class="done-check">✓</div>
+    <h2>삽입 완료!</h2>
+    <p id="done-msg">자막이 캡컷 프로젝트에 들어갔어요.</p>
+    <p class="sub">캡컷에서 프로젝트를 열면 <b>「AI 자막」 캡션 트랙</b>이 추가되어 있어요.</p>
+    <div class="done-actions">
+      <button class="btn btn-primary btn-lg" id="btn-new-job">새 작업 시작</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirm-overlay" class="overlay hidden">
+  <div class="overlay-card">
+    <h2>캡컷이 실행 중이에요</h2>
+    <p class="sub">「<b id="confirm-project-name">—</b>」에 삽입합니다.<br>
+    프로그램은 켜져 있어도 되지만, <b>작업할 프로젝트가 캡컷에서 열려 있으면</b><br>
+    삽입한 자막이 저장 시점에 사라질 수 있어요. 프로젝트를 닫았는지 확인해 주세요.</p>
+    <div class="done-actions">
+      <button class="btn btn-ghost" id="btn-confirm-cancel">돌아가기</button>
+      <button class="btn btn-primary" id="btn-confirm-inject">프로젝트를 닫았어요, 삽입</button>
+    </div>
+  </div>
+</div>
+
+<div id="quiz-overlay" class="overlay hidden">
+  <div class="overlay-card">
+    <h2>사용 횟수를 모두 썼어요</h2>
+    <p class="sub">퀴즈를 맞히면 10회가 추가됩니다.</p>
+    <p class="quiz-q" id="quiz-q"></p>
+    <input id="quiz-answer" class="quiz-input" placeholder="정답 입력" autocomplete="off">
+    <p class="gate-error hidden" id="quiz-error"></p>
+    <div class="done-actions">
+      <button class="btn btn-ghost" id="btn-quiz-cancel">닫기</button>
+      <button class="btn btn-primary" id="btn-quiz-submit">확인</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-root"></div>
+<script src="app.js"></script>
+</body>
+</html>
