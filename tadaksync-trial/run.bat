@@ -12,7 +12,6 @@ if not errorlevel 1 (
 set MISSING=
 if not exist "runtime\python.exe" set MISSING=runtime\python.exe
 if not exist "runtime\Lib\site-packages\webview\__init__.py" set MISSING=runtime\Lib\site-packages\webview
-if not exist "models\faster-whisper-base\model.bin" set MISSING=models\faster-whisper-base\model.bin
 
 if not "%MISSING%"=="" (
   echo The unzip did not finish. Missing: %MISSING%
@@ -22,6 +21,10 @@ if not "%MISSING%"=="" (
   echo 3. Run run.bat inside the extracted folder.
   pause
   exit /b 1
+)
+
+if not exist "models\faster-whisper-base\model.bin" (
+  echo Note: the speech model is missing, so it will be downloaded on first use.
 )
 
 if exist "runtime\pythonw.exe" (

@@ -62,6 +62,33 @@ function createZip(stageDir) {
   }
 }
 
+const MODEL_PART_BYTES = 24 * 1024 * 1024
+
+/** 백신·압축 프로그램이 138MB짜리 model.bin 하나를 막는 일이 있어 조각으로 나눠 담는다. */
+function splitModel(stageDir) {
+  const modelPath = path.join(stageDir, 'models/faster-whisper-base/model.bin')
+  if (!fs.existsSync(modelPath)) return
+  const total = fs.statSync(modelPath).size
+  const fd = fs.openSync(modelPath, 'r')
+  const buffer = Buffer.alloc(MODEL_PART_BYTES)
+  let index = 0
+  let offset = 0
+  try {
+    while (offset < total) {
+      const read = fs.readSync(fd, buffer, 0, MODEL_PART_BYTES, offset)
+      if (read <= 0) break
+      index += 1
+      const part = `${modelPath}.part${String(index).padStart(2, '0')}`
+      fs.writeFileSync(part, buffer.subarray(0, read))
+      offset += read
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+  fs.rmSync(modelPath, { force: true })
+  console.log(`음성인식 모델을 ${index}조각으로 나눠 담았습니다. (첫 실행에서 자동으로 합칩니다)`)
+}
+
 function main() {
   verifyBundle(SOURCE_DIR)
   fs.rmSync(DIST_DIR, { recursive: true, force: true })
@@ -74,6 +101,7 @@ function main() {
       filter: shouldCopy,
     })
     verifyBundle(stageDir)
+    splitModel(stageDir)
     createZip(stageDir)
 
     const sizeMb = (fs.statSync(ZIP_PATH).size / 1024 / 1024).toFixed(1)

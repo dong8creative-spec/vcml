@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import re
+import shutil
 import sys
 import threading
 from dataclasses import dataclass, field
@@ -44,29 +46,93 @@ class FullScript:
     language_probability: float = 0.0
 
 
-def bundled_model_dir() -> Optional[str]:
-    """프로그램 폴더에 동봉된 Whisper 모델 경로를 찾는다.
+MODEL_PART_SUFFIX = ".part"
+APP_DIR_NAME = "TadakSyncTrial"
 
-    배포 zip에 모델을 포함하거나, 사용자가 별도 모델 zip을 받아
-    프로그램 폴더의 models\\faster-whisper-large-v3 에 풀어두면 자동 인식된다.
-    """
+
+def _model_search_dirs() -> list[Path]:
     bases: list[Path] = []
     if getattr(sys, "frozen", False):
         exe_dir = Path(sys.executable).resolve().parent
         bases += [exe_dir, exe_dir.parent]
-    trial_root = Path(__file__).resolve().parent.parent
-    bases.append(trial_root)
     bases.append(Path(__file__).resolve().parent.parent)
+    dirs: list[Path] = []
     for base in bases:
         for name in (f"faster-whisper-{MODEL}", MODEL, f"models--Systran--faster-whisper-{MODEL}"):
-            d = base / "models" / name
-            if (d / "model.bin").is_file():
-                return str(d)
-            snapshots = d / "snapshots"
-            if snapshots.is_dir():
-                for snap in snapshots.iterdir():
-                    if (snap / "model.bin").is_file():
-                        return str(snap)
+            dirs.append(base / "models" / name)
+    return dirs
+
+
+def _appdata_model_dir() -> Path:
+    base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or str(Path.home() / ".cache")
+    return Path(base) / APP_DIR_NAME / "models" / f"faster-whisper-{MODEL}"
+
+
+def _model_parts(directory: Path) -> list[Path]:
+    if not directory.is_dir():
+        return []
+    parts = sorted(directory.glob(f"model.bin{MODEL_PART_SUFFIX}*"))
+    return parts
+
+
+def _assemble_model(parts: list[Path], progress: Optional[Callable[[str], None]] = None) -> Optional[Path]:
+    """분할된 모델 조각을 하나로 합친다.
+
+    백신·압축 프로그램이 138MB짜리 model.bin 하나를 막는 경우가 있어
+    배포본에는 조각으로 넣고, 첫 실행에서 쓸 수 있는 곳에 합친다.
+    """
+    source_dir = parts[0].parent
+    total = sum(p.stat().st_size for p in parts)
+    for target_dir in (source_dir, _appdata_model_dir()):
+        target = target_dir / "model.bin"
+        try:
+            if target.is_file() and target.stat().st_size == total:
+                return target_dir
+            target_dir.mkdir(parents=True, exist_ok=True)
+            if target_dir != source_dir:
+                for extra in source_dir.iterdir():
+                    if extra.is_file() and not extra.name.startswith("model.bin" + MODEL_PART_SUFFIX):
+                        shutil.copy2(extra, target_dir / extra.name)
+            if progress:
+                progress("음성인식 모델을 준비하고 있어요... (최초 1회만)")
+            tmp = target.with_suffix(".bin.tmp")
+            with open(tmp, "wb") as out:
+                for part in parts:
+                    with open(part, "rb") as chunk:
+                        shutil.copyfileobj(chunk, out, 1024 * 1024)
+            os.replace(tmp, target)
+            return target_dir
+        except OSError:
+            continue
+    return None
+
+
+def bundled_model_dir(progress: Optional[Callable[[str], None]] = None) -> Optional[str]:
+    """프로그램 폴더에 동봉된 Whisper 모델 경로를 찾는다.
+
+    model.bin 이 그대로 있으면 그것을 쓰고, 압축 과정에서 빠졌다면
+    같이 들어 있는 조각(model.bin.partNN)을 합쳐서 쓴다.
+    """
+    candidates = _model_search_dirs()
+    for d in candidates:
+        if (d / "model.bin").is_file():
+            return str(d)
+        snapshots = d / "snapshots"
+        if snapshots.is_dir():
+            for snap in snapshots.iterdir():
+                if (snap / "model.bin").is_file():
+                    return str(snap)
+
+    appdata = _appdata_model_dir()
+    if (appdata / "model.bin").is_file():
+        return str(appdata)
+
+    for d in candidates:
+        parts = _model_parts(d)
+        if parts:
+            assembled = _assemble_model(parts, progress)
+            if assembled is not None:
+                return str(assembled)
     return None
 
 
@@ -112,7 +178,7 @@ class Transcriber:
             if self._model is not None and self._model_size == model_size:
                 return
 
-            path = bundled_model_dir()
+            path = bundled_model_dir(progress)
             if path:
                 progress("동봉된 Whisper 모델을 불러오고 있어요...")
             else:
