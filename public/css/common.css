@@ -49,6 +49,22 @@
 
   /* 전역 텍스트 배율 (150%) — html·font-size px 와 함께 사용 */
   --text-scale:     1.2;
+
+  /* ── 브랜드 액센트 (히어로 이미지 톤과 맞춘 블루) ──
+     사이트 전체가 흑백뿐이라 밋밋해 보이는 부분을 보완하기 위한 포인트 컬러.
+     --primary(버튼/보더 등 기존 흑백 액션 컬러)는 그대로 두고,
+     컬러가 필요한 배지·아이콘·강조 요소에만 별도로 사용한다. */
+  --brand:          #1140e0;
+  --brand-dark:     #0d34b3;
+  --brand-soft:     #eef1fd;
+
+  /* ── 카드 그림자·라운딩 스케일 ── */
+  --shadow-sm: 0 2px 10px rgba(17, 17, 17, .06);
+  --shadow-md: 0 8px 28px rgba(17, 17, 17, .10);
+  --shadow-lg: 0 16px 44px rgba(17, 17, 17, .14);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
 }
 
 /* Toast */
