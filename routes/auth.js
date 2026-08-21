@@ -122,7 +122,8 @@ router.post('/send-code', async (req, res) => {
   const code = generateCode()
   verificationCodes.set(email, { code, expiresAt: Date.now() + 10 * 60 * 1000, verified: false })
   console.log(`[인증코드] ${email} → ${code}`)
-  res.json({ success: true, dev_code: code })
+  const isProd = process.env.NODE_ENV === 'production'
+  res.json({ success: true, ...(isProd ? {} : { dev_code: code }) })
 })
 
 router.post('/verify-code', (req, res) => {
