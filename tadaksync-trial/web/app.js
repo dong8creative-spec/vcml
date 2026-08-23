@@ -174,6 +174,7 @@ async function startTranscribe() {
   $("#progress-msg").textContent = "준비 중…";
   $("#progress-fill").style.width = "6%";
   gotoStep(2);
+  maybeShowInlineAd();
   const r = await state.api.start_transcribe(state.selectedProject.index);
   if (!r.ok) {
     state.busy = false;
@@ -225,6 +226,31 @@ async function doInject() {
   $("#done-overlay").classList.remove("hidden");
   setTimeout(maybeShowTrialAd, 700);
 }
+
+async function maybeShowInlineAd() {
+  try {
+    const res = await fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad`, { cache: "no-store" });
+    if (!res.ok) return;
+    const ad = await res.json();
+    if (!ad.enabled || !ad.image_url || !ad.link_url) return;
+    $("#ad-inline-image").src = ad.image_url;
+    $("#ad-inline-image").alt = ad.advertiser || "";
+    $("#ad-inline-headline").textContent = ad.headline || ad.advertiser || "";
+    $("#ad-inline-body").textContent = ad.body || "";
+    $("#btn-ad-inline-cta").textContent = ad.cta_label || "자세히 보기";
+    state.inlineAdLinkUrl = ad.link_url;
+    $("#transcribe-ad-slot").classList.remove("hidden");
+  } catch {
+    // 광고 로드 실패는 조용히 무시 — 전사 진행에는 영향 없어야 한다.
+  }
+}
+
+$("#btn-ad-inline-cta").addEventListener("click", () => {
+  const url = state.inlineAdLinkUrl;
+  if (!url) return;
+  fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad/click`, { method: "POST" }).catch(() => {});
+  state.api.open_external_link(url);
+});
 
 async function maybeShowTrialAd() {
   try {
