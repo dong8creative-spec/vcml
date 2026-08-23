@@ -21,7 +21,7 @@ router.post('/uploads', upload.single('file'), async (req, res) => {
   try {
     const kind = String(req.body?.kind || '').trim()
     const courseId = String(req.body?.course_id || '').trim()
-    if (!['detail-intro', 'thumbnail'].includes(kind)) {
+    if (!['detail-intro', 'thumbnail', 'trial-ad'].includes(kind)) {
       return res.status(400).json({ error: '유효하지 않은 업로드 종류입니다.' })
     }
     if (!req.file?.buffer?.length) {
@@ -35,7 +35,7 @@ router.post('/uploads', upload.single('file'), async (req, res) => {
     } else if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(ct)) {
       return res.status(400).json({ error: 'JPEG, PNG, WebP만 업로드할 수 있습니다.' })
     }
-    if (kind === 'thumbnail' && req.file.size > 2 * 1024 * 1024) {
+    if ((kind === 'thumbnail' || kind === 'trial-ad') && req.file.size > 2 * 1024 * 1024) {
       return res.status(400).json({ error: '2MB 이하 이미지만 업로드할 수 있습니다.' })
     }
     const url = await uploadCourseImage(req.file.buffer, {
@@ -1185,6 +1185,22 @@ function isValidExternalUrl(value) {
     return false
   }
 }
+
+router.get('/trial-ad', async (req, res) => {
+  res.json(await db.getTrialAdConfig())
+})
+
+router.patch('/trial-ad', async (req, res) => {
+  const { link_url, image_url } = req.body || {}
+  if (link_url && !isValidExternalUrl(link_url)) {
+    return res.status(400).json({ error: '광고 링크 URL이 올바르지 않습니다.' })
+  }
+  if (image_url && !isValidExternalUrl(image_url)) {
+    return res.status(400).json({ error: '광고 이미지 URL이 올바르지 않습니다.' })
+  }
+  const trialAd = await db.updateTrialAdConfig(req.body)
+  res.json({ success: true, ...trialAd })
+})
 
 router.get('/test-room', async (req, res) => {
   res.json(await db.getTestRoomConfig())

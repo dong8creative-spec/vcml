@@ -3,6 +3,7 @@
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const SAMPLE_CAP = "타닥싱크";
+const VCML_API_ORIGIN = "https://vcml.kr";
 
 const state = {
   api: null,
@@ -222,7 +223,39 @@ async function doInject() {
   applyUses(r);
   $("#done-msg").textContent = `「${r.project}」에 자막 ${r.line_count}개가 들어갔어요.`;
   $("#done-overlay").classList.remove("hidden");
+  setTimeout(maybeShowTrialAd, 700);
 }
+
+async function maybeShowTrialAd() {
+  try {
+    const res = await fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad`, { cache: "no-store" });
+    if (!res.ok) return;
+    const ad = await res.json();
+    if (!ad.enabled || !ad.image_url || !ad.link_url) return;
+    $("#ad-image").src = ad.image_url;
+    $("#ad-image").alt = ad.advertiser || "";
+    $("#ad-headline").textContent = ad.headline || "";
+    $("#ad-body").textContent = ad.body || "";
+    $("#btn-ad-cta").textContent = ad.cta_label || "자세히 보기";
+    state.adLinkUrl = ad.link_url;
+    $("#trial-ad-overlay").classList.remove("hidden");
+  } catch {
+    // 광고 로드 실패는 조용히 무시 — 체험판 핵심 기능에는 영향 없어야 한다.
+  }
+}
+
+function closeTrialAd() {
+  $("#trial-ad-overlay").classList.add("hidden");
+}
+
+$("#btn-ad-close").addEventListener("click", closeTrialAd);
+$("#btn-ad-cta").addEventListener("click", () => {
+  const url = state.adLinkUrl;
+  closeTrialAd();
+  if (!url) return;
+  fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad/click`, { method: "POST" }).catch(() => {});
+  state.api.open_external_link(url);
+});
 
 window.__pyEvent = (msg) => {
   const { event, data } = msg || {};

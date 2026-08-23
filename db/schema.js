@@ -72,6 +72,7 @@ const TTL = {
   HERO: 5 * 60_000,      // 히어로 5분
   FOOTER: 5 * 60_000,    // 푸터 5분
   TEST_ROOM: 5 * 60_000, // 테스트룸 플로팅 버튼 5분
+  TRIAL_AD: 5 * 60_000,  // 타닥싱크 체험판 광고 5분
   HOMEPAGE: 5 * 60_000,  // 홈페이지 레이아웃 5분
   DASHBOARD: 60_000,     // 관리자 대시보드 1분
   STATS: 60_000,         // 통계 1분
@@ -1132,6 +1133,32 @@ function normalizeFooterConfig(data = {}) {
     base.policy_links = data.policy_links.slice(0, 8).map(normalizeFooterLink).filter(l => l.label)
   }
   if (!base.columns.length) base.columns = DEFAULT_FOOTER_CONFIG.columns
+  return base
+}
+
+const DEFAULT_TRIAL_AD_CONFIG = {
+  enabled: false,
+  advertiser: '',
+  headline: '',
+  body: '',
+  image_url: '',
+  link_url: '',
+  cta_label: '자세히 보기',
+  impressions: 0,
+  clicks: 0,
+}
+
+function normalizeTrialAdConfig(data = {}) {
+  const base = JSON.parse(JSON.stringify(DEFAULT_TRIAL_AD_CONFIG))
+  if (data.enabled != null) base.enabled = !!data.enabled
+  if (data.advertiser != null) base.advertiser = String(data.advertiser).trim().slice(0, 60)
+  if (data.headline != null) base.headline = String(data.headline).trim().slice(0, 60)
+  if (data.body != null) base.body = String(data.body).trim().slice(0, 200)
+  if (data.image_url != null) base.image_url = String(data.image_url).trim().slice(0, 1000)
+  if (data.link_url != null) base.link_url = String(data.link_url).trim().slice(0, 1000)
+  if (data.cta_label != null) base.cta_label = String(data.cta_label).trim().slice(0, 20) || DEFAULT_TRIAL_AD_CONFIG.cta_label
+  base.impressions = Math.max(0, parseInt(data.impressions, 10) || 0)
+  base.clicks = Math.max(0, parseInt(data.clicks, 10) || 0)
   return base
 }
 
@@ -5967,6 +5994,40 @@ const db = {
     await fs.collection('site_settings').doc('footer').set({ ...next, updated_at: now() })
     cacheInvalidate('site:footer')
     return db.getFooterConfig()
+  },
+
+  async getTrialAdConfig() {
+    const cached = cacheGet('site:trial_ad')
+    if (cached) return cached
+    const doc = await fs.collection('site_settings').doc('trial_ad').get()
+    const data = doc.exists ? doc.data() : {}
+    const result = { ...normalizeTrialAdConfig(data), updated_at: data.updated_at || null }
+    cacheSet('site:trial_ad', result, TTL.TRIAL_AD)
+    return result
+  },
+
+  async updateTrialAdConfig(data) {
+    const current = await db.getTrialAdConfig()
+    const next = normalizeTrialAdConfig({ ...current, ...data })
+    await fs.collection('site_settings').doc('trial_ad').set({ ...next, updated_at: now() })
+    cacheInvalidate('site:trial_ad')
+    return db.getTrialAdConfig()
+  },
+
+  async recordTrialAdImpression() {
+    await fs.collection('site_settings').doc('trial_ad').set(
+      { impressions: admin.firestore.FieldValue.increment(1) },
+      { merge: true },
+    )
+    cacheInvalidate('site:trial_ad')
+  },
+
+  async recordTrialAdClick() {
+    await fs.collection('site_settings').doc('trial_ad').set(
+      { clicks: admin.firestore.FieldValue.increment(1) },
+      { merge: true },
+    )
+    cacheInvalidate('site:trial_ad')
   },
 
   async getTestRoomConfig() {

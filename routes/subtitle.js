@@ -374,6 +374,35 @@ router.get('/download-model', authMiddleware, async (req, res) => {
 })
 
 /** POST /api/subtitle/device/start — 앱이 연동 코드 발급 (인증 불필요) */
+/** GET /api/subtitle/trial-ad — 체험판(로그인 없음) 전면 광고. 켜져 있을 때만 노출한다. */
+router.get('/trial-ad', async (req, res) => {
+  try {
+    const ad = await db.getTrialAdConfig()
+    if (!ad.enabled || !ad.image_url || !ad.link_url) {
+      return res.json({ enabled: false })
+    }
+    db.recordTrialAdImpression().catch(() => {})
+    res.json({
+      enabled: true,
+      advertiser: ad.advertiser,
+      headline: ad.headline,
+      body: ad.body,
+      image_url: ad.image_url,
+      link_url: ad.link_url,
+      cta_label: ad.cta_label,
+    })
+  } catch (e) {
+    console.error('subtitle trial-ad:', e)
+    res.json({ enabled: false })
+  }
+})
+
+/** POST /api/subtitle/trial-ad/click — 체험판 광고 클릭 집계(best-effort) */
+router.post('/trial-ad/click', async (req, res) => {
+  db.recordTrialAdClick().catch(() => {})
+  res.json({ success: true })
+})
+
 router.post('/device/start', async (req, res) => {
   try {
     const deviceId = String(req.body?.device_id || '').trim().slice(0, 64)

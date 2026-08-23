@@ -502,6 +502,25 @@ select:focus { border-color: var(--lime); }
 .overlay-card .sub { color: var(--muted); }
 .overlay-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .overlay-head h2 { margin: 0; }
+
+/* ─────────── 체험판 광고 팝업 ─────────── */
+.ad-card { position: relative; max-width: 440px; }
+.ad-close {
+  position: absolute; top: 10px; right: 10px; width: 28px; height: 28px;
+  border: none; border-radius: 50%; background: rgba(0, 0, 0, .06);
+  color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer;
+}
+.ad-close:hover { background: rgba(0, 0, 0, .12); }
+.ad-badge {
+  display: inline-block; margin: 0 auto 12px; padding: 3px 10px;
+  border-radius: 20px; background: rgba(0, 0, 0, .06); color: var(--muted);
+  font-size: 11px; font-weight: 700; letter-spacing: .02em;
+}
+.ad-image {
+  width: 100%; max-height: 220px; object-fit: cover;
+  border-radius: var(--radius-sm); margin-bottom: 14px;
+}
+.ad-card h3 { font-size: 19px; font-weight: 800; margin-bottom: 6px; }
 .done-check {
   width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%;
   background: var(--lime); color: #000000; font-size: 30px; font-weight: 900;
