@@ -125,7 +125,7 @@ function renderStyles() {
 
 function renderInjectSummary() {
   const name = state.selectedProject?.name || "—";
-  $("#inject-summary").textContent = `「${name}」에 자막 ${state.lineCount}개 삽입`;
+  $("#inject-summary").textContent = `「${name}」에 자막 ${state.lineCount}줄 넣을게요`;
 }
 
 function bindSegmented(rootSel, key) {
@@ -152,20 +152,20 @@ async function submitQuiz() {
   const answer = $("#quiz-answer").value;
   const r = await state.api.quiz_answer(answer);
   if (!r.ok) {
-    $("#quiz-error").textContent = r.error || "정답이 아닙니다.";
+    $("#quiz-error").textContent = r.error || "정답이 아니에요.";
     $("#quiz-error").classList.remove("hidden");
     return;
   }
   applyUses(r);
   $("#quiz-overlay").classList.add("hidden");
-  toast("정답입니다. 10회가 추가되었어요.", "success");
+  toast("정답이에요! 10번 더 쓰실 수 있어요.", "success");
   const next = state.pendingAfterQuiz;
   state.pendingAfterQuiz = null;
   if (typeof next === "function") next();
 }
 
 async function startTranscribe() {
-  if (!state.selectedProject) { toast("프로젝트를 먼저 선택해 주세요.", "warn"); return; }
+  if (!state.selectedProject) { toast("프로젝트를 먼저 골라주세요.", "warn"); return; }
   if (!state.canUse) {
     openQuiz(startTranscribe);
     return;
@@ -187,7 +187,7 @@ async function startTranscribe() {
 async function buildBlocks() {
   const text = $("#script-editor").value;
   if (!text.split(/\r?\n/).some((line) => line.trim())) {
-    toast("엔터로 자막 줄을 나눠 주세요.", "warn");
+    toast("엔터를 눌러서 자막을 나눠주세요.", "warn");
     return;
   }
   const r = await state.api.build_blocks(text);
@@ -199,7 +199,7 @@ async function buildBlocks() {
 }
 
 async function requestInject() {
-  if (!state.lineCount) { toast("삽입할 자막이 없어요.", "warn"); return; }
+  if (!state.lineCount) { toast("넣을 자막이 없어요.", "warn"); return; }
   if (!state.canUse) {
     openQuiz(requestInject);
     return;
@@ -297,10 +297,10 @@ window.__pyEvent = (msg) => {
     $("#script-editor").value = data?.text || "";
     updateLineCount();
     gotoStep(3);
-    toast("자막을 인식했어요. 엔터로 줄을 나눠 주세요.", "success");
+    toast("자막이 다 됐어요! 엔터로 줄을 나눠주세요.", "success");
   } else if (event === "transcribe_error") {
     state.busy = false;
-    toast(data?.message || "인식에 실패했어요.", "error");
+    toast(data?.message || "자막 만들기에 실패했어요.", "error");
     gotoStep(1);
   }
 };

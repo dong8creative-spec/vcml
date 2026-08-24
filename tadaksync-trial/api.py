@@ -119,7 +119,7 @@ class Api:
             self._projects = capcut.list_projects()
             running = capcut.is_capcut_running()
         except Exception as e:
-            return _err(f"프로젝트 탐색에 실패했어요: {e}")
+            return _err(f"프로젝트를 찾는 데 실패했어요: {e}")
         return _ok(
             projects=[_project_dict(p, i) for i, p in enumerate(self._projects)],
             capcut_running=running,
@@ -159,13 +159,13 @@ class Api:
             uses.grant_quiz_bonus()
             self._quiz = None
             return _ok(**_uses_state())
-        return _err("정답이 아닙니다.")
+        return _err("정답이 아니에요.")
 
     def start_transcribe(self, project_index: int) -> dict:
         if self._busy:
             return _err("이미 작업을 진행 중이에요.")
         if not uses.can_use():
-            return _err("사용 횟수가 없어요.", needs_quiz=True)
+            return _err("사용 횟수를 다 쓰셨어요.", needs_quiz=True)
         try:
             idx = int(project_index)
             project = self._projects[idx]
@@ -178,14 +178,14 @@ class Api:
 
     def _transcribe_worker(self, project: capcut.Project) -> None:
         try:
-            self._emit("progress", {"message": "타임라인 오디오를 읽고 있어요…", "ratio": 0.08})
+            self._emit("progress", {"message": "영상 소리를 읽고 있어요…", "ratio": 0.08})
             built = capcut.build_timeline_audio(project)
             if built.audio is None or len(built.audio) == 0:
-                raise RuntimeError("오디오를 만들지 못했어요.")
+                raise RuntimeError("소리를 읽어오지 못했어요.")
             if not audio_has_speech(built.audio):
-                raise RuntimeError("음성이 거의 들리지 않아요. 다른 초안을 골라 주세요.")
+                raise RuntimeError("말소리가 거의 들리지 않아요. 다른 영상을 골라 주세요.")
 
-            self._emit("progress", {"message": "음성인식 모델을 준비하고 있어요…", "ratio": 0.18})
+            self._emit("progress", {"message": "자막 만들 준비를 하고 있어요…", "ratio": 0.18})
             self._transcriber.load(
                 MODEL,
                 progress=lambda m: self._emit("progress", {"message": m, "ratio": 0.28}),
@@ -197,7 +197,7 @@ class Api:
                 progress_ratio=lambda r: self._emit("progress", {"ratio": 0.3 + 0.55 * float(r)}),
             )
             if not (script.words or script.text.strip()):
-                raise RuntimeError("인식된 문장이 없어요.")
+                raise RuntimeError("알아들은 말이 없어요.")
 
             self._script = script
             self._audio = built.audio
@@ -213,7 +213,7 @@ class Api:
 
     def build_blocks(self, script_text: str) -> dict:
         if not self._script:
-            return _err("먼저 자막을 인식해 주세요.")
+            return _err("먼저 자막을 만들어 주세요.")
         lines = build_lines_from_script(script_text or "", self._script.words)
         if not lines:
             return _err("엔터로 나눈 자막 줄이 없어요.")
@@ -227,11 +227,11 @@ class Api:
 
     def inject(self, style_key: str, size: str, position: str) -> dict:
         if not uses.can_use():
-            return _err("사용 횟수가 없어요.", needs_quiz=True)
+            return _err("사용 횟수를 다 쓰셨어요.", needs_quiz=True)
         if self._project is None:
             return _err("프로젝트를 먼저 선택해 주세요.")
         if not self._lines:
-            return _err("삽입할 자막이 없어요. 엔터로 줄을 나눈 뒤 블록을 만들어 주세요.")
+            return _err("넣을 자막이 없어요. 엔터로 줄을 나눠주세요.")
         try:
             style = styles.build_style(style_key, size=size, position=position)
             inject_subtitles(self._project.dir, self._lines, style=style)
@@ -243,7 +243,7 @@ class Api:
             )
         except Exception as e:
             traceback.print_exc()
-            return _err(f"삽입에 실패했어요: {e}")
+            return _err(f"자막 넣기에 실패했어요: {e}")
 
     def open_external_link(self, url: str) -> dict:
         """광고 등 외부 링크를 앱 창이 아니라 기본 브라우저로 연다."""
