@@ -297,7 +297,7 @@ window.__pyEvent = (msg) => {
     $("#script-editor").value = data?.text || "";
     updateLineCount();
     gotoStep(3);
-    toast("전문을 인식했어요. 엔터로 줄을 나눠 주세요.", "success");
+    toast("자막을 인식했어요. 엔터로 줄을 나눠 주세요.", "success");
   } else if (event === "transcribe_error") {
     state.busy = false;
     toast(data?.message || "인식에 실패했어요.", "error");

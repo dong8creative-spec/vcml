@@ -53,7 +53,7 @@ def _show_error(message: str) -> None:
     if sys.platform == "win32":
         try:
             import ctypes
-            ctypes.windll.user32.MessageBoxW(0, shown[:1500], "타닥싱크 체험", 0x10)
+            ctypes.windll.user32.MessageBoxW(0, shown[:1500], "타닥싱크 V1", 0x10)
         except Exception:
             print(shown, file=sys.stderr)
     else:

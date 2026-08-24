@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>타닥싱크 체험</title>
+<title>타닥싱크 V1</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -12,19 +12,19 @@
   <aside class="sidebar">
     <div class="brand-mark">
       <span class="brand-dot"></span>
-      <span class="brand-name">TADAKSYNC<em>체험</em></span>
+      <span class="brand-name">TADAKSYNC<em>V1</em></span>
     </div>
 
     <nav class="steps" id="step-nav">
       <div class="step active" data-step="1"><span class="step-num">1</span><span class="step-label">프로젝트 선택</span></div>
-      <div class="step" data-step="2"><span class="step-num">2</span><span class="step-label">전문 인식</span></div>
+      <div class="step" data-step="2"><span class="step-num">2</span><span class="step-label">자막 인식</span></div>
       <div class="step" data-step="3"><span class="step-num">3</span><span class="step-label">엔터로 줄 나누기</span></div>
       <div class="step" data-step="4"><span class="step-num">4</span><span class="step-label">스타일 · 삽입</span></div>
     </nav>
 
     <div class="account-card">
       <div class="account-row">
-        <div class="account-name">체험 횟수</div>
+        <div class="account-name">사용 횟수</div>
       </div>
       <div class="coin-chip"><span class="coin-dot"></span><span id="acc-remaining">—</span></div>
       <p class="trial-note">로그인·코인 없이 사용할 수 있어요. 10회마다 퀴즈로 연장됩니다.</p>
@@ -62,10 +62,10 @@
     <section class="view hidden" id="view-2">
       <div class="progress-stage">
         <div class="pulse-ring"><div class="pulse-core"></div></div>
-        <h2>전문을 인식하고 있어요</h2>
+        <h2>자막을 인식하고 있어요</h2>
         <p class="sub" id="progress-msg">준비 중…</p>
         <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-        <p class="progress-note">체험판은 Whisper base 모델이라 정식판보다 인식이 조금 낮을 수 있어요.</p>
+        <p class="progress-note">V1은 Whisper base 모델이라 정식판보다 인식이 조금 낮을 수 있어요.</p>
         <div id="transcribe-ad-slot" class="ad-inline hidden">
           <span class="ad-badge">광고</span>
           <img id="ad-inline-image" class="ad-inline-image" alt="" />
@@ -91,7 +91,7 @@
         </div>
       </header>
       <textarea id="script-editor" class="script-editor" spellcheck="false"
-        placeholder="인식된 전문이 여기에 표시됩니다. 엔터로 줄을 나누세요."></textarea>
+        placeholder="인식된 자막이 여기에 표시됩니다. 엔터로 줄을 나누세요."></textarea>
     </section>
 
     <section class="view hidden" id="view-4">

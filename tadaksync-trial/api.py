@@ -213,7 +213,7 @@ class Api:
 
     def build_blocks(self, script_text: str) -> dict:
         if not self._script:
-            return _err("먼저 전문을 인식해 주세요.")
+            return _err("먼저 자막을 인식해 주세요.")
         lines = build_lines_from_script(script_text or "", self._script.words)
         if not lines:
             return _err("엔터로 나눈 자막 줄이 없어요.")
