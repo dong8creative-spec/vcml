@@ -1186,20 +1186,37 @@ function isValidExternalUrl(value) {
   }
 }
 
-router.get('/trial-ad', async (req, res) => {
-  res.json(await db.getTrialAdConfig())
+function validateTrialAdCampaignBody(body) {
+  const { link_url, image_url, slot, region } = body || {}
+  if (link_url && !isValidExternalUrl(link_url)) return '광고 링크 URL이 올바르지 않습니다.'
+  if (image_url && !isValidExternalUrl(image_url)) return '광고 이미지 URL이 올바르지 않습니다.'
+  if (slot != null && !db.TRIAL_AD_SLOTS.includes(slot)) return '유효하지 않은 노출 자리입니다.'
+  if (region != null && !db.TRIAL_AD_REGIONS.includes(region)) return '유효하지 않은 지역입니다.'
+  return null
+}
+
+router.get('/trial-ad-campaigns', async (req, res) => {
+  res.json({ slots: db.TRIAL_AD_SLOTS, regions: db.TRIAL_AD_REGIONS, campaigns: await db.listTrialAdCampaigns() })
 })
 
-router.patch('/trial-ad', async (req, res) => {
-  const { link_url, image_url } = req.body || {}
-  if (link_url && !isValidExternalUrl(link_url)) {
-    return res.status(400).json({ error: '광고 링크 URL이 올바르지 않습니다.' })
-  }
-  if (image_url && !isValidExternalUrl(image_url)) {
-    return res.status(400).json({ error: '광고 이미지 URL이 올바르지 않습니다.' })
-  }
-  const trialAd = await db.updateTrialAdConfig(req.body)
-  res.json({ success: true, ...trialAd })
+router.post('/trial-ad-campaigns', async (req, res) => {
+  const error = validateTrialAdCampaignBody(req.body)
+  if (error) return res.status(400).json({ error })
+  const campaign = await db.createTrialAdCampaign(req.body)
+  res.json({ success: true, campaign })
+})
+
+router.patch('/trial-ad-campaigns/:id', async (req, res) => {
+  const error = validateTrialAdCampaignBody(req.body)
+  if (error) return res.status(400).json({ error })
+  const campaign = await db.updateTrialAdCampaign(req.params.id, req.body)
+  if (!campaign) return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' })
+  res.json({ success: true, campaign })
+})
+
+router.delete('/trial-ad-campaigns/:id', async (req, res) => {
+  await db.deleteTrialAdCampaign(req.params.id)
+  res.json({ success: true })
 })
 
 router.get('/test-room', async (req, res) => {

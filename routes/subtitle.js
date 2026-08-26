@@ -373,23 +373,25 @@ router.get('/download-model', authMiddleware, async (req, res) => {
   }
 })
 
-/** POST /api/subtitle/device/start — 앱이 연동 코드 발급 (인증 불필요) */
-/** GET /api/subtitle/trial-ad — 체험판(로그인 없음) 전면 광고. 켜져 있을 때만 노출한다. */
+/** GET /api/subtitle/trial-ad?slot=transcribe_inline|insert_popup — 체험판(로그인 없음) 광고.
+ *  접속 IP로 지역을 추정해, 그 슬롯·지역에 켜져 있고 기간이 살아있는 캠페인 중 하나를 골라 내려준다. */
 router.get('/trial-ad', async (req, res) => {
   try {
-    const ad = await db.getTrialAdConfig()
-    if (!ad.enabled || !ad.image_url || !ad.link_url) {
+    const slot = String(req.query.slot || '')
+    const campaign = await db.pickTrialAdForSlot(slot, clientIp(req))
+    if (!campaign || !campaign.image_url || !campaign.link_url) {
       return res.json({ enabled: false })
     }
-    db.recordTrialAdImpression().catch(() => {})
+    db.recordTrialAdCampaignImpression(campaign.id).catch(() => {})
     res.json({
       enabled: true,
-      advertiser: ad.advertiser,
-      headline: ad.headline,
-      body: ad.body,
-      image_url: ad.image_url,
-      link_url: ad.link_url,
-      cta_label: ad.cta_label,
+      campaign_id: campaign.id,
+      advertiser: campaign.advertiser,
+      headline: campaign.headline,
+      body: campaign.body,
+      image_url: campaign.image_url,
+      link_url: campaign.link_url,
+      cta_label: campaign.cta_label,
     })
   } catch (e) {
     console.error('subtitle trial-ad:', e)
@@ -399,7 +401,8 @@ router.get('/trial-ad', async (req, res) => {
 
 /** POST /api/subtitle/trial-ad/click — 체험판 광고 클릭 집계(best-effort) */
 router.post('/trial-ad/click', async (req, res) => {
-  db.recordTrialAdClick().catch(() => {})
+  const campaignId = String(req.body?.campaign_id || '').trim()
+  if (campaignId) db.recordTrialAdCampaignClick(campaignId).catch(() => {})
   res.json({ success: true })
 })
 

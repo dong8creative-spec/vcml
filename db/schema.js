@@ -1136,30 +1136,72 @@ function normalizeFooterConfig(data = {}) {
   return base
 }
 
-const DEFAULT_TRIAL_AD_CONFIG = {
+// ── 타닥싱크 체험판 광고 캠페인 ──
+// 슬롯(자리)별·지역별로 여러 광고주를 동시에 등록해두고, 기간이 겹치면 그 안에서
+// 로테이션한다. 지역은 로그인이 없는 체험판 특성상 접속 IP로 추정한다(geoip-lite).
+const TRIAL_AD_SLOTS = ['transcribe_inline', 'insert_popup']
+const TRIAL_AD_REGIONS = ['all', 'seoul_gyeonggi', 'busan_gyeongnam', 'other']
+
+// ISO 3166-2:KR 지역 코드 → 지역 그룹. geoip-lite가 국가만 맞히고 세부 지역을
+// 못 찾으면(빈 문자열) 'other'로 취급한다.
+const KR_REGION_GROUPS = {
+  seoul_gyeonggi: ['11', '28', '41'], // 서울, 인천, 경기
+  busan_gyeongnam: ['26', '31', '48'], // 부산, 울산, 경남
+}
+
+function resolveTrialAdRegion(ip) {
+  try {
+    const geoip = require('geoip-lite')
+    const geo = ip && geoip.lookup(ip)
+    if (!geo || geo.country !== 'KR') return 'other'
+    for (const [group, codes] of Object.entries(KR_REGION_GROUPS)) {
+      if (codes.includes(geo.region)) return group
+    }
+    return 'other'
+  } catch {
+    return 'other'
+  }
+}
+
+const DEFAULT_TRIAL_AD_CAMPAIGN = {
   enabled: false,
+  slot: 'insert_popup',
+  region: 'all',
   advertiser: '',
   headline: '',
   body: '',
   image_url: '',
   link_url: '',
   cta_label: '자세히 보기',
+  starts_at: null,
+  ends_at: null,
   impressions: 0,
   clicks: 0,
 }
 
-function normalizeTrialAdConfig(data = {}) {
-  const base = JSON.parse(JSON.stringify(DEFAULT_TRIAL_AD_CONFIG))
+function normalizeTrialAdCampaign(data = {}) {
+  const base = JSON.parse(JSON.stringify(DEFAULT_TRIAL_AD_CAMPAIGN))
   if (data.enabled != null) base.enabled = !!data.enabled
+  if (TRIAL_AD_SLOTS.includes(data.slot)) base.slot = data.slot
+  if (TRIAL_AD_REGIONS.includes(data.region)) base.region = data.region
   if (data.advertiser != null) base.advertiser = String(data.advertiser).trim().slice(0, 60)
   if (data.headline != null) base.headline = String(data.headline).trim().slice(0, 60)
   if (data.body != null) base.body = String(data.body).trim().slice(0, 200)
   if (data.image_url != null) base.image_url = String(data.image_url).trim().slice(0, 1000)
   if (data.link_url != null) base.link_url = String(data.link_url).trim().slice(0, 1000)
-  if (data.cta_label != null) base.cta_label = String(data.cta_label).trim().slice(0, 20) || DEFAULT_TRIAL_AD_CONFIG.cta_label
+  if (data.cta_label != null) base.cta_label = String(data.cta_label).trim().slice(0, 20) || DEFAULT_TRIAL_AD_CAMPAIGN.cta_label
+  if (data.starts_at != null) base.starts_at = data.starts_at ? new Date(data.starts_at).toISOString() : null
+  if (data.ends_at != null) base.ends_at = data.ends_at ? new Date(data.ends_at).toISOString() : null
   base.impressions = Math.max(0, parseInt(data.impressions, 10) || 0)
   base.clicks = Math.max(0, parseInt(data.clicks, 10) || 0)
   return base
+}
+
+function isTrialAdCampaignLive(campaign, now = new Date()) {
+  if (!campaign.enabled) return false
+  if (campaign.starts_at && new Date(campaign.starts_at) > now) return false
+  if (campaign.ends_at && new Date(campaign.ends_at) < now) return false
+  return true
 }
 
 const DEFAULT_TEST_ROOM_CONFIG = {
@@ -5996,38 +6038,65 @@ const db = {
     return db.getFooterConfig()
   },
 
-  async getTrialAdConfig() {
-    const cached = cacheGet('site:trial_ad')
-    if (cached) return cached
-    const doc = await fs.collection('site_settings').doc('trial_ad').get()
-    const data = doc.exists ? doc.data() : {}
-    const result = { ...normalizeTrialAdConfig(data), updated_at: data.updated_at || null }
-    cacheSet('site:trial_ad', result, TTL.TRIAL_AD)
-    return result
+  async listTrialAdCampaigns() {
+    const snap = await fs.collection('trial_ad_campaigns').orderBy('created_at', 'desc').get()
+    return snap.docs.map(d => ({ id: d.id, ...normalizeTrialAdCampaign(d.data()), updated_at: d.data().updated_at || null }))
   },
 
-  async updateTrialAdConfig(data) {
-    const current = await db.getTrialAdConfig()
-    const next = normalizeTrialAdConfig({ ...current, ...data })
-    await fs.collection('site_settings').doc('trial_ad').set({ ...next, updated_at: now() })
-    cacheInvalidate('site:trial_ad')
-    return db.getTrialAdConfig()
+  async createTrialAdCampaign(data) {
+    const next = normalizeTrialAdCampaign(data)
+    const ref = await fs.collection('trial_ad_campaigns').add({ ...next, created_at: now(), updated_at: now() })
+    cacheInvalidate('site:trial_ad_campaigns:')
+    return { id: ref.id, ...next }
   },
 
-  async recordTrialAdImpression() {
-    await fs.collection('site_settings').doc('trial_ad').set(
+  async updateTrialAdCampaign(id, data) {
+    const ref = fs.collection('trial_ad_campaigns').doc(id)
+    const doc = await ref.get()
+    if (!doc.exists) return null
+    const next = normalizeTrialAdCampaign({ ...doc.data(), ...data })
+    await ref.set({ ...next, updated_at: now() }, { merge: true })
+    cacheInvalidate('site:trial_ad_campaigns:')
+    return { id, ...next }
+  },
+
+  async deleteTrialAdCampaign(id) {
+    await fs.collection('trial_ad_campaigns').doc(id).delete()
+    cacheInvalidate('site:trial_ad_campaigns:')
+  },
+
+  // 슬롯(자리)에 노출할 캠페인 하나를 고른다: 접속 IP로 지역을 추정해
+  // (지역 전용 캠페인들 우선, 없으면 'all' 캠페인들로 대체) 그중 기간이 살아있는
+  // 캠페인을 무작위로 하나 선택한다. 사용자별 노출 제한은 두지 않는다.
+  async pickTrialAdForSlot(slot, ip) {
+    if (!TRIAL_AD_SLOTS.includes(slot)) return null
+    const cacheKey = `site:trial_ad_campaigns:${slot}`
+    let campaigns = cacheGet(cacheKey)
+    if (!campaigns) {
+      const snap = await fs.collection('trial_ad_campaigns').where('slot', '==', slot).where('enabled', '==', true).get()
+      campaigns = snap.docs.map(d => ({ id: d.id, ...normalizeTrialAdCampaign(d.data()) }))
+      cacheSet(cacheKey, campaigns, TTL.TRIAL_AD)
+    }
+    const region = resolveTrialAdRegion(ip)
+    const live = campaigns.filter(c => isTrialAdCampaignLive(c))
+    const regional = live.filter(c => c.region === region)
+    const pool = regional.length ? regional : live.filter(c => c.region === 'all')
+    if (!pool.length) return null
+    return pool[Math.floor(Math.random() * pool.length)]
+  },
+
+  async recordTrialAdCampaignImpression(id) {
+    await fs.collection('trial_ad_campaigns').doc(id).set(
       { impressions: admin.firestore.FieldValue.increment(1) },
       { merge: true },
     )
-    cacheInvalidate('site:trial_ad')
   },
 
-  async recordTrialAdClick() {
-    await fs.collection('site_settings').doc('trial_ad').set(
+  async recordTrialAdCampaignClick(id) {
+    await fs.collection('trial_ad_campaigns').doc(id).set(
       { clicks: admin.firestore.FieldValue.increment(1) },
       { merge: true },
     )
-    cacheInvalidate('site:trial_ad')
   },
 
   async getTestRoomConfig() {
@@ -7934,6 +8003,8 @@ seedInstructorPortfolioQuoteDefaults().catch(console.error)
 seedInstructorPortfolioWorksDefaults().catch(console.error)
 
 module.exports = db
+module.exports.TRIAL_AD_SLOTS = TRIAL_AD_SLOTS
+module.exports.TRIAL_AD_REGIONS = TRIAL_AD_REGIONS
 module.exports.SUBTITLE_PRICING_LAUNCH_AT_KST = SUBTITLE_PRICING_LAUNCH_AT_KST
 module.exports.isSubtitlePricingLaunched = isSubtitlePricingLaunched
 module.exports.subtitleDurationUsFromMinutes = subtitleDurationUsFromMinutes

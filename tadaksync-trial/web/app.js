@@ -227,9 +227,18 @@ async function doInject() {
   setTimeout(maybeShowTrialAd, 700);
 }
 
+function reportAdClick(campaignId) {
+  if (!campaignId) return;
+  fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad/click`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ campaign_id: campaignId }),
+  }).catch(() => {});
+}
+
 async function maybeShowInlineAd() {
   try {
-    const res = await fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad`, { cache: "no-store" });
+    const res = await fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad?slot=transcribe_inline`, { cache: "no-store" });
     if (!res.ok) return;
     const ad = await res.json();
     if (!ad.enabled || !ad.image_url || !ad.link_url) return;
@@ -239,6 +248,7 @@ async function maybeShowInlineAd() {
     $("#ad-inline-body").textContent = ad.body || "";
     $("#btn-ad-inline-cta").textContent = ad.cta_label || "자세히 보기";
     state.inlineAdLinkUrl = ad.link_url;
+    state.inlineAdCampaignId = ad.campaign_id;
     $("#transcribe-ad-slot").classList.remove("hidden");
   } catch {
     // 광고 로드 실패는 조용히 무시 — 전사 진행에는 영향 없어야 한다.
@@ -248,13 +258,13 @@ async function maybeShowInlineAd() {
 $("#btn-ad-inline-cta").addEventListener("click", () => {
   const url = state.inlineAdLinkUrl;
   if (!url) return;
-  fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad/click`, { method: "POST" }).catch(() => {});
+  reportAdClick(state.inlineAdCampaignId);
   state.api.open_external_link(url);
 });
 
 async function maybeShowTrialAd() {
   try {
-    const res = await fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad`, { cache: "no-store" });
+    const res = await fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad?slot=insert_popup`, { cache: "no-store" });
     if (!res.ok) return;
     const ad = await res.json();
     if (!ad.enabled || !ad.image_url || !ad.link_url) return;
@@ -264,6 +274,7 @@ async function maybeShowTrialAd() {
     $("#ad-body").textContent = ad.body || "";
     $("#btn-ad-cta").textContent = ad.cta_label || "자세히 보기";
     state.adLinkUrl = ad.link_url;
+    state.adCampaignId = ad.campaign_id;
     $("#trial-ad-overlay").classList.remove("hidden");
   } catch {
     // 광고 로드 실패는 조용히 무시 — 체험판 핵심 기능에는 영향 없어야 한다.
@@ -279,7 +290,7 @@ $("#btn-ad-cta").addEventListener("click", () => {
   const url = state.adLinkUrl;
   closeTrialAd();
   if (!url) return;
-  fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad/click`, { method: "POST" }).catch(() => {});
+  reportAdClick(state.adCampaignId);
   state.api.open_external_link(url);
 });
 
