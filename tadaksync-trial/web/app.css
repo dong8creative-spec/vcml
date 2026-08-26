@@ -187,6 +187,29 @@ b { font-weight: 700; color: var(--royal); }
 .account-menu button:hover { background: var(--panel-3); }
 .account-menu button.danger { color: var(--royal); }
 
+/* ─────────── 라이선스 키 ─────────── */
+.license-box { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft); }
+.license-hint { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+.license-row { display: flex; gap: 6px; }
+.license-input {
+  flex: 1; min-width: 0; padding: 8px 10px;
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: inherit; font-size: 12px; letter-spacing: .03em; outline: none;
+}
+.license-input:focus { border-color: var(--lime); }
+.btn-sm { padding: 8px 12px; font-size: 12px; flex: none; }
+.license-error { color: var(--royal); font-size: 11.5px; margin-top: 6px; }
+.license-active {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.license-badge {
+  background: var(--lime-dim); color: var(--lime); font-weight: 700; font-size: 12px;
+  border-radius: 999px; padding: 4px 10px;
+}
+.license-sub { color: var(--muted); font-size: 11.5px; }
+
 /* ─────────── 뷰 공통 ─────────── */
 .view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .view-head {

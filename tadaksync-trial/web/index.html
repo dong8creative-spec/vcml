@@ -28,6 +28,19 @@
       </div>
       <div class="coin-chip"><span class="coin-dot"></span><span id="acc-remaining">—</span></div>
       <p class="trial-note">로그인도, 코인도 필요 없어요. 10번 쓰고 나면 퀴즈 하나로 10번 더 드려요.</p>
+
+      <div class="license-box" id="license-box">
+        <p class="license-hint">라이선스 키가 있으신가요?</p>
+        <div class="license-row">
+          <input id="license-input" class="license-input" placeholder="TDSK-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false">
+          <button class="btn btn-ghost btn-sm" id="btn-license-apply">적용</button>
+        </div>
+        <p class="license-error hidden" id="license-error"></p>
+      </div>
+      <div class="license-active hidden" id="license-active">
+        <span class="license-badge">✓ 정식 라이선스</span>
+        <span class="license-sub">광고 없이 쓰고 계세요</span>
+      </div>
     </div>
   </aside>
 

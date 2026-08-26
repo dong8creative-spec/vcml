@@ -406,6 +406,17 @@ router.post('/trial-ad/click', async (req, res) => {
   res.json({ success: true })
 })
 
+/** POST /api/subtitle/license/verify — 타닥싱크 V1 영구 라이선스 키 확인(로그인 없음). */
+router.post('/license/verify', async (req, res) => {
+  try {
+    const result = await db.verifyTadaksyncLicense(req.body?.license_key)
+    res.json(result)
+  } catch (e) {
+    console.error('subtitle license verify:', e)
+    res.status(500).json({ valid: false, reason: 'server_error' })
+  }
+})
+
 router.post('/device/start', async (req, res) => {
   try {
     const deviceId = String(req.body?.device_id || '').trim().slice(0, 64)

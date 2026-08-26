@@ -1204,6 +1204,20 @@ function isTrialAdCampaignLive(campaign, now = new Date()) {
   return true
 }
 
+// ── 타닥싱크 V1 영구 라이선스 (광고 제거 + 오프라인 완전판) ──
+// 사이트에 결제 연동 전이라, 스마트스토어 등에서 결제를 받은 뒤 관리자가
+// 이메일 기준으로 키를 발급하는 방식(강의 수동 등록과 동일한 흐름)을 쓴다.
+const TADAKSYNC_LICENSE_KEY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // 0/O, 1/I 제외
+
+function generateTadaksyncLicenseKeyRaw() {
+  const bytes = crypto.randomBytes(12)
+  let out = ''
+  for (let i = 0; i < 12; i++) {
+    out += TADAKSYNC_LICENSE_KEY_ALPHABET[bytes[i] % TADAKSYNC_LICENSE_KEY_ALPHABET.length]
+  }
+  return `TDSK-${out.slice(0, 4)}-${out.slice(4, 8)}-${out.slice(8, 12)}`
+}
+
 const DEFAULT_TEST_ROOM_CONFIG = {
   enabled: true,
   label: '바로가기',
@@ -6097,6 +6111,85 @@ const db = {
       { clicks: admin.firestore.FieldValue.increment(1) },
       { merge: true },
     )
+  },
+
+  async issueTadaksyncLicense({ email, name, phone, note, amount, method, order_ref } = {}, adminUserId = null) {
+    const cleanEmail = String(email || '').trim().toLowerCase()
+    if (!cleanEmail) {
+      const err = new Error('이메일이 필요합니다.')
+      err.status = 400
+      throw err
+    }
+    let licenseKey = generateTadaksyncLicenseKeyRaw()
+    for (let i = 0; i < 5; i++) {
+      const dupe = await fs.collection('tadaksync_licenses').where('license_key', '==', licenseKey).limit(1).get()
+      if (dupe.empty) break
+      licenseKey = generateTadaksyncLicenseKeyRaw()
+    }
+    const data = {
+      license_key: licenseKey,
+      email: cleanEmail,
+      name: String(name || '').trim().slice(0, 60),
+      phone: String(phone || '').trim().slice(0, 30),
+      tier: 'lifetime',
+      status: 'active',
+      amount: Number(amount) || 50000,
+      method: String(method || '스마트스토어').trim().slice(0, 40),
+      order_ref: String(order_ref || '').trim().slice(0, 100),
+      note: String(note || '').trim().slice(0, 300),
+      activated_at: null,
+      last_verified_at: null,
+      created_by: adminUserId,
+      created_at: now(),
+      updated_at: now(),
+    }
+    const ref = await fs.collection('tadaksync_licenses').add(data)
+    return { id: ref.id, ...data }
+  },
+
+  async listTadaksyncLicenses({ status, q } = {}) {
+    const snap = await fs.collection('tadaksync_licenses').orderBy('created_at', 'desc').get()
+    let rows = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    if (status) rows = rows.filter(r => r.status === status)
+    if (q) {
+      const needle = String(q).trim().toLowerCase()
+      rows = rows.filter(r =>
+        (r.email || '').includes(needle) ||
+        (r.license_key || '').toLowerCase().includes(needle) ||
+        (r.name || '').includes(needle))
+    }
+    return rows
+  },
+
+  async revokeTadaksyncLicense(id) {
+    await fs.collection('tadaksync_licenses').doc(id).set({ status: 'revoked', updated_at: now() }, { merge: true })
+  },
+
+  async reactivateTadaksyncLicense(id) {
+    await fs.collection('tadaksync_licenses').doc(id).set({ status: 'active', updated_at: now() }, { merge: true })
+  },
+
+  // 타닥싱크 V1(로그인 없음)에서 키를 입력하면 이 함수로 유효성을 확인한다.
+  // 키 자체가 곧 신원 증명이라 별도 로그인 없이도 광고 제거·오프라인 완전판을 풀어준다.
+  async verifyTadaksyncLicense(key) {
+    const normalized = String(key || '').trim().toUpperCase()
+    if (!normalized) return { valid: false, reason: 'empty' }
+    const snap = await fs.collection('tadaksync_licenses').where('license_key', '==', normalized).limit(1).get()
+    if (snap.empty) return { valid: false, reason: 'not_found' }
+    const doc = snap.docs[0]
+    const data = doc.data()
+    if (data.status !== 'active') return { valid: false, reason: 'revoked' }
+    await doc.ref.set(
+      { last_verified_at: now(), activated_at: data.activated_at || now() },
+      { merge: true },
+    )
+    return {
+      valid: true,
+      tier: data.tier || 'lifetime',
+      email: data.email || null,
+      ads_removed: true,
+      offline_unlocked: true,
+    }
   },
 
   async getTestRoomConfig() {

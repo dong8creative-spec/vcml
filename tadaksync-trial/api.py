@@ -9,6 +9,7 @@ import traceback
 import webbrowser
 from pathlib import Path
 
+import license_store
 import uses
 from engine import APP_NAME, MAX_USES, VERSION, WHISPER_MODEL
 from engine import capcut
@@ -111,8 +112,13 @@ class Api:
             whisper=WHISPER_MODEL,
             max_uses=MAX_USES,
             styles=styles.list_presets(),
+            license=license_store.load(),
             **_uses_state(),
         )
+
+    def save_license(self, key: str, tier: str) -> dict:
+        """서버가 유효하다고 확인해준 라이선스 키를 이 기기에 저장한다."""
+        return _ok(license=license_store.save(str(key or "").strip().upper(), str(tier or "lifetime")))
 
     def list_projects(self) -> dict:
         try:

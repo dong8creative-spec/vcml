@@ -1219,6 +1219,30 @@ router.delete('/trial-ad-campaigns/:id', async (req, res) => {
   res.json({ success: true })
 })
 
+router.get('/tadaksync-licenses', async (req, res) => {
+  const { status, q } = req.query
+  res.json({ licenses: await db.listTadaksyncLicenses({ status, q }) })
+})
+
+router.post('/tadaksync-licenses', async (req, res) => {
+  try {
+    const license = await db.issueTadaksyncLicense(req.body, req.user.id)
+    res.json({ success: true, license })
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message || '라이선스 발급에 실패했습니다.' })
+  }
+})
+
+router.post('/tadaksync-licenses/:id/revoke', async (req, res) => {
+  await db.revokeTadaksyncLicense(req.params.id)
+  res.json({ success: true })
+})
+
+router.post('/tadaksync-licenses/:id/reactivate', async (req, res) => {
+  await db.reactivateTadaksyncLicense(req.params.id)
+  res.json({ success: true })
+})
+
 router.get('/test-room', async (req, res) => {
   res.json(await db.getTestRoomConfig())
 })

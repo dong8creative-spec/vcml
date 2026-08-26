@@ -19,7 +19,14 @@ const state = {
   position: "bottom",
   busy: false,
   pendingAfterQuiz: null,
+  license: { unlocked: false, key: null, tier: null },
 };
+
+function applyLicenseState() {
+  const on = !!state.license.unlocked;
+  $("#license-box").classList.toggle("hidden", on);
+  $("#license-active").classList.toggle("hidden", !on);
+}
 
 function toast(msg, kind = "") {
   const el = document.createElement("div");
@@ -237,6 +244,7 @@ function reportAdClick(campaignId) {
 }
 
 async function maybeShowInlineAd() {
+  if (state.license.unlocked) return;
   try {
     const res = await fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad?slot=transcribe_inline`, { cache: "no-store" });
     if (!res.ok) return;
@@ -263,6 +271,7 @@ $("#btn-ad-inline-cta").addEventListener("click", () => {
 });
 
 async function maybeShowTrialAd() {
+  if (state.license.unlocked) return;
   try {
     const res = await fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad?slot=insert_popup`, { cache: "no-store" });
     if (!res.ok) return;
@@ -316,6 +325,44 @@ window.__pyEvent = (msg) => {
   }
 };
 
+async function applyLicenseKey() {
+  const key = $("#license-input").value.trim();
+  const errEl = $("#license-error");
+  errEl.classList.add("hidden");
+  if (!key) return;
+  const btn = $("#btn-license-apply");
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${VCML_API_ORIGIN}/api/subtitle/license/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ license_key: key }),
+    });
+    const data = await res.json();
+    if (!data.valid) {
+      errEl.textContent = "라이선스 키를 확인할 수 없어요. 다시 확인해주세요.";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    await state.api.save_license(key, data.tier || "lifetime");
+    state.license = { unlocked: true, key, tier: data.tier || "lifetime" };
+    applyLicenseState();
+    $("#trial-ad-overlay").classList.add("hidden");
+    $("#transcribe-ad-slot").classList.add("hidden");
+    toast("정식 라이선스가 적용됐어요. 앞으로 광고 없이 쓰실 수 있어요.", "success");
+  } catch {
+    errEl.textContent = "인터넷 연결을 확인하고 다시 시도해주세요.";
+    errEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+$("#btn-license-apply").addEventListener("click", applyLicenseKey);
+$("#license-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") applyLicenseKey();
+});
+
 async function boot() {
   const wait = () => new Promise((resolve) => {
     if (window.pywebview?.api) return resolve(window.pywebview.api);
@@ -328,6 +375,8 @@ async function boot() {
   if (!r.ok) { toast(r.error, "error"); return; }
   applyUses(r);
   state.styles = r.styles || [];
+  if (r.license) state.license = r.license;
+  applyLicenseState();
   await loadProjects();
 }
 
