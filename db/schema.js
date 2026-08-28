@@ -3353,8 +3353,12 @@ const db = {
     return { id: ref.id, ...data }
   },
 
-  /** course-catalog.js 기준으로 Firestore 강의 동기화 (수강생·후기 통계는 유지) */
-  async syncCoursesFromCatalog() {
+  /** course-catalog.js 기준으로 Firestore 강의 동기화 (수강생·후기 통계는 유지).
+   *  course-catalog.js는 코드로 관리하는 일부 강의만 담고 있고, 대부분의 강의는
+   *  관리자 페이지에서 직접 등록돼 이 파일에는 없다. 그래서 카탈로그에 없다고
+   *  비공개 처리하면 정상 운영 중인 강의가 사라진다 — unpublishMissing을 명시적으로
+   *  true로 넘길 때만 그 동작을 한다(기본은 매칭되는 강의 정보만 갱신). */
+  async syncCoursesFromCatalog({ unpublishMissing = false } = {}) {
     const { COURSES, TARGET_SLUGS } = require('./course-catalog')
     const syncFields = [
       'title', 'description', 'category', 'thumbnail_icon', 'thumb_style',
@@ -3379,7 +3383,7 @@ const db = {
         patch.rating = data.rating ?? 0
         await doc.ref.update(patch)
         updated++
-      } else if (data.is_published) {
+      } else if (unpublishMissing && data.is_published) {
         await doc.ref.update({ is_published: 0, updated_at: now() })
         unpublished++
       }
@@ -3434,6 +3438,12 @@ const db = {
     return counts
   },
 
+  // 주의: course-catalog.js는 코드로 관리하는 일부 강의만 담고 있고, 관리자
+  // 페이지에서 직접 등록한 대부분의 강의는 여기 없다. 이 함수는 "카탈로그에
+  // 없으면 삭제"이므로, 지금 운영 중인 강의를 TARGET_SLUGS에 다 넣어두지 않은
+  // 채로 실행하면 정상 강의가 통째로 삭제된다. UI 버튼은 연결돼 있지 않고
+  // scripts/delete-legacy-courses.js에서만 호출하니, 실행 전 반드시 카탈로그
+  // 목록을 실제 운영 강의와 대조할 것.
   async deleteLegacyCourses({ includeLive = false } = {}) {
     const { TARGET_SLUGS } = require('./course-catalog')
     const snap = await fs.collection('courses').get()

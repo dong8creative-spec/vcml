@@ -3466,12 +3466,12 @@
     })
 
     document.getElementById('btn-sync-catalog')?.addEventListener('click', async () => {
-      if (!confirm('카탈로그(11개) 기준으로 강의 정보를 동기화할까요?\n구버전 강의는 비공개 처리됩니다. 수강생·후기 통계는 유지됩니다.')) return
+      if (!confirm('course-catalog.js에 등록된 강의(코드로 관리하는 일부 강의)만 그 정보로 갱신할까요?\n그 목록에 없는 다른 강의는 건드리지 않습니다. 수강생·후기 통계는 유지됩니다.')) return
       const btn = document.getElementById('btn-sync-catalog')
       try {
         btn.disabled = true
         const result = await API.post('/admin/courses/sync-catalog', {})
-        alert(`동기화 완료\n· 갱신 ${result.updated}개\n· 신규 ${result.created}개\n· 구버전 비공개 ${result.unpublished}개`)
+        alert(`동기화 완료\n· 갱신 ${result.updated}개\n· 신규 ${result.created}개`)
         await loadCourses()
       } catch (e) {
         alert(e.message || '동기화 실패')
