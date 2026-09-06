@@ -26,6 +26,20 @@ def _line_target_len(line: str, remaining_norm: str, remaining_word_norm: list[s
     target = normalize_text(line)
     if not target:
         return 0
+
+    # 사용자가 단어를 고치지 않고 엔터로만 줄을 나눴다면, 이 줄의 텍스트는
+    # 남은 단어들의 정규화 문자열과 정확히 접두 일치한다 — 이 경우 유사도
+    # 추정 없이 정확한 단어 수를 바로 구한다(유사도 방식은 짧거나 반복되는
+    # 문구에서 실제와 어긋난 개수를 고를 수 있어, 고치지 않았는데도 미리듣기가
+    # 안 맞는 원인이 됐다).
+    acc = ""
+    for idx, word_norm in enumerate(remaining_word_norm, 1):
+        acc += word_norm
+        if acc == target:
+            return idx
+        if len(acc) > len(target):
+            break
+
     best_count = 1
     best_score = -1.0
     acc = ""
