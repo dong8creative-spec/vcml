@@ -13,4 +13,11 @@ tadaksync-v2/.venv/
 tadaksync-v2/build/
 tadaksync-v2/dist/
 tadaksync-v2/**/__pycache__/
+
+# 타닥싱크 3 로컬 빌드/가상환경 (소스만 커밋)
+tadaksync-v3/.venv/
+tadaksync-v3/build/
+tadaksync-v3/dist/
+tadaksync-v3/**/__pycache__/
+
 *.zip
