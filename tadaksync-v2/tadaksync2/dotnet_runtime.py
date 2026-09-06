@@ -7,6 +7,11 @@ System.Windows.Forms.ContextMenu를 찾지 못해 TypeLoadException이 나는 �
 netfx(.NET Framework, Windows 기본 내장)로 고정한다. pythonnet 3.1.0+에서는
 과거 Korean 등 비-ASCII 경로에서 나던 Python.Runtime.Loader.Initialize 오류도
 없다.
+
+환경변수(PYTHONNET_RUNTIME)만 설정하면 이후 `import clr` 시점에 clr_loader가
+그 값을 읽어 적용하는데, 시스템에 coreclr(.NET 6/8 등)가 설치돼 있으면 이 값이
+무시되고 coreclr가 먼저 선택되는 사례가 있었다. 그래서 pythonnet.load()를
+명시적으로 호출해 netfx를 강제한다.
 """
 
 from __future__ import annotations
@@ -19,3 +24,5 @@ def configure() -> None:
     if sys.platform != "win32":
         return
     os.environ.setdefault("PYTHONNET_RUNTIME", "netfx")
+    import pythonnet
+    pythonnet.load("netfx")
