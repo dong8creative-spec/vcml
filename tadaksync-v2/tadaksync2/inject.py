@@ -31,6 +31,10 @@ from .transcribe import SubtitleLine
 # v1과 같은 트랙 이름을 유지: v1/v2 어느 쪽으로 다시 삽입해도
 # 기존 AI 자막 트랙이 중복 없이 교체된다.
 TRACK_NAME = "AI 자막"
+TRACK_NAME_TRANSLATED = "AI 자막(번역)"
+TRACK_NAMES = (TRACK_NAME, TRACK_NAME_TRANSLATED)
+# 이중 자막일 때 번역 트랙을 원어보다 약간 위에 둔다.
+TRANSLATED_Y_OFFSET = 0.18
 
 Color = tuple[float, float, float]
 
@@ -239,10 +243,10 @@ def _build_content(text: str, style: SubtitleStyle, font_path: str,
 
 
 def _remove_previous_track(data: dict) -> None:
-    """이전에 삽입한 'AI 자막' 트랙과 관련 소재를 제거."""
+    """이전에 삽입한 'AI 자막' / 'AI 자막(번역)' 트랙과 관련 소재를 제거."""
     tracks = data.get("tracks") or []
     targets = [t for t in tracks
-               if t.get("type") == "text" and t.get("name") == TRACK_NAME]
+               if t.get("type") == "text" and t.get("name") in TRACK_NAMES]
     if not targets:
         return
 
@@ -260,8 +264,9 @@ def _remove_previous_track(data: dict) -> None:
 
 
 def _build_track(data: dict, lines: list[SubtitleLine],
-                 style: SubtitleStyle) -> dict:
-    """자막 라인들로 'AI 자막' 텍스트 트랙을 만들고 소재를 등록한다."""
+                 style: SubtitleStyle, *, track_name: str = TRACK_NAME,
+                 y_offset: float = 0.0) -> dict:
+    """자막 라인들로 텍스트 트랙을 만들고 소재를 등록한다."""
     mats = data.setdefault("materials", {})
     texts = mats.setdefault("texts", [])
     anims = mats.setdefault("material_animations", [])
@@ -271,10 +276,11 @@ def _build_track(data: dict, lines: list[SubtitleLine],
                            if t.get("type") == "text")
     canvas_w, canvas_h = _canvas_size(data)
     tx, ty = _resolve_transform(style, canvas_w, canvas_h)
+    ty = max(-1.0, min(1.0, ty + y_offset))
 
     track = copy.deepcopy(TRACK_TPL)
     track["id"] = _new_id()
-    track["name"] = TRACK_NAME
+    track["name"] = track_name
     if style.as_caption:
         # 캡컷 '자동 캡션'과 동일한 캡션 트랙: 소재 type을 subtitle로,
         # 트랙 flag를 1로 설정하면 캡컷이 자막(캡션) 트랙으로 취급해
@@ -339,10 +345,22 @@ def _build_track(data: dict, lines: list[SubtitleLine],
     return track
 
 
-def inject_subtitles(draft_dir: Path, lines: list[SubtitleLine],
-                     style: SubtitleStyle | None = None) -> Path:
-    """자막 라인을 캡컷 프로젝트에 삽입. 백업 파일 경로를 반환."""
+def inject_subtitles(
+    draft_dir: Path,
+    lines: list[SubtitleLine],
+    style: SubtitleStyle | None = None,
+    *,
+    translated_lines: list[SubtitleLine] | None = None,
+    inject_mode: str = "original",
+) -> Path:
+    """자막 라인을 캡컷 프로젝트에 삽입. 백업 파일 경로를 반환.
+
+    inject_mode: original | translated | both
+    """
     style = style or SubtitleStyle()
+    mode = (inject_mode or "original").strip().lower()
+    if mode not in ("original", "translated", "both"):
+        mode = "original"
     content_path = draft_dir / "draft_content.json"
     if not content_path.is_file():
         raise FileNotFoundError(f"draft_content.json이 없습니다: {draft_dir}")
@@ -358,11 +376,24 @@ def inject_subtitles(draft_dir: Path, lines: list[SubtitleLine],
 
     try:
         _remove_previous_track(data)
-        track = _build_track(data, lines, style)
-        data.setdefault("tracks", []).append(track)
-        if lines:
-            data["duration"] = max(int(data.get("duration", 0)),
-                                   max(l.end_us for l in lines))
+        all_lines: list[SubtitleLine] = []
+        if mode in ("original", "both") and lines:
+            data.setdefault("tracks", []).append(
+                _build_track(data, lines, style, track_name=TRACK_NAME))
+            all_lines.extend(lines)
+        if mode in ("translated", "both") and translated_lines:
+            y_off = TRANSLATED_Y_OFFSET if mode == "both" else 0.0
+            data.setdefault("tracks", []).append(
+                _build_track(
+                    data, translated_lines, style,
+                    track_name=TRACK_NAME_TRANSLATED,
+                    y_offset=y_off,
+                ))
+            all_lines.extend(translated_lines)
+        if not all_lines:
+            raise ValueError("삽입할 자막이 없습니다.")
+        data["duration"] = max(int(data.get("duration", 0)),
+                               max(l.end_us for l in all_lines))
 
         serialized = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
         content_path.write_text(serialized, encoding="utf-8")

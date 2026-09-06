@@ -2,10 +2,11 @@
 
 pywebview의 js_api로 노출된다. JS에서 window.pywebview.api.<메서드>(...)로
 호출하면 각 호출이 별도 스레드에서 실행되고 Promise로 반환된다.
-오래 걸리는 작업(로그인 폴링, 전문 인식)은 내부 스레드로 돌리고
-진행 상황을 window.__pyEvent({event, data}) 이벤트로 push한다.
+오래 걸리는 작업(전문 인식)은 내부 스레드로 돌리고 진행 상황을
+window.__pyEvent({event, data}) 이벤트로 push한다.
 
-코인 정책: 전문 인식 30초당 1코인, 자동 어절 1코인, 엔터 줄 나눔 2코인. 무음·미인식 시 미차감.
+로그인·코인 없음 — 전사·번역·삽입 전부 로컬에서 무료로 동작한다.
+번역은 Argos Translate(translate_local.py)로 완전 오프라인 처리한다.
 """
 
 from __future__ import annotations
@@ -18,11 +19,11 @@ import traceback
 from pathlib import Path
 
 from . import APP_NAME, VERSION
-from . import billing
 from . import capcut
 from . import license as license_api
 from . import srt as srt_io
 from . import styles
+from . import translate_local
 from .inject import inject_subtitles
 from .playback import Player
 from . import keyword_spans
@@ -31,6 +32,12 @@ from .pro_plan import build_lines_auto, build_lines_from_script, _clamp_word_ran
 from .transcribe import (LANGUAGE_CHOICES, MODEL, SR, FullScript,
                          SubtitleLine, Transcriber, _close_gaps,
                          _refine_speech_boundaries, audio_has_speech)
+
+TRANSLATION_LANGS = {
+    "en": "영어",
+    "ja": "일본어",
+    "zh": "중국어",
+}
 
 
 def _ok(**kw) -> dict:
@@ -48,7 +55,6 @@ def _project_dict(p: capcut.Project, index: int) -> dict:
         "dir": str(p.dir),
         "duration": p.duration_str,
         "duration_us": p.duration_us,
-        "estimated_coins": p.estimated_coins,
         "mtime": time.strftime("%Y-%m-%d %H:%M", time.localtime(p.mtime)),
     }
 
@@ -63,15 +69,16 @@ def _lines_to_dicts(lines: list[SubtitleLine]) -> list[dict]:
     return out
 
 
-def _dicts_to_lines(blocks: list[dict]) -> list[SubtitleLine]:
+def _dicts_to_lines(blocks: list[dict], text_key: str = "text") -> list[SubtitleLine]:
     out: list[SubtitleLine] = []
     for b in blocks:
-        raw_text = str(b.get("text") or "")
+        raw_text = str(b.get(text_key) or "")
         text = raw_text.strip()
         start = int(b.get("start_us", 0))
         end = int(b.get("end_us", 0))
         if text and end > start:
-            spans = _clean_spans(b.get("spans") or [], raw_text)
+            spans = (_clean_spans(b.get("spans") or [], raw_text)
+                     if text_key == "text" else [])
             out.append(SubtitleLine(start_us=start, end_us=end, text=text, spans=spans))
     return out
 
@@ -139,7 +146,8 @@ def _normalize_keyword_style(
 
 
 def _duration_us_from_blocks(blocks: list[dict]) -> int:
-    return billing.duration_us_from_blocks(blocks)
+    ends = [int(b.get("end_us", 0) or 0) for b in (blocks or [])]
+    return max(ends) if ends else 0
 
 
 class Api:
@@ -149,8 +157,6 @@ class Api:
         self._style_editor_url = ""
         self._editor_blocks: list[dict] = []
         self._editor_config: dict = {}
-        self._auth = license_api.load_auth()
-        self._balance = (self._auth or {}).get("balance")
         self._transcriber = Transcriber()
         self._player = Player()
 
@@ -160,17 +166,15 @@ class Api:
         self._script: FullScript | None = None
         self._duration_us: int | None = None
         self._from_transcribe = False
-        self._line_split_job_id: str | None = None
+        self._source_lang: str = ""
         self._split_mode: str | None = None
 
         self._busy = False
-        self._login_cancel: threading.Event | None = None
         self._prewarm_started = False
 
     def set_window(self, window) -> None:
         self._window = window
-        if self._auth:
-            self._prewarm_model()
+        self._prewarm_model()
 
     def set_style_editor_url(self, url: str) -> None:
         self._style_editor_url = str(url or "")
@@ -200,38 +204,6 @@ class Api:
                 f"window.__pyEvent && window.__pyEvent({payload})")
         except Exception:
             pass
-
-    def _auth_state(self) -> dict:
-        if not self._auth:
-            return {"logged_in": False}
-        return {
-            "logged_in": True,
-            "user_name": self._auth.get("user_name") or "",
-            "email": self._auth.get("email") or "",
-            "balance": self._balance,
-        }
-
-    def _save_balance(self, balance) -> None:
-        if balance is None or not self._auth:
-            return
-        self._balance = balance
-        self._auth = license_api.save_auth(
-            self._auth["token"], self._auth.get("user_name"),
-            balance, self._auth.get("email"))
-        self._emit("auth", self._auth_state())
-
-    def _apply_me_snapshot(self, me: dict) -> None:
-        if not self._auth:
-            return
-        token = me.get("token") or self._auth["token"]
-        self._balance = me.get("balance")
-        self._auth = license_api.save_auth(
-            token,
-            me.get("name") or self._auth.get("user_name"),
-            self._balance,
-            me.get("email") or self._auth.get("email"),
-        )
-        self._emit("auth", self._auth_state())
 
     def _prewarm_model(self) -> None:
         if self._prewarm_started:
@@ -263,70 +235,10 @@ class Api:
             running = False
         return _ok(
             app={"name": APP_NAME, "version": VERSION},
-            auth=self._auth_state(),
             languages=list(LANGUAGE_CHOICES.keys()),
             styles=styles.list_presets(),
             capcut_running=running,
-            billing=billing.billing_meta(),
         )
-
-    def refresh_me(self) -> dict:
-        """서버에서 잔액/권한 재확인. 401/403이면 로그아웃 처리."""
-        if not self._auth:
-            return _err("로그인이 필요해요.", logged_in=False)
-        try:
-            me = license_api.verify_entitlement(self._auth["token"])
-            self._apply_me_snapshot(me)
-            self._prewarm_model()
-            pending = me.get("pending_actions") or []
-            if pending:
-                self._emit("pending_actions", pending)
-            return _ok(
-                auth=self._auth_state(),
-                coin_courses=me.get("coin_courses") or [],
-                smartstore_review=me.get("smartstore_review") or {},
-                pending_actions=pending,
-            )
-        except RuntimeError as e:
-            status = getattr(e, "status", None)
-            if status in (401, 403):
-                license_api.clear_auth()
-                self._auth = None
-                self._balance = None
-                self._emit("auth", self._auth_state())
-                return _err(str(e), logged_out=True)
-            return _err(str(e))
-
-    def claim_smartstore_review(self) -> dict:
-        if not self._auth:
-            return _err("로그인이 필요해요.")
-        try:
-            result = license_api.claim_smartstore_review(self._auth["token"])
-            me = license_api.fetch_me(self._auth["token"])
-            self._apply_me_snapshot(me)
-            return _ok(
-                result=result,
-                auth=self._auth_state(),
-                coin_courses=me.get("coin_courses") or [],
-                smartstore_review=me.get("smartstore_review") or {},
-            )
-        except RuntimeError as e:
-            return _err(str(e))
-
-    def ack_inbox(self, message_ids: list) -> dict:
-        if not self._auth:
-            return _err("로그인이 필요해요.")
-        ids = [str(x) for x in (message_ids or []) if x]
-        if not ids:
-            return _ok()
-        try:
-            license_api.ack_inbox(self._auth["token"], ids)
-            return _ok()
-        except RuntimeError as e:
-            return _err(str(e))
-
-    def review_write_url(self, course_id: str | None = None) -> dict:
-        return _ok(url=license_api.review_write_url(course_id))
 
     # --------------------------------------------------------------- 광고
     def get_banner_ad(self, slot: str) -> dict:
@@ -335,54 +247,6 @@ class Api:
     def report_ad_click(self, campaign_id: str) -> dict:
         license_api.report_ad_click(campaign_id)
         return _ok()
-
-    # --------------------------------------------------------------- 로그인
-    def start_login(self) -> dict:
-        if self._login_cancel is not None:
-            return _err("이미 로그인 진행 중이에요.")
-        cancel = threading.Event()
-        self._login_cancel = cancel
-
-        def worker() -> None:
-            try:
-                auth = license_api.start_device_login(
-                    on_status=lambda m: self._emit("login_status", {"message": m}),
-                    on_code=lambda code, url: self._emit(
-                        "login_code", {"code": code, "url": url}),
-                    cancel_event=cancel,
-                )
-                self._auth = auth
-                self._balance = auth.get("balance")
-                self._emit("auth", self._auth_state())
-                self._prewarm_model()
-            except Exception as e:
-                if str(e) != "cancelled":
-                    self._emit("login_error", {"message": str(e) or "로그인에 실패했어요."})
-            finally:
-                self._login_cancel = None
-
-        threading.Thread(target=worker, daemon=True).start()
-        return _ok()
-
-    def cancel_login(self) -> dict:
-        if self._login_cancel is not None:
-            self._login_cancel.set()
-        return _ok()
-
-    def logout(self) -> dict:
-        license_api.clear_auth()
-        self._auth = None
-        self._balance = None
-        return _ok(auth=self._auth_state())
-
-    def fetch_history(self) -> dict:
-        if not self._auth:
-            return _err("로그인이 필요해요.")
-        try:
-            history = license_api.fetch_history(self._auth["token"])
-            return _ok(history=history)
-        except RuntimeError as e:
-            return _err(str(e))
 
     # ------------------------------------------------------------- 프로젝트
     def list_projects(self) -> dict:
@@ -422,15 +286,9 @@ class Api:
 
     # ------------------------------------------------------------- 전문 인식
     def start_transcribe(self, project_index: int, language_label: str) -> dict:
-        """전문 인식 시작 (백그라운드). 진행/완료는 이벤트로 push.
-
-        코인: 비어 있지 않은 전문이 나온 뒤에만 차감. 무음·미인식은 미차감.
-        전문 확정 후에는 환불하지 않음.
-        """
+        """전문 인식 시작 (백그라운드). 진행/완료는 이벤트로 push."""
         if self._busy:
             return _err("이미 작업이 진행 중이에요.")
-        if not self._auth:
-            return _err("로그인이 필요해요.")
         try:
             project = self._projects[int(project_index)]
         except (IndexError, ValueError):
@@ -447,10 +305,6 @@ class Api:
     def _transcribe_worker(self, project: capcut.Project, language) -> None:
         status = lambda m: self._emit("progress", {"message": m})
         ratio = lambda r: self._emit("progress_ratio", {"ratio": max(0.0, min(1.0, r))})
-        job_id = None
-        token = self._auth["token"] if self._auth else None
-        consumed = False
-        script_committed = False  # 전문 확정 후에는 환불 불가
         try:
             status(f"[{project.name}] 타임라인 오디오를 분석하고 있어요...")
             res = capcut.build_timeline_audio(project)
@@ -460,143 +314,38 @@ class Api:
 
             status("발화(말)가 있는지 확인하고 있어요…")
             if not audio_has_speech(res.audio):
-                raise RuntimeError(
-                    "오디오에서 말을 찾지 못했어요. 작업이 취소되었고 코인은 차감되지 않았어요.")
+                raise RuntimeError("오디오에서 말을 찾지 못했어요.")
 
-            minutes = license_api.minutes_from_audio(len(res.audio), SR)
-            duration_us = res.duration_us or billing.duration_us_from_audio(
-                len(res.audio), SR)
-            recognition_coin_cost = billing.recognition_coins(duration_us)
-            if token:
-                try:
-                    me = license_api.fetch_me(token)
-                    balance = int(me.get("balance") or 0)
-                    self._save_balance(balance)
-                    if balance < recognition_coin_cost:
-                        raise RuntimeError(
-                            f"코인이 부족해요. (필요 {recognition_coin_cost}개, 보유 {balance}개)")
-                except RuntimeError as e:
-                    payload = getattr(e, "payload", {}) or {}
-                    if payload.get("code") == "insufficient":
-                        raise RuntimeError(
-                            f"코인이 부족해요. (필요 {recognition_coin_cost}개, 보유 "
-                            f"{payload.get('balance', '?')}개)") from e
-                    if getattr(e, "status", None) in (401, 403):
-                        license_api.clear_auth()
-                        self._auth = None
-                        self._balance = None
-                        self._emit("auth", self._auth_state())
-                        raise RuntimeError("로그인이 만료됐어요. 다시 로그인해 주세요.") from e
-                    if "코인이 부족" in str(e):
-                        raise
-                    cached = self._balance
-                    if cached is not None and int(cached) < recognition_coin_cost:
-                        raise RuntimeError(
-                            f"코인이 부족해요. (필요 {recognition_coin_cost}개, 보유 "
-                            f"{int(cached)}개)") from e
-                    status(
-                        "서버에서 잔액을 확인하지 못했어요. 인식은 계속 진행합니다… "
-                        "(차감 단계에서 다시 확인돼요)")
+            duration_us = res.duration_us or int(len(res.audio) * 1_000_000 / SR)
+            minutes = max(1, -(-duration_us // 60_000_000))
             self._transcriber.load(MODEL, progress=status)
             script = self._transcriber.transcribe_full_script(
                 res.audio, language=language,
                 progress=status, progress_ratio=ratio)
             if not (script.text or "").strip():
-                raise RuntimeError(
-                    "자막으로 인식된 내용이 없어요. 작업이 취소되었고 코인은 차감되지 않았어요.")
-
-            # 전문이 확보된 뒤에만 차감 — 이후에는 환불하지 않음
-            job_id = license_api.new_job_id()
-            status(
-                f"코인 {recognition_coin_cost}개를 차감하고 있어요… "
-                f"(타임라인 약 {minutes}분 · 30초당 1코인)")
-            try:
-                consumed_res = license_api.consume(token, duration_us, job_id)
-            except Exception as e:
-                payload = getattr(e, "payload", {}) or {}
-                if payload.get("code") == "insufficient":
-                    raise RuntimeError(
-                        f"코인이 부족해요. (필요 {recognition_coin_cost}개, 보유 "
-                        f"{payload.get('balance', '?')}개)") from e
-                if getattr(e, "status", None) in (401, 403):
-                    license_api.clear_auth()
-                    self._auth = None
-                    self._balance = None
-                    self._emit("auth", self._auth_state())
-                    raise RuntimeError("로그인이 만료됐어요. 다시 로그인해 주세요.") from e
-                if getattr(e, "status", None) == 500:
-                    raise RuntimeError(
-                        "음성 인식은 완료됐지만 코인 차감 중 서버 오류가 발생했어요. "
-                        "캡컷 문제가 아닙니다. 잠시 후 다시 시도하거나 프로그램에서 다시 로그인해 보세요."
-                    ) from e
-                raise
-            consumed = True
-            script_committed = True
-            self._save_balance(consumed_res.get("balance"))
+                raise RuntimeError("자막으로 인식된 내용이 없어요.")
 
             self._audio = res.audio
             self._script = script
             self._duration_us = duration_us
             self._from_transcribe = True
-            self._line_split_job_id = None
+            self._source_lang = script.language or ""
             self._emit("script_ready", {
                 "text": script.text,
                 "language": script.language,
                 "minutes": minutes,
                 "duration_us": duration_us,
-                "recognition_coins": recognition_coin_cost,
-                "line_split_auto_coins": billing.line_split_coins(duration_us, "auto"),
-                "line_split_manual_coins": billing.line_split_coins(duration_us, "manual"),
-                "line_split_coins": billing.line_split_coins(duration_us, "auto"),
                 "missing_files": res.missing_files,
             })
         except Exception as e:
             traceback.print_exc()
-            # 전문 확정(차감 완료) 이후에는 어떤 경우에도 환불하지 않음
-            if consumed and (not script_committed) and job_id and token:
-                try:
-                    refunded = license_api.refund(token, job_id)
-                    self._save_balance(refunded.get("balance"))
-                    status("작업에 실패해서 차감된 코인을 환불했어요.")
-                except Exception:
-                    traceback.print_exc()
             self._emit("transcribe_error", {"message": str(e) or "전문 인식에 실패했어요."})
         finally:
             self._busy = False
 
     # ------------------------------------------------------------- 자막 블록
-    def _charge_line_split(self, duration_us: int, split_mode: str) -> dict:
-        """인식 경로에서 줄 나눔 코인 차감. ok/err dict 반환."""
-        mode = billing.normalize_line_split_mode(split_mode)
-        need = billing.line_split_coins(duration_us, mode)
-        if not (self._from_transcribe and self._auth):
-            return _ok(line_split_coins=0, split_mode=mode)
-        if not self._line_split_job_id:
-            self._line_split_job_id = license_api.new_job_id()
-        try:
-            charged = license_api.consume_line_split(
-                self._auth["token"], duration_us, self._line_split_job_id, mode)
-        except Exception as e:
-            payload = getattr(e, "payload", {}) or {}
-            if payload.get("code") == "insufficient":
-                return _err(
-                    f"줄 나눔 코인이 부족해요. (필요 {need}개, 보유 "
-                    f"{payload.get('balance', '?')}개)",
-                    needed=need, balance=payload.get("balance"))
-            if getattr(e, "status", None) in (401, 403):
-                license_api.clear_auth()
-                self._auth = None
-                self._balance = None
-                self._emit("auth", self._auth_state())
-                return _err("로그인이 만료됐어요. 다시 로그인해 주세요.")
-            return _err(str(e) or "줄 나눔 코인 차감에 실패했어요.")
-        self._save_balance(charged.get("balance"))
-        self._split_mode = mode
-        coins = charged.get("coins", need)
-        return _ok(line_split_coins=coins, split_mode=mode, balance=charged.get("balance"))
-
     def build_blocks_auto(self, *word_args: int) -> dict:
-        """자동 어절 분할 → 타임코드 블록 (1코인).
+        """자동 어절 분할 → 타임코드 블록.
 
         인자: (max,) 또는 (min, max) — pywebview/구버전 호환.
         """
@@ -616,19 +365,11 @@ class Api:
         blocks = _lines_to_dicts(lines)
         duration_us = _duration_us_from_blocks(blocks) or self._duration_us or 0
         self._duration_us = duration_us
-        charged = self._charge_line_split(duration_us, "auto")
-        if not charged.get("ok"):
-            return charged
-        return _ok(
-            blocks=blocks,
-            duration_us=duration_us,
-            line_split_coins=charged.get("line_split_coins", 0),
-            split_mode="auto",
-            balance=charged.get("balance"),
-        )
+        self._split_mode = "auto"
+        return _ok(blocks=blocks, duration_us=duration_us, split_mode="auto")
 
     def build_blocks(self, script_text: str) -> dict:
-        """엔터로 나눈 전문 → 타임코드 자막 블록 (2코인)."""
+        """엔터로 나눈 전문 → 타임코드 자막 블록."""
         if not self._script:
             return _err("먼저 전문을 인식해 주세요.")
         lines = build_lines_from_script(script_text or "", self._script.words)
@@ -639,15 +380,44 @@ class Api:
         blocks = _lines_to_dicts(lines)
         duration_us = _duration_us_from_blocks(blocks) or self._duration_us or 0
         self._duration_us = duration_us
-        charged = self._charge_line_split(duration_us, "manual")
-        if not charged.get("ok"):
-            return charged
+        self._split_mode = "manual"
+        return _ok(blocks=blocks, duration_us=duration_us, split_mode="manual")
+
+    # --------------------------------------------------------------- 번역
+    def translate_blocks(self, blocks: list[dict], target_lang: str) -> dict:
+        """블록별 번역(Argos Translate, 완전 오프라인·무료)."""
+        if self._busy:
+            return _err("이미 작업이 진행 중이에요.")
+        lang = str(target_lang or "").strip().lower()
+        if lang not in TRANSLATION_LANGS:
+            return _err("지원하지 않는 번역 언어예요. (영어/일본어/중국어)")
+        safe_blocks = []
+        for b in blocks or []:
+            text = str(b.get("text") or "").strip()
+            start = int(b.get("start_us", 0) or 0)
+            end = int(b.get("end_us", 0) or 0)
+            if text and end > start:
+                item = {"start_us": start, "end_us": end, "text": text}
+                if b.get("spans"):
+                    item["spans"] = b.get("spans")
+                safe_blocks.append(item)
+        if not safe_blocks:
+            return _err("번역할 자막 블록이 없어요.")
+
+        source_lang = self._source_lang or (
+            self._script.language if self._script else "")
+        self._busy = True
+        try:
+            out_blocks = translate_local.translate_blocks(safe_blocks, lang, source_lang)
+        except Exception as e:
+            traceback.print_exc()
+            return _err(str(e) or "번역에 실패했어요.")
+        finally:
+            self._busy = False
         return _ok(
-            blocks=blocks,
-            duration_us=duration_us,
-            line_split_coins=charged.get("line_split_coins", 0),
-            split_mode="manual",
-            balance=charged.get("balance"),
+            blocks=out_blocks,
+            target_lang=lang,
+            target_language_label=TRANSLATION_LANGS[lang],
         )
 
     def scan_keyword(self, blocks: list[dict], keyword: str,
@@ -817,7 +587,7 @@ class Api:
         block_dicts = _lines_to_dicts(lines)
         self._duration_us = _duration_us_from_blocks(block_dicts)
         self._from_transcribe = False
-        self._line_split_job_id = None
+        self._source_lang = ""
         return _ok(blocks=block_dicts, project=self._project.name)
 
     def export_srt(self, blocks: list[dict]) -> dict:
@@ -858,7 +628,8 @@ class Api:
     # ---------------------------------------------------------------- 삽입
     def inject(self, blocks: list[dict], style_key: str,
                size: str = "medium", position: str = "bottom",
-               project_index: int | None = None) -> dict:
+               project_index: int | None = None,
+               inject_mode: str = "original") -> dict:
         # 삽입 시점의 UI 선택을 최종 기준으로 다시 고정 (SRT/인식 공통)
         if project_index is None:
             return _err("프로젝트를 먼저 선택해 주세요.")
@@ -866,25 +637,29 @@ class Api:
         if not sel.get("ok"):
             return sel
         lines = _dicts_to_lines(blocks or [])
-        if not lines:
+        translated_lines = _dicts_to_lines(blocks or [], text_key="text_translated")
+        if inject_mode in ("original", "both") and not lines:
             return _err("삽입할 자막이 없어요.")
+        if inject_mode in ("translated", "both") and not translated_lines:
+            return _err("번역된 자막이 없어요. 먼저 번역을 실행해 주세요.")
         style = styles.build_style(style_key, size=size, position=position)
         try:
-            backup = inject_subtitles(self._project.dir, lines, style)
+            backup = inject_subtitles(
+                self._project.dir, lines, style,
+                translated_lines=(translated_lines
+                                  if inject_mode in ("translated", "both") else None),
+                inject_mode=inject_mode,
+            )
         except Exception as e:
             traceback.print_exc()
             return _err(f"삽입에 실패했어요: {e}")
-        return _ok(count=len(lines), backup=str(backup),
-                   project=self._project.name)
+        count = len(lines) if inject_mode in ("original", "both") else 0
+        if inject_mode in ("translated", "both"):
+            count += len(translated_lines)
+        return _ok(count=count, backup=str(backup),
+                   project=self._project.name, inject_mode=inject_mode)
 
     # ---------------------------------------------------------------- 기타
-    def open_url(self, url: str) -> dict:
-        import webbrowser
-        if not str(url).startswith(license_api.api_base()):
-            return _err("허용되지 않은 주소예요.")
-        webbrowser.open(str(url))
-        return _ok()
-
     def open_external_link(self, url: str) -> dict:
         """광고 등 외부(광고주) 링크를 앱 창이 아니라 기본 브라우저로 연다."""
         import webbrowser

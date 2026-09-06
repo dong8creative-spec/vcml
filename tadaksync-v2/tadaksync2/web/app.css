@@ -80,30 +80,6 @@ b { font-weight: 700; }
 }
 .icon-btn:hover { color: var(--text); background: var(--panel-3); }
 
-/* ─────────── 로그인 게이트 ─────────── */
-.gate {
-  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-  background:
-    radial-gradient(900px 480px at 70% 20%, rgba(200,255,0,.08), transparent 55%),
-    var(--bg);
-  z-index: 50;
-}
-.gate-card { max-width: 520px; padding: 48px; text-align: center; }
-.gate-card .brand-mark { justify-content: center; margin-bottom: 34px; }
-.gate-card h1 { font-size: 32px; line-height: 1.3; font-weight: 800; letter-spacing: -0.01em; }
-.gate-desc { color: var(--muted); margin: 18px 0 32px; }
-.gate-status { color: var(--muted); margin: 16px 0; }
-.gate-error { color: var(--danger); margin-top: 16px; }
-.login-code-box {
-  background: var(--panel); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 18px; margin: 0 auto; max-width: 260px;
-}
-.login-code-label { font-size: 12px; color: var(--muted); letter-spacing: .08em; }
-.login-code {
-  font-size: 34px; font-weight: 800; letter-spacing: .3em; color: var(--lime);
-  margin-top: 4px; text-shadow: 0 0 24px var(--lime-glow);
-}
-
 /* ─────────── 셸 레이아웃 ─────────── */
 .shell { display: flex; height: 100vh; }
 .sidebar {
@@ -153,33 +129,10 @@ b { font-weight: 700; }
   opacity: 1;
 }
 
-/* ─────────── 계정 카드 ─────────── */
-.account-card {
-  position: relative; margin-top: 14px;
-  background: var(--panel); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 14px;
+/* ─────────── 무료 안내 ─────────── */
+.free-note {
+  margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.45;
 }
-.account-row { display: flex; align-items: center; justify-content: space-between; }
-.account-name { font-weight: 700; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.coin-chip {
-  display: inline-flex; align-items: center; gap: 7px; margin-top: 9px;
-  background: var(--lime-dim); color: var(--lime);
-  border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: 12.5px;
-}
-.coin-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); }
-.account-menu {
-  position: absolute; bottom: calc(100% + 8px); left: 0; right: 0;
-  background: var(--panel-2); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); overflow: hidden; z-index: 5;
-  box-shadow: 0 12px 32px rgba(0,0,0,.5);
-}
-.account-menu button {
-  display: block; width: 100%; text-align: left; padding: 11px 14px;
-  background: none; border: none; color: var(--text);
-  font-family: inherit; font-size: 13px; cursor: pointer;
-}
-.account-menu button:hover { background: var(--panel-3); }
-.account-menu button.danger { color: var(--danger); }
 
 /* ─────────── 뷰 공통 ─────────── */
 .view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
@@ -347,7 +300,6 @@ select:focus { border-color: var(--lime); }
 .split-choice-card:hover { border-color: var(--lime); box-shadow: 0 0 0 1px var(--lime-dim); }
 .split-choice-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
 .split-choice-desc { font-size: 13px; color: var(--muted); line-height: 1.55; min-height: 40px; }
-.split-choice-coin { margin-top: 14px; font-size: 13px; color: var(--lime); font-weight: 700; }
 .split-auto-options {
   display: flex; flex-wrap: wrap; gap: 12px 18px; margin: 12px 0 8px;
 }
@@ -446,6 +398,14 @@ select:focus { border-color: var(--lime); }
 }
 .block-text:hover { border-color: var(--border); }
 .block-text:focus { border-color: var(--lime); background: var(--panel-2); }
+.block-text-translated {
+  width: 100%;
+  background: transparent; border: 1px solid transparent; border-radius: 7px;
+  color: var(--muted); font-family: inherit; font-size: 13px; font-style: italic;
+  padding: 4px 10px; outline: none; user-select: text;
+}
+.block-text-translated:hover { border-color: var(--border); }
+.block-text-translated:focus { border-color: var(--lime); background: var(--panel-2); color: var(--text); }
 .block-span-hint { font-size: 11.5px; color: var(--muted); padding-left: 10px; }
 .block-btns { grid-column: 4; display: flex; gap: 2px; flex: none; }
 .block-btns .icon-btn.play:hover { color: var(--lime); }
@@ -530,8 +490,6 @@ select:focus { border-color: var(--lime); }
 #done-msg { margin-bottom: 8px; font-weight: 600; }
 .done-actions { display: flex; gap: 12px; justify-content: center; margin-top: 26px; }
 
-.history-list { max-height: 50vh; overflow-y: auto; }
-
 /* ─────────── DEV dock (TADAKSYNC_DEV=1) ─────────── */
 .dev-dock {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999;
@@ -551,21 +509,6 @@ select:focus { border-color: var(--lime); }
 }
 .dev-log-row { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dev-log-row:nth-child(odd) { opacity: .92; }
-.history-row {
-  display: flex; justify-content: space-between; gap: 14px;
-  padding: 11px 4px; border-bottom: 1px solid var(--border-soft); font-size: 13px;
-}
-.history-row .h-when { color: var(--muted); flex: none; }
-.history-row .h-delta { font-weight: 800; flex: none; }
-.history-row .h-delta.plus { color: var(--lime); }
-.history-row .h-delta.minus { color: var(--danger); }
-
-.review-sep {
-  border: none; border-top: 1px solid var(--border-soft); margin: 16px 0;
-}
-.review-h3 {
-  margin: 0 0 8px; font-size: 14px; font-weight: 800; color: var(--text);
-}
 
 /* ─────────── 토스트 ─────────── */
 #toast-root {

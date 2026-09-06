@@ -3,3 +3,4 @@ numpy
 pywebview>=5
 pyinstaller>=6.0
 pyinstaller-hooks-contrib>=2024.0
+argostranslate>=1.9.0

@@ -140,11 +140,6 @@ class Project:
         s = self.duration_us / US
         return f"{int(s // 60)}:{s % 60:05.2f}"
 
-    @property
-    def estimated_coins(self) -> int:
-        from . import billing
-        return billing.recognition_coins(self.duration_us)
-
 
 def list_projects() -> list[Project]:
     """draft_content.json이 있는 캡컷 프로젝트를 최근 수정순으로 나열."""

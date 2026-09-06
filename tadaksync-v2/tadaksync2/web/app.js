@@ -15,7 +15,6 @@ const state = {
   step: 1,
   maxStep: 1,              // 방문·해금된 최고 단계 (2는 진행 화면이라 내비 제외)
   unlocked: { 1: true },   // 클릭으로 갈 수 있는 단계
-  auth: { logged_in: false },
   languages: [],
   styles: [],
   projects: [],
@@ -27,13 +26,11 @@ const state = {
   styleKey: "classic",
   size: "medium",
   position: "bottom",
+  injectMode: "original",   // 'original' | 'translated' | 'both'
   highlightColor: "#ffef3b",
   recentHighlightColors: ["#ffef3b", "#00e5ff", "#ff5c8a", "#c8ff00"],
   playingIdx: null,
   busy: false,
-  coinCourses: [],
-  smartstoreReview: {},
-  shownInboxIds: new Set(),
   keywordScan: null,
   blocksUndo: null,
   styleEditorOpen: false,
@@ -133,6 +130,7 @@ function gotoStep(n, opts = {}) {
   if (n === 3) updateLineCount();
   if (n === 4) {
     renderBlocks();
+    updateInjectModeVisibility();
     if (state.blocks.length) openStyleEditor({ silent: true });
     else closeStyleEditor();
   } else {
@@ -144,32 +142,6 @@ function gotoStep(n, opts = {}) {
 function onStepNavClick(n) {
   if (!canGoToStep(n)) return;
   gotoStep(n, { unlock: false });
-}
-
-/* ───────────────────────── 인증 ───────────────────────── */
-
-function renderAuth() {
-  const a = state.auth;
-  if (!a.logged_in) {
-    $("#login-gate").classList.remove("hidden");
-    $("#shell").classList.add("hidden");
-    $("#login-idle").classList.remove("hidden");
-    $("#login-pending").classList.add("hidden");
-    return;
-  }
-  $("#login-gate").classList.add("hidden");
-  $("#shell").classList.remove("hidden");
-  $("#acc-name").textContent = a.user_name || a.email || "수강생";
-  $("#acc-balance").textContent = (a.balance ?? "—");
-}
-
-async function startLogin() {
-  $("#login-error").classList.add("hidden");
-  $("#login-idle").classList.add("hidden");
-  $("#login-pending").classList.remove("hidden");
-  $("#login-code").textContent = "·····";
-  $("#login-status").textContent = "연동 코드를 발급받고 있어요…";
-  await state.api.start_login();
 }
 
 /* ───────────────────────── 프로젝트 ───────────────────────── */
@@ -193,7 +165,6 @@ function renderProjects() {
   grid.innerHTML = "";
   $("#project-empty").classList.toggle("hidden", state.projects.length > 0);
   for (const p of state.projects) {
-    const coins = p.estimated_coins ?? 1;
     const card = document.createElement("div");
     card.className = "project-card" +
       (state.selectedProject?.index === p.index ? " selected" : "");
@@ -201,11 +172,9 @@ function renderProjects() {
       <div class="p-name" title="${esc(p.name)}">${esc(p.name)}</div>
       <div class="p-meta">
         <div class="p-dur-row">
-          <span class="p-badge" title="영상 최종길이 · 예상 코인">
+          <span class="p-badge" title="영상 최종길이">
             <span class="p-badge-label">최종길이</span>
             <span class="p-badge-val">${esc(p.duration)}</span>
-            <span class="p-badge-sep">·</span>
-            <span class="p-badge-coin">🪙 ${esc(coins)}</span>
           </span>
         </div>
         <div class="p-mtime">프로젝트 최신 수정일자 ${esc(p.mtime)}</div>
@@ -277,10 +246,6 @@ function onScriptReady(data) {
   if (data.missing_files && data.missing_files.length) {
     toast(`원본 파일 ${data.missing_files.length}개를 찾지 못해 일부 구간이 빠졌을 수 있어요.`, "warn");
   }
-  const autoCoins = data.line_split_auto_coins ?? data.line_split_coins ?? 1;
-  const manualCoins = data.line_split_manual_coins ?? 2;
-  $("#split-auto-coins").textContent = autoCoins;
-  $("#split-manual-coins").textContent = manualCoins;
   $("#progress-stage").classList.add("hidden");
   $("#split-choice").classList.remove("hidden");
   gotoStep(2);
@@ -306,11 +271,6 @@ async function chooseSplitAuto() {
     if (!res.ok) { toast(res.error, "error"); return; }
     state.splitMode = "auto";
     state.blocks = res.blocks;
-    if (res.line_split_coins) {
-      toast(`자동 어절 나누기 (${minW}~${maxW}어절) · ${res.line_split_coins}코인 차감`, "success");
-      if (res.balance != null && state.auth) state.auth.balance = res.balance;
-      renderAuth();
-    }
     gotoStep(4);
   } catch (e) {
     toast(e?.message || "자동 어절 나누기에 실패했어요.", "error");
@@ -340,12 +300,36 @@ async function buildBlocks() {
   if (!res.ok) { toast(res.error, "error"); return; }
   state.splitMode = "manual";
   state.blocks = res.blocks;
-  if (res.line_split_coins) {
-    toast(`엔터 줄 나누기 · ${res.line_split_coins}코인 차감`, "success");
-    if (res.balance != null && state.auth) state.auth.balance = res.balance;
-    renderAuth();
-  }
   gotoStep(4);
+}
+
+/* ───────────────────────── 번역 ───────────────────────── */
+
+function updateInjectModeVisibility() {
+  const hasTranslated = state.blocks.some((b) => (b.text_translated || "").trim());
+  $("#opt-inject-mode").classList.toggle("hidden", !hasTranslated);
+  if (!hasTranslated) {
+    state.injectMode = "original";
+    $$("#seg-inject-mode button").forEach((b) => b.classList.toggle("on", b.dataset.v === "original"));
+  }
+}
+
+async function translateBlocks() {
+  const lang = $("#sel-translate-lang").value;
+  if (!lang) { toast("번역할 언어를 선택해 주세요.", "warn"); return; }
+  if (!state.blocks.length) { toast("번역할 자막 블록이 없어요.", "warn"); return; }
+  const btn = $("#btn-translate");
+  btn.disabled = true;
+  try {
+    const res = await state.api.translate_blocks(state.blocks, lang);
+    if (!res.ok) { toast(res.error, "error"); return; }
+    state.blocks = res.blocks;
+    renderBlocks();
+    updateInjectModeVisibility();
+    toast(`${res.target_language_label}로 번역했어요.`, "success");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function remapSpansOnTextChange(oldText, newText, spans) {
@@ -429,6 +413,9 @@ function renderBlocks() {
     row.className = "block-row" + (state.playingIdx === i ? " playing" : "");
     const spanHint = (b.spans && b.spans.length)
       ? `<span class="block-span-hint">${b.spans.length}개 강조</span>` : "";
+    const hasTranslated = (b.text_translated || "").trim().length > 0;
+    const translatedRow = hasTranslated
+      ? `<input class="block-text-translated" value="${esc(b.text_translated)}">` : "";
     row.innerHTML = `
       <span class="block-idx">${i + 1}</span>
       <span class="block-time">
@@ -438,6 +425,7 @@ function renderBlocks() {
       </span>
       <div class="block-text-wrap">
         <input class="block-text" value="${esc(b.text)}">
+        ${translatedRow}
         ${spanHint}
       </div>
       <span class="block-btns">
@@ -460,6 +448,9 @@ function renderBlocks() {
       b.text = e.target.value;
       b.spans = remapSpansOnTextChange(prev, b.text, b.spans || []);
       scheduleSyncEditorBlocks();
+    });
+    row.querySelector(".block-text-translated")?.addEventListener("input", (e) => {
+      b.text_translated = e.target.value;
     });
     row.querySelector(".play").addEventListener("click", async () => {
       if (state.playingIdx === i) {
@@ -576,7 +567,7 @@ async function doInject() {
   try {
     const res = await state.api.inject(
       state.blocks, state.styleKey, state.size, state.position,
-      state.selectedProject.index);
+      state.selectedProject.index, state.injectMode);
     if (!res.ok) { toast(res.error, "error"); return; }
     $("#done-msg").textContent =
       `「${res.project}」에 자막 ${res.count}개를 삽입했어요.`;
@@ -593,6 +584,10 @@ function resetJob() {
   state.playingIdx = null;
   state.fromSrt = false;
   state.busy = false;
+  state.injectMode = "original";
+  $$("#seg-inject-mode button").forEach((b) => b.classList.toggle("on", b.dataset.v === "original"));
+  $("#opt-inject-mode").classList.add("hidden");
+  $("#sel-translate-lang").value = "";
   state.unlocked = { 1: true };
   state.maxStep = 1;
   $("#script-editor").value = "";
@@ -600,138 +595,6 @@ function resetJob() {
   state.selectedProject = null;
   gotoStep(1);
   loadProjects();
-}
-
-/* ───────────────────────── 사용 내역 ───────────────────────── */
-
-async function openHistory() {
-  $("#account-menu").classList.add("hidden");
-  $("#history-overlay").classList.remove("hidden");
-  const list = $("#history-list");
-  list.innerHTML = '<p class="sub">불러오는 중…</p>';
-  const res = await state.api.fetch_history();
-  if (!res.ok) { list.innerHTML = `<p class="sub">${esc(res.error)}</p>`; return; }
-  if (!res.history.length) { list.innerHTML = '<p class="sub">아직 내역이 없어요.</p>'; return; }
-  list.innerHTML = res.history.map((h) => {
-    const delta = h.delta ?? h.amount ?? 0;
-    const plus = delta > 0;
-    return `<div class="history-row">
-      <span class="h-when">${esc(h.created_at || h.when || "")}</span>
-      <span class="h-desc">${esc(h.description || h.reason || h.type || "")}</span>
-      <span class="h-delta ${plus ? "plus" : "minus"}">${plus ? "+" : ""}${delta}</span>
-    </div>`;
-  }).join("");
-}
-
-function applyMeExtras(r) {
-  if (!r) return;
-  if (r.coin_courses) state.coinCourses = r.coin_courses;
-  if (r.smartstore_review) state.smartstoreReview = r.smartstore_review;
-  if (r.pending_actions) handlePendingActions(r.pending_actions);
-}
-
-function handlePendingActions(actions) {
-  const ids = [];
-  for (const action of actions || []) {
-    const id = String(action.id || "");
-    if (!id || state.shownInboxIds.has(id)) continue;
-    state.shownInboxIds.add(id);
-    const typ = action.type;
-    const body = action.body || "";
-    if (typ === "smartstore_rewrite") {
-      toast(body || "스마트스토어 후기를 아직 확인하지 못했어요. 작성 후 다시 「작성 완료」를 눌러 주세요.", "warn");
-      ids.push(id);
-    } else if (typ === "smartstore_granted") {
-      toast(body || "스마트스토어 후기 보너스 코인이 지급됐어요!", "success");
-      ids.push(id);
-    }
-  }
-  if (ids.length) state.api.ack_inbox(ids).catch(() => {});
-}
-
-async function openReviewGuide() {
-  $("#account-menu").classList.add("hidden");
-  $("#review-overlay").classList.remove("hidden");
-  $("#review-courses").innerHTML = '<p class="sub">불러오는 중…</p>';
-  $("#review-smartstore").innerHTML = "";
-  const r = await state.api.refresh_me();
-  if (!r.ok) {
-    $("#review-courses").innerHTML = `<p class="sub">${esc(r.error || "불러오지 못했어요.")}</p>`;
-    return;
-  }
-  applyMeExtras(r);
-  state.auth = r.auth;
-  renderAuth();
-  renderReviewGuide();
-}
-
-function renderReviewGuide() {
-  const pending = (state.coinCourses || []).filter((c) => !c.review_bonus_granted);
-  const coursesEl = $("#review-courses");
-  if (!pending.length) {
-    coursesEl.innerHTML = '<p class="sub">수강 후기 보너스를 모두 받으셨어요. 감사합니다!</p>';
-  } else {
-    coursesEl.innerHTML = pending.map((c) => {
-      const title = esc(c.course_title || "수강 강의");
-      const bonus = Number(c.review_bonus_coins || 50).toLocaleString();
-      const cid = esc(c.course_id || "");
-      return `<button class="btn btn-ghost review-course-btn" data-course-id="${cid}" style="width:100%;margin-bottom:8px;justify-content:flex-start">
-        ${title} 후기 작성하기 (+${bonus}코인)
-      </button>`;
-    }).join("");
-    $$(".review-course-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const r = await state.api.review_write_url(btn.dataset.courseId || null);
-        if (r.ok && r.url) state.api.open_url(r.url);
-        else toast(r.error || "후기 작성 페이지를 열지 못했어요.", "warn");
-      });
-    });
-  }
-
-  const smart = state.smartstoreReview || {};
-  const status = smart.status || "none";
-  const bonus = Number(smart.bonus_coins || 150).toLocaleString();
-  const storeUrl = (smart.store_review_url || "").trim();
-  const smartEl = $("#review-smartstore");
-  let html = `<h3 class="review-h3">네이버 스마트스토어 후기</h3>`;
-  if (status === "approved") {
-    html += `<p class="sub">스마트스토어 후기 보너스까지 받으셨어요. 감사합니다!</p>`;
-  } else if (status === "pending") {
-    html += `<p class="sub">작성 완료 신고를 접수했어요. 관리자가 확인하는 중이에요.</p>`;
-  } else {
-    let guide = `스마트스토어에 후기를 작성한 뒤 완료를 눌러 주시면, 관리자 확인 후 +${bonus}코인을 드려요.`;
-    if (status === "rejected" && smart.reject_reason) {
-      guide = `${esc(smart.reject_reason)}\n\n${guide}`;
-    }
-    html += `<p class="sub" style="white-space:pre-wrap;margin-bottom:12px">${guide}</p>
-      <div class="done-actions" style="justify-content:flex-start">
-        <button class="btn btn-ghost" id="btn-open-store">스토어 후기 작성</button>
-        <button class="btn btn-primary" id="btn-claim-smartstore">작성 완료했어요 (+${bonus})</button>
-      </div>`;
-  }
-  smartEl.innerHTML = html;
-  const openBtn = $("#btn-open-store");
-  if (openBtn) {
-    openBtn.addEventListener("click", () => {
-      if (!storeUrl) { toast("스마트스토어 링크가 아직 준비되지 않았어요.", "warn"); return; }
-      state.api.open_url(storeUrl);
-    });
-  }
-  const claimBtn = $("#btn-claim-smartstore");
-  if (claimBtn) {
-    claimBtn.addEventListener("click", async () => {
-      if (!confirm("네이버 스마트스토어에 후기를 정말 작성하셨나요?\n관리자가 확인한 뒤 보너스 지급 여부를 알려드릴게요.")) return;
-      claimBtn.disabled = true;
-      const r = await state.api.claim_smartstore_review();
-      claimBtn.disabled = false;
-      if (!r.ok) { toast(r.error || "신고에 실패했어요.", "warn"); return; }
-      applyMeExtras(r);
-      state.auth = r.auth;
-      renderAuth();
-      renderReviewGuide();
-      toast("작성 완료 신고를 접수했어요! 확인 후 코인이 지급돼요.", "success");
-    });
-  }
 }
 
 /* ───────────────────────── DEV 모니터 ───────────────────────── */
@@ -819,32 +682,6 @@ function maybeEnableDev(api) {
 window.__pyEvent = (msg) => {
   const { event, data } = msg;
   switch (event) {
-    case "auth":
-      state.auth = data;
-      renderAuth();
-      if (data.logged_in) {
-        if (state.step === 1) loadProjects();
-        state.api.refresh_me().then((r) => {
-          if (r.ok) {
-            applyMeExtras(r);
-            state.auth = r.auth;
-            renderAuth();
-          }
-        });
-      }
-      break;
-    case "login_code":
-      $("#login-code").textContent = data.code;
-      break;
-    case "login_status":
-      $("#login-status").textContent = data.message;
-      break;
-    case "login_error":
-      $("#login-idle").classList.remove("hidden");
-      $("#login-pending").classList.add("hidden");
-      $("#login-error").textContent = data.message;
-      $("#login-error").classList.remove("hidden");
-      break;
     case "progress":
       if (state.step === 2) $("#progress-msg").textContent = data.message;
       break;
@@ -860,9 +697,6 @@ window.__pyEvent = (msg) => {
       state.busy = false;
       toast(data.message, "error");
       gotoStep(1, { unlock: false });
-      break;
-    case "pending_actions":
-      handlePendingActions(data || []);
       break;
     case "prewarm_status":
       if (data?.message && (
@@ -895,7 +729,6 @@ function makeMockApi() {
   const SENT = ["안녕하세요 여러분", "오늘은 캡컷에서 자막을 자동으로 넣는 방법을 알아볼게요",
     "먼저 프로그램을 열고 프로젝트를 선택합니다", "전문 인식을 누르면 이렇게 전체 대본이 나와요",
     "이제 엔터만 눌러서 자막을 나누면 끝입니다", "스타일까지 고르면 캡컷에 바로 들어가요"];
-  let mockAuth = { logged_in: false };
   let mockEditorBlocks = [];
   let mockEditorConfig = {};
   let mockEditorWin = null;
@@ -903,7 +736,6 @@ function makeMockApi() {
     get_state: async () => ({
       ok: true,
       app: { name: "타닥싱크 2", version: "2.16.0-mock" },
-      auth: mockAuth,
       languages: ["자동 감지", "한국어", "일본어"],
       styles: [
         { key: "classic", name: "클래식 화이트", desc: "흰 글자 + 검은 외곽선 — 어떤 영상에도 어울리는 기본" },
@@ -912,45 +744,25 @@ function makeMockApi() {
       ],
       capcut_running: false,
     }),
-    start_login: async () => {
-      emit("login_code", { code: "83A2FQ", url: "#" }, 700);
-      emit("login_status", { message: "브라우저에서 구글 로그인 후 연동해 주세요… (mock)" }, 800);
-      mockAuth = { logged_in: true, user_name: "테스트 수강생", email: "mock@tadak.kr", balance: 128 };
-      emit("auth", mockAuth, 2400);
-      return { ok: true };
+    get_banner_ad: async () => ({ ok: true, enabled: false }),
+    report_ad_click: async () => ({ ok: true }),
+    translate_blocks: async (blocks, lang) => {
+      const labels = { en: "영어", ja: "일본어", zh: "중국어" };
+      if (!labels[lang]) return { ok: false, error: "지원하지 않는 언어예요." };
+      return {
+        ok: true,
+        target_lang: lang,
+        target_language_label: labels[lang],
+        blocks: blocks.map((b) => ({ ...b, text_translated: `[${labels[lang]}] ${b.text}` })),
+      };
     },
-    cancel_login: async () => ({ ok: true }),
-    logout: async () => { mockAuth = { logged_in: false }; return { ok: true, auth: mockAuth }; },
-    refresh_me: async () => ({
-      ok: true,
-      auth: mockAuth,
-      coin_courses: [{ course_id: "c1", course_title: "캡컷 초신속", review_bonus_coins: 50, review_bonus_granted: false }],
-      smartstore_review: { status: "none", bonus_coins: 150, store_review_url: "#" },
-      pending_actions: [],
-    }),
-    claim_smartstore_review: async () => ({
-      ok: true,
-      auth: mockAuth,
-      coin_courses: [],
-      smartstore_review: { status: "pending", bonus_coins: 150 },
-    }),
-    ack_inbox: async () => ({ ok: true }),
-    review_write_url: async (cid) => ({ ok: true, url: `https://vcml.kr/mypage.html?tab=courses&review_course=${cid || ""}` }),
-    fetch_history: async () => ({
-      ok: true,
-      history: [
-        { created_at: "2026-07-14 10:22", description: "자막 생성 (0714 브이로그)", delta: -4 },
-        { created_at: "2026-07-12 18:03", description: "수강 후기 보상", delta: 100 },
-        { created_at: "2026-07-10 09:41", description: "가입 보너스", delta: 100 },
-      ],
-    }),
     list_projects: async () => ({
       ok: true, capcut_running: Math.random() < 0.5,
       projects: [
-        { index: 0, name: "0714 브이로그 최종", dir: "C:\\...", duration: "4:12.50", estimated_coins: 5, mtime: "2026-07-14 09:12" },
-        { index: 1, name: "쇼츠 - 자막 실험", dir: "C:\\...", duration: "0:58.20", estimated_coins: 1, mtime: "2026-07-13 22:40" },
-        { index: 2, name: "강의 3강 편집본", dir: "C:\\...", duration: "12:03.00", estimated_coins: 13, mtime: "2026-07-11 15:27" },
-        { index: 3, name: "0627_test4", dir: "C:\\...", duration: "2:31.80", estimated_coins: 3, mtime: "2026-06-27 14:02" },
+        { index: 0, name: "0714 브이로그 최종", dir: "C:\\...", duration: "4:12.50", mtime: "2026-07-14 09:12" },
+        { index: 1, name: "쇼츠 - 자막 실험", dir: "C:\\...", duration: "0:58.20", mtime: "2026-07-13 22:40" },
+        { index: 2, name: "강의 3강 편집본", dir: "C:\\...", duration: "12:03.00", mtime: "2026-07-11 15:27" },
+        { index: 3, name: "0627_test4", dir: "C:\\...", duration: "2:31.80", mtime: "2026-06-27 14:02" },
       ],
     }),
     add_draft_root: async () => ({ ok: true, cancelled: true }),
@@ -961,12 +773,10 @@ function makeMockApi() {
     capcut_running: async () => ({ ok: true, running: Math.random() < 0.4 }),
     start_transcribe: async () => {
       emit("progress", { message: "타임라인 오디오를 분석하고 있어요..." }, 400);
-      emit("progress", { message: "코인 5개를 차감하고 있어요… (타임라인 약 5분)" }, 1300);
-      emit("progress", { message: "음성을 인식하고 있어요..." }, 2200);
+      emit("progress", { message: "음성을 인식하고 있어요..." }, 1300);
       for (let i = 1; i <= 8; i++) emit("progress_ratio", { ratio: i / 8 }, 2200 + i * 500);
       emit("script_ready", {
         text: SENT.join(" "), language: "ko", minutes: 5, missing_files: [],
-        line_split_auto_coins: 1, line_split_manual_coins: 2,
       }, 6600);
       return { ok: true };
     },
@@ -982,7 +792,6 @@ function makeMockApi() {
           t += dur + 150_000;
           return b;
         }),
-        line_split_coins: 2,
         split_mode: "manual",
       };
     },
@@ -997,7 +806,6 @@ function makeMockApi() {
           t += dur + 150_000;
           return b;
         }),
-        line_split_coins: 1,
         split_mode: "auto",
       };
     },
@@ -1117,7 +925,7 @@ function makeMockApi() {
     export_srt: async () => ({ ok: true, path: "C:\\mock\\subtitles.srt" }),
     preview_play: async () => ({ ok: true }),
     preview_stop: async () => ({ ok: true }),
-    inject: async (blocks, _style, _size, _pos, projectIndex) => {
+    inject: async (blocks, _style, _size, _pos, projectIndex, _injectMode) => {
       if (projectIndex == null) return { ok: false, error: "프로젝트를 먼저 선택해 주세요." };
       await new Promise((r) => setTimeout(r, 900));
       const names = ["0714 브이로그 최종", "쇼츠 - 자막 실험", "강의 3강 편집본", "0627_test4"];
@@ -1127,7 +935,7 @@ function makeMockApi() {
         project: names[projectIndex] || "프로젝트",
       };
     },
-    open_url: async () => ({ ok: true }),
+    open_external_link: async () => ({ ok: true }),
     sync_editor_blocks: async (blocks) => {
       mockEditorBlocks = JSON.parse(JSON.stringify(blocks || []));
       if (mockEditorWin && !mockEditorWin.closed) {
@@ -1174,7 +982,6 @@ function makeMockApi() {
 
 async function init() {
   const st = await state.api.get_state();
-  state.auth = st.auth;
   state.languages = st.languages;
   state.styles = st.styles;
   if (st.styles.length && !st.styles.some((s) => s.key === state.styleKey)) {
@@ -1186,18 +993,8 @@ async function init() {
     .map((l) => `<option${l === "한국어" ? " selected" : ""}>${esc(l)}</option>`).join("");
 
   renderStyles();
-  renderAuth();
   gotoStep(1);
-  if (state.auth.logged_in) {
-    loadProjects();
-    state.api.refresh_me().then((r) => {
-      if (r.ok) {
-        applyMeExtras(r);
-        state.auth = r.auth;
-        renderAuth();
-      } else if (r.logged_out) toast(r.error, "warn");
-    });
-  }
+  loadProjects();
 }
 
 function bindEvents() {
@@ -1211,39 +1008,6 @@ function bindEvents() {
       e.preventDefault();
       onStepNavClick(parseInt(el.dataset.step, 10));
     });
-  });
-
-  $("#btn-login").addEventListener("click", startLogin);
-  $("#btn-login-cancel").addEventListener("click", async () => {
-    await state.api.cancel_login();
-    $("#login-idle").classList.remove("hidden");
-    $("#login-pending").classList.add("hidden");
-  });
-
-  $("#btn-acc-menu").addEventListener("click", (e) => {
-    e.stopPropagation();
-    $("#account-menu").classList.toggle("hidden");
-  });
-  document.addEventListener("click", () => $("#account-menu").classList.add("hidden"));
-  $("#btn-logout").addEventListener("click", async () => {
-    const r = await state.api.logout();
-    state.auth = r.auth || { logged_in: false };
-    renderAuth();
-  });
-  $("#btn-history").addEventListener("click", openHistory);
-  $("#btn-history-close").addEventListener("click", () =>
-    $("#history-overlay").classList.add("hidden"));
-  $("#btn-review-guide").addEventListener("click", openReviewGuide);
-  $("#btn-review-close").addEventListener("click", () =>
-    $("#review-overlay").classList.add("hidden"));
-  $("#btn-refresh-me").addEventListener("click", async () => {
-    const r = await state.api.refresh_me();
-    if (r.ok) {
-      applyMeExtras(r);
-      state.auth = r.auth;
-      renderAuth();
-      toast("잔액을 새로고침했어요.", "success");
-    } else toast(r.error, "warn");
   });
 
   $("#btn-reload-projects").addEventListener("click", loadProjects);
@@ -1260,6 +1024,7 @@ function bindEvents() {
   $("#split-max-words")?.addEventListener("change", syncSplitWordRange);
 
   $("#btn-open-style-editor").addEventListener("click", toggleStyleEditor);
+  $("#btn-translate").addEventListener("click", translateBlocks);
 
   $("#btn-back-script").addEventListener("click", () => {
     if (state.fromSrt) { toast("SRT로 불러온 자막은 줄 나누기 화면이 없어요.", "warn"); return; }
@@ -1281,6 +1046,7 @@ function bindEvents() {
   $("#btn-back-blocks").addEventListener("click", () => gotoStep(4));
   bindSegmented("#seg-size", "size");
   bindSegmented("#seg-position", "position");
+  bindSegmented("#seg-inject-mode", "injectMode");
   $("#btn-inject").addEventListener("click", requestInject);
   $("#btn-confirm-cancel").addEventListener("click", () =>
     $("#confirm-overlay").classList.add("hidden"));
