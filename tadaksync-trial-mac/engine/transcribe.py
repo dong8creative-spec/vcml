@@ -507,7 +507,11 @@ def _refine_speech_boundaries(lines: list[SubtitleLine],
 
     refined: list[SubtitleLine] = []
     prev_end = 0.0
-    max_early_snap = 0.4
+    # 0.4초(30fps 기준 12프레임)는 자막이 실제 발화보다 눈에 띄게 일찍 뜨는
+    # 문제를 일으켜서 값을 줄였다. 이 값은 "Whisper 타임스탬프를 실제 발화
+    # 시작점으로 앞당길 수 있는 최대치"라, 크면 클수록 보정이 자주 상한에
+    # 걸려 매번 그만큼 일찍 뜨는 것처럼 보인다.
+    max_early_snap = 0.12
 
     for idx, line in enumerate(lines):
         s = line.start_us / US
