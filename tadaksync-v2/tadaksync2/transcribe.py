@@ -220,6 +220,18 @@ class Transcriber:
                 if text:
                     fallback_parts.append(text)
 
+        # faster-whisper가 이따금 end == start(0폭) 단어를 낸다. 그대로 두면
+        # build_lines_from_script / build_lines_auto의 valid 필터(w[2] > w[1])에서
+        # 조용히 빠져, 사용자가 편집·엔터로 나눈 줄과 단어 수가 어긋난다. 그러면
+        # 정확 매핑(빠른 경로)이 실패하고 유사도 추정으로 넘어가, 뒤쪽 블록이
+        # 한 어절(≈0.4초 = 30fps 12프레임)씩 밀린 타임코드를 받는다. 0폭 단어에
+        # 다음 단어 시작 직전까지(최대 0.2초) 최소 폭을 준다.
+        for i in range(len(words)):
+            w, s0, e0 = words[i]
+            if e0 <= s0:
+                nxt = words[i + 1][1] if i + 1 < len(words) else s0 + 200_000
+                words[i] = (w, s0, max(s0 + 1, min(nxt, s0 + 200_000)))
+
         text = "".join(w[0] for w in words).strip()
         if not text:
             text = " ".join(fallback_parts).strip()
