@@ -1,1 +1,0 @@
-../../Resources/ctranslate2/logging.py

@@ -1,1 +1,0 @@
-../../../Resources/onnxruntime/capi/build_and_package_info.py

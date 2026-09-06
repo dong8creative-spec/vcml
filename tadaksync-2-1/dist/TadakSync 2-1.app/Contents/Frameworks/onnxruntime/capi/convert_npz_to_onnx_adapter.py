@@ -1,1 +1,0 @@
-../../../Resources/onnxruntime/capi/convert_npz_to_onnx_adapter.py

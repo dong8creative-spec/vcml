@@ -1,1 +1,0 @@
-../../../Resources/onnxruntime/capi/__init__.py
