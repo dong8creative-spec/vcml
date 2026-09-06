@@ -1,14 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
-import os
 from PyInstaller.utils.hooks import collect_all
 
 datas = [('tadaksync2/web', 'tadaksync2/web')]
 binaries = []
-# scripts/prepare_dotnet.ps1 로 미리 받아둔 .NET 8 데스크톱 런타임을 그대로 동봉한다.
-# ContextMenu TypeLoadException(체험판에서 겪은 것과 같은 coreclr/WebView2 버전 불일치
-# 문제)을 시스템 .NET 버전에 상관없이 피하기 위함 — dotnet_runtime.py 참고.
-if os.path.isdir('dotnet'):
-    datas.append(('dotnet', 'dotnet'))
 hiddenimports = [
     'clr',
     'pythonnet',
