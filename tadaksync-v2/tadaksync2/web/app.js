@@ -235,6 +235,7 @@ async function startTranscribe() {
   gotoStep(2, { unlock: false });
   $("#progress-fill").style.width = "0%";
   $("#progress-msg").textContent = "준비 중…";
+  maybeShowInlineAd();
   const res = await state.api.start_transcribe(state.selectedProject.index, lang);
   if (!res.ok) {
     state.busy = false;
@@ -242,6 +243,30 @@ async function startTranscribe() {
     gotoStep(1, { unlock: false });
   }
 }
+
+async function maybeShowInlineAd() {
+  try {
+    const ad = await state.api.get_banner_ad("transcribe_inline");
+    if (!ad.ok || !ad.enabled || !ad.image_url || !ad.link_url) return;
+    $("#ad-inline-image").src = ad.image_url;
+    $("#ad-inline-image").alt = ad.advertiser || "";
+    $("#ad-inline-headline").textContent = ad.headline || ad.advertiser || "";
+    $("#ad-inline-body").textContent = ad.body || "";
+    $("#btn-ad-inline-cta").textContent = ad.cta_label || "자세히 보기";
+    state.inlineAdLinkUrl = ad.link_url;
+    state.inlineAdCampaignId = ad.campaign_id;
+    $("#transcribe-ad-slot").classList.remove("hidden");
+  } catch {
+    // 광고 로드 실패는 조용히 무시 — 전사 진행에는 영향 없어야 한다.
+  }
+}
+
+$("#btn-ad-inline-cta")?.addEventListener("click", () => {
+  const url = state.inlineAdLinkUrl;
+  if (!url) return;
+  state.api.report_ad_click(state.inlineAdCampaignId);
+  state.api.open_external_link(url);
+});
 
 function onScriptReady(data) {
   state.busy = false;

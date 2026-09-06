@@ -3,6 +3,7 @@
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const SAMPLE_CAP = "타닥싱크";
+const VCML_API_ORIGIN = "https://vcml.kr";
 
 const state = {
   api: null,
@@ -173,6 +174,7 @@ async function startTranscribe() {
   $("#progress-msg").textContent = "준비 중…";
   $("#progress-fill").style.width = "6%";
   gotoStep(2);
+  maybeShowInlineAd();
   const r = await state.api.start_transcribe(state.selectedProject.index);
   if (!r.ok) {
     state.busy = false;
@@ -223,6 +225,41 @@ async function doInject() {
   $("#done-msg").textContent = `「${r.project}」에 자막 ${r.line_count}개가 들어갔어요.`;
   $("#done-overlay").classList.remove("hidden");
 }
+
+function reportAdClick(campaignId) {
+  if (!campaignId) return;
+  fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad/click`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ campaign_id: campaignId }),
+  }).catch(() => {});
+}
+
+async function maybeShowInlineAd() {
+  try {
+    const res = await fetch(`${VCML_API_ORIGIN}/api/subtitle/trial-ad?slot=transcribe_inline`, { cache: "no-store" });
+    if (!res.ok) return;
+    const ad = await res.json();
+    if (!ad.enabled || !ad.image_url || !ad.link_url) return;
+    $("#ad-inline-image").src = ad.image_url;
+    $("#ad-inline-image").alt = ad.advertiser || "";
+    $("#ad-inline-headline").textContent = ad.headline || ad.advertiser || "";
+    $("#ad-inline-body").textContent = ad.body || "";
+    $("#btn-ad-inline-cta").textContent = ad.cta_label || "자세히 보기";
+    state.inlineAdLinkUrl = ad.link_url;
+    state.inlineAdCampaignId = ad.campaign_id;
+    $("#transcribe-ad-slot").classList.remove("hidden");
+  } catch {
+    // 광고 로드 실패는 조용히 무시 — 전사 진행에는 영향 없어야 한다.
+  }
+}
+
+$("#btn-ad-inline-cta").addEventListener("click", () => {
+  const url = state.inlineAdLinkUrl;
+  if (!url) return;
+  reportAdClick(state.inlineAdCampaignId);
+  state.api.open_external_link(url);
+});
 
 window.__pyEvent = (msg) => {
   const { event, data } = msg || {};

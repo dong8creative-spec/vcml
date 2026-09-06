@@ -296,6 +296,31 @@ select:focus { border-color: var(--lime); }
 }
 .progress-note { color: var(--muted); font-size: 12.5px; }
 
+/* ─────────── 전사 중 인라인 광고 배너 ─────────── */
+.ad-badge {
+  display: inline-block; margin: 0 auto 12px; padding: 3px 10px;
+  border-radius: 20px; background: rgba(255, 255, 255, .08); color: var(--muted);
+  font-size: 11px; font-weight: 700; letter-spacing: .02em;
+}
+.ad-inline {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; width: 100%;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); text-align: left; max-width: 420px;
+}
+.ad-inline .ad-badge { flex-shrink: 0; margin: 0; }
+.ad-inline-image {
+  width: 44px; height: 44px; object-fit: cover;
+  border-radius: 8px; flex-shrink: 0;
+}
+.ad-inline-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ad-inline-text b { font-size: 13px; font-weight: 700; }
+.ad-inline-text span {
+  font-size: 12px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ad-inline-cta { flex-shrink: 0; font-size: 12px; padding: 8px 14px; }
+
 /* ─────────── STEP 3: 전문 편집 ─────────── */
 .script-editor {
   flex: 1; width: 100%; resize: none; outline: none;

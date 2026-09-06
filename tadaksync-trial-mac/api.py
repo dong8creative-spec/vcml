@@ -6,6 +6,7 @@ import json
 import threading
 import time
 import traceback
+import webbrowser
 from pathlib import Path
 
 import uses
@@ -243,6 +244,17 @@ class Api:
         except Exception as e:
             traceback.print_exc()
             return _err(f"삽입에 실패했어요: {e}")
+
+    def open_external_link(self, url: str) -> dict:
+        """광고 등 외부 링크를 앱 창이 아니라 기본 브라우저로 연다."""
+        url = str(url or "").strip()
+        if not url.lower().startswith(("http://", "https://")):
+            return _err("올바르지 않은 링크예요.")
+        try:
+            webbrowser.open(url)
+            return _ok()
+        except Exception as e:
+            return _err(f"링크를 열지 못했어요: {e}")
 
     def cleanup(self) -> None:
         pass

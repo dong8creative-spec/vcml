@@ -224,6 +224,24 @@ def fetch_me(token: str) -> dict:
     return _request("GET", "/api/subtitle/me", token=token)
 
 
+def fetch_banner_ad(slot: str) -> dict:
+    """전사 중 배너 등 광고 슬롯 조회. 로그인 불필요(접속 IP로 지역 추정)."""
+    path = "/api/subtitle/trial-ad?slot=" + urllib.parse.quote(str(slot or ""))
+    try:
+        return _request("GET", path)
+    except RuntimeError:
+        return {"enabled": False}
+
+
+def report_ad_click(campaign_id: str) -> None:
+    if not campaign_id:
+        return
+    try:
+        _request("POST", "/api/subtitle/trial-ad/click", body={"campaign_id": campaign_id})
+    except RuntimeError:
+        pass
+
+
 def verify_entitlement(token: str) -> dict:
     """구글 로그인·코인 권한 확인. 실패 시 RuntimeError (payload.code / status 포함)."""
     try:

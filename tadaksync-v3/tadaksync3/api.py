@@ -273,6 +273,14 @@ class Api:
     def review_write_url(self, course_id: str | None = None) -> dict:
         return _ok(url=license_api.review_write_url(course_id))
 
+    # --------------------------------------------------------------- 광고
+    def get_banner_ad(self, slot: str) -> dict:
+        return _ok(**license_api.fetch_banner_ad(slot))
+
+    def report_ad_click(self, campaign_id: str) -> dict:
+        license_api.report_ad_click(campaign_id)
+        return _ok()
+
     # --------------------------------------------------------------- 로그인
     def start_login(self) -> dict:
         if self._login_cancel is not None:
@@ -755,6 +763,18 @@ class Api:
             return _err("허용되지 않은 주소예요.")
         webbrowser.open(str(url))
         return _ok()
+
+    def open_external_link(self, url: str) -> dict:
+        """광고 등 외부(광고주) 링크를 앱 창이 아니라 기본 브라우저로 연다."""
+        import webbrowser
+        url = str(url or "").strip()
+        if not url.lower().startswith(("http://", "https://")):
+            return _err("올바르지 않은 링크예요.")
+        try:
+            webbrowser.open(url)
+            return _ok()
+        except Exception as e:
+            return _err(f"링크를 열지 못했어요: {e}")
 
     def cleanup(self) -> None:
         try:
