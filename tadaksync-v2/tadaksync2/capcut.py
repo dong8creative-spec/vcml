@@ -55,9 +55,15 @@ def _custom_draft_paths() -> list[Path]:
     return paths
 
 
+def _app_data_dir() -> Path:
+    base = os.environ.get("APPDATA") or str(Path.home() / ".config")
+    folder = Path(base) / "TadakSync2"
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
 def _settings_path() -> Path:
-    from . import license as license_api
-    return license_api.app_data_dir() / "settings.json"
+    return _app_data_dir() / "settings.json"
 
 
 def manual_draft_roots() -> list[Path]:
