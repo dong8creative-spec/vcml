@@ -547,7 +547,12 @@ def _refine_speech_boundaries(lines: list[SubtitleLine],
                 onset2 = find_onset(audio, max(s, prev_end), min(e + 0.6, audio_dur), env)
                 new_s = max(onset2, prev_end) if onset2 is not None else max(s, prev_end)
         else:
-            if onset is not None and onset > s:
+            # s가 이미 발화 구간 안이면 Whisper 시작값은 실제 온셋에 붙어 있다.
+            # find_onset은 "이미 발화 중이면 침묵까지 스킵한 뒤 다음 rise"를
+            # 돌려주므로, 연속 발화에서 이 값을 그대로 쓰면 블록 첫 어절을
+            # 잘라먹어 자막이 소리보다 한참(≈12프레임) 늦게 뜬다. 앞으로
+            # 당기는 미세 보정만 max_early_snap 범위에서 허용한다.
+            if onset is not None and s < onset <= s + max_early_snap:
                 new_s = onset
             else:
                 new_s = max(s, prev_end)
