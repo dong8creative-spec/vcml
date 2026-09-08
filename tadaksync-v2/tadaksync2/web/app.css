@@ -36,6 +36,8 @@ body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   user-select: none;
+  display: flex;
+  flex-direction: column;
 }
 .hidden { display: none !important; }
 .accent { color: var(--lime); }
@@ -81,7 +83,45 @@ b { font-weight: 700; }
 .icon-btn:hover { color: var(--text); background: var(--panel-3); }
 
 /* ─────────── 셸 레이아웃 ─────────── */
-.shell { display: flex; height: 100vh; }
+.shell { display: flex; flex: 1 1 auto; min-height: 0; }
+
+/* ─────────── 하단 배너 광고 ─────────── */
+.app-banner {
+  flex: none;
+  display: flex; align-items: center; gap: 14px;
+  height: 64px; padding: 0 16px 0 14px;
+  background: var(--panel); border-top: 1px solid var(--border);
+}
+.app-banner .ab-badge {
+  flex: none; font-size: 10px; font-weight: 800; letter-spacing: .06em;
+  color: var(--muted); border: 1px solid var(--border);
+  border-radius: 5px; padding: 2px 6px;
+}
+.app-banner .ab-image {
+  flex: none; height: 44px; width: auto; max-width: 120px;
+  object-fit: contain; border-radius: 6px;
+}
+.app-banner .ab-text {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-direction: column; gap: 1px;
+  overflow: hidden;
+}
+.app-banner .ab-text b {
+  font-size: 13.5px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.app-banner .ab-text span {
+  font-size: 12px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.app-banner .ab-cta {
+  flex: none; padding: 8px 16px; font-size: 12.5px; cursor: pointer;
+}
+.app-banner .ab-close {
+  flex: none; background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 13px; padding: 6px 8px; border-radius: 6px;
+}
+.app-banner .ab-close:hover { color: var(--text); background: var(--panel-3); }
 .sidebar {
   width: 236px; flex: none; display: flex; flex-direction: column;
   padding: 26px 18px 18px; background: var(--bg-2);

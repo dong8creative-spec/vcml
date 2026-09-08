@@ -34,6 +34,8 @@ const state = {
   keywordScan: null,
   blocksUndo: null,
   styleEditorOpen: false,
+  appBanner: null,          // {link_url, campaign_id} — 하단 상시 배너 광고
+  appBannerDismissed: false,
 };
 
 /* ───────────────────────── 유틸 ───────────────────────── */
@@ -127,6 +129,7 @@ function gotoStep(n, opts = {}) {
   $$(".view").forEach((v) => v.classList.add("hidden"));
   $(`#view-${n}`).classList.remove("hidden");
   renderStepNav();
+  updateAppBannerVisibility();
   if (n === 3) updateLineCount();
   if (n === 4) {
     renderBlocks();
@@ -236,6 +239,49 @@ $("#btn-ad-inline-cta")?.addEventListener("click", () => {
   state.api.report_ad_click(state.inlineAdCampaignId);
   state.api.open_external_link(url);
 });
+
+/* ── 하단 상시 배너 광고 (slot: app_banner) ── */
+async function loadAppBanner() {
+  try {
+    const ad = await state.api.get_banner_ad("app_banner");
+    if (!ad || !ad.ok || !ad.enabled || !ad.image_url || !ad.link_url) return;
+    $("#ab-image").src = ad.image_url;
+    $("#ab-image").alt = ad.advertiser || "";
+    $("#ab-headline").textContent = ad.headline || ad.advertiser || "";
+    $("#ab-body").textContent = ad.body || "";
+    $("#ab-cta").textContent = ad.cta_label || "자세히 보기";
+    state.appBanner = { link_url: ad.link_url, campaign_id: ad.campaign_id };
+    updateAppBannerVisibility();
+  } catch {
+    // 광고 로드 실패는 조용히 무시.
+  }
+}
+
+function updateAppBannerVisibility() {
+  const el = $("#app-banner");
+  if (!el) return;
+  // 2단계(전사 진행)는 자체 인라인 광고가 있어 하단 배너는 숨긴다.
+  const show = !!state.appBanner && !state.appBannerDismissed && state.step !== 2;
+  el.classList.toggle("hidden", !show);
+}
+
+$("#ab-cta")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  openAppBannerLink();
+});
+$("#app-banner")?.addEventListener("click", openAppBannerLink);
+$("#ab-close")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  state.appBannerDismissed = true;
+  updateAppBannerVisibility();
+});
+
+function openAppBannerLink() {
+  const ad = state.appBanner;
+  if (!ad || !ad.link_url) return;
+  state.api.report_ad_click(ad.campaign_id);
+  state.api.open_external_link(ad.link_url);
+}
 
 function onScriptReady(data) {
   state.busy = false;
@@ -995,6 +1041,7 @@ async function init() {
   renderStyles();
   gotoStep(1);
   loadProjects();
+  loadAppBanner();
 }
 
 function bindEvents() {
