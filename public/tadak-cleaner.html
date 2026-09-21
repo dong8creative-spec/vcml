@@ -37,6 +37,11 @@
     .tc-msg{margin-top:12px;font-size:14px;color:#B3410B}
     .tc-msg:empty{display:none}
     .tc-notice{margin:20px 0 0;background:#F26A1B;color:#fff;border-radius:16px;padding:22px 24px;font-size:28px;font-weight:700;line-height:1.45;text-align:center}
+    .tc-term-cmd{display:flex;gap:8px;align-items:stretch;margin-top:10px}
+    .tc-term-cmd code{flex:1;min-width:0;background:#2B2118;color:#FFE9CF;border-radius:10px;padding:12px 14px;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow-x:auto;word-break:normal;user-select:all}
+    .tc-copy{flex:none;border:1px solid #D9CBB9;background:#fff;color:#2B2118;border-radius:10px;padding:0 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+    .tc-lock{text-align:center;padding:8px 0}
+    .tc-lock p{margin:0 0 4px;font-size:14.5px}
     .tc-steps{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
     .tc-step{background:#fff;border:1px solid #F0DFCC;border-radius:16px;padding:18px}
     .tc-step h3{display:flex;align-items:center;gap:8px;font-size:16px;margin:0 0 10px}
@@ -105,6 +110,10 @@
       <p>Mac 로그인 암호를 넣고 <b>「열기」</b>. 이제 시작 화면이 나오면 성공! 다음부터는 그냥 열려요.</p></div>
   </div>
 
+  <h2 class="tc-h2">터미널로 여는 방법</h2>
+  <p class="tc-meta" style="margin:0">위 방법이 잘 안 될 때, 명령어 한 줄로 바로 열 수 있어요.</p>
+  <div class="tc-card" id="tc-terminal"></div>
+
   <h2 class="tc-h2">열리지 않을 때, 그리고 권한 안내</h2>
   <div class="tc-card">
     <h2>옛 macOS라면 더 쉬워요</h2>
@@ -162,6 +171,63 @@ async function downloadDmg() {
 
 if (API.isLoggedIn()) renderReady()
 else renderLoggedOut()
+
+const termEl = document.getElementById('tc-terminal')
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag)
+  if (cls) e.className = cls
+  if (text != null) e.textContent = text
+  return e
+}
+
+function renderTerminalLocked() {
+  termEl.innerHTML =
+    `<div class="tc-lock"><p><b>로그인하시면 볼 수 있어요.</b></p>` +
+    `<p class="tc-meta">터미널로 여는 방법은 로그인한 회원께만 보여드려요.</p>` +
+    `<a class="tc-btn google" href="${buildGoogleAuthUrl(nextPath, 'student', 'login')}">${GOOGLE_ICON_SVG} 구글 계정으로 시작하기</a></div>`
+}
+
+function renderTerminalGuide(data) {
+  termEl.textContent = ''
+  data.steps.forEach((st, i) => {
+    const wrap = el('div', null)
+    wrap.style.marginTop = i ? '18px' : '0'
+    const h = el('h2', null, `${i + 1}. ${st.title}`)
+    wrap.appendChild(h)
+    wrap.appendChild(el('p', null, st.text))
+    if (st.command) {
+      const row = el('div', 'tc-term-cmd')
+      row.appendChild(el('code', null, st.command))
+      const btn = el('button', 'tc-copy', '복사')
+      btn.type = 'button'
+      btn.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(st.command); btn.textContent = '복사됨' }
+        catch { btn.textContent = '길게 눌러 복사' }
+        setTimeout(() => { btn.textContent = '복사' }, 1800)
+      })
+      row.appendChild(btn)
+      wrap.appendChild(row)
+    }
+    if (st.note) wrap.appendChild(el('p', 'tc-meta', st.note))
+    termEl.appendChild(wrap)
+  })
+  const ul = el('ul', null)
+  data.notes.forEach(n => ul.appendChild(el('li', null, n)))
+  ul.style.marginTop = '18px'
+  termEl.appendChild(ul)
+}
+
+async function loadTerminalGuide() {
+  if (!API.isLoggedIn()) return renderTerminalLocked()
+  try {
+    renderTerminalGuide(await API.get('/cleaner/terminal-guide'))
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) return renderTerminalLocked()
+    termEl.textContent = '안내를 불러오지 못했어요. 잠시 뒤에 다시 열어 주세요.'
+  }
+}
+loadTerminalGuide()
 </script>
 </body>
 </html>
