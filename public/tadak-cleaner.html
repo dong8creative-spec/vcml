@@ -21,6 +21,9 @@
   <link rel="stylesheet" href="/css/style.css?v=16" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
   <style>
+    [data-site-header]{min-height:53px}
+    #tc-actions{min-height:66px}
+    #tc-terminal{min-height:150px}
     .tc-wrap{max-width:780px;margin:0 auto;padding:40px 20px 72px;color:#2B2118;line-height:1.7;letter-spacing:-.01em;word-break:keep-all}
     .tc-hero{display:flex;align-items:center;gap:18px;margin-bottom:26px}
     .tc-hero img{width:72px;height:72px;border-radius:18px;box-shadow:0 3px 10px rgba(0,0,0,.18)}
@@ -35,8 +38,7 @@
     .tc-btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:12px;padding:14px 22px;font:inherit;font-size:16px;font-weight:700;background:#F26A1B;color:#fff;cursor:pointer;text-decoration:none;margin-top:10px}
     .tc-btn:disabled{opacity:.6;cursor:default}
     .tc-btn.google{background:#fff;color:#2B2118;border:1px solid #D9CBB9}
-    .tc-msg{margin-top:12px;font-size:14px;color:#B3410B}
-    .tc-msg:empty{display:none}
+    .tc-msg{margin-top:12px;min-height:24px;font-size:14px;color:#B3410B}
     .tc-notice{margin:20px 0 0;background:#F26A1B;color:#fff;border-radius:16px;padding:22px 24px;font-size:28px;font-weight:700;line-height:1.45;text-align:center}
     .tc-term-cmd{display:flex;gap:8px;align-items:stretch;margin-top:10px}
     .tc-term-cmd code{flex:1;min-width:0;background:#2B2118;color:#FFE9CF;border-radius:10px;padding:12px 14px;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow-x:auto;word-break:normal;user-select:all}
@@ -61,6 +63,7 @@
     .tc-h2{font-size:20px;margin:44px 0 6px;color:#F26A1B}
     .tc-wrap ul{margin:8px 0;padding-left:20px}
     .tc-wrap li{margin:7px 0;font-size:14.5px}
+    @media (min-width:701px){[data-site-header]{min-height:65px}}
     @media (max-width:700px){.tc-wrap{padding:24px 16px 56px}.tc-steps{grid-template-columns:1fr}.tc-hero h1{font-size:23px}.tc-notice{font-size:23px;padding:20px 18px}}
   </style>
 </head>
@@ -114,7 +117,7 @@
 
   <h2 class="tc-h2">터미널로 여는 방법</h2>
   <p class="tc-meta" style="margin:0">위 방법이 잘 안 될 때, 명령어 한 줄로 바로 열 수 있어요.</p>
-  <div class="tc-card" id="tc-terminal"></div>
+  <div class="tc-card" id="tc-terminal"><p class="tc-meta" style="margin:0">불러오는 중이에요…</p></div>
 
   <h2 class="tc-h2">열리지 않을 때, 그리고 권한 안내</h2>
   <div class="tc-card">
