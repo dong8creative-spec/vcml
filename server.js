@@ -39,7 +39,11 @@ app.get('/sitemap.xml', async (req, res) => {
       db.getCourses(false),
       db.getBlogPosts({ publicOnly: true }),
     ])
-    const today = new Date().toISOString().slice(0, 10)
+    // lastmod는 실제 수정일이 있을 때만 적는다(모든 주소에 '오늘'을 적으면 검색엔진이 값을 신뢰하지 않게 된다).
+    const lastmodTag = v => {
+      const d = v ? new Date(v) : null
+      return d && !isNaN(d) ? `\n    <lastmod>${d.toISOString().slice(0, 10)}</lastmod>` : ''
+    }
     const staticPages = [
       { url: `${SITE_ORIGIN}/`, priority: '1.0', changefreq: 'weekly' },
       { url: `${SITE_ORIGIN}/courses`, priority: '0.9', changefreq: 'weekly' },
@@ -48,18 +52,19 @@ app.get('/sitemap.xml', async (req, res) => {
       { url: `${SITE_ORIGIN}/reviews`, priority: '0.7', changefreq: 'weekly' },
       { url: `${SITE_ORIGIN}/blog`, priority: '0.7', changefreq: 'weekly' },
       { url: `${SITE_ORIGIN}/faq`, priority: '0.5', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/tadak-cleaner`, priority: '0.6', changefreq: 'monthly' },
       { url: `${SITE_ORIGIN}/policy/refund`, priority: '0.5', changefreq: 'monthly' },
       { url: `${SITE_ORIGIN}/policy/privacy`, priority: '0.5', changefreq: 'monthly' },
       { url: `${SITE_ORIGIN}/policy/terms`, priority: '0.5', changefreq: 'monthly' },
     ]
     const coursePages = (courses || [])
       .filter(c => c.is_published)
-      .map(c => ({ url: courseUrl(c.slug), priority: '0.9', changefreq: 'weekly' }))
+      .map(c => ({ url: courseUrl(c.slug), priority: '0.9', changefreq: 'weekly', lastmod: c.updated_at }))
     const blogPages = (blogPosts || [])
-      .map(p => ({ url: `${SITE_ORIGIN}/blog/${encodeURIComponent(p.slug)}`, priority: '0.6', changefreq: 'monthly' }))
+      .map(p => ({ url: `${SITE_ORIGIN}/blog/${encodeURIComponent(p.slug)}`, priority: '0.6', changefreq: 'monthly', lastmod: p.updated_at || p.published_at || p.created_at }))
     const all = [...staticPages, ...coursePages, ...blogPages]
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${all.map(p =>
-      `  <url>\n    <loc>${p.url}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>`
+      `  <url>\n    <loc>${p.url}</loc>${lastmodTag(p.lastmod)}\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>`
     ).join('\n')}\n</urlset>`
     res.setHeader('Content-Type', 'application/xml; charset=utf-8')
     res.setHeader('Cache-Control', 'public, max-age=3600')
