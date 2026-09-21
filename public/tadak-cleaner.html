@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-13X3J2EYQ2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-13X3J2EYQ2');
+  </script>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>타닥정리함 — 타닥클래스</title>
+  <meta name="description" content="맥 용량 정리, 뭘 지워도 되는지 쉬운 말로 알려주는 무료 프로그램 타닥정리함. 다운로드와 처음 여는 방법 안내." />
+  <link rel="canonical" href="https://vcml.kr/tadak-cleaner" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="타닥정리함 — 타닥클래스" />
+  <meta property="og:description" content="지워도 되는 것과 고민해야 하는 것을 쉬운 말로 알려주는 맥 정리 프로그램." />
+  <meta property="og:url" content="https://vcml.kr/tadak-cleaner" />
+  <meta property="og:image" content="https://vcml.kr/images/tadak-cleaner-icon.png" />
+  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <link rel="stylesheet" href="/css/common.css?v=3" />
+  <style>
+    .tc-wrap{max-width:780px;margin:0 auto;padding:40px 20px 72px;color:#2B2118;line-height:1.7;letter-spacing:-.01em;word-break:keep-all}
+    .tc-hero{display:flex;align-items:center;gap:18px;margin-bottom:26px}
+    .tc-hero img{width:72px;height:72px;border-radius:18px;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+    .tc-hero h1{font-size:28px;line-height:1.4;margin:0 0 6px}
+    .tc-hero p{margin:0;color:#7A6A5C;font-size:15px}
+    .tc-card{background:#fff;border:1px solid #F0DFCC;border-radius:16px;padding:20px 22px;margin-top:20px}
+    .tc-card h2{font-size:18px;margin:0 0 10px}
+    .tc-card p{margin:6px 0;font-size:14.5px}
+    .tc-meta{color:#7A6A5C;font-size:13px}
+    .tc-dl{background:#FFF6EC}
+    .tc-btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:12px;padding:14px 22px;font:inherit;font-size:16px;font-weight:700;background:#F26A1B;color:#fff;cursor:pointer;text-decoration:none;margin-top:10px}
+    .tc-btn:disabled{opacity:.6;cursor:default}
+    .tc-btn.google{background:#fff;color:#2B2118;border:1px solid #D9CBB9}
+    .tc-msg{margin-top:12px;font-size:14px;color:#B3410B}
+    .tc-steps{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+    .tc-step{background:#fff;border:1px solid #F0DFCC;border-radius:16px;padding:18px}
+    .tc-step h3{display:flex;align-items:center;gap:8px;font-size:16px;margin:0 0 10px}
+    .tc-step .n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#F26A1B;color:#fff;font-weight:800;font-size:14px}
+    .tc-step p{margin:10px 0 0;font-size:14px;line-height:1.75;color:#4a3d31}
+    .tc-win{background:#F5F5F7;border:1px solid #D6D6DA;border-radius:10px;padding:14px;font-size:13px;line-height:1.7}
+    .tc-win .dots{display:flex;gap:5px;margin-bottom:8px}
+    .tc-win .dots i{width:9px;height:9px;border-radius:50%;display:block}
+    .tc-win .dots i:nth-child(1){background:#FF5F57}.tc-win .dots i:nth-child(2){background:#FEBC2E}.tc-win .dots i:nth-child(3){background:#28C840}
+    .tc-dmg{display:flex;align-items:center;justify-content:space-around;padding:10px 0}
+    .tc-dmg img{width:54px;height:54px;border-radius:13px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+    .tc-dmg .ar{font-size:22px;color:#F26A1B}
+    .tc-dmg .fd{width:54px;height:54px;border-radius:12px;background:#6EB8FF;display:grid;place-items:center;color:#fff;font-size:10px}
+    .tc-mock{display:inline-block;border-radius:6px;padding:3px 12px;border:1px solid #C9C9CE;background:#fff;font-size:12px;margin:8px 8px 0 0}
+    .tc-mock.hl{background:#0A84FF;color:#fff;border-color:#0A84FF;outline:3px solid #FFD24D}
+    .tc-h2{font-size:20px;margin:44px 0 6px;color:#F26A1B}
+    .tc-wrap ul{margin:8px 0;padding-left:20px}
+    .tc-wrap li{margin:7px 0;font-size:14.5px}
+    @media (max-width:700px){.tc-wrap{padding:24px 16px 56px}.tc-steps{grid-template-columns:1fr}.tc-hero h1{font-size:23px}}
+  </style>
+</head>
+<body>
+<div data-site-header></div>
+
+<main class="tc-wrap">
+  <div class="tc-hero">
+    <img src="/images/tadak-cleaner-icon.png" alt="타닥정리함 아이콘" />
+    <div>
+      <h1>타닥정리함</h1>
+      <p>지워도 되는 것과 고민해야 하는 것을 쉬운 말로 알려주는 맥 정리 프로그램이에요.</p>
+    </div>
+  </div>
+
+  <div class="tc-card tc-dl">
+    <h2>다운로드</h2>
+    <p class="tc-meta">Mac 전용 · Intel / Apple Silicon 모두 지원 · 버전 0.9.1 · 약 20MB</p>
+    <div id="tc-actions"></div>
+    <div class="tc-msg" id="tc-msg"></div>
+    <p class="tc-meta" style="margin-top:14px">개인 무료 사용용이며 재배포·판매는 금지예요. Apple 공증을 받지 않은 프로그램이라 처음 열 때 아래 안내대로 한 번 허용해 주세요. 파일을 지우는 프로그램이니 중요한 자료는 백업 후 사용해 주세요.</p>
+  </div>
+
+  <h2 class="tc-h2">처음 열 때 딱 한 번</h2>
+  <p class="tc-meta" style="margin:0">처음에 경고 창이 나오는 건 정상이에요. 1분이면 끝나요.</p>
+
+  <div class="tc-card">
+    <h2>왜 경고가 나오나요?</h2>
+    <p>타닥정리함은 Apple 유료 개발자 등록 없이 직접 나눠 드리는 무료 프로그램이라, macOS가 처음 한 번 "확인되지 않은 개발자"라고 물어봐요. 위험하다는 뜻이 아니에요. 한 번 허용하면 다시 나오지 않아요.</p>
+  </div>
+
+  <div class="tc-steps">
+    <div class="tc-step"><h3><span class="n">1</span>설치 파일 열기</h3>
+      <div class="tc-win"><div class="dots"><i></i><i></i><i></i></div>
+        <div class="tc-dmg"><img src="/images/tadak-cleaner-icon.png" alt="" /><div class="ar">➜</div><div class="fd">Applications</div></div></div>
+      <p>받은 <b>.dmg</b> 파일을 더블클릭하고, 주황색 「타닥정리함」을 <b>Applications</b> 폴더로 끌어다 놓아요.</p></div>
+    <div class="tc-step"><h3><span class="n">2</span>응용 프로그램에서 열기</h3>
+      <div class="tc-win"><b>“타닥정리함”을(를) 열 수 없습니다</b><br>Apple에서 확인할 수 없어…<br>
+        <span class="tc-mock">휴지통으로 이동</span><span class="tc-mock hl">완료</span></div>
+      <p>Applications의 타닥정리함을 열면 이런 창이 나와요. <b>「완료」</b>를 눌러 닫아요. (휴지통 버튼은 누르지 마세요!)</p></div>
+    <div class="tc-step"><h3><span class="n">3</span>시스템 설정에서 허용</h3>
+      <div class="tc-win"><b>개인정보 보호 및 보안</b><br>“타닥정리함”이(가) 차단되었습니다.<br><span class="tc-mock hl">그래도 열기</span></div>
+      <p><b>시스템 설정 → 개인정보 보호 및 보안</b>으로 가서 맨 아래 <b>「그래도 열기」</b>를 눌러요.</p></div>
+    <div class="tc-step"><h3><span class="n">4</span>암호 입력 후 열기</h3>
+      <div class="tc-win"><b>Mac 암호를 입력하세요</b><br><span class="tc-mock">••••••••</span><span class="tc-mock hl">열기</span></div>
+      <p>Mac 로그인 암호를 넣고 <b>「열기」</b>. 이제 시작 화면이 나오면 성공! 다음부터는 그냥 열려요.</p></div>
+  </div>
+
+  <h2 class="tc-h2">열리지 않을 때, 그리고 권한 안내</h2>
+  <div class="tc-card">
+    <h2>옛 macOS라면 더 쉬워요</h2>
+    <p>응용 프로그램의 타닥정리함을 <b>마우스 오른쪽 클릭(또는 Control+클릭) → 열기 → 열기</b>. 최신 macOS에서 이 방법에 「열기」가 안 보이면 위 3번 방법을 쓰세요.</p>
+  </div>
+  <div class="tc-card">
+    <h2>처음 실행하면 이렇게 물어봐요</h2>
+    <ul>
+      <li><b>다운로드·바탕화면·문서 폴더 접근</b> → 「허용」 (문서 정리에 필요해요)</li>
+      <li><b>전체 디스크 접근</b> (선택) → 켜면 더 깊은 캐시까지 볼 수 있어요. 꺼도 대부분 잘 동작해요.</li>
+    </ul>
+    <p class="tc-meta" style="margin-top:12px">그래도 안 되면 <a href="/inquiry.html">문의해 주세요</a>. macOS 버전을 함께 알려주시면 빨리 찾아볼 수 있어요.</p>
+  </div>
+</main>
+
+<div data-chrome="footer"></div>
+<script src="/js/api.js?v=4"></script>
+<script src="/js/site-layout.js"></script>
+<script src="/js/site-header.js?v=16"></script>
+<script src="/js/site-chrome.js"></script>
+<script>
+const nextPath = '/tadak-cleaner'
+const actionsEl = document.getElementById('tc-actions')
+const msgEl = document.getElementById('tc-msg')
+
+function showMsg(text) { msgEl.textContent = text || '' }
+
+function renderLoggedOut() {
+  actionsEl.innerHTML =
+    `<a class="tc-btn google" href="${buildGoogleAuthUrl(nextPath, 'student', 'login')}">${GOOGLE_ICON_SVG} 구글 계정으로 시작하기</a>`
+  showMsg('구글 계정으로 한 번만 로그인해 주시면 바로 받으실 수 있어요.')
+  msgEl.style.color = '#7A6A5C'
+}
+
+function renderReady() {
+  actionsEl.innerHTML = '<button type="button" class="tc-btn" id="tc-download">타닥정리함 다운로드 (.dmg)</button>'
+  document.getElementById('tc-download').addEventListener('click', downloadDmg)
+}
+
+async function downloadDmg() {
+  const btn = document.getElementById('tc-download')
+  btn.disabled = true
+  showMsg('')
+  msgEl.style.color = ''
+  try {
+    const data = await API.get('/cleaner/download')
+    if (!data.url) throw new Error('받으실 주소를 가져오지 못했어요. 잠시 뒤에 다시 눌러주세요.')
+    location.href = data.url
+  } catch (e) {
+    showMsg(e.message || '잠깐 문제가 생겼어요. 다시 한 번 눌러주세요.')
+  } finally {
+    btn.disabled = false
+  }
+}
+
+if (API.isLoggedIn()) renderReady()
+else renderLoggedOut()
+</script>
+</body>
+</html>

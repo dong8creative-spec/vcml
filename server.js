@@ -204,6 +204,7 @@ app.get('/', async (req, res) => {
 app.get('/instructor', (req, res) => res.sendFile(path.join(__dirname, 'public', 'instructors.html')))
 app.get('/reviews', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reviews.html')))
 app.get('/faq', (req, res) => res.sendFile(path.join(__dirname, 'public', 'faq.html')))
+app.get('/tadak-cleaner', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tadak-cleaner.html')))
 app.get('/policy/refund',  (req, res) => res.sendFile(path.join(__dirname, 'public', 'refund.html')))
 app.get('/policy/terms',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')))
 app.get('/policy/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')))
@@ -295,6 +296,7 @@ app.use('/api/reviews',  require('./routes/reviews'))
 app.use('/api/institution', require('./routes/institution'))
 app.use('/api/anticipation', require('./routes/anticipation'))
 app.use('/api/subtitle', require('./routes/subtitle'))
+app.use('/api/cleaner', require('./routes/cleaner'))
 app.use('/api',          require('./routes/public'))
 
 app.post('/api/cron/sync-login-logs', async (req, res) => {
