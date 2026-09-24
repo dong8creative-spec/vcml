@@ -11,7 +11,7 @@
   <link rel="canonical" href="https://vcml.kr/tadaksync-auto" />
   <link rel="stylesheet" href="/css/style.css?v=22" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
-  <link rel="stylesheet" href="/css/subtitle-tool.css?v=24" />
+  <link rel="stylesheet" href="/css/subtitle-tool.css?v=25" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
@@ -122,9 +122,15 @@
     <img class="af-final-symbol" src="/images/tadaksync-auto.svg" alt="" width="72" height="72" loading="lazy" />
     <p class="af-eyebrow">TADAKSYNC AUTO FREE</p>
     <h2>자막이 빨라지면,<br>팔로워는 더 빠르게 모입니다</h2>
-    <div class="af-actions" id="st-download-actions-bottom"></div>
-    <p class="af-maker">타닥클래스 도각쌤이 만들었습니다</p>
-    <p class="af-ad">광고주 모집 · 하루 1,000원 · <a href="/inquiry.html">문의하기</a></p>
+    <div class="af-final-cta-row">
+      <div class="af-actions" id="st-download-actions-bottom"></div>
+      <a class="af-kakao-link" id="af-kakao-link" href="#" target="_blank" rel="noopener noreferrer" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4C7.03 4 3 7.24 3 11.2c0 2.44 1.34 4.6 3.42 5.96L5 20l3.86-2.12c.94.17 1.92.26 3.14.26 4.97 0 9-3.24 9-7.2S16.97 4 12 4z" fill="currentColor"/></svg>
+        오픈채팅방으로 이동
+      </a>
+    </div>
+    <p class="af-maker">타닥클래스의 10년간 실전 영상 편집 노하우로 설계했습니다</p>
+    <p class="af-ad">영상 편집자를 위한 브랜드 제휴 · <a href="/inquiry.html">문의하기</a></p>
   </section>
 </main>
 
@@ -136,6 +142,7 @@ const nextPath = '/tadaksync-auto'
 const actionsEl = document.getElementById('st-download-actions')
 const bottomActionsEl = document.getElementById('st-download-actions-bottom')
 const msgEl = document.getElementById('st-msg')
+const kakaoLinkEl = document.getElementById('af-kakao-link')
 
 function showMsg(text, kind = 'info') {
   msgEl.innerHTML = text ? `<div class="st-banner ${kind}" style="margin-top:14px;margin-bottom:0">${text}</div>` : ''
@@ -181,7 +188,19 @@ async function loadDownload() {
   }
 }
 
+async function loadKakaoOpenChat() {
+  try {
+    const res = await fetch('/api/test-room', { cache: 'no-store' })
+    if (!res.ok) return
+    const cfg = await res.json()
+    if (!/^https?:\/\//i.test(cfg.kakao_url || '')) return
+    kakaoLinkEl.href = cfg.kakao_url
+    kakaoLinkEl.hidden = false
+  } catch (_) {}
+}
+
 loadDownload()
+loadKakaoOpenChat()
 </script>
 </body>
 </html>

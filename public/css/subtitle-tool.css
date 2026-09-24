@@ -854,6 +854,18 @@ html.st-pricing-launched [data-pricing-prelaunch] { display: none !important; }
 }
 .af-final-symbol { display: block; width: 72px; height: 72px; margin: 0 auto 22px; border-radius: 17px; box-shadow: 0 16px 38px rgba(0,0,0,.24); transform: none; }
 .af-final .af-eyebrow { color: var(--auto-mustard); }
+.af-final-cta-row {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 34px;
+}
+.af-final-cta-row .af-actions { margin-top: 0; }
+.af-kakao-link {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 54px;
+  padding: 15px 24px; border: 1px solid #e6d200; border-radius: 999px;
+  color: #191919; background: #fee500; font-size: 16px; font-weight: 800;
+  box-shadow: 0 10px 26px rgba(0,0,0,.16); transition: transform .15s, background .15s;
+}
+.af-kakao-link:hover { color: #191919; background: #f5dc00; transform: translateY(-2px); }
+.af-kakao-link svg { width: 22px; height: 22px; flex: 0 0 22px; color: #3a1d1d; }
 .af-final .af-maker { margin: 34px 0 0; color: #b9d0d1; font-size: 15px; }
 .af-final .af-ad { margin: 10px 0 0; color: #91b4b6; font-size: 14px; }
 .af-final .af-ad a { color: var(--auto-mustard); font-weight: 800; }
@@ -889,6 +901,8 @@ html.st-pricing-launched [data-pricing-prelaunch] { display: none !important; }
   .af-before-copy li { padding: 16px 16px 16px 54px; font-size: 14px; }
   .af-before-copy li::before { top: 14px; left: 16px; }
   .af-final { padding-top: 88px; padding-bottom: 88px; }
+  .af-final-cta-row { flex-direction: column; }
+  .af-final-cta-row .af-actions, .af-final-cta-row .st-btn, .af-kakao-link { width: 100%; max-width: 360px; }
 }
 
 @media (max-width: 430px) {

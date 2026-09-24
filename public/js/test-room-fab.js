@@ -1,7 +1,7 @@
 /** 우측 고정 바로가기 플로팅 패널 (편집 테스트 · 타닥싱크 · SNS) */
 ;(function () {
   const ROOT_ID = 'test-room-fab'
-  const FAB_VERSION = 22
+  const FAB_VERSION = 23
   const ENTER_MS = 540
   const LEAVE_MS = 300
   const REVIEWS_SECTION = '.review-ticker-section, [data-home-section="reviews"]'
@@ -32,6 +32,7 @@
 
   function skipWidget() {
     if (/\/admin\.html$/i.test(location.pathname)) return true
+    if (/^\/(?:tadaksync-auto|subtitle-tool(?:\.html|\/)?)/i.test(location.pathname)) return true
     if (window.self !== window.top) return true
     if (new URLSearchParams(location.search).get('preview') === '1') return true
     return false
