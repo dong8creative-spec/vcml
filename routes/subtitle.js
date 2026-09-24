@@ -10,6 +10,8 @@ const router = express.Router()
 const SUBTITLE_ZIP_PATH = process.env.SUBTITLE_TOOL_STORAGE_PATH || 'subtitle-tool/TadakSync.zip'
 const SUBTITLE_TRIAL_ZIP_PATH = process.env.SUBTITLE_TRIAL_STORAGE_PATH || 'subtitle-tool/TadakSyncTrial.zip'
 const SUBTITLE_TRIAL_MAC_ZIP_PATH = process.env.SUBTITLE_TRIAL_MAC_STORAGE_PATH || 'subtitle-tool/TadakSyncTrial-mac.zip'
+const SUBTITLE_AUTO_FREE_SETUP_PATH = process.env.SUBTITLE_AUTO_FREE_SETUP_PATH
+  || 'subtitle-tool/TadakSync-Auto-Free-Setup.exe'
 const TRIAL_DOWNLOADS = {
   win: {
     path: SUBTITLE_TRIAL_ZIP_PATH,
@@ -348,6 +350,31 @@ router.get('/download-trial', authMiddleware, async (req, res) => {
       error: missing
         ? '테스트 버전 다운로드 파일이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'
         : '테스트 버전 다운로드 링크를 만들지 못했습니다.',
+    })
+  }
+})
+
+/** GET /api/subtitle/download-free — 회원용 TADAKSYNC AUTO FREE 설치파일 */
+router.get('/download-free', authMiddleware, async (req, res) => {
+  try {
+    const result = await db.ensureSubtitleEntitlement(req.user.id)
+    if (!result.ok) {
+      return res.status(403).json(result)
+    }
+    const url = await getSignedDownloadUrl(SUBTITLE_AUTO_FREE_SETUP_PATH, 15 * 60 * 1000)
+    res.json({
+      url,
+      filename: 'TadakSync-Auto-Free-Setup.exe',
+      os: 'win',
+      expires_in: 900,
+    })
+  } catch (e) {
+    console.error('subtitle auto-free download:', e)
+    const missing = /찾을 수 없습니다/.test(e.message || '')
+    res.status(missing ? 404 : 500).json({
+      error: missing
+        ? '무료 버전 설치파일이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'
+        : '무료 버전 다운로드 링크를 만들지 못했습니다.',
     })
   }
 })
