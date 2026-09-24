@@ -143,6 +143,9 @@ const actionsEl = document.getElementById('st-download-actions')
 const bottomActionsEl = document.getElementById('st-download-actions-bottom')
 const msgEl = document.getElementById('st-msg')
 const kakaoLinkEl = document.getElementById('af-kakao-link')
+let freeInstallerLink = null
+let freeInstallerExpiresAt = 0
+let freeInstallerRequest = null
 
 function showMsg(text, kind = 'info') {
   msgEl.innerHTML = text ? `<div class="st-banner ${kind}" style="margin-top:14px;margin-bottom:0">${text}</div>` : ''
@@ -158,15 +161,31 @@ function renderLoggedOut() {
   showMsg('타닥클래스 회원 로그인 후 무료로 받을 수 있습니다')
 }
 
+function getFreeInstallerLink() {
+  if (freeInstallerLink && freeInstallerExpiresAt > Date.now() + 30_000) {
+    return Promise.resolve(freeInstallerLink)
+  }
+  if (!freeInstallerRequest) {
+    freeInstallerRequest = API.get('/subtitle/download-free')
+      .then(data => {
+        if (!data.url) throw new Error('다운로드 주소를 가져오지 못했습니다')
+        freeInstallerLink = data.url
+        freeInstallerExpiresAt = Date.now() + Math.max(0, Number(data.expires_in || 900) - 60) * 1000
+        return freeInstallerLink
+      })
+      .finally(() => { freeInstallerRequest = null })
+  }
+  return freeInstallerRequest
+}
+
 async function downloadFreeInstaller() {
   const buttons = document.querySelectorAll('[id^="btn-download-free"]')
   buttons.forEach(btn => { btn.disabled = true })
   showMsg('안전한 다운로드 주소를 만들고 있습니다')
   try {
-    const data = await API.get('/subtitle/download-free')
-    if (!data.url) throw new Error('다운로드 주소를 가져오지 못했습니다')
+    const url = await getFreeInstallerLink()
     showMsg('다운로드를 시작합니다 파일이 커서 시간이 걸릴 수 있습니다', 'ok')
-    location.href = data.url
+    location.href = url
   } catch (e) {
     showMsg(e.message || '다운로드를 시작하지 못했습니다 잠시 뒤 다시 눌러주세요', 'err')
   } finally {
@@ -174,18 +193,19 @@ async function downloadFreeInstaller() {
   }
 }
 
-async function loadDownload() {
+function loadDownload() {
   if (!API.isLoggedIn()) {
     renderLoggedOut()
     return
   }
-  try {
-    await API.get('/subtitle/entitlement')
-    renderActions(`<button type="button" class="st-btn st-btn--free" id="btn-download-free" onclick="downloadFreeInstaller()"><i class="ti ti-download"></i> Windows 설치파일 무료로 받기</button>`)
-    showMsg('설치파일 용량은 약 1.5GB입니다 저장 공간을 먼저 확인해 주세요', 'info')
-  } catch (e) {
-    renderLoggedOut()
-  }
+  renderActions(`<button type="button" class="st-btn st-btn--free" id="btn-download-free" onclick="downloadFreeInstaller()"><i class="ti ti-download"></i> Windows 설치파일 무료로 받기</button>`)
+  showMsg('설치파일 용량은 약 1.5GB입니다 저장 공간을 먼저 확인해 주세요', 'info')
+  API.get('/subtitle/entitlement').catch(e => {
+    if (e.status === 401 || e.status === 403) renderLoggedOut()
+  })
+  getFreeInstallerLink().catch(e => {
+    if (e.status === 401 || e.status === 403) renderLoggedOut()
+  })
 }
 
 async function loadKakaoOpenChat() {

@@ -12,6 +12,30 @@ const SUBTITLE_TRIAL_ZIP_PATH = process.env.SUBTITLE_TRIAL_STORAGE_PATH || 'subt
 const SUBTITLE_TRIAL_MAC_ZIP_PATH = process.env.SUBTITLE_TRIAL_MAC_STORAGE_PATH || 'subtitle-tool/TadakSyncTrial-mac.zip'
 const SUBTITLE_AUTO_FREE_SETUP_PATH = process.env.SUBTITLE_AUTO_FREE_SETUP_PATH
   || 'subtitle-tool/TadakSync-Auto-Free-Setup.exe'
+const FREE_URL_TTL_MS = 15 * 60 * 1000
+const FREE_URL_CACHE_MS = 12 * 60 * 1000
+let freeDownloadUrlCache = null
+let freeDownloadUrlRequest = null
+
+async function getFreeInstallerUrl() {
+  if (freeDownloadUrlCache && freeDownloadUrlCache.cacheUntil > Date.now()) {
+    return freeDownloadUrlCache
+  }
+  if (!freeDownloadUrlRequest) {
+    const requestedAt = Date.now()
+    freeDownloadUrlRequest = getSignedDownloadUrl(SUBTITLE_AUTO_FREE_SETUP_PATH, FREE_URL_TTL_MS)
+      .then(url => {
+        freeDownloadUrlCache = {
+          url,
+          signedExpiresAt: requestedAt + FREE_URL_TTL_MS,
+          cacheUntil: Math.min(requestedAt + FREE_URL_CACHE_MS, requestedAt + FREE_URL_TTL_MS - 60_000),
+        }
+        return freeDownloadUrlCache
+      })
+      .finally(() => { freeDownloadUrlRequest = null })
+  }
+  return freeDownloadUrlRequest
+}
 const TRIAL_DOWNLOADS = {
   win: {
     path: SUBTITLE_TRIAL_ZIP_PATH,
@@ -357,16 +381,20 @@ router.get('/download-trial', authMiddleware, async (req, res) => {
 /** GET /api/subtitle/download-free — 회원용 TADAKSYNC AUTO FREE 설치파일 */
 router.get('/download-free', authMiddleware, async (req, res) => {
   try {
-    const result = await db.ensureSubtitleEntitlement(req.user.id)
-    if (!result.ok) {
-      return res.status(403).json(result)
+    const user = await db.findUserById(req.user.id)
+    if (!user) {
+      return res.status(403).json({ ok: false, code: 'not_found', error: '사용자를 찾을 수 없습니다.' })
     }
-    const url = await getSignedDownloadUrl(SUBTITLE_AUTO_FREE_SETUP_PATH, 15 * 60 * 1000)
+    if (!user.google_id) {
+      return res.status(403).json({ ok: false, code: 'google_required', error: '타닥싱크는 구글 로그인 계정만 이용할 수 있습니다.' })
+    }
+    const signed = await getFreeInstallerUrl()
+    res.set('Cache-Control', 'private, no-store')
     res.json({
-      url,
+      url: signed.url,
       filename: 'TadakSync-Auto-Free-Setup.exe',
       os: 'win',
-      expires_in: 900,
+      expires_in: Math.max(0, Math.floor((signed.signedExpiresAt - Date.now()) / 1000)),
     })
   } catch (e) {
     console.error('subtitle auto-free download:', e)
