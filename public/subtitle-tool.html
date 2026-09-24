@@ -3,104 +3,181 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>타닥싱크 — 타닥클래스</title>
-  <link rel="stylesheet" href="/css/style.css?v=16" />
+  <title>타닥싱크 AUTO FREE | 캡컷 자동 자막 무료 도구</title>
+  <meta name="description" content="영상을 인식해 자막을 어절 단위로 나누고 캡컷 프로젝트에 바로 삽입하는 윈도우용 무료 도구, 타닥싱크 AUTO FREE." />
+  <meta property="og:title" content="타닥싱크 AUTO FREE" />
+  <meta property="og:description" content="말이 많은 영상도 자막 인식부터 캡컷 삽입까지 한 번에." />
+  <meta property="og:url" content="https://vcml.kr/subtitle-tool.html" />
+  <link rel="canonical" href="https://vcml.kr/subtitle-tool.html" />
+  <link rel="stylesheet" href="/css/style.css?v=20" />
   <link rel="stylesheet" href="/css/common.css?v=3" />
   <link rel="stylesheet" href="/css/subtitle-tool.css?v=10" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 </head>
-<body data-st-active="home">
-<script src="/js/subtitle-pricing-launch.js?v=3"></script>
+<body data-st-active="home" class="st-product-page">
 <div data-site-header></div>
 
-<div class="st-wrap">
-  <div class="st-hero">
-    <h1>타닥싱크 <span style="font-weight:600;font-size:0.72em;color:#888">TadakSync</span></h1>
-    <p>
-      자막 한 줄씩 옮겨 적다가 밤새운 적 있으시죠. 그 시간을 좀 줄여드리고 싶어서, 말한 걸 알아듣고 캡컷에 자막까지 넣어 주는 도구를 만들었어요.
+<main class="af-page">
+  <section class="af-hero">
+    <a class="af-back" href="/"><i class="ti ti-arrow-left"></i> 타닥클래스</a>
+    <p class="af-eyebrow">TADAKSYNC AUTO FREE</p>
+    <h1>AI 연결 없이,<br><span>자막은 자연스럽게.</span></h1>
+    <p class="af-lead">
+      클립 삭제만으로 컷 편집까지 간단하게.<br>
+      완성된 결과는 캡컷 프로젝트에 바로 이어집니다.
     </p>
-  </div>
-
-  <div data-st-subnav></div>
-
-  <div class="st-card">
-    <h2>어느 걸로 시작할까요?</h2>
-    <p class="st-meta" style="margin-bottom:18px">
-      처음이시면 <strong>테스트 버전</strong>부터 편하게 써 보시고, 내 컴퓨터에서 잘 돌아가는지 먼저 확인해 보세요.
-    </p>
-    <div class="st-version-pick st-version-pick--three">
-      <a class="st-version-card st-version-card--free" href="/subtitle-tool/auto-free.html">
-        <span class="st-version-card__badge st-version-card__badge--free">무료로 계속 사용</span>
-        <span class="st-version-card__icon" aria-hidden="true">T</span>
-        <b class="st-version-card__title">타닥싱크 AUTO FREE</b>
-        <span class="st-version-card__desc">
-          영상을 인식해 자막을 나누고 캡컷 프로젝트에 바로 넣습니다. 회원이면 무료로 사용할 수 있어요.
-        </span>
-        <span class="st-version-card__cta st-version-card__cta--btn st-version-card__cta--free">
-          <i class="ti ti-download"></i> 무료 버전 받기
-        </span>
-      </a>
-      <a class="st-version-card st-version-card--trial" href="/subtitle-tool/trial.html">
-        <span class="st-version-card__badge">처음이면 여기부터</span>
-        <span class="st-version-card__icon" aria-hidden="true">🧪</span>
-        <b class="st-version-card__title">먼저 써보기</b>
-        <span class="st-version-card__desc">
-          로그인·결제가 없어도 받아서 열어보고 손에 맞는지만 확인해 보세요. 마음에 안 들면 폴더만 지우면 돼요.
-        </span>
-        <span class="st-version-card__cta st-version-card__cta--btn">
-          <i class="ti ti-download"></i> 먼저 써보기
-        </span>
-      </a>
-      <a class="st-version-card st-version-card--full" href="/subtitle-tool/full.html">
-        <span class="st-version-card__icon" aria-hidden="true">⚡</span>
-        <b class="st-version-card__title">타닥싱크 2 <small>정식</small></b>
-        <span class="st-version-card__desc">
-          손에 익으셨다면 이걸 쓰세요. 더 정확하게 알아듣고, 자막 모양도 원하는 대로 고칠 수 있어요.
-        </span>
-        <span class="st-version-card__cta st-version-card__cta--btn st-version-card__cta--dark">
-          <i class="ti ti-download"></i> 정식 버전 받기
-        </span>
-      </a>
+    <div class="af-actions" id="st-download-actions"><div class="spinner" id="st-loading"></div></div>
+    <div id="st-msg" class="af-message" aria-live="polite"></div>
+    <div class="af-facts" aria-label="지원 정보">
+      <span><b>무료</b> 회원이라면 계속</span>
+      <span><b>Windows</b> 10·11 64비트</span>
+      <span><b>CapCut</b> 프로젝트에 바로</span>
     </div>
-  </div>
+  </section>
 
-  <div class="st-card">
-    <h2>더 알아보기</h2>
-    <div class="st-hub-links">
-      <a class="st-hub-link" href="/subtitle-tool/start.html">
-        <span class="icon">📥</span>
-        <b>설치하는 법</b>
-        <span>받아서 실행하는 순서를 하나씩 알려드려요</span>
-      </a>
-      <a class="st-hub-link" href="/subtitle-tool/guide.html">
-        <span class="icon">📖</span>
-        <b>쓰는 법</b>
-        <span>자막이 만들어지는 과정을 차근차근 보여드려요</span>
-      </a>
-      <a class="st-hub-link" href="/subtitle-tool/pricing.html">
-        <span class="icon">🪙</span>
-        <b>코인 이야기</b>
-        <span data-pricing-prelaunch>지금은 무료로 쓰실 수 있어요</span>
-        <span data-pricing-live>얼마나 쓰면 얼마인지 알려드려요</span>
-      </a>
+  <section class="af-product">
+    <div class="af-product-copy">
+      <p class="af-label">자연스러운 자막</p>
+      <h2>말한 흐름 그대로.<br>읽기는 더 편하게.</h2>
+      <p>영상의 목소리를 인식한 뒤 어절 수에 맞춰 자막을 나눕니다. 자동 나눔으로 빠르게 시작하고, 직접 나눔으로 원하는 호흡을 살릴 수 있습니다.</p>
     </div>
-  </div>
-</div>
+    <figure class="af-device">
+      <img src="/images/tadaksync-auto-free/free-captions.png" alt="타닥싱크 AUTO FREE 자막 확인 화면" />
+    </figure>
+  </section>
 
+  <section class="af-dark">
+    <div class="af-dark-copy">
+      <p class="af-label">간편한 컷 편집</p>
+      <h2>필요 없는 자막을 지우면,<br>클립도 함께 정리.</h2>
+      <p>실수한 말이나 쓰지 않을 문장을 자막에서 선택해 삭제하세요. 무음 구간 줄이기와 함께 적용하면 말의 흐름이 끊기지 않는 영상으로 빠르게 다듬을 수 있습니다.</p>
+    </div>
+    <figure class="af-dark-screen">
+      <img src="/images/tadaksync-auto-free/free-silence.png" alt="타닥싱크 AUTO FREE 무음 구간과 클립 삭제 화면" loading="lazy" />
+    </figure>
+  </section>
+
+  <section class="af-bento-section">
+    <div class="af-section-head">
+      <p class="af-label">한 번의 흐름</p>
+      <h2>인식부터 캡컷 적용까지.</h2>
+    </div>
+    <div class="af-bento">
+      <article class="af-tile af-tile--wide">
+        <span class="af-tile-icon"><i class="ti ti-wave-sine"></i></span>
+        <h3>영상 인식</h3>
+        <p>프로젝트의 목소리와 시간 정보를 읽어 전체 자막 원고를 준비합니다.</p>
+      </article>
+      <article class="af-tile">
+        <span class="af-tile-icon"><i class="ti ti-text-wrap"></i></span>
+        <h3>자동·직접 나눔</h3>
+        <p>빠르게 나누거나, 직접 줄바꿈해 말맛을 살립니다.</p>
+      </article>
+      <article class="af-tile">
+        <span class="af-tile-icon"><i class="ti ti-palette"></i></span>
+        <h3>자막 디자인</h3>
+        <p>영상에 어울리는 크기, 위치, 디자인을 고릅니다.</p>
+      </article>
+      <article class="af-tile af-tile--accent">
+        <span class="af-tile-icon"><i class="ti ti-subtitle"></i></span>
+        <h3>캡컷에 바로 삽입</h3>
+        <p>선택한 프로젝트에 자막과 편집 결과를 적용합니다.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="af-how">
+    <div class="af-section-head">
+      <p class="af-label">처음이어도 간단하게</p>
+      <h2>네 단계면 충분합니다.</h2>
+    </div>
+    <ol class="af-steps">
+      <li><b>저장</b><span>캡컷에서 영상을 넣은 프로젝트를 저장하고 캡컷을 닫습니다.</span></li>
+      <li><b>인식</b><span>가장 최근에 만든 프로젝트를 고르고 영상 인식을 시작합니다.</span></li>
+      <li><b>정리</b><span>자막 줄, 지울 클립, 무음 구간과 자막 디자인을 확인합니다.</span></li>
+      <li><b>적용</b><span>자막 적용을 누르고 캡컷에서 같은 프로젝트를 열어 확인합니다.</span></li>
+    </ol>
+  </section>
+
+  <section class="af-before">
+    <div>
+      <p class="af-label">설치 전 안내</p>
+      <h2>처음 한 번만<br>천천히 설치하세요.</h2>
+    </div>
+    <div class="af-before-copy">
+      <p>영상 인식에 필요한 파일이 함께 들어 있어 설치파일은 약 1.5GB입니다. Windows에서 게시자를 확인할 수 없다는 안내가 나오면, 주소가 <strong>vcml.kr</strong>인지 확인한 뒤 설치를 계속해 주세요.</p>
+      <ul>
+        <li>첫 실행에는 타닥클래스 회원 로그인이 필요합니다.</li>
+        <li>작업 전 캡컷 프로젝트를 저장하고 캡컷을 완전히 닫아 주세요.</li>
+        <li>무료 운영을 위한 광고가 표시되며 재생 볼륨은 50%입니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="af-final">
+    <p class="af-eyebrow">TADAKSYNC AUTO FREE</p>
+    <h2>자막이 빨라지면,<br>편집은 더 즐거워집니다.</h2>
+    <div class="af-actions" id="st-download-actions-bottom"></div>
+    <p class="af-maker">타닥클래스 도각쌤이 만들었습니다.</p>
+    <p class="af-ad">광고주 모집 · 하루 1,000원 · <a href="/inquiry.html">문의하기</a></p>
+  </section>
+</main>
+
+<script src="/js/api.js?v=3"></script>
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=16"></script>
-<script src="/js/subtitle-tool-nav.js?v=3"></script>
 <script>
-;(function () {
-  const code = (new URLSearchParams(location.search).get('code') || '').trim().toLowerCase()
-  if (code) {
-    location.replace(`/subtitle-tool/full.html?code=${encodeURIComponent(code)}`)
+const nextPath = '/subtitle-tool.html'
+const actionsEl = document.getElementById('st-download-actions')
+const bottomActionsEl = document.getElementById('st-download-actions-bottom')
+const msgEl = document.getElementById('st-msg')
+
+function showMsg(text, kind = 'info') {
+  msgEl.innerHTML = text ? `<div class="st-banner ${kind}" style="margin-top:14px;margin-bottom:0">${text}</div>` : ''
+}
+
+function renderActions(html) {
+  actionsEl.innerHTML = html
+  bottomActionsEl.innerHTML = html.replace('id="btn-download-free"', 'id="btn-download-free-bottom"')
+}
+
+function renderLoggedOut() {
+  renderActions(`<a class="st-btn st-btn--free" href="${buildGoogleAuthUrl(nextPath, 'student', 'login')}">${GOOGLE_ICON_SVG} 구글 계정으로 로그인하고 받기</a>`)
+  showMsg('타닥클래스 회원 로그인 후 무료로 받을 수 있습니다.')
+}
+
+async function downloadFreeInstaller() {
+  const buttons = document.querySelectorAll('[id^="btn-download-free"]')
+  buttons.forEach(btn => { btn.disabled = true })
+  showMsg('안전한 다운로드 주소를 만들고 있습니다.')
+  try {
+    const data = await API.get('/subtitle/download-free')
+    if (!data.url) throw new Error('다운로드 주소를 가져오지 못했습니다.')
+    showMsg('다운로드를 시작합니다. 파일이 커서 시간이 걸릴 수 있습니다.', 'ok')
+    location.href = data.url
+  } catch (e) {
+    showMsg(e.message || '다운로드를 시작하지 못했습니다. 잠시 뒤 다시 눌러주세요.', 'err')
+  } finally {
+    buttons.forEach(btn => { btn.disabled = false })
   }
-  if (typeof SubtitlePricingLaunch !== 'undefined') {
-    SubtitlePricingLaunch.applyGates(document.body)
+}
+
+async function loadDownload() {
+  if (!API.isLoggedIn()) {
+    renderLoggedOut()
+    return
   }
-})()
+  try {
+    await API.get('/subtitle/entitlement')
+    renderActions(`<button type="button" class="st-btn st-btn--free" id="btn-download-free" onclick="downloadFreeInstaller()"><i class="ti ti-download"></i> Windows 설치파일 무료로 받기</button>`)
+    showMsg('설치파일 용량은 약 1.5GB입니다. 저장 공간을 먼저 확인해 주세요.', 'info')
+  } catch (e) {
+    renderLoggedOut()
+  }
+}
+
+loadDownload()
 </script>
 </body>
 </html>
