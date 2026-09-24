@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타닥클래스 관리자</title>
   <meta name="robots" content="noindex, nofollow" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=22" />
   <link rel="stylesheet" href="css/admin.css?v=10" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
@@ -1940,7 +1940,7 @@
               </div>
               <div class="form-group">
                 <label>타닥싱크 URL</label>
-                <input type="text" id="tr-tadaksync-url" placeholder="/subtitle-tool.html" maxlength="500" />
+                <input type="text" id="tr-tadaksync-url" placeholder="/tadaksync-auto" maxlength="500" />
               </div>
               <div class="form-group">
                 <label>타닥싱크 버튼 문구</label>
@@ -5168,7 +5168,7 @@
         document.getElementById('tr-label').value = cfg.label || ''
         document.getElementById('tr-room-url').value = cfg.room_url || ''
         document.getElementById('tr-room-label').value = cfg.room_label || ''
-        document.getElementById('tr-tadaksync-url').value = cfg.tadaksync_url || '/subtitle-tool.html'
+        document.getElementById('tr-tadaksync-url').value = cfg.tadaksync_url || '/tadaksync-auto'
         document.getElementById('tr-tadaksync-label').value = cfg.tadaksync_label || ''
         document.getElementById('tr-instagram-url').value = cfg.instagram_url || ''
         document.getElementById('tr-instagram-label').value = cfg.instagram_label || ''
@@ -5192,7 +5192,7 @@
           label: document.getElementById('tr-label').value.trim(),
           room_url: document.getElementById('tr-room-url').value.trim(),
           room_label: document.getElementById('tr-room-label').value.trim(),
-          tadaksync_url: document.getElementById('tr-tadaksync-url').value.trim() || '/subtitle-tool.html',
+          tadaksync_url: document.getElementById('tr-tadaksync-url').value.trim() || '/tadaksync-auto',
           tadaksync_label: document.getElementById('tr-tadaksync-label').value.trim(),
           instagram_url: document.getElementById('tr-instagram-url').value.trim(),
           instagram_label: document.getElementById('tr-instagram-label').value.trim(),

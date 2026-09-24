@@ -52,6 +52,7 @@ app.get('/sitemap.xml', async (req, res) => {
       { url: `${SITE_ORIGIN}/reviews`, priority: '0.7', changefreq: 'weekly' },
       { url: `${SITE_ORIGIN}/blog`, priority: '0.7', changefreq: 'weekly' },
       { url: `${SITE_ORIGIN}/faq`, priority: '0.5', changefreq: 'monthly' },
+      { url: `${SITE_ORIGIN}/tadaksync-auto`, priority: '0.8', changefreq: 'monthly' },
       { url: `${SITE_ORIGIN}/tadak-cleaner`, priority: '0.6', changefreq: 'monthly' },
       { url: `${SITE_ORIGIN}/policy/refund`, priority: '0.5', changefreq: 'monthly' },
       { url: `${SITE_ORIGIN}/policy/privacy`, priority: '0.5', changefreq: 'monthly' },
@@ -209,6 +210,8 @@ app.get('/', async (req, res) => {
 app.get('/instructor', (req, res) => res.sendFile(path.join(__dirname, 'public', 'instructors.html')))
 app.get('/reviews', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reviews.html')))
 app.get('/faq', (req, res) => res.sendFile(path.join(__dirname, 'public', 'faq.html')))
+app.get('/tadaksync-auto', (req, res) => res.sendFile(path.join(__dirname, 'public', 'subtitle-tool.html')))
+app.get('/subtitle-tool.html', (req, res) => res.redirect(301, '/tadaksync-auto'))
 app.get('/tadak-cleaner', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tadak-cleaner.html')))
 app.get('/policy/refund',  (req, res) => res.sendFile(path.join(__dirname, 'public', 'refund.html')))
 app.get('/policy/terms',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')))

@@ -1208,7 +1208,7 @@ router.patch('/test-room', async (req, res) => {
     instagram_label,
     kakao_url: kakao_url || '',
     kakao_label,
-    tadaksync_url: tadaksync_url || '/subtitle-tool.html',
+    tadaksync_url: tadaksync_url || '/tadaksync-auto',
     tadaksync_label,
   })
   res.json({ success: true, ...settings })

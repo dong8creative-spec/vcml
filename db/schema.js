@@ -1145,8 +1145,8 @@ const DEFAULT_TEST_ROOM_CONFIG = {
   instagram_label: '인스타그램',
   kakao_url: '',
   kakao_label: '카카오 대기방',
-  tadaksync_url: '/subtitle-tool.html',
-  tadaksync_label: '타닥싱크',
+  tadaksync_url: '/tadaksync-auto',
+  tadaksync_label: '타닥싱크 Auto',
 }
 
 function devTestRoomFallback(cfg) {

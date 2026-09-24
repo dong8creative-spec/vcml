@@ -68,6 +68,13 @@
       }
     },
     {
+      "src": "/subtitle-tool\\.html",
+      "status": 301,
+      "headers": {
+        "Location": "/tadaksync-auto"
+      }
+    },
+    {
       "src": "/(faq|instructor|reviews|blog|courses)/",
       "status": 301,
       "headers": {

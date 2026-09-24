@@ -1,5 +1,61 @@
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Heavy.woff2') format('woff2');
+  font-weight: 900;
+  font-display: swap;
+}
+
 /* ── COLOR TOKENS (black & white) ── */
 :root {
+  --font-sans: 'Suit', 'Apple SD Gothic Neo', sans-serif;
   --primary:        #111111;
   --primary-dark:   #000000;
   --primary-light:  #888888;
@@ -45,7 +101,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 25.2px; scroll-behavior: smooth; }
 body {
-  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  font-family: var(--font-sans);
   background: #fff;
   color: var(--text-primary);
   line-height: 1.6;
@@ -54,6 +110,7 @@ body {
   line-break: strict;
   overflow-wrap: normal;
 }
+button, input, select, textarea { font-family: inherit; }
 /* URL·이메일·코드 등 끊기지 않으면 레이아웃이 깨지는 문자열만 예외 */
 code, kbd, samp, pre,
 .break-all,
@@ -829,12 +886,12 @@ img { display: block; max-width: 100%; }
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(calc(-1 * var(--rt-marquee-distance, 50%)), 0, 0); }
 }
-.rticker-card { background: #fff; border-radius: 14px; padding: 20px 22px; border: 1px solid var(--border); width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
-.rticker-stars { color: var(--warning); font-size: 11px; letter-spacing: 1px; }
-.rticker-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; flex: 1; }
-.rticker-author { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.rticker-card { background: #fff; border-radius: 14px; padding: 20px 22px; border: 1px solid var(--border); width: 260px; min-height: 196px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.rticker-stars { color: var(--warning); font-size: 11px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; }
+.rticker-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; flex: 1; min-width: 0; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
+.rticker-author { display: flex; align-items: center; gap: 8px; min-width: 0; margin-top: 4px; overflow: hidden; }
 .rticker-dot { width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.rticker-author span { font-size: 13px; color: var(--text-hint); }
+.rticker-author > span { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text-hint); }
 .rticker-author span strong { color: var(--text-primary); font-weight: 700; }
 .rticker-course { font-size: 12.5px; color: var(--primary); font-weight: 600; }
 

@@ -1,7 +1,7 @@
 /** 우측 고정 바로가기 플로팅 패널 (편집 테스트 · 타닥싱크 · SNS) */
 ;(function () {
   const ROOT_ID = 'test-room-fab'
-  const FAB_VERSION = 20
+  const FAB_VERSION = 22
   const ENTER_MS = 540
   const LEAVE_MS = 300
   const REVIEWS_SECTION = '.review-ticker-section, [data-home-section="reviews"]'
@@ -11,14 +11,14 @@
 
   const SYMBOLS = {
     room: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="1.75"/><path d="M3 9h18M8 5V3.5M16 5V3.5M9.5 13.5l2-2.5 2 2.5 2.5-3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    tadaksync: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M7 11h10M7 15h4M13 15h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`,
+    tadaksync: `<img src="/images/tadaksync-auto.svg" alt="" width="30" height="30" aria-hidden="true">`,
     instagram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="4.1" stroke="currentColor" stroke-width="1.75"/><circle cx="17.35" cy="6.65" r="1.15" fill="currentColor"/></svg>`,
     kakao: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4C7.03 4 3 7.24 3 11.2c0 2.44 1.34 4.6 3.42 5.96L5 20l3.86-2.12c.94.17 1.92.26 3.14.26 4.97 0 9-3.24 9-7.2S16.97 4 12 4z" fill="currentColor"/></svg>`,
   }
 
   const TIPS = {
     room: '편집자 테스트 신청',
-    tadaksync: '타닥싱크 — 자막 도구',
+    tadaksync: '타닥싱크 Auto — 자동 자막·컷 편집',
     instagram: '도각쌤의 인스타그램',
     kakao: '수강생 실시간 커뮤니티',
   }
@@ -222,11 +222,11 @@
   }
 
   function resolveTadaksyncUrl(cfg) {
-    const raw = String(cfg.tadaksync_url || '/subtitle-tool.html').trim()
-    if (!raw) return '/subtitle-tool.html'
+    const raw = String(cfg.tadaksync_url || '/tadaksync-auto').trim()
+    if (!raw || raw === '/subtitle-tool.html' || raw.startsWith('/subtitle-tool/')) return '/tadaksync-auto'
     if (raw.startsWith('/')) return raw
     if (isValidUrl(raw)) return raw
-    return '/subtitle-tool.html'
+    return '/tadaksync-auto'
   }
 
   function buildButton(type, href, ariaLabel, symbol, tip) {
@@ -250,7 +250,7 @@
     buttons.push(buildButton('room', roomHref, `${roomLabel}. ${TIPS.room}`, SYMBOLS.room, TIPS.room))
 
     const tadaksyncHref = resolveTadaksyncUrl(cfg)
-    const tadaksyncLabel = cfg.tadaksync_label || '타닥싱크'
+    const tadaksyncLabel = cfg.tadaksync_label || '타닥싱크 Auto'
     buttons.push(buildButton('tadaksync', tadaksyncHref, `${tadaksyncLabel}. ${TIPS.tadaksync}`, SYMBOLS.tadaksync, TIPS.tadaksync))
 
     if (isValidUrl(cfg.instagram_url)) {
