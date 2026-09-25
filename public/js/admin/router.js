@@ -24,7 +24,6 @@
     homepage: '홈페이지 관리',
     'smartstore-reviews': '스마트스토어 후기',
     settings: '사이트 설정',
-    institution: '열람실 관리',
   }
 
   const loaders = {}

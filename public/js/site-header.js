@@ -16,7 +16,7 @@
       <a href="/instructor" data-nav-key="instructors">강사 소개</a>
       <a href="/notices.html" data-nav-key="notices">공지사항</a>
       <a href="/#all" data-gnb-all data-nav-key="all">전체강의</a>
-      <a href="/institution.html" data-nav-key="institution">열람실</a>
+      <a href="/tadaksync-auto" data-nav-key="institution">타닥싱크</a>
     </nav>
     <div class="header-right" id="header-right">${DEFAULT_AUTH_HTML}</div>
   </div>
