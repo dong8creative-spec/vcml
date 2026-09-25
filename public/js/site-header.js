@@ -42,7 +42,7 @@
     return window.API || (typeof API !== 'undefined' ? API : null)
   }
 
-  function renderHeaderAuth(wallet) {
+  function renderHeaderAuth() {
     const hr = document.getElementById('header-right')
     if (!hr) return
     const api = getApi()
@@ -54,30 +54,11 @@
     if (api.isLoggedIn()) {
       const user = api.user()
       const id = esc(userIdLabel(user))
-      const coinText = wallet && Number.isFinite(Number(wallet.balance))
-        ? Number(wallet.balance).toLocaleString()
-        : '-'
       hr.innerHTML = `
         <a href="/mypage.html" class="nav-btn nav-user-id">${id}</a>
-        <a href="/coins.html" class="nav-btn nav-coin" title="코인 관리">🪙 ${coinText}</a>
         <a href="#" class="nav-btn nav-btn-outline" onclick="API.logout();return false">로그아웃</a>`
     } else {
       hr.innerHTML = guestAuthHtml(next)
-    }
-  }
-
-  async function renderHeaderAuthWithWallet() {
-    const api = getApi()
-    if (!api || !api.isLoggedIn()) {
-      renderHeaderAuth()
-      return
-    }
-    renderHeaderAuth()
-    try {
-      const wallet = await api.get('/subtitle/wallet?limit=1')
-      renderHeaderAuth(wallet)
-    } catch (_) {
-      renderHeaderAuth({ balance: 0 })
     }
   }
 
@@ -207,17 +188,16 @@
     if (!isHome && typeof applyHomepageLayout === 'function') {
       try { await applyHomepageLayout() } catch (_) {}
     }
-    await renderHeaderAuthWithWallet()
     initGnbCatLinks()
     initReadableTextFormatter()
     document.dispatchEvent(new Event('site-header-ready'))
   }
 
-  window.renderHeaderAuth = () => renderHeaderAuthWithWallet()
+  window.renderHeaderAuth = renderHeaderAuth
   window.initGnbCatLinks = initGnbCatLinks
 
   function scheduleBoot() {
-    boot().catch(() => renderHeaderAuthWithWallet())
+    boot().catch(() => renderHeaderAuth())
   }
 
   if (document.readyState === 'loading') {
@@ -225,5 +205,4 @@
   } else {
     scheduleBoot()
   }
-  window.addEventListener('load', () => renderHeaderAuthWithWallet())
 })()

@@ -27,12 +27,6 @@
       <a href="#curriculum" class="nav-item" data-section="curriculum">
         <i class="ti ti-list"></i> 커리큘럼 편집
       </a>
-      <a href="#programs" class="nav-item" data-section="programs">
-        <i class="ti ti-package"></i> 수강생 프로그램
-      </a>
-      <a href="#subtitle-coins" class="nav-item" data-section="subtitle-coins">
-        <i class="ti ti-coin"></i> 타닥싱크 코인
-      </a>
 
       <div class="nav-group-label">회원 관리</div>
       <a href="#students" class="nav-item" data-section="students">
@@ -76,9 +70,6 @@
       </a>
       <a href="#reviews" class="nav-item" data-section="reviews">
         <i class="ti ti-star"></i> 수강 후기
-      </a>
-      <a href="#smartstore-reviews" class="nav-item" data-section="smartstore-reviews">
-        <i class="ti ti-shopping-bag-check"></i> 스마트스토어 후기
       </a>
       <a href="#notices" class="nav-item" data-section="notices">
         <i class="ti ti-bell"></i> 공지사항
@@ -286,12 +277,6 @@
                 <input type="url" id="live-replay-url" placeholder="https://..." maxlength="500" />
               </div>
               <div class="form-group">
-                <label>제공 프로그램 <span style="font-size: 13.2px;color:#aaa">타닥싱크 등</span></label>
-                <select id="live-program-id">
-                  <option value="">없음</option>
-                </select>
-              </div>
-              <div class="form-group">
                 <label>강의 자료 다운로드 링크 <span style="font-size: 13.2px;color:#aaa">시작 1시간 전 ~ 종료 후 1주일</span></label>
                 <input type="url" id="live-material-url" placeholder="https://..." maxlength="500" />
               </div>
@@ -488,12 +473,6 @@
                 <label>수강생 단톡방 링크</label>
                 <input type="url" id="cm-live-chat-url" placeholder="https://open.kakao.com/o/..." maxlength="500" />
               </div>
-              <div class="form-group">
-                <label>제공 프로그램</label>
-                <select id="cm-program-id">
-                  <option value="">없음</option>
-                </select>
-              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -594,59 +573,6 @@
           </div>
           <div class="modal-footer">
             <button class="btn-sm" onclick="document.getElementById('course-enrollments-modal').style.display='none'">닫기</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== SECTION: PROGRAMS ===== -->
-    <section class="section" id="sec-programs">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">수강생 프로그램</div>
-            <p class="sec-sub">강의에 연결할 데스크톱 프로그램(타닥싱크 등)을 관리합니다. 기본 오픈 시점은 강의 시작 2시간 전입니다.</p>
-          </div>
-          <button type="button" class="btn-primary-sm" onclick="openProgramModal()"><i class="ti ti-plus"></i> 프로그램 추가</button>
-        </div>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr><th>이름</th><th>식별자</th><th>오픈</th><th>다운로드 경로</th><th>공개</th><th></th></tr>
-            </thead>
-            <tbody id="programs-tbody">
-              <tr class="empty-state-row"><td colspan="6">불러오는 중…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="modal-overlay" id="program-modal" style="display:none">
-        <div class="modal">
-          <div class="modal-header">
-            <div class="modal-title" id="program-modal-title">프로그램</div>
-            <button class="modal-close" onclick="document.getElementById('program-modal').style.display='none'">✕</button>
-          </div>
-          <div class="modal-body modal-body--form">
-            <input type="hidden" id="pg-id" />
-            <div class="form-group"><label>이름</label><input type="text" id="pg-name" placeholder="타닥싱크" /></div>
-            <div class="form-group"><label>식별자(slug)</label><input type="text" id="pg-slug" placeholder="tadak-sync" /></div>
-            <div class="form-group"><label>페이지 경로</label><input type="text" id="pg-page" placeholder="/subtitle-tool.html" /></div>
-            <div class="form-group"><label>Storage 경로</label><input type="text" id="pg-storage" placeholder="subtitle-tool/TadakSync.zip" /></div>
-            <div class="form-group"><label>혜택 문구</label><input type="text" id="pg-feature" placeholder="수강생 전용 타닥싱크 2(TadakSync 2) 제공" /></div>
-            <div class="two-col">
-              <div class="form-group"><label>시작 N시간 전 오픈</label><input type="number" id="pg-early" min="0" step="0.5" value="2" /></div>
-              <div class="form-group"><label>공개</label>
-                <select id="pg-published"><option value="1">공개</option><option value="0">비공개</option></select>
-              </div>
-            </div>
-            <div class="two-col">
-              <div class="form-group"><label>최초 코인</label><input type="number" id="pg-initial" min="0" value="100" /></div>
-              <div class="form-group"><label>후기 보너스 코인</label><input type="number" id="pg-review" min="0" value="50" /></div>
-            </div>
-            <div class="form-group"><label>도각쌤 인스타그램 URL</label><input type="url" id="pg-community-instagram" placeholder="https://instagram.com/..." maxlength="500" /></div>
-            <div class="form-group"><label>단톡방 입장 URL</label><input type="url" id="pg-community-chat" placeholder="https://open.kakao.com/o/..." maxlength="500" /></div>
-            <div class="form-group"><label>웹사이트 URL</label><input type="url" id="pg-community-website" placeholder="https://vcml.kr" maxlength="500" /></div>
-            <button class="btn-save" onclick="saveProgram()">저장</button>
           </div>
         </div>
       </div>
@@ -1271,85 +1197,6 @@
       </div>
     </section>
 
-    <!-- ===== SECTION: SMARTSTORE REVIEWS ===== -->
-    <section class="section" id="sec-smartstore-reviews">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">스마트스토어 후기 검수</div>
-            <p class="sec-sub">앱에서 「작성 완료」를 누른 신고를 확인하고 150코인 지급 여부를 결정합니다.</p>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn-sm active" onclick="loadSmartstoreReviews('pending')" id="smartstore-tab-pending">대기</button>
-            <button class="btn-sm" onclick="loadSmartstoreReviews('approved')" id="smartstore-tab-approved">승인</button>
-            <button class="btn-sm" onclick="loadSmartstoreReviews('rejected')" id="smartstore-tab-rejected">거절</button>
-            <button class="btn-sm" onclick="loadSmartstoreReviews('all')" id="smartstore-tab-all">전체</button>
-          </div>
-        </div>
-        <table class="data-table">
-          <thead>
-            <tr><th>수강생</th><th>상태</th><th>신고</th><th>검수</th><th>사유/메모</th><th>관리</th></tr>
-          </thead>
-          <tbody id="smartstore-reviews-tbody">
-            <tr><td colspan="6" style="text-align:center;color:#888">로딩 중...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- ===== SECTION: SUBTITLE COINS ===== -->
-    <section class="section" id="sec-subtitle-coins">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">타닥싱크 코인 관리</div>
-            <p class="sec-sub" id="subtitle-coins-meta">
-              코인을 지급받은 회원의 잔액을 조정하고, 채널 관리자(일일 +20, 상한 1,000)를 설정합니다. 일반 회원 상한 500,000.
-            </p>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="search" id="subtitle-coins-search" placeholder="이름·이메일 검색" style="min-width:220px" />
-            <button class="btn-sm" id="subtitle-coins-search-btn">검색</button>
-            <button class="btn-sm" onclick="loadSubtitleCoins()">새로고침</button>
-          </div>
-        </div>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>회원</th>
-              <th>잔액</th>
-              <th>상한</th>
-              <th>일일 보충</th>
-              <th>채널 관리자</th>
-              <th>코인 조정</th>
-              <th>내역</th>
-            </tr>
-          </thead>
-          <tbody id="subtitle-coins-tbody">
-            <tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="modal-overlay" id="subtitle-coins-ledger-modal" style="display:none">
-        <div class="modal" style="max-width:720px">
-          <div class="modal-header">
-            <div class="modal-title" id="subtitle-coins-ledger-title">코인 내역</div>
-            <button class="modal-close" onclick="document.getElementById('subtitle-coins-ledger-modal').style.display='none'">✕</button>
-          </div>
-          <div style="padding:0 20px 16px;max-height:420px;overflow:auto">
-            <table class="data-table">
-              <thead>
-                <tr><th>일시</th><th>증감</th><th>잔액</th><th>사유</th><th>메모</th></tr>
-              </thead>
-              <tbody id="subtitle-coins-ledger-tbody">
-                <tr><td colspan="5" style="text-align:center;color:#888">로딩 중...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <!-- ===== SECTION: NOTICES ===== -->
     <section class="section" id="sec-notices">
@@ -3454,7 +3301,6 @@
       document.getElementById('cm-live-material-url').value = c.live_material_url || ''
       document.getElementById('cm-live-replay-url').value = c.live_replay_url || ''
       document.getElementById('cm-live-chat-url').value = c.live_chat_url || ''
-      fillCmProgramSelect(c.program_id)
       const liveLinks = document.getElementById('cm-live-links')
       if (liveLinks) liveLinks.style.display = isVodCourseAdmin(c) ? 'none' : ''
       document.getElementById('course-modal').style.display = 'flex'
@@ -3514,7 +3360,6 @@
         payload.live_material_url = document.getElementById('cm-live-material-url').value.trim() || null
         payload.live_replay_url = document.getElementById('cm-live-replay-url').value.trim() || null
         payload.live_chat_url = document.getElementById('cm-live-chat-url').value.trim() || null
-        payload.program_id = document.getElementById('cm-program-id')?.value || null
         if (Number(payload.sale_price) === 0) payload.course_type = 'live'
         else if (course?.course_type === 'live' && Number(payload.sale_price) > 0) payload.course_type = 'recorded'
       } else {
@@ -3610,7 +3455,6 @@
       if (c.live_ends_at) {
         try { document.getElementById('live-ends-at').value = toDatetimeLocalValue(c.live_ends_at) } catch {}
       }
-      fillProgramSelect(c.program_id || '')
       onLiveTypeChange()
       document.getElementById('live-panel').scrollIntoView({ behavior: 'smooth' })
     }
@@ -3621,26 +3465,6 @@
       if (isNaN(d.getTime())) return ''
       const pad = n => String(n).padStart(2, '0')
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-    }
-
-    let _programsCache = null
-    async function fillProgramSelect(selectedId) {
-      const sel = document.getElementById('live-program-id')
-      if (!sel) return
-      try {
-        if (!_programsCache) {
-          _programsCache = await API.get('/admin/programs')
-          if (!Array.isArray(_programsCache) || !_programsCache.length) {
-            const ensured = await API.post('/admin/programs/ensure-subtitle', {})
-            _programsCache = ensured?.program ? [ensured.program] : []
-          }
-        }
-      } catch {
-        _programsCache = []
-      }
-      sel.innerHTML = '<option value="">없음</option>' + (_programsCache || []).map(p =>
-        `<option value="${p.id}" ${String(p.id) === String(selectedId) ? 'selected' : ''}>${esc(p.name || p.slug)}${p.initial_coins != null ? ` (${Number(p.initial_coins).toLocaleString()}코인)` : ''}</option>`
-      ).join('')
     }
 
     let _liveCurriculumImageData = null
@@ -3691,7 +3515,6 @@
       const live_curriculum_text = document.getElementById('live-curriculum-text').value.trim()
       const imageUrl = document.getElementById('live-curriculum-image-url').value.trim()
       const live_curriculum_image = _liveCurriculumImageData || imageUrl || null
-      const program_id = document.getElementById('live-program-id')?.value || ''
       await API.patch(`/admin/courses/${_selectedCourseId}`, {
         course_type,
         delivery_mode: 'live_first',
@@ -3706,88 +3529,9 @@
         live_status,
         live_curriculum_text: live_curriculum_text || null,
         live_curriculum_image,
-        program_id: program_id || null,
       })
       alert('설정이 저장되었습니다.')
       loadCourses()
-    }
-
-    async function loadProgramsAdmin() {
-      const tbody = document.getElementById('programs-tbody')
-      if (!tbody) return
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">로딩 중...</td></tr>'
-      try {
-        let list = await API.get('/admin/programs')
-        if (!Array.isArray(list) || !list.length) {
-          await API.post('/admin/programs/ensure-subtitle', {})
-          list = await API.get('/admin/programs')
-        }
-        _programsCache = list
-        if (!list.length) {
-          tbody.innerHTML = '<tr class="empty-state-row"><td colspan="6">등록된 프로그램이 없습니다.</td></tr>'
-          return
-        }
-        tbody.innerHTML = list.map(p => `
-          <tr>
-            <td>${esc(p.name)}</td>
-            <td class="td-sub">${esc(p.slug)}</td>
-            <td>시작 ${Number(p.early_access_hours ?? 2)}시간 전</td>
-            <td class="td-sub">${esc(p.storage_path || '-')}</td>
-            <td>${p.is_published ? '공개' : '비공개'}</td>
-            <td><button type="button" class="btn-sm" onclick="openProgramModal('${esc(p.id)}')">수정</button></td>
-          </tr>`).join('')
-      } catch (e) {
-        tbody.innerHTML = `<tr class="empty-state-row"><td colspan="6">${esc(e.message || '불러오기 실패')}</td></tr>`
-      }
-    }
-
-    function openProgramModal(id) {
-      const p = (id && _programsCache) ? _programsCache.find(x => String(x.id) === String(id)) : null
-      document.getElementById('program-modal').style.display = 'flex'
-      document.getElementById('program-modal-title').textContent = p ? '프로그램 수정' : '프로그램 추가'
-      document.getElementById('pg-id').value = p?.id || ''
-      document.getElementById('pg-name').value = p?.name || ''
-      document.getElementById('pg-slug').value = p?.slug || ''
-      document.getElementById('pg-page').value = p?.page_path || '/subtitle-tool.html'
-      document.getElementById('pg-storage').value = p?.storage_path || 'subtitle-tool/TadakSync.zip'
-      document.getElementById('pg-feature').value = p?.feature_label || ''
-      document.getElementById('pg-early').value = p?.early_access_hours ?? 2
-      document.getElementById('pg-published').value = p?.is_published === 0 ? '0' : '1'
-      document.getElementById('pg-initial').value = p?.initial_coins ?? 100
-      document.getElementById('pg-review').value = p?.review_bonus_coins ?? 50
-      document.getElementById('pg-community-instagram').value = p?.community_instagram_url || ''
-      document.getElementById('pg-community-chat').value = p?.community_chat_url || ''
-      document.getElementById('pg-community-website').value = p?.community_website_url || 'https://vcml.kr'
-    }
-
-    async function saveProgram() {
-      const id = document.getElementById('pg-id').value
-      const body = {
-        name: document.getElementById('pg-name').value.trim(),
-        slug: document.getElementById('pg-slug').value.trim(),
-        page_path: document.getElementById('pg-page').value.trim(),
-        storage_path: document.getElementById('pg-storage').value.trim(),
-        feature_label: document.getElementById('pg-feature').value.trim(),
-        early_access_hours: Number(document.getElementById('pg-early').value) || 2,
-        is_published: document.getElementById('pg-published').value === '1' ? 1 : 0,
-        initial_coins: parseInt(document.getElementById('pg-initial').value, 10) || 0,
-        review_bonus_coins: parseInt(document.getElementById('pg-review').value, 10) || 0,
-        community_instagram_url: document.getElementById('pg-community-instagram').value.trim() || null,
-        community_chat_url: document.getElementById('pg-community-chat').value.trim() || null,
-        community_website_url: document.getElementById('pg-community-website').value.trim() || 'https://vcml.kr',
-        type: 'desktop_coin',
-        requires_google: 1,
-      }
-      if (!body.name) { alert('이름을 입력하세요.'); return }
-      try {
-        if (id) await API.patch('/admin/programs/' + id, body)
-        else await API.post('/admin/programs', body)
-        _programsCache = null
-        document.getElementById('program-modal').style.display = 'none'
-        loadProgramsAdmin()
-      } catch (e) {
-        alert(e.message || '저장 실패')
-      }
     }
 
     let _allStudents = []
@@ -4317,211 +4061,6 @@
       await API.del(`/admin/reviews/${id}`);
       loadReviews();
     }
-
-    let _smartstoreReviewStatus = 'pending'
-    const smartstoreStatusLabel = {
-      pending: '<span class="badge-status pending">확인 대기</span>',
-      approved: '<span class="badge-status paid">지급 완료</span>',
-      rejected: '<span class="badge-status refund">재작성 요청</span>',
-    }
-
-    async function loadSmartstoreReviews(status = _smartstoreReviewStatus || 'pending') {
-      _smartstoreReviewStatus = status
-      ;['pending', 'approved', 'rejected', 'all'].forEach(s => {
-        const tab = document.getElementById('smartstore-tab-' + s)
-        if (tab) tab.classList.toggle('active', s === status)
-      })
-      const tbody = document.getElementById('smartstore-reviews-tbody')
-      if (!tbody) return
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888">로딩 중...</td></tr>'
-      try {
-        const rows = await API.get('/admin/smartstore-reviews?status=' + encodeURIComponent(status))
-        if (!rows.length) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888">표시할 신고가 없습니다.</td></tr>'
-          return
-        }
-        tbody.innerHTML = rows.map(r => {
-          const claimed = r.claimed_at ? r.claimed_at.slice(0, 16).replace('T', ' ') : '-'
-          const reviewed = r.reviewed_at ? r.reviewed_at.slice(0, 16).replace('T', ' ') : '-'
-          const canReview = r.status === 'pending'
-          return `<tr>
-            <td>${esc(r.user_name || '-')}<br><span class="td-sub">${esc(r.user_email || '')}</span></td>
-            <td>${smartstoreStatusLabel[r.status] || esc(r.status || '-')}</td>
-            <td class="td-date">${claimed}<br><span class="td-sub">신고 ${Number(r.claim_count || 1)}회</span></td>
-            <td class="td-date">${reviewed}</td>
-            <td class="td-sub" style="max-width:260px;white-space:pre-line">${esc(r.reject_reason || r.admin_note || '-')}</td>
-            <td>
-              ${canReview ? `<button class="btn-sm" onclick="approveSmartstoreReview('${escAttr(r.user_id)}')">승인(+150)</button>
-              <button class="btn-sm danger" onclick="rejectSmartstoreReview('${escAttr(r.user_id)}')">거절</button>` : '-'}
-            </td>
-          </tr>`
-        }).join('')
-      } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#e00">${esc(e.message || '불러오기 실패')}</td></tr>`
-      }
-    }
-
-    async function approveSmartstoreReview(userId) {
-      if (!confirm('스마트스토어 후기를 확인했고 150코인을 지급할까요?')) return
-      try {
-        await API.post('/admin/smartstore-reviews/' + encodeURIComponent(userId) + '/approve', {})
-        alert('지급 처리되었습니다.')
-        loadSmartstoreReviews(_smartstoreReviewStatus)
-      } catch (e) {
-        alert(e.message || '승인 실패')
-      }
-    }
-
-    async function rejectSmartstoreReview(userId) {
-      const reason = prompt(
-        '앱에 띄울 재작성 요청 사유를 입력하세요.',
-        '스마트스토어에서 작성하신 후기를 아직 확인하지 못했어요. 후기를 작성해 주신 후 다시 「작성 완료」를 눌러 주세요.',
-      )
-      if (reason === null) return
-      try {
-        await API.post('/admin/smartstore-reviews/' + encodeURIComponent(userId) + '/reject', { reason })
-        alert('재작성 요청을 보냈습니다.')
-        loadSmartstoreReviews(_smartstoreReviewStatus)
-      } catch (e) {
-        alert(e.message || '거절 실패')
-      }
-    }
-
-    const subtitleCoinReasonLabel = {
-      initial: '최초 지급',
-      daily_login: '일일 로그인',
-      review_bonus: '후기 보너스',
-      smartstore_review: '스마트스토어 후기',
-      consume: '음성 인식',
-      refund: '환불',
-      line_split: '줄 나눔',
-      line_split_refund: '줄 나눔 환불',
-      translate: '번역',
-      translate_refund: '번역 환불',
-      admin_adjust: '관리자 조정',
-    }
-
-    async function loadSubtitleCoins() {
-      const tbody = document.getElementById('subtitle-coins-tbody')
-      const metaEl = document.getElementById('subtitle-coins-meta')
-      if (!tbody) return
-      const q = document.getElementById('subtitle-coins-search')?.value?.trim() || ''
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">로딩 중...</td></tr>'
-      try {
-        const data = await API.get('/admin/subtitle-coin-wallets?q=' + encodeURIComponent(q))
-        const rows = data.rows || []
-        const meta = data.meta || {}
-        if (metaEl && meta.balance_cap_member != null) {
-          metaEl.textContent = `일반 회원 상한 ${Number(meta.balance_cap_member).toLocaleString()}코인 · 채널 관리자 일일 +${meta.daily_login_coins_channel_admin} (상한 ${Number(meta.balance_cap_channel_admin).toLocaleString()}) · 일반 일일 +${meta.daily_login_coins}`
-        }
-        if (!rows.length) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">표시할 지갑이 없습니다.</td></tr>'
-          return
-        }
-        tbody.innerHTML = rows.map(r => {
-          const capLabel = Number(r.balance_cap || 0).toLocaleString()
-          const balLabel = Number(r.balance || 0).toLocaleString()
-          const dailyLabel = '+' + Number(r.daily_login_coins || 1)
-          const adminBadge = r.is_channel_admin
-            ? '<span class="badge-status paid">채널 관리자</span>'
-            : '<span class="td-sub">일반</span>'
-          const toggleLabel = r.is_channel_admin ? '해제' : '지정'
-          const toggleNext = r.is_channel_admin ? 'false' : 'true'
-          return `<tr>
-            <td>${esc(r.user_name || '-')}<br><span class="td-sub">${esc(r.user_email || r.user_id || '')}</span></td>
-            <td><strong>${balLabel}</strong></td>
-            <td>${capLabel}</td>
-            <td>${dailyLabel}</td>
-            <td>${adminBadge}<br>
-              <button class="btn-sm" onclick="toggleSubtitleChannelAdmin('${escAttr(r.user_id)}', ${toggleNext})">${toggleLabel}</button>
-            </td>
-            <td style="min-width:200px">
-              <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
-                <input type="number" id="subtitle-delta-${escAttr(r.user_id)}" value="10" style="width:72px" />
-                <button class="btn-sm" onclick="adjustSubtitleCoins('${escAttr(r.user_id)}')">적용</button>
-              </div>
-              <span class="td-sub">+는 지급, −는 차감 (상한 적용)</span>
-            </td>
-            <td><button class="btn-sm" onclick="openSubtitleCoinLedger('${escAttr(r.user_id)}', '${escAttr(r.user_name || r.user_email || r.user_id)}')">내역</button></td>
-          </tr>`
-        }).join('')
-      } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#e00">${esc(e.message || '불러오기 실패')}</td></tr>`
-      }
-    }
-
-    async function adjustSubtitleCoins(userId) {
-      const input = document.getElementById('subtitle-delta-' + userId)
-      const delta = parseInt(input?.value, 10)
-      if (!Number.isFinite(delta) || delta === 0) {
-        alert('0이 아닌 정수를 입력하세요.')
-        return
-      }
-      const note = prompt('조정 사유(선택, ledger에 기록됩니다)', '') ?? ''
-      if (note === null) return
-      const sign = delta > 0 ? '+' : ''
-      if (!confirm(`${sign}${delta}코인을 조정할까요?`)) return
-      try {
-        const result = await API.post('/admin/subtitle-coin-wallets/' + encodeURIComponent(userId) + '/adjust', { delta, note })
-        let msg = `적용 완료. 잔액 ${Number(result.balance || 0).toLocaleString()}코인`
-        if (result.capped) msg += ` (상한 ${Number(result.cap || 0).toLocaleString()} 적용)`
-        alert(msg)
-        loadSubtitleCoins()
-      } catch (e) {
-        alert(e.message || '조정 실패')
-      }
-    }
-
-    async function toggleSubtitleChannelAdmin(userId, enabled) {
-      const label = enabled ? '채널 관리자로 지정' : '채널 관리자 해제'
-      if (!confirm(`${label}할까요?`)) return
-      try {
-        await API.patch('/admin/users/' + encodeURIComponent(userId) + '/subtitle-channel-admin', { enabled: !!enabled })
-        alert('저장되었습니다.')
-        loadSubtitleCoins()
-      } catch (e) {
-        alert(e.message || '설정 실패')
-      }
-    }
-
-    async function openSubtitleCoinLedger(userId, label) {
-      const modal = document.getElementById('subtitle-coins-ledger-modal')
-      const title = document.getElementById('subtitle-coins-ledger-title')
-      const tbody = document.getElementById('subtitle-coins-ledger-tbody')
-      if (!modal || !tbody) return
-      title.textContent = `코인 내역 — ${label || userId}`
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888">로딩 중...</td></tr>'
-      modal.style.display = 'flex'
-      try {
-        const rows = await API.get('/admin/subtitle-coin-wallets/' + encodeURIComponent(userId) + '/ledger')
-        if (!rows.length) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888">내역이 없습니다.</td></tr>'
-          return
-        }
-        tbody.innerHTML = rows.map(row => {
-          const when = row.created_at ? row.created_at.slice(0, 16).replace('T', ' ') : '-'
-          const delta = Number(row.delta || 0)
-          const deltaLabel = (delta > 0 ? '+' : '') + delta.toLocaleString()
-          const bal = Number(row.balance_after || 0).toLocaleString()
-          const reason = subtitleCoinReasonLabel[row.reason] || row.reason || '-'
-          const note = row.note || row.ref || '-'
-          return `<tr>
-            <td class="td-date">${when}</td>
-            <td style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}">${deltaLabel}</td>
-            <td>${bal}</td>
-            <td>${esc(reason)}</td>
-            <td class="td-sub">${esc(String(note))}</td>
-          </tr>`
-        }).join('')
-      } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#e00">${esc(e.message || '불러오기 실패')}</td></tr>`
-      }
-    }
-
-    document.getElementById('subtitle-coins-search-btn')?.addEventListener('click', () => loadSubtitleCoins())
-    document.getElementById('subtitle-coins-search')?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') loadSubtitleCoins()
-    })
 
     // ── 편집자 신청 관리 ──
     const expLabel = { 0:'6개월~1년', 1:'1년↑', 2:'2년↑', 3:'3년↑', 5:'5년↑' }
@@ -6387,8 +5926,6 @@
     AdminRouter.registerLoaders({
       dashboard: loadDashboard,
       courses: loadCourses,
-      programs: loadProgramsAdmin,
-      'subtitle-coins': loadSubtitleCoins,
       curriculum: loadCurriculumAdmin,
       students: loadStudents,
       'login-logs': () => { loadLoginLogsSheetsStatus(); return loadLoginLogs() },
@@ -6396,7 +5933,6 @@
       coupons: loadCouponsAdmin,
       refunds: () => AdminOps.loadRefunds(),
       reviews: loadReviews,
-      'smartstore-reviews': () => loadSmartstoreReviews('pending'),
       instructors: loadInstructors,
       'editor-apps': () => loadEditorApps('pending'),
       'editor-program': loadEditorProgramDesign,
@@ -6415,22 +5951,6 @@
     window.loadTickets = (status) => AdminSupport.loadTickets(status)
     window.loadFaqs = () => AdminSupport.loadFaqs()
     AdminRouter.bindNav()
-
-    async function fillCmProgramSelect(selectedId) {
-      const sel = document.getElementById('cm-program-id')
-      if (!sel) return
-      try {
-        if (!_programsCache) {
-          _programsCache = await API.get('/admin/programs')
-        }
-      } catch (_) {
-        _programsCache = []
-      }
-      const list = Array.isArray(_programsCache) ? _programsCache : (_programsCache?.programs || [])
-      sel.innerHTML = `<option value="">없음</option>` + list.map(p =>
-        `<option value="${escAttr(p.id)}"${String(p.id) === String(selectedId || '') ? ' selected' : ''}>${esc(p.name || p.slug)}${p.initial_coins != null ? ` (${Number(p.initial_coins).toLocaleString()}코인)` : ''}</option>`
-      ).join('')
-    }
 
     // 상단 날짜 동적 초기화
     ;(function() {

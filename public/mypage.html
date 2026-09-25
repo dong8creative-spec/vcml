@@ -45,99 +45,15 @@
       <div class="section-title">내 강의</div>
       <div id="my-courses"><div class="spinner"></div></div>
     </div>
-    <!-- 내 클라이언츠 (의뢰인) -->
-    <div class="my-section" id="sec-projects">
-      <div class="section-title">내 클라이언츠</div>
-      <div id="my-projects"><div class="spinner"></div></div>
-    </div>
-    <!-- 내 견적 (편집자) -->
-    <div class="my-section" id="sec-quotes">
-      <div class="section-title">내 견적 현황</div>
-      <div id="my-quotes"><div class="spinner"></div></div>
-    </div>
-    <!-- 에디터즈 프로필 -->
-    <div class="my-section" id="sec-editor-profile">
-      <div class="section-title">에디터즈 프로필</div>
-      <div id="editor-profile-wrap"><div class="spinner"></div></div>
-    </div>
     <!-- 내 쿠폰 -->
     <div class="my-section" id="sec-coupons">
       <div class="section-title">내 쿠폰</div>
       <div id="my-coupons"><div class="spinner"></div></div>
     </div>
-    <!-- 프로필 · 설정 -->
-    <div class="my-section" id="sec-settings">
-      <div class="section-title">프로필 · 설정</div>
-
-      <div class="profile-form-card">
-        <div class="profile-photo-row">
-          <div class="profile-photo-preview" id="profile-photo-preview">?</div>
-          <div class="profile-photo-actions">
-            <label><i class="ti ti-camera"></i> 사진 변경<input type="file" id="profile-photo-input" accept="image/jpeg,image/png,image/webp" /></label>
-            <button type="button" class="btn-photo-remove" id="btn-photo-remove" style="display:none" onclick="removeProfilePhoto()">사진 삭제</button>
-            <span style="font-size:12px;color:#bbb;line-height:1.5">JPG·PNG·WEBP, 최대 2MB</span>
-          </div>
-        </div>
-
-        <div class="pf-field">
-          <label>이름</label>
-          <input type="text" id="pf-name" maxlength="30" placeholder="표시 이름" />
-        </div>
-
-        <div class="pf-field">
-          <label>휴대폰 번호 <span class="pf-hint">라이브·알림톡 수신용</span></label>
-          <input type="tel" id="pf-phone" maxlength="13" placeholder="010-0000-0000" oninput="formatPhoneInput(this)" />
-        </div>
-
-        <div class="pf-field">
-          <label>자기소개 <span class="pf-hint">공개 프로필에 표시됩니다</span></label>
-          <textarea id="pf-bio" maxlength="500" placeholder="간단한 자기소개를 작성해주세요. (에디터즈·클라이언츠 매칭 시 도움이 됩니다)"></textarea>
-          <div class="pf-char-count"><span id="pf-bio-count">0</span>/500</div>
-        </div>
-
-        <div class="pf-field">
-          <label>SNS · 개인 링크 <span class="pf-hint">최대 5개</span></label>
-          <div class="link-list" id="link-list"></div>
-          <button type="button" class="btn-add-link" id="btn-add-link" onclick="addLinkRow()"><i class="ti ti-plus"></i> 링크 추가</button>
-        </div>
-
-        <button type="button" class="btn-save-profile" id="btn-save-profile" onclick="saveProfile()">프로필 저장</button>
-      </div>
-
-      <div class="settings-card">
-        <div class="settings-row">
-          <div>
-            <div class="settings-label">마케팅 정보 수신 동의</div>
-            <div class="settings-desc">신규 강의 오픈, 이벤트, 할인 정보를 이메일 또는 등록하신 연락처(알림톡·문자)로 받습니다.</div>
-          </div>
-          <div>
-            <span id="marketing-status" style="font-size: 15.6px;color:#aaa"></span>
-            <button id="btn-marketing-toggle" class="btn-settings-action" onclick="withdrawMarketing()">마케팅 수신 철회</button>
-          </div>
-        </div>
-        <div style="font-size: 14.4px;color:#bbb;margin-top:12px;line-height:1.6">
-          동의 철회 시 마케팅 수신(이메일·문자·알림톡)이 즉시 중단됩니다. 동의 기록은 법적 근거로 보관됩니다.
-        </div>
-      </div>
-
-      <div class="settings-card">
-        <div class="settings-label" style="margin-bottom:4px">연결된 계정</div>
-        <div class="settings-desc" style="margin-bottom:14px">소셜 계정을 연결하면 다음부터 해당 계정으로도 로그인할 수 있습니다.</div>
-        <div class="settings-row">
-          <div>
-            <div class="settings-label">Google</div>
-            <div class="settings-desc" id="google-link-status">확인 중…</div>
-          </div>
-          <button id="btn-google-link-toggle" class="btn-settings-action" onclick="toggleSocialLink('google')">연결하기</button>
-        </div>
-        <div class="settings-row" style="margin-top:12px">
-          <div>
-            <div class="settings-label">카카오</div>
-            <div class="settings-desc" id="kakao-link-status">확인 중…</div>
-          </div>
-          <button id="btn-kakao-link-toggle" class="btn-settings-action" onclick="toggleSocialLink('kakao')">연결하기</button>
-        </div>
-      </div>
+    <!-- 타닥싱크 -->
+    <div class="my-section" id="sec-tadaksync">
+      <div class="section-title">타닥싱크</div>
+      <div id="tadaksync-wrap"><div class="spinner"></div></div>
     </div>
   </main>
 </div>
@@ -148,28 +64,27 @@
 <script src="/js/site-layout.js"></script>
 <script src="/js/site-header.js?v=17"></script>
 <script>
-if (!API.isLoggedIn()) { location.href = '/login.html?next=/mypage.html' }
+if (!API.isLoggedIn()) { location.href = '/login.html?next=' + encodeURIComponent('/mypage.html' + location.search) }
 const user = API.user()
 
-const statusLabel = { open:'모집중', matched:'매칭완료', contract:'계약완료', in_progress:'작업중', delivered:'납품완료', completed:'완료', cancelled:'취소' }
 const memberTypeLabel = { student:'수강생', client:'의뢰인' }
 const roleLabel = { editor:'에디터즈', admin:'관리자' }
-const memberType = user.member_type || 'student'
-
-const LINK_PRESETS = ['Instagram', 'YouTube', 'Website', 'Blog', 'Behance', '기타']
 
 let profileData = null
 let profilePromise = null
 let myCoursesPromise = null
 window.__myCoursesPromise = null
-let pendingProfileImage = undefined
 
 function getProfileData({ refresh = false } = {}) {
   if (!refresh && profileData) return Promise.resolve(profileData)
   if (!refresh && profilePromise) return profilePromise
   profilePromise = API.get('/my/profile').then(p => {
     profileData = p
-    const stored = { ...API.user(), ...userPayloadFromProfile(p), phone: p.phone }
+    const stored = {
+      ...API.user(),
+      name: p.name, phone: p.phone, bio: p.bio, profile_image: p.profile_image,
+      social_links: p.social_links, member_type: p.member_type, role: p.role,
+    }
     localStorage.setItem('tc_user', JSON.stringify(stored))
     return p
   }).finally(() => { profilePromise = null })
@@ -222,25 +137,14 @@ function renderSidebar(profile) {
 renderSidebar(user)
 
 const tabs = [
-  { id:'courses',  icon:'ti-book',         label:'내 강의',       always:true },
-  { id:'coins',    icon:'ti-coin',         label:'코인 관리',     always:true, href:'/coins.html' },
-  { id:'projects', icon:'ti-clipboard',    label:'내 클라이언츠', memberTypes:['client'], roles:['admin'] },
-  { id:'quotes',   icon:'ti-file-invoice', label:'내 견적',       roles:['editor','admin'] },
-  { id:'editor-profile', icon:'ti-rosette', label:'에디터즈 프로필', roles:['editor','admin'] },
-  { id:'coupons',  icon:'ti-ticket',       label:'내 쿠폰',       always:true },
-  { id:'settings', icon:'ti-user-circle',  label:'프로필 · 설정', always:true },
+  { id:'courses',   icon:'ti-book',   label:'내 강의' },
+  { id:'coupons',   icon:'ti-ticket', label:'내 쿠폰' },
+  { id:'tadaksync', icon:'/images/tadaksync-auto.svg', label:'타닥싱크' },
 ]
 
-const visibleTabs = tabs.filter(t => {
-  if (t.always) return true
-  if (t.memberTypes && t.memberTypes.includes(memberType)) return true
-  if (t.roles && t.roles.includes(user.role)) return true
-  return false
-})
-
-document.getElementById('my-nav').innerHTML = visibleTabs.map(t => `
-  <a class="my-nav-item" ${t.href ? '' : `data-sec="${t.id}"`} href="${t.href || '#'}" ${t.href ? '' : `onclick="showSection('${t.id}');return false"`}>
-    <i class="ti ${t.icon}"></i><span>${t.label}</span>
+document.getElementById('my-nav').innerHTML = tabs.map(t => `
+  <a class="my-nav-item" data-sec="${t.id}" href="#" onclick="showSection('${t.id}');return false">
+    ${t.icon.startsWith('/') ? `<img src="${t.icon}" alt="" style="width:20px;height:20px;flex-shrink:0;object-fit:contain" />` : `<i class="ti ${t.icon}"></i>`}<span>${t.label}</span>
   </a>`).join('')
 
 document.getElementById('my-nav-logout').innerHTML = `
@@ -258,220 +162,8 @@ function showSection(id) {
   if (navItem) navItem.classList.add('active')
   currentSection = id
   if (id === 'courses') loadCourses()
-  if (id === 'projects') loadProjects()
-  if (id === 'quotes') loadQuotes()
-  if (id === 'editor-profile') loadEditorProfile()
   if (id === 'coupons') loadCoupons()
-  if (id === 'settings') loadSettings()
-}
-
-function updatePhotoPreview(src, initial) {
-  const el = document.getElementById('profile-photo-preview')
-  const rm = document.getElementById('btn-photo-remove')
-  if (src) {
-    el.innerHTML = `<img src="${src.replace(/"/g, '&quot;')}" alt="" />`
-    if (rm) rm.style.display = 'block'
-  } else {
-    el.textContent = initial || '?'
-    if (rm) rm.style.display = 'none'
-  }
-}
-
-function addLinkRow(label = 'Instagram', url = '') {
-  const list = document.getElementById('link-list')
-  const rows = list.querySelectorAll('.link-row')
-  if (rows.length >= 5) { toast('링크는 최대 5개까지 등록할 수 있습니다.', 'info'); return }
-  const opts = LINK_PRESETS.map(p => `<option value="${p}" ${p === label ? 'selected' : ''}>${p}</option>`).join('')
-  const row = document.createElement('div')
-  row.className = 'link-row'
-  row.innerHTML = `
-    <select class="link-label">${opts}</select>
-    <input type="url" class="link-url" placeholder="https://..." value="${escapeHtml(url)}" />
-    <button type="button" class="btn-link-remove" onclick="this.closest('.link-row').remove();updateAddLinkBtn()" title="삭제">×</button>`
-  list.appendChild(row)
-  updateAddLinkBtn()
-}
-
-function updateAddLinkBtn() {
-  const btn = document.getElementById('btn-add-link')
-  const n = document.querySelectorAll('#link-list .link-row').length
-  if (btn) btn.style.display = n >= 5 ? 'none' : 'inline-flex'
-}
-
-function collectLinks() {
-  return [...document.querySelectorAll('#link-list .link-row')].map(row => ({
-    label: row.querySelector('.link-label')?.value || '기타',
-    url: row.querySelector('.link-url')?.value.trim() || '',
-  })).filter(l => l.url)
-}
-
-function resizeProfileImage(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const img = new Image()
-      img.onload = () => {
-        const max = 256
-        let w = img.width, h = img.height
-        if (w > max || h > max) {
-          if (w > h) { h = Math.round(h * max / w); w = max }
-          else { w = Math.round(w * max / h); h = max }
-        }
-        const canvas = document.createElement('canvas')
-        canvas.width = w; canvas.height = h
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-        resolve(canvas.toDataURL('image/jpeg', 0.85))
-      }
-      img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'))
-      img.src = reader.result
-    }
-    reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'))
-    reader.readAsDataURL(file)
-  })
-}
-
-document.getElementById('profile-photo-input')?.addEventListener('change', async e => {
-  const file = e.target.files?.[0]
-  if (!file) return
-  if (file.size > 2 * 1024 * 1024) { toast('2MB 이하 이미지만 업로드할 수 있습니다.', 'error'); e.target.value = ''; return }
-  try {
-    pendingProfileImage = await resizeProfileImage(file)
-    updatePhotoPreview(pendingProfileImage, document.getElementById('pf-name')?.value?.[0])
-  } catch (err) {
-    toast(err.message, 'error')
-  }
-  e.target.value = ''
-})
-
-function removeProfilePhoto() {
-  pendingProfileImage = null
-  updatePhotoPreview(null, document.getElementById('pf-name')?.value?.[0] || user.name?.[0])
-}
-
-document.getElementById('pf-bio')?.addEventListener('input', e => {
-  document.getElementById('pf-bio-count').textContent = e.target.value.length
-})
-
-async function loadSettings() {
-  try {
-    profileData = await getProfileData()
-    pendingProfileImage = undefined
-    document.getElementById('pf-name').value = profileData.name || ''
-    document.getElementById('pf-phone').value = profileData.phone || ''
-    document.getElementById('pf-bio').value = profileData.bio || ''
-    document.getElementById('pf-bio-count').textContent = (profileData.bio || '').length
-    updatePhotoPreview(profileData.profile_image, profileData.name?.[0])
-    const list = document.getElementById('link-list')
-    list.innerHTML = ''
-    const links = profileData.social_links?.length ? profileData.social_links : []
-    if (links.length) links.forEach(l => addLinkRow(l.label, l.url))
-    else addLinkRow()
-    updateAddLinkBtn()
-    const ms = document.getElementById('marketing-status')
-    const mb = document.getElementById('btn-marketing-toggle')
-    if (profileData.marketing_agreed) {
-      ms.textContent = '동의함 ✅'; mb.style.display = 'inline-block'
-    } else {
-      ms.textContent = '미동의'; mb.style.display = 'none'
-    }
-    renderLinkStatus(profileData)
-    renderSidebar(profileData)
-  } catch (e) {
-    toast('프로필을 불러오지 못했습니다.', 'error')
-  }
-}
-
-function renderLinkStatus(p) {
-  const map = [
-    ['google', p.google_linked, 'google-link-status', 'btn-google-link-toggle'],
-    ['kakao', p.kakao_linked, 'kakao-link-status', 'btn-kakao-link-toggle'],
-  ]
-  map.forEach(([provider, linked, statusId, btnId]) => {
-    const statusEl = document.getElementById(statusId)
-    const btn = document.getElementById(btnId)
-    if (!statusEl || !btn) return
-    if (linked) {
-      statusEl.textContent = '연결됨 ✅'
-      btn.textContent = '연결 해제'
-      btn.dataset.linked = '1'
-      // 다른 로그인 수단이 없으면 해제 비활성화
-      const otherLinked = provider === 'google' ? p.kakao_linked : p.google_linked
-      btn.disabled = !p.has_password && !otherLinked
-    } else {
-      statusEl.textContent = '연결 안 됨'
-      btn.textContent = '연결하기'
-      btn.dataset.linked = '0'
-      btn.disabled = false
-    }
-  })
-}
-
-async function toggleSocialLink(provider) {
-  const btn = document.getElementById(provider === 'google' ? 'btn-google-link-toggle' : 'btn-kakao-link-toggle')
-  if (btn?.dataset.linked === '1') {
-    // 연결 해제
-    if (!confirm(`${provider === 'google' ? 'Google' : '카카오'} 연결을 해제할까요?`)) return
-    try {
-      const res = await API.post('/my/unlink/' + provider, {})
-      renderLinkStatus(res.user)
-      toast('연결을 해제했습니다.', 'success')
-    } catch (e) {
-      toast(e.message || '해제 중 오류가 발생했습니다.', 'error')
-    }
-    return
-  }
-  // 연결하기: 단기 토큰 발급 후 OAuth 왕복
-  try {
-    const { link_token } = await API.get('/auth/link-token')
-    const builder = provider === 'google' ? buildGoogleAuthUrl : buildKakaoAuthUrl
-    location.href = builder('/mypage.html', null, 'link', link_token)
-  } catch (e) {
-    toast(e.message || '연동을 시작하지 못했습니다.', 'error')
-  }
-}
-
-// 연동 결과 토스트 (콜백 리다이렉트 파라미터)
-;(function handleLinkResult() {
-  const sp = new URLSearchParams(location.search)
-  if (sp.get('link_success')) {
-    const p = sp.get('link_success')
-    toast(`${p === 'google' ? 'Google' : '카카오'} 계정을 연결했습니다.`, 'success')
-    history.replaceState(null, '', location.pathname)
-  } else if (sp.get('link_error')) {
-    toast(decodeURIComponent(sp.get('link_error')), 'error')
-    history.replaceState(null, '', location.pathname)
-  }
-})()
-
-async function saveProfile() {
-  const btn = document.getElementById('btn-save-profile')
-  btn.disabled = true; btn.textContent = '저장 중...'
-  try {
-    const body = {
-      name: document.getElementById('pf-name').value.trim(),
-      phone: document.getElementById('pf-phone').value.trim(),
-      bio: document.getElementById('pf-bio').value.trim(),
-      social_links: collectLinks(),
-    }
-    if (pendingProfileImage !== undefined) body.profile_image = pendingProfileImage
-    const res = await API.patch('/my/profile', body)
-    profileData = res.user
-    profilePromise = null
-    pendingProfileImage = undefined
-    if (typeof invalidatePhoneCache === 'function') invalidatePhoneCache()
-    const stored = { ...API.user(), ...userPayloadFromProfile(res.user), phone: res.user.phone }
-    localStorage.setItem('tc_user', JSON.stringify(stored))
-    renderSidebar(profileData)
-    toast('프로필이 저장되었습니다.', 'success')
-  } catch (e) {
-    toast(e.message, 'error')
-  } finally {
-    btn.disabled = false; btn.textContent = '프로필 저장'
-  }
-}
-
-function userPayloadFromProfile(p) {
-  return { name: p.name, phone: p.phone, bio: p.bio, profile_image: p.profile_image, social_links: p.social_links, member_type: p.member_type, role: p.role }
+  if (id === 'tadaksync') loadTadaksync()
 }
 
 async function initProfile() {
@@ -484,8 +176,8 @@ async function initProfile() {
 initProfile()
 
 // 초기 탭
-const initTab = new URLSearchParams(location.search).get('tab') || visibleTabs[0]?.id
-showSection(typeof initTab === 'string' ? initTab : initTab.id)
+const initTab = new URLSearchParams(location.search).get('tab') || tabs[0].id
+showSection(initTab)
 
 // ── 내 강의 ──
 function isLiveLikeCourse(c) {
@@ -494,52 +186,6 @@ function isLiveLikeCourse(c) {
   if (c.course_type === 'live') return true
   if (c.live_starts_at || c.live_schedule) return true
   return false
-}
-
-function getCourseLectureStart(c) {
-  const raw = c?.live_starts_at || c?.checkout_ends_at
-  if (!raw) return null
-  const d = new Date(raw)
-  return isNaN(d.getTime()) ? null : d
-}
-
-const PROGRAM_EARLY_ACCESS_MS = 2 * 60 * 60 * 1000
-
-function isCourseLectureStarted(c, at = new Date()) {
-  const start = getCourseLectureStart(c)
-  if (!start) return true
-  return at.getTime() >= start.getTime() - PROGRAM_EARLY_ACCESS_MS
-}
-
-function getProgramOpenAt(c) {
-  const start = getCourseLectureStart(c)
-  if (!start) return null
-  return new Date(start.getTime() - PROGRAM_EARLY_ACCESS_MS)
-}
-
-function formatLectureStartLabel(date) {
-  if (!date) return ''
-  return date.toLocaleString('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })
-}
-
-function renderSubtitleToolDownload(c) {
-  if (c.program?.type !== 'desktop_coin') return ''
-  const programName = '타닥싱크 2'
-  const pagePath = c.program?.page_path || '/subtitle-tool.html'
-  if (!API.isAdmin() && !isCourseLectureStarted(c)) {
-    const openAt = getProgramOpenAt(c)
-    const label = openAt ? `${formatLectureStartLabel(openAt)}부터` : '강의 시작 2시간 전부터'
-    return `<div class="my-vod-actions"><span class="pc-btn secondary my-vod-btn--disabled" aria-disabled="true"><i class="ti ti-clock"></i> ${escapeHtml(label)} 다운로드 가능</span></div>`
-  }
-  return `<div class="my-vod-actions"><a href="${escapeHtml(pagePath)}" class="pc-btn secondary" style="display:inline-flex;width:auto"><i class="ti ti-download"></i> ${escapeHtml(programName)} 다운로드</a></div>`
 }
 
 function renderCourseThumbBadge(c) {
@@ -622,7 +268,7 @@ function renderLiveCourseCard(c) {
       </div>
     </a>
     ${hasActions ? `<div class="my-lc-actions">${replayBtn}${materialBtn}${meetWrap}</div>` : ''}
-    ${renderSubtitleToolDownload(c)}
+    
     ${renderCertificateAction(c)}
     ${renderCourseReviewBlock(c)}
     ${renderCancelAction(c)}
@@ -887,7 +533,7 @@ function renderVodCourseCard(c) {
         <div class="mc-meta">${c.completed_chapters}/${c.total_chapters}강 완료${accessExpired ? ' · <span class="mc-access-expired">수강 기간 만료</span>' : (c.access?.access_ends_at ? ` · ${formatAccessUntil(c.access.access_ends_at)}까지` : '')}</div>
       </div>
     </a>
-    ${renderSubtitleToolDownload(c)}
+    
     ${renderCertificateAction(c)}
     ${renderCourseReviewBlock(c)}
     ${renderCancelAction(c)}
@@ -927,146 +573,6 @@ function openRequestedReview() {
   review.open = true
   review.scrollIntoView({ behavior: 'smooth', block: 'center' })
   setTimeout(() => document.getElementById('review-content-' + courseId)?.focus(), 300)
-}
-
-// ── 내 클라이언츠 (의뢰인) ──
-async function loadProjects() {
-  const el = document.getElementById('my-projects')
-  if (el.dataset.loaded) return
-  try {
-    const projects = await API.get('/projects/my/list')
-    el.dataset.loaded = '1'
-    if (!projects.length) {
-      el.innerHTML = `<div class="empty-state"><i class="ti ti-clipboard-off"></i><p>등록한 클라이언츠가 없습니다.<br><a href="/project-post.html">클라이언츠 등록하기 →</a></p></div>`
-      return
-    }
-    const isActive = s => ['matched','contract','in_progress','delivered'].includes(s)
-    el.innerHTML = `<div style="margin-bottom:12px;display:flex;justify-content:flex-end"><a href="/project-post.html" class="pc-btn primary">+ 새 클라이언츠 등록</a></div>
-    <div class="proj-list">${projects.map(p => `
-      <div class="proj-card">
-        <div class="pc-left">
-          <span class="pc-cat">${p.category}</span>
-          <div class="pc-title">${p.title}</div>
-          <div class="pc-meta">등록일 ${(p.created_at||'').slice(0,10)} · 견적 ${p.quote_count||0}건</div>
-        </div>
-        <div class="pc-right">
-          <span class="status-badge ${p.status}">${statusLabel[p.status]||p.status}</span>
-          ${isActive(p.status)
-            ? `<a href="/chat.html?id=${p.id}" class="pc-btn primary">채팅방</a>`
-            : `<a href="/project-detail.html?id=${p.id}" class="pc-btn secondary">상세보기</a>`}
-        </div>
-      </div>`).join('')}</div>`
-  } catch(e) {
-    el.innerHTML = '<p style="color:#aaa;text-align:center">클라이언츠 목록을 불러오지 못했습니다.</p>'
-  }
-}
-
-// ── 내 견적 (편집자) ──
-async function loadQuotes() {
-  const el = document.getElementById('my-quotes')
-  if (el.dataset.loaded) return
-  try {
-    const quotes = await API.get('/projects/my/quotes')
-    el.dataset.loaded = '1'
-    if (!quotes.length) {
-      el.innerHTML = `<div class="empty-state"><i class="ti ti-file-off"></i><p>제출한 견적이 없습니다.<br><a href="/projects.html">클라이언츠 보기 →</a></p></div>`
-      return
-    }
-    const isActive = s => ['matched','contract','in_progress','delivered'].includes(s)
-    el.innerHTML = `<div class="quote-list">${quotes.map(q => {
-      const statusMap = { pending:'검토 대기', accepted:'수락됨 ✅', rejected:'미선택' }
-      return `<div class="quote-card">
-        <div class="qc-top">
-          <div>
-            <div class="qc-project">${q.project_title || '(삭제된 클라이언츠)'}</div>
-            <div style="font-size: 14.4px;color:#aaa">${q.project_category || ''}</div>
-          </div>
-          <div class="qc-amount">₩${Number(q.amount).toLocaleString()}</div>
-        </div>
-        <div class="qc-msg">${q.message}</div>
-        <div class="qc-bottom">
-          <span class="qc-meta">${(q.created_at||'').slice(0,10)} 제출</span>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span class="qs-badge ${q.status}">${statusMap[q.status]||q.status}</span>
-            ${q.status === 'accepted' && isActive(q.project_status)
-              ? `<a href="/chat.html?id=${q.project_id}" class="pc-btn primary" style="font-size: 14.4px;padding:5px 12px">채팅방</a>`
-              : `<a href="/project-detail.html?id=${q.project_id}" class="pc-btn secondary" style="font-size: 14.4px;padding:5px 12px">클라이언츠 보기</a>`}
-          </div>
-        </div>
-      </div>`
-    }).join('')}</div>`
-  } catch(e) {
-    el.innerHTML = '<p style="color:#aaa;text-align:center">견적 목록을 불러오지 못했습니다.</p>'
-  }
-}
-
-// ── 에디터즈 프로필 ──
-const EDITOR_LOCATIONS = ['서울','경기','인천','부산','대구','광주','대전','울산','세종','강원','충북','충남','전북','전남','경북','경남','제주','해외·원격']
-const WORK_TYPE_LABELS = { remote:'원격·재택', hybrid:'하이브리드', onsite:'현장 근무', project:'프로젝트 단위', fulltime:'풀타임·장기' }
-
-async function loadEditorProfile() {
-  const wrap = document.getElementById('editor-profile-wrap')
-  if (wrap.dataset.loaded) return
-  try {
-    const app = await API.get('/editor/my-application')
-    if (!app || app.status !== 'approved') {
-      wrap.innerHTML = `<div class="empty-state"><i class="ti ti-rosette"></i><p>승인된 에디터즈만 이용할 수 있습니다.<br><a href="/editor-program.html" style="color:#111111;font-weight:700">에디터즈 신청하기 →</a></p></div>`
-      wrap.dataset.loaded = '1'
-      return
-    }
-    const featuredActive = app.is_featured
-    const untilStr = app.featured_until ? app.featured_until.slice(0, 10) : ''
-    const locOpts = EDITOR_LOCATIONS.map(l => `<option value="${l}" ${app.location === l ? 'selected' : ''}>${l}</option>`).join('')
-    const wtOpts = (app.work_type_options || Object.entries(WORK_TYPE_LABELS).map(([value, label]) => ({ value, label })))
-      .map(o => `<option value="${o.value}" ${app.work_type === o.value ? 'selected' : ''}>${o.label}</option>`).join('')
-    wrap.innerHTML = `
-      <div class="featured-banner ${featuredActive ? 'active' : ''}">
-        <h4>${featuredActive ? '⭐ 명단 상단 노출 중' : '상위노출 쿠폰'}</h4>
-        <p>${featuredActive
-          ? `~ ${untilStr}까지 에디터즈 목록 상단에 노출됩니다.`
-          : '승격(승인) 시 1주일 상위노출이 적용되고, 수강생은 상위노출 쿠폰 2만원×5장이 발급됩니다.'}</p>
-      </div>
-      <div class="profile-form-card">
-        <div class="pf-field">
-          <label>활동 지역</label>
-          <select id="ed-location"><option value="">선택</option>${locOpts}</select>
-        </div>
-        <div class="pf-field">
-          <label>희망 근무 형태</label>
-          <select id="ed-work-type"><option value="">선택</option>${wtOpts}</select>
-        </div>
-        <div class="pf-field">
-          <label>에디터 소개 <span class="pf-hint">에디터즈 목록에 표시</span></label>
-          <textarea id="ed-intro" maxlength="1000">${escapeHtml(app.intro || '')}</textarea>
-        </div>
-        <div class="pf-field">
-          <label>포트폴리오 링크</label>
-          <input type="url" id="ed-portfolio" value="${escapeHtml(app.portfolio_url || '')}" placeholder="https://..." />
-        </div>
-        <button type="button" class="btn-save-profile" onclick="saveEditorProfile()">에디터즈 프로필 저장</button>
-      </div>`
-    wrap.dataset.loaded = '1'
-  } catch(e) {
-    wrap.innerHTML = '<p style="color:#aaa;text-align:center">에디터즈 프로필을 불러오지 못했습니다.</p>'
-  }
-}
-
-async function saveEditorProfile() {
-  const location = document.getElementById('ed-location')?.value
-  const work_type = document.getElementById('ed-work-type')?.value
-  const intro = document.getElementById('ed-intro')?.value.trim()
-  const portfolio_url = document.getElementById('ed-portfolio')?.value.trim()
-  if (!location) return alert('활동 지역을 선택해주세요.')
-  if (!work_type) return alert('희망 근무 형태를 선택해주세요.')
-  try {
-    await API.patch('/editor/profile', { location, work_type, intro, portfolio_url: portfolio_url || null })
-    alert('에디터즈 프로필이 저장되었습니다.')
-    const wrap = document.getElementById('editor-profile-wrap')
-    delete wrap.dataset.loaded
-    loadEditorProfile()
-  } catch(e) {
-    alert(e.message || '저장 중 오류가 발생했습니다.')
-  }
 }
 
 // ── 내 쿠폰 ──
@@ -1171,23 +677,78 @@ async function useFeaturedCoupon(couponId) {
     const el = document.getElementById('my-coupons')
     delete el.dataset.loaded
     loadCoupons()
-    const wrap = document.getElementById('editor-profile-wrap')
-    if (wrap) { delete wrap.dataset.loaded; loadEditorProfile() }
   } catch(e) {
     alert(e.message || '쿠폰 사용 중 오류가 발생했습니다.')
   }
 }
 
-// ── 마케팅 철회 ──
-async function withdrawMarketing() {
-  if (!confirm('마케팅 정보 수신 동의를 철회하시겠습니까?')) return
+// ── 타닥싱크 ──
+async function loadTadaksync() {
+  const el = document.getElementById('tadaksync-wrap')
+  if (el.dataset.loaded) return
+  const deviceCode = new URLSearchParams(location.search).get('code')
   try {
-    await API.del('/my/marketing-consent')
-    alert('마케팅 수신 동의가 철회되었습니다.')
-    document.getElementById('btn-marketing-toggle').style.display = 'none'
-    document.getElementById('marketing-status').textContent = '철회 완료'
-  } catch(e) {
-    alert('처리 중 오류가 발생했습니다.')
+    const entitlement = await API.get('/subtitle/entitlement')
+    let status = { linked: false }
+    try { status = await API.get('/subtitle/device/status') } catch {}
+    el.dataset.loaded = '1'
+    renderTadaksync(entitlement, status, deviceCode)
+  } catch (e) {
+    if (e.code === 'google_required') {
+      el.innerHTML = `<div class="empty-state"><i class="ti ti-brand-google"></i><p>타닥싱크는 구글 계정 연결이 필요합니다.<br>구글 계정으로 로그인해 주세요.</p></div>`
+      return
+    }
+    el.innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>타닥싱크 정보를 불러오지 못했습니다.</p></div>`
+  }
+}
+
+function renderTadaksync(entitlement, status, deviceCode) {
+  const el = document.getElementById('tadaksync-wrap')
+  const linkedDesc = status.linked
+    ? `연결됨 ✅${status.linked_at ? ` · ${formatAccessUntil(status.linked_at)} 연결` : ''}`
+    : '연결된 컴퓨터가 없습니다.'
+  const codeCardHtml = deviceCode ? `
+    <div class="settings-card" id="tadaksync-code-card" style="margin-top:16px;border-color:#c7d2fe;background:#f5f7ff">
+      <div class="settings-label" style="margin-bottom:4px">이 컴퓨터랑 연결하기</div>
+      <div class="settings-desc" style="margin-bottom:14px">프로그램에 뜬 번호가 아래와 같은지 확인하고 버튼을 눌러주세요. 계정당 컴퓨터 1대만 연결되며, 새로 연결하면 이전 컴퓨터는 자동으로 해제됩니다.</div>
+      <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:26px;font-weight:800;letter-spacing:.12em;color:#111;margin-bottom:14px">${escapeHtml(deviceCode.toUpperCase())}</div>
+      <div id="tadaksync-code-msg"></div>
+      <button type="button" class="pc-btn primary" id="btn-tadaksync-approve" onclick="approveTadaksyncDevice('${escapeHtml(deviceCode)}')">이 컴퓨터로 연결하기</button>
+    </div>` : ''
+
+  el.innerHTML = `
+    <div class="settings-card">
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">연결된 컴퓨터</div>
+          <div class="settings-desc">${linkedDesc}</div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-card" style="margin-top:16px">
+      <div class="settings-label" style="margin-bottom:4px">다운로드</div>
+      <div class="settings-desc" style="margin-bottom:14px">처음 실행할 때 이 계정으로 로그인하면 이 컴퓨터가 자동으로 연결됩니다.</div>
+      <a href="/tadaksync-auto" class="pc-btn secondary">타닥싱크 Auto 받기</a>
+    </div>
+    ${codeCardHtml}`
+
+  if (deviceCode) {
+    document.getElementById('tadaksync-code-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+async function approveTadaksyncDevice(code) {
+  const btn = document.getElementById('btn-tadaksync-approve')
+  const msg = document.getElementById('tadaksync-code-msg')
+  if (btn) btn.disabled = true
+  try {
+    const res = await API.post('/subtitle/device/approve', { code })
+    if (msg) msg.innerHTML = `<div class="settings-desc" style="color:#1a5c2e;margin-bottom:10px">${res.replaced ? '이 컴퓨터로 옮겼어요.' : '연결됐어요.'} 프로그램으로 돌아가시면 됩니다.</div>`
+    if (btn) btn.textContent = '연결 완료'
+    history.replaceState(null, '', '/mypage.html?tab=tadaksync')
+  } catch (e) {
+    if (msg) msg.innerHTML = `<div class="settings-desc" style="color:#8b1a1a;margin-bottom:10px">${escapeHtml(e.message || '연결에 실패했습니다.')}</div>`
+    if (btn) btn.disabled = false
   }
 }
 </script>
