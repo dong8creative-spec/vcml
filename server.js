@@ -303,6 +303,7 @@ app.use('/api/messages', require('./routes/messages'))
 app.use('/api/reviews',  require('./routes/reviews'))
 app.use('/api/anticipation', require('./routes/anticipation'))
 app.use('/api/subtitle', require('./routes/subtitle'))
+app.use('/api/app',      require('./routes/app'))
 app.use('/api/cleaner', require('./routes/cleaner'))
 app.use('/api',          require('./routes/public'))
 

@@ -6234,6 +6234,22 @@ const db = {
     return { ok: true }
   },
 
+  /** 데스크톱 앱 릴리스 메타(버전·서명) — client는 앱 구분자(예: 'auto'). 배포 스크립트가 기록, /api/app/update가 읽음. */
+  async getAppRelease(client) {
+    const key = String(client || '').trim()
+    if (!key) return null
+    const snap = await fs.collection('app_releases').doc(key).get()
+    return snap.exists ? { client: snap.id, ...snap.data() } : null
+  },
+
+  async setAppRelease(client, data) {
+    const key = String(client || '').trim()
+    if (!key) throw new Error('client가 필요합니다.')
+    const payload = { ...data, updated_at: now() }
+    await fs.collection('app_releases').doc(key).set(payload, { merge: false })
+    return { client: key, ...payload }
+  },
+
   parseLiveStart,
   parseLiveEndsAt,
   isFreeLiveCourse,
