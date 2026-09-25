@@ -1,7 +1,7 @@
 const express = require('express')
 const jwt = require('jsonwebtoken')
 const db = require('../db/schema')
-const { authMiddleware, clientIp } = require('../middleware/auth')
+const { authMiddleware, subtitleAppAuth, clientIp } = require('../middleware/auth')
 const { recordLoginLog } = require('../utils/loginAudit')
 const { getSignedDownloadUrl } = require('../utils/storage')
 
@@ -63,6 +63,59 @@ router.get('/entitlement', authMiddleware, async (req, res) => {
   } catch (e) {
     console.error('subtitle entitlement:', e)
     res.status(500).json({ error: '이용 권한을 확인하지 못했습니다.' })
+  }
+})
+
+/** GET /api/subtitle/me — 앱이 로그인 직후·주기적으로 계정 상태를 재확인 (앱 전용) */
+router.get('/me', subtitleAppAuth, async (req, res) => {
+  try {
+    const result = await db.ensureSubtitleEntitlement(req.user.id)
+    if (!result.ok) {
+      return res.status(403).json(result)
+    }
+    const user = await db.findUserById(req.user.id)
+    const refreshedToken = signSubtitleToken(user || req.user, req.user.device_id, req.user.session_id)
+    const pendingActions = await db.listSubtitleAppInbox(req.user.id)
+    res.json({
+      email: req.user.email || null,
+      name: req.user.name || null,
+      token: refreshedToken,
+      has_google: !!result.has_google,
+      pending_actions: pendingActions,
+    })
+  } catch (e) {
+    console.error('subtitle me:', e)
+    res.status(500).json({ error: '계정 정보를 불러오지 못했습니다.' })
+  }
+})
+
+/** GET /api/subtitle/history — 사용 내역 (앱 전용, 코인 폐지로 항상 빈 목록) */
+router.get('/history', subtitleAppAuth, async (req, res) => {
+  try {
+    const result = await db.ensureSubtitleEntitlement(req.user.id)
+    if (!result.ok) {
+      return res.status(403).json(result)
+    }
+    res.json({ history: [] })
+  } catch (e) {
+    console.error('subtitle history:', e)
+    res.status(500).json({ error: '사용 내역을 불러오지 못했습니다.' })
+  }
+})
+
+/** POST /api/subtitle/smartstore-review/claim — 코인 폐지로 더 이상 제공되지 않는 혜택 (앱 전용) */
+router.post('/smartstore-review/claim', subtitleAppAuth, async (req, res) => {
+  res.status(410).json({ ok: false, code: 'discontinued', error: '이 혜택은 더 이상 제공되지 않습니다.' })
+})
+
+/** POST /api/subtitle/inbox/ack — 앱 안내 메시지 확인 처리 (앱 전용) */
+router.post('/inbox/ack', subtitleAppAuth, async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.message_ids) ? req.body.message_ids : []
+    res.json(await db.ackSubtitleAppInbox(req.user.id, ids))
+  } catch (e) {
+    console.error('subtitle inbox ack:', e)
+    res.status(500).json({ error: '알림 확인 처리에 실패했습니다.' })
   }
 })
 

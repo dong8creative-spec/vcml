@@ -6058,6 +6058,41 @@ const db = {
     return { ok: true, has_google: true }
   },
 
+  /** 앱 안내 메시지함 — 코인/과금과 무관한 범용 알림 큐 */
+  async listSubtitleAppInbox(userId) {
+    if (!userId) return []
+    const snap = await fs.collection('subtitle_app_inbox')
+      .where('user_id', '==', userId)
+      .get()
+    const rows = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(m => !m.acked_at)
+      .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
+    return rows.map(m => ({
+      id: m.id,
+      type: m.type,
+      title: m.title,
+      body: m.body,
+      created_at: m.created_at || null,
+      payload: m.payload || {},
+    }))
+  },
+
+  async ackSubtitleAppInbox(userId, messageIds = []) {
+    const ids = Array.isArray(messageIds) ? messageIds.map(v => String(v || '').trim()).filter(Boolean) : []
+    if (!userId || !ids.length) return { ok: true, acked: 0 }
+    const ts = now()
+    let acked = 0
+    for (const id of ids.slice(0, 20)) {
+      const ref = fs.collection('subtitle_app_inbox').doc(id)
+      const snap = await ref.get()
+      if (!snap.exists || snap.data().user_id !== userId) continue
+      await ref.update({ acked_at: ts })
+      acked++
+    }
+    return { ok: true, acked }
+  },
+
   async createSubtitleDeviceCode(deviceId = null) {
     const code = crypto.randomBytes(4).toString('hex')
     const expiresAt = new Date(Date.now() + SUBTITLE_DEVICE_CODE_TTL_MS).toISOString()
