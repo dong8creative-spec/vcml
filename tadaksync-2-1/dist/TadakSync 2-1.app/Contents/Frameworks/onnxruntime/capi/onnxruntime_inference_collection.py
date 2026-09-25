@@ -1,1 +1,0 @@
-../../../Resources/onnxruntime/capi/onnxruntime_inference_collection.py

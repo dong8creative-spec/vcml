@@ -1,1 +1,0 @@
-../../Resources/av/frame.pyi

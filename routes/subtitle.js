@@ -7,9 +7,6 @@ const { getSignedDownloadUrl } = require('../utils/storage')
 
 const router = express.Router()
 
-const SUBTITLE_ZIP_PATH = process.env.SUBTITLE_TOOL_STORAGE_PATH || 'subtitle-tool/TadakSync.zip'
-const SUBTITLE_TRIAL_ZIP_PATH = process.env.SUBTITLE_TRIAL_STORAGE_PATH || 'subtitle-tool/TadakSyncTrial.zip'
-const SUBTITLE_TRIAL_MAC_ZIP_PATH = process.env.SUBTITLE_TRIAL_MAC_STORAGE_PATH || 'subtitle-tool/TadakSyncTrial-mac.zip'
 const SUBTITLE_AUTO_FREE_SETUP_PATH = process.env.SUBTITLE_AUTO_FREE_SETUP_PATH
   || 'subtitle-tool/TadakSync-Auto-Free-Setup.exe'
 const FREE_URL_TTL_MS = 15 * 60 * 1000
@@ -36,19 +33,6 @@ async function getFreeInstallerUrl() {
   }
   return freeDownloadUrlRequest
 }
-const TRIAL_DOWNLOADS = {
-  win: {
-    path: SUBTITLE_TRIAL_ZIP_PATH,
-    filename: 'TadakSyncTrial.zip',
-    launcher: 'run.bat',
-  },
-  mac: {
-    path: SUBTITLE_TRIAL_MAC_ZIP_PATH,
-    filename: 'TadakSyncTrial-mac.zip',
-    launcher: '타닥싱크 체험 실행.command',
-  },
-}
-const SUBTITLE_MODEL_ZIP_PATH = process.env.SUBTITLE_MODEL_STORAGE_PATH || 'subtitle-tool/whisper-model-large-v3.zip'
 const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://vcml.kr'
 
 function signSubtitleToken(user, deviceId, sessionId) {
@@ -82,61 +66,6 @@ router.get('/entitlement', authMiddleware, async (req, res) => {
   }
 })
 
-/** GET /api/subtitle/download — 서명 URL */
-router.get('/download', authMiddleware, async (req, res) => {
-  try {
-    const result = await db.ensureSubtitleEntitlement(req.user.id)
-    if (!result.ok) {
-      return res.status(403).json(result)
-    }
-    const storagePath = SUBTITLE_ZIP_PATH
-    const filename = storagePath.split('/').pop() || 'TadakSync.zip'
-    const url = await getSignedDownloadUrl(storagePath, 15 * 60 * 1000)
-    res.json({ url, filename, expires_in: 900 })
-  } catch (e) {
-    console.error('subtitle download:', e)
-    const missing = /찾을 수 없습니다/.test(e.message || '')
-    res.status(missing ? 404 : 500).json({
-      error: missing
-        ? '다운로드 파일이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'
-        : '다운로드 링크를 만들지 못했습니다.',
-    })
-  }
-})
-
-/** GET /api/subtitle/download-trial?os=win|mac — 구글 로그인 회원용 체험판 서명 URL */
-router.get('/download-trial', authMiddleware, async (req, res) => {
-  const osKey = String(req.query.os || 'win').trim().toLowerCase()
-  const pack = TRIAL_DOWNLOADS[osKey]
-  if (!pack) {
-    return res.status(400).json({ error: 'os는 win 또는 mac만 가능합니다.' })
-  }
-  try {
-    const result = await db.ensureSubtitleEntitlement(req.user.id)
-    if (!result.ok) {
-      return res.status(403).json(result)
-    }
-    const storagePath = pack.path
-    const url = await getSignedDownloadUrl(storagePath, 15 * 60 * 1000)
-    const filename = storagePath.split('/').pop() || pack.filename
-    res.json({
-      url,
-      filename,
-      os: osKey,
-      launcher: pack.launcher,
-      expires_in: 900,
-    })
-  } catch (e) {
-    console.error('subtitle trial download:', e)
-    const missing = /찾을 수 없습니다/.test(e.message || '')
-    res.status(missing ? 404 : 500).json({
-      error: missing
-        ? '테스트 버전 다운로드 파일이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'
-        : '테스트 버전 다운로드 링크를 만들지 못했습니다.',
-    })
-  }
-})
-
 /** GET /api/subtitle/download-free — 회원용 TADAKSYNC AUTO FREE 설치파일 */
 router.get('/download-free', authMiddleware, async (req, res) => {
   try {
@@ -162,27 +91,6 @@ router.get('/download-free', authMiddleware, async (req, res) => {
       error: missing
         ? '무료 버전 설치파일이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'
         : '무료 버전 다운로드 링크를 만들지 못했습니다.',
-    })
-  }
-})
-
-/** GET /api/subtitle/download-model — 음성인식 모델 zip 서명 URL
- * (자동 다운로드가 안 되는 환경용. 프로그램 폴더의 models\faster-whisper-large-v3 에 압축 해제) */
-router.get('/download-model', authMiddleware, async (req, res) => {
-  try {
-    const result = await db.ensureSubtitleEntitlement(req.user.id)
-    if (!result.ok) {
-      return res.status(403).json(result)
-    }
-    const url = await getSignedDownloadUrl(SUBTITLE_MODEL_ZIP_PATH, 60 * 60 * 1000)
-    res.json({ url, filename: 'whisper-model-large-v3.zip', expires_in: 3600 })
-  } catch (e) {
-    console.error('subtitle download-model:', e)
-    const missing = /찾을 수 없습니다/.test(e.message || '')
-    res.status(missing ? 404 : 500).json({
-      error: missing
-        ? '모델 파일이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'
-        : '다운로드 링크를 만들지 못했습니다.',
     })
   }
 })
@@ -256,7 +164,6 @@ router.post('/device/approve', authMiddleware, async (req, res) => {
       success: true,
       already: !!approved.already,
       replaced: !!bound.replaced,
-      balance: entitlement.balance,
     })
   } catch (e) {
     console.error('subtitle device approve:', e)
@@ -282,16 +189,10 @@ router.get('/device/poll', async (req, res) => {
           error: entitlement.error,
         })
       }
-      let balance = entitlement.balance ?? null
-      if (balance == null && polled.user_id) {
-        const wallet = await db.getSubtitleWallet(polled.user_id)
-        balance = wallet?.balance ?? null
-      }
       return res.json({
         status: 'approved',
         token: polled.token,
         user_name: polled.user_name,
-        balance,
       })
     }
     res.json({ status: polled.status })
