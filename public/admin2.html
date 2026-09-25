@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>관리자 허브 — 타닥클래스</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="/css/admin2.css?v=1">
+</head>
+<body>
+
+<header class="a2-header">
+  <div class="a2-logo"><span class="dot">●</span> 타닥클래스 관리자 허브</div>
+  <div class="a2-header-links">
+    <a href="/admin.html">기존 관리자 화면</a>
+    <a href="/">공개 사이트</a>
+  </div>
+</header>
+
+<div class="a2-wrap">
+  <h1 class="a2-title">오늘의 운영 현황</h1>
+  <p class="a2-sub">기존 사이드바 24개 섹션을 5개 묶음으로 정리했어요. 카드를 누르면 실제 관리자 화면의 해당 섹션이 바로 열려요.</p>
+
+  <div id="a2-stats" class="a2-stat-grid">
+    <div class="a2-loading">불러오는 중…</div>
+  </div>
+
+  <div class="a2-section-title">바로가기</div>
+  <div class="a2-group-grid" id="a2-groups"></div>
+
+  <div class="a2-section-title">최근 결제</div>
+  <div class="a2-table-wrap">
+    <table class="a2-table">
+      <thead><tr><th>수강생</th><th>강의</th><th>금액</th><th>결제수단</th><th>결제일</th></tr></thead>
+      <tbody id="a2-orders"><tr><td colspan="5" class="a2-loading">불러오는 중…</td></tr></tbody>
+    </table>
+  </div>
+  <p class="a2-note">이 표는 기존 관리자 화면과 같은 API(<code>/admin/dashboard</code>)를 그대로 사용해요 — 별도 서버 작업 없이 바로 실데이터예요.</p>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin/utils.js?v=1"></script>
+<script src="/js/admin/auth.js?v=2"></script>
+<script>
+const GROUPS = [
+  {
+    title: '강의 운영',
+    desc: '강의·커리큘럼·강사, 프로그램 선발과 제출물 검수까지',
+    items: [
+      ['courses', '강의 목록'], ['curriculum', '커리큘럼 편집'], ['instructors', '강사 관리'],
+      ['programs', '수강생 프로그램'], ['editor-program', '선발 프로그램 설계'],
+      ['editor-apps', '에디터즈 신청'], ['submissions', '미션 제출 검수'],
+    ],
+  },
+  {
+    title: '학생 · 결제',
+    desc: '수강생 명단, 결제·환불·쿠폰과 타닥싱크 코인',
+    items: [
+      ['students', '수강생 목록'], ['orders', '결제 내역'], ['refunds', '환불 요청'],
+      ['coupons', '쿠폰 관리'], ['subtitle-coins', '타닥싱크 코인'],
+    ],
+  },
+  {
+    title: '고객지원',
+    desc: '문의·FAQ와 후기 관리를 한 곳에서',
+    items: [
+      ['tickets', '고객 문의'], ['faqs', 'FAQ 관리'], ['reviews', '수강 후기'],
+      ['smartstore-reviews', '스마트스토어 후기'],
+    ],
+  },
+  {
+    title: '콘텐츠 · 마케팅',
+    desc: '공지·블로그 발행과 선물코드 이벤트, 외주 클라이언츠',
+    items: [
+      ['notices', '공지사항'], ['blog', '블로그'], ['gift-codes', '선물코드 이벤트'], ['projects', '클라이언츠 현황'],
+    ],
+  },
+  {
+    title: '사이트 설정',
+    desc: '홈페이지 노출 섹션과 계정·로그인 기록',
+    items: [
+      ['homepage', '홈페이지 관리'], ['settings', '사이트 설정'], ['login-logs', '로그인 기록'],
+    ],
+  },
+];
+
+function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function renderGroups() {
+  document.getElementById('a2-groups').innerHTML = GROUPS.map(g => `
+    <div class="a2-group">
+      <div class="a2-group-title">${esc(g.title)}</div>
+      <p class="a2-group-desc">${esc(g.desc)}</p>
+      <div class="a2-chip-row">
+        ${g.items.map(([key, label]) => `<a class="a2-chip" href="/admin.html#${key}">${esc(label)}</a>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function renderStats(stats) {
+  const cards = [
+    { label: '이번 달 매출', value: (stats.monthRevenue || 0).toLocaleString() + '원', delta: `오늘 ${(stats.todayRevenue||0).toLocaleString()}원`, accent: true },
+    { label: '총 수강생', value: (stats.totalStudents || 0).toLocaleString() + '명', delta: `이번 달 신규 ${stats.newStudents||0}명` },
+    { label: '이번 달 결제', value: (stats.monthOrders || 0).toLocaleString() + '건', delta: `오늘 ${stats.todayOrders||0}건` },
+    { label: '환불 대기', value: (stats.refundPending || 0).toLocaleString() + '건', accent: (stats.refundPending||0) > 0 },
+    { label: '스마트스토어 결제', value: (stats.smartstoreOrders || 0).toLocaleString() + '건', delta: `사이트 직결제 ${stats.siteOrders||0}건` },
+    { label: '누적 매출', value: (stats.revenue || 0).toLocaleString() + '원' },
+  ];
+  document.getElementById('a2-stats').innerHTML = cards.map(c => `
+    <div class="a2-stat">
+      <div class="a2-stat-label">${esc(c.label)}</div>
+      <div class="a2-stat-value${c.accent ? ' accent' : ''}">${esc(c.value)}</div>
+      ${c.delta ? `<div class="a2-stat-delta">${esc(c.delta)}</div>` : ''}
+    </div>`).join('');
+}
+
+function renderOrders(orders) {
+  const rows = (orders || []).slice(0, 8);
+  document.getElementById('a2-orders').innerHTML = rows.length ? rows.map(o => `
+    <tr>
+      <td>${esc(o.user_name || '-')}</td>
+      <td>${esc(o.course_title || '-')}</td>
+      <td>${(o.amount||0).toLocaleString()}원</td>
+      <td>${esc(o.method || '-')}</td>
+      <td>${esc(o.paid_at || '-')}</td>
+    </tr>`).join('') : '<tr><td colspan="5" class="a2-loading">최근 결제 내역이 없어요.</td></tr>';
+}
+
+async function boot() {
+  renderGroups();
+  const ok = await AdminAuth.guardAdminAccess({ next: '/admin2.html' });
+  if (!ok) return;
+  try {
+    const { stats, orders } = await API.get('/admin/dashboard');
+    renderStats(stats);
+    renderOrders(orders);
+  } catch (e) {
+    document.getElementById('a2-stats').innerHTML = '<div class="a2-loading">지표를 불러오지 못했어요. 새로고침해 주세요.</div>';
+  }
+}
+boot().catch(() => {});
+</script>
+</body>
+</html>
