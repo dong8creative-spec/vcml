@@ -16,9 +16,6 @@
   <aside class="sidebar">
     <div class="sidebar-logo">타닥클래스<span>Admin Panel</span></div>
     <nav class="sidebar-nav">
-      <a href="/admin2.html" class="nav-item" style="background:#eef1fd;color:#2748d6;font-weight:700">
-        <i class="ti ti-sparkles"></i> 새 관리자 허브 (베타)
-      </a>
       <div class="nav-group-label">대시보드</div>
       <a href="#dashboard" class="nav-item active" data-section="dashboard">
         <i class="ti ti-layout-dashboard"></i> 개요
@@ -6418,13 +6415,6 @@
     window.loadTickets = (status) => AdminSupport.loadTickets(status)
     window.loadFaqs = () => AdminSupport.loadFaqs()
     AdminRouter.bindNav()
-
-    // 관리자 허브(admin2.html)의 바로가기 카드가 특정 섹션으로 바로 열리도록,
-    // URL 해시(#tickets 등)가 있으면 그 섹션을 초기 화면으로 띄운다. 해시가 없으면 기존과 동일하게 대시보드.
-    const _initialSection = location.hash.replace('#', '')
-    if (_initialSection && document.getElementById('sec-' + _initialSection)) {
-      showSection(_initialSection)
-    }
 
     async function fillCmProgramSelect(selectedId) {
       const sel = document.getElementById('cm-program-id')
