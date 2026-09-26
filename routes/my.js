@@ -198,11 +198,6 @@ router.get('/courses', authMiddleware, async (req, res) => {
         paidAt: order?.paid_at,
       })
     }
-    try {
-      row.program = await db.getProgramForCourse(c)
-    } catch {
-      row.program = null
-    }
     return row
   }))
   res.json(courses.filter(Boolean).reverse())

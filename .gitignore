@@ -14,3 +14,6 @@ tadaksync-v2/build/
 tadaksync-v2/dist/
 tadaksync-v2/**/__pycache__/
 *.zip
+
+# 타닥싱크 Auto Windows 포팅 — 별도 데스크톱 앱 소스, 웹 저장소와 무관 (배포본은 Firebase Storage)
+TadakSync Auto - for windows/

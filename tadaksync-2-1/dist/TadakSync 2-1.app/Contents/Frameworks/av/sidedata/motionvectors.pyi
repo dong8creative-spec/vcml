@@ -1,1 +1,0 @@
-../../../Resources/av/sidedata/motionvectors.pyi

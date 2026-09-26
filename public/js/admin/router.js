@@ -3,8 +3,6 @@
   const titles = {
     dashboard: '대시보드 개요',
     courses: '강의 목록',
-    programs: '수강생 프로그램',
-    'subtitle-coins': '타닥싱크 코인',
     curriculum: '커리큘럼 편집',
     students: '수강생 목록',
     'login-logs': '로그인 기록',
@@ -22,7 +20,6 @@
     faqs: 'FAQ 관리',
     blog: '블로그',
     homepage: '홈페이지 관리',
-    'smartstore-reviews': '스마트스토어 후기',
     settings: '사이트 설정',
   }
 

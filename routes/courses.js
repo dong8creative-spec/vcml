@@ -553,11 +553,6 @@ router.get('/:slug', async (req, res) => {
         paidAt: orderRecord?.paid_at,
       })
     }
-    try {
-      payload.program = await db.getProgramForCourse(course)
-    } catch {
-      payload.program = null
-    }
     res.json(payload)
   } catch (e) {
     res.status(500).json({ error: e.message })
