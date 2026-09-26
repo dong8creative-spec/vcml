@@ -3,6 +3,7 @@
 (function () {
   const DEFAULT = {
     sections: {
+      tadaksync_hero: true,
       hero: true,
       categories: true,
       instructors: false,
@@ -16,9 +17,8 @@
       all: true,
       instructors: true,
       notices: true,
-      institution: true,
+      tadaksync: true,
       capcut: false,
-      tadaksync: false,
       reviews: false,
       editors: false,
       projects: false,

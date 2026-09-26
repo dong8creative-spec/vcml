@@ -309,6 +309,13 @@ img { display: block; max-width: 100%; }
 .hero-stats strong { display: block; font-size: 27.6px; font-weight: 800; color: #fff; }
 .hero-stats span { font-size: 19.2px; color: rgba(255,255,255,.6); }
 
+/* ── 타닥싱크 히어로 (메인) / 강의 히어로 (서브, 축소) ── */
+.hero--tadaksync { background: linear-gradient(150deg, #050505 0%, #101010 55%, #1a1a1a 100%); min-height: 480px; }
+.hero--compact { min-height: 240px; padding: 40px 24px; }
+.hero--compact .hero-text h1 { font-size: 28px; margin-bottom: 8px; }
+.hero--compact .hero-text p { font-size: 15px; margin-bottom: 16px; }
+.hero--compact .hero-badge { margin-bottom: 10px; }
+
 /* ── INSTRUCTORS ── */
 .instructors-section { background: #fff; }
 .instructors-grid {

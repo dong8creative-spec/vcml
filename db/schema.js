@@ -4251,6 +4251,11 @@ const db = {
     cacheInvalidate('homepage:data*', 'reviews:live:*')
   },
 
+  async getMarketingOptedInUsersWithPhone() {
+    const snap = await fs.collection('users').where('marketing_agreed', '==', 1).get()
+    return snapToArr(snap).filter(u => u.phone)
+  },
+
   // platform_reviews (실시간 후기 — 유형별 노출)
   async getPlatformReviewsByTypes(types) {
     const key = `platform_reviews:${[...types].sort().join(',')}`
@@ -5845,13 +5850,12 @@ const db = {
     return { id: ref.id, ...data }
   },
   async getTickets({ status } = {}) {
-    let snap
-    if (status && status !== 'all') {
-      snap = await fs.collection('support_tickets').where('status', '==', status).orderBy('created_at', 'desc').get()
-    } else {
-      snap = await fs.collection('support_tickets').orderBy('created_at', 'desc').get()
-    }
-    return snapToArr(snap)
+    // status 필터 + created_at 정렬을 Firestore 쿼리에서 같이 하면 복합 인덱스가 필요해서(FAILED_PRECONDITION),
+    // 필터만 쿼리로 하고 정렬은 메모리에서 처리한다(문의 규모상 충분히 빠름).
+    let q = fs.collection('support_tickets')
+    if (status && status !== 'all') q = q.where('status', '==', status)
+    const snap = await q.get()
+    return snapToArr(snap).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
   },
   async getTicketById(id) {
     const doc = await fs.collection('support_tickets').doc(id).get()
@@ -5868,6 +5872,13 @@ const db = {
   },
   async deleteTicket(id) {
     await fs.collection('support_tickets').doc(id).delete()
+  },
+  async markTicketAutoReplied(id, autoReplyText) {
+    // 문의 접수 즉시 나가는 정책 템플릿 답변 기록 — 사람이 나중에 쓰는 answer와는 별개 필드.
+    // status는 바꾸지 않는다(자동 응답은 실제 "답변완료" 처리가 아니라 접수 확인일 뿐).
+    await fs.collection('support_tickets').doc(id).update({
+      auto_reply_sent: true, auto_reply_text: autoReplyText,
+    })
   },
 
   // ── FAQ ──

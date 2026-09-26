@@ -3,7 +3,8 @@ const multer = require('multer')
 const db = require('../db/schema')
 const { getTotalMailCountFromConfig } = require('../db/schema')
 const { adminMiddleware } = require('../middleware/auth')
-const { sendLiveInviteMessage } = require('../utils/kakaoMessage')
+const { sendLiveInviteMessage, sendNewCourseMessage, sendTadaksyncUpdateMessage } = require('../utils/kakaoMessage')
+const { sendMail } = require('../utils/mailer')
 const { uploadCourseImage } = require('../utils/storage')
 
 const upload = multer({
@@ -1033,6 +1034,46 @@ router.post('/courses/:id/send-live-invite', async (req, res) => {
   res.json({ success: true, ...results })
 })
 
+router.post('/courses/:id/notify-new-course', async (req, res) => {
+  const course = await db.getCourseById(req.params.id)
+  if (!course) return res.status(404).json({ error: '강의를 찾을 수 없습니다.' })
+
+  const siteOrigin = process.env.SITE_ORIGIN || 'https://vcml.kr'
+  const courseUrl = `${siteOrigin}/courses/${course.slug}`
+  const users = await db.getMarketingOptedInUsersWithPhone()
+  const results = { sent: 0, failed: 0 }
+
+  for (const user of users) {
+    try {
+      await sendNewCourseMessage(user.phone, user.name, course.title, courseUrl)
+      results.sent++
+    } catch (err) {
+      results.failed++
+    }
+  }
+
+  res.json({ success: true, ...results })
+})
+
+router.post('/tadaksync/notify-update', async (req, res) => {
+  const { version, notes, download_url } = req.body
+  if (!version || !download_url) return res.status(400).json({ error: '버전과 다운로드 링크는 필수입니다.' })
+
+  const users = await db.getMarketingOptedInUsersWithPhone()
+  const results = { sent: 0, failed: 0 }
+
+  for (const user of users) {
+    try {
+      await sendTadaksyncUpdateMessage(user.phone, user.name, version, notes || '', download_url)
+      results.sent++
+    } catch (err) {
+      results.failed++
+    }
+  }
+
+  res.json({ success: true, ...results })
+})
+
 router.get('/course-stats', async (req, res) => {
   res.json(await db.getCourseStats())
 })
@@ -1461,6 +1502,8 @@ router.post('/tickets/:id/answer', async (req, res) => {
   const { answer } = req.body
   if (!answer) return res.status(400).json({ error: '답변 내용이 필요합니다.' })
   const t = await db.answerTicket(req.params.id, { answer })
+  // 관리자가 작성한 실제 답변을 문의자 이메일로 발송 (미설정 시 콘솔 시뮬레이션)
+  sendMail({ to: t.email, subject: `[타닥클래스] 문의 답변 — ${t.subject}`, text: answer }).catch(() => {})
   res.json({ success: true, ticket: t })
 })
 router.patch('/tickets/:id/status', async (req, res) => {

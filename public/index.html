@@ -78,8 +78,23 @@ if (new URLSearchParams(location.search).get('preview') === '1') {
 
 <div data-site-header></div>
 
-<!-- HERO -->
-<section class="hero hero--has-image" data-home-section="hero">
+<!-- 타닥싱크 히어로 -->
+<section class="hero hero--tadaksync" data-home-section="tadaksync_hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-badge"><i class="ti ti-download"></i> 무료로 먼저 써보세요</div>
+      <h1>자막 만드느라 밤새운 적 있으시죠?</h1>
+      <p>타닥싱크가 캡컷 자막을 자동으로 만들어드려요.<br>무음 구간이랑 필요 없는 부분도 알아서 정리해드려요.</p>
+      <div class="hero-btns">
+        <a href="/tadaksync-auto" class="btn-hero-primary"><span class="btn-hero-ghost__label">타닥싱크 무료로 받기</span></a>
+        <a href="#course-hero" class="btn-hero-ghost"><span class="btn-hero-ghost__label">강의도 보러가기</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 강의 히어로 (서브) -->
+<section class="hero hero--has-image hero--compact" id="course-hero" data-home-section="hero">
   <div class="hero-bg" id="hero-bg" style="background-image:url('/images/hero.webp')" aria-hidden="true"></div>
   <div class="hero-overlay" aria-hidden="true"></div>
   <div class="hero-inner" id="hero-inner">

@@ -1885,7 +1885,8 @@
               <div>
                 <div class="layout-toggle-group-title" style="font-size:12px">홈 섹션</div>
                 <div class="layout-toggle-list" id="hp-section-toggles">
-                  <label class="layout-toggle"><input type="checkbox" data-hp-section="hero" checked /><span>히어로</span></label>
+                  <label class="layout-toggle"><input type="checkbox" data-hp-section="tadaksync_hero" checked /><span>타닥싱크 히어로</span></label>
+                  <label class="layout-toggle"><input type="checkbox" data-hp-section="hero" checked /><span>강의 히어로</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-section="categories" checked /><span>카테고리 타일</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-section="all_courses" checked /><span>전체 강의</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-section="free_courses" checked /><span>무료 강의</span></label>
@@ -1900,7 +1901,7 @@
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="instructors" checked /><span>강사 소개</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="notices" checked /><span>공지사항</span></label>
                   <label class="layout-toggle"><input type="checkbox" data-hp-nav="all" checked /><span>전체강의</span></label>
-                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="institution" checked /><span>타닥싱크</span></label>
+                  <label class="layout-toggle"><input type="checkbox" data-hp-nav="tadaksync" checked /><span>타닥싱크</span></label>
                 </div>
               </div>
             </div>
@@ -2097,6 +2098,32 @@
             <input type="text" value="02-0000-0000" disabled />
           </div>
           <button class="btn-save" type="button" disabled title="준비 중">저장</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">소식 알림 발송 (카카오 알림톡)</div>
+          </div>
+          <p class="card-body sec-sub">마케팅 수신 동의 + 전화번호가 있는 회원에게만 발송됩니다. 실제 운영 전환(카카오 비즈니스 채널·솔라피 등) 전까지는 서버 콘솔에 시뮬레이션 로그만 남습니다.</p>
+          <div class="form-group">
+            <label>강의 개설 알림</label>
+            <select id="notify-course-select"><option value="">강의 목록 불러오는 중...</option></select>
+          </div>
+          <button class="btn-save" type="button" id="notify-course-btn">개설 알림 보내기</button>
+
+          <div class="form-group" style="margin-top:22px">
+            <label>타닥싱크 버전</label>
+            <input type="text" id="notify-ts-version" placeholder="예: 1.2.0" />
+          </div>
+          <div class="form-group">
+            <label>업데이트 내용</label>
+            <textarea id="notify-ts-notes" rows="3" style="width:100%;font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg-soft);resize:vertical" placeholder="예: 무음 구간 자동 삭제 기능 추가"></textarea>
+          </div>
+          <div class="form-group">
+            <label>다운로드 링크</label>
+            <input type="text" id="notify-ts-url" placeholder="https://vcml.kr/tadaksync-auto" />
+          </div>
+          <button class="btn-save" type="button" id="notify-ts-btn">업데이트 알림 보내기</button>
         </div>
 
         <div class="card">
@@ -2410,6 +2437,7 @@
   <script src="/js/admin/modules/instructor-portfolio.js?v=14"></script>
   <script src="/js/admin/modules/courses-quick.js?v=2"></script>
   <script src="/js/admin/modules/gift-codes.js?v=1"></script>
+  <script src="/js/admin/modules/notify.js?v=1"></script>
   <script>
     // ── 헬퍼 (AdminUtils 위임) ──
     const esc = (...a) => AdminUtils.esc(...a)
