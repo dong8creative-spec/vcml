@@ -305,6 +305,7 @@ app.use('/api/anticipation', require('./routes/anticipation'))
 app.use('/api/subtitle', require('./routes/subtitle'))
 app.use('/api/app',      require('./routes/app'))
 app.use('/api/cleaner', require('./routes/cleaner'))
+app.use('/api/support', require('./routes/support'))
 app.use('/api',          require('./routes/public'))
 
 app.post('/api/cron/sync-login-logs', async (req, res) => {

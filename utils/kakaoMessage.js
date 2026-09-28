@@ -17,8 +17,10 @@ const IS_PROD = process.env.NODE_ENV === 'production'
 
 // ── 템플릿 코드 (카카오 심사 후 발급받은 코드로 교체) ──
 const TEMPLATES = {
-  COUPON_ISSUED:  process.env.ALIMTALK_TMPL_COUPON || 'TMPL_COUPON_001',
-  LIVE_INVITE:    process.env.ALIMTALK_TMPL_LIVE   || 'TMPL_LIVE_001',
+  COUPON_ISSUED:     process.env.ALIMTALK_TMPL_COUPON   || 'TMPL_COUPON_001',
+  LIVE_INVITE:       process.env.ALIMTALK_TMPL_LIVE     || 'TMPL_LIVE_001',
+  NEW_COURSE:        process.env.ALIMTALK_TMPL_COURSE   || 'TMPL_COURSE_001',
+  TADAKSYNC_UPDATE:  process.env.ALIMTALK_TMPL_TSUPDATE || 'TMPL_TSUPDATE_001',
 }
 
 async function sendAlimtalk({ to, templateCode, variables }) {
@@ -102,4 +104,54 @@ async function sendLiveInviteMessage(phone, name, courseTitle, schedule, meetCod
   })
 }
 
-module.exports = { sendAlimtalk, sendCouponIssuedMessage, sendLiveInviteMessage }
+/**
+ * 신규 강의 개설 알림톡
+ *
+ * 카카오 심사 등록 템플릿 문안:
+ * ───────────────────────────────
+ * [타닥클래스] #{이름}님, 새 강의가 열렸어요!
+ *
+ * 📚 #{강의명}
+ *
+ * [강의 보러가기]
+ * ───────────────────────────────
+ * 수신거부: 마이페이지 > 계정 설정 > 마케팅 수신 철회
+ */
+async function sendNewCourseMessage(phone, name, courseTitle, courseUrl) {
+  if (!phone) return { skipped: true, reason: '전화번호 없음 — 알림톡 미발송' }
+  return sendAlimtalk({
+    to: phone,
+    templateCode: TEMPLATES.NEW_COURSE,
+    variables: { 이름: name, 강의명: courseTitle, 링크: courseUrl },
+  })
+}
+
+/**
+ * 타닥싱크 업데이트 알림톡
+ *
+ * 카카오 심사 등록 템플릿 문안:
+ * ───────────────────────────────
+ * [타닥싱크] #{이름}님, 새 버전이 나왔어요! (v#{버전})
+ *
+ * #{업데이트내용}
+ *
+ * [업데이트 받으러 가기]
+ * ───────────────────────────────
+ * 수신거부: 마이페이지 > 계정 설정 > 마케팅 수신 철회
+ */
+async function sendTadaksyncUpdateMessage(phone, name, version, notes, downloadUrl) {
+  if (!phone) return { skipped: true, reason: '전화번호 없음 — 알림톡 미발송' }
+  return sendAlimtalk({
+    to: phone,
+    templateCode: TEMPLATES.TADAKSYNC_UPDATE,
+    variables: { 이름: name, 버전: version, 업데이트내용: notes, 링크: downloadUrl },
+  })
+}
+
+module.exports = {
+  sendAlimtalk,
+  sendCouponIssuedMessage,
+  sendLiveInviteMessage,
+  sendNewCourseMessage,
+  sendTadaksyncUpdateMessage,
+}
