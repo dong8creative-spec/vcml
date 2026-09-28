@@ -35,6 +35,9 @@
       <a href="#login-logs" class="nav-item" data-section="login-logs">
         <i class="ti ti-history"></i> 로그인 기록
       </a>
+      <a href="#tadaksync-usage" class="nav-item" data-section="tadaksync-usage">
+        <i class="ti ti-chart-bar"></i> 타닥싱크 사용 현황
+      </a>
       <a href="#orders" class="nav-item" data-section="orders">
         <i class="ti ti-receipt"></i> 결제 내역
       </a>
@@ -813,6 +816,56 @@
           </thead>
           <tbody id="login-logs-table-body">
             <tr><td colspan="8" style="text-align:center;color:#888">로딩 중…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: TADAKSYNC USAGE ===== -->
+    <section class="section" id="sec-tadaksync-usage">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">타닥싱크 사용 현황 <span id="tsu-range" class="td-sub" style="margin-left:6px"></span></div>
+          <div class="filter-row">
+            <select id="tsu-days" onchange="loadTadaksyncUsage()">
+              <option value="7">최근 7일</option>
+              <option value="30" selected>최근 30일</option>
+              <option value="90">최근 90일</option>
+              <option value="365">최근 1년</option>
+            </select>
+            <input type="search" id="tsu-search" placeholder="이메일·이름 검색" oninput="renderTadaksyncUsage()" style="width:180px">
+            <button class="btn-sm" type="button" onclick="loadTadaksyncUsage()"><i class="ti ti-refresh"></i></button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="tsu-totals" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+          <p class="sec-sub" style="margin-top:10px">인식 횟수·시간과 광고 노출·시청 완료·클릭만 집계합니다. 영상·자막 내용은 저장하지 않습니다.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-title">사용자별</div></div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>이메일</th><th>이름</th>
+              <th>인식 횟수</th><th>인식 시간</th>
+              <th>광고 노출</th><th>시청 완료</th><th>클릭</th>
+              <th>사용 일수</th><th>마지막 사용 (KST)</th>
+            </tr>
+          </thead>
+          <tbody id="tsu-users-body">
+            <tr><td colspan="9" style="text-align:center;color:#888">로딩 중…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">일별</div></div>
+        <table class="data-table">
+          <thead>
+            <tr><th>날짜 (KST)</th><th>사용자 수</th><th>인식 횟수</th><th>인식 시간</th><th>광고 노출</th><th>시청 완료</th><th>클릭</th></tr>
+          </thead>
+          <tbody id="tsu-daily-body">
+            <tr><td colspan="7" style="text-align:center;color:#888">로딩 중…</td></tr>
           </tbody>
         </table>
       </div>
@@ -3687,6 +3740,66 @@
       }
     }
 
+    let _tsuData = null
+
+    function fmtTsuDuration(sec) {
+      const s = Math.round(Number(sec) || 0)
+      if (s < 60) return s + '초'
+      const m = Math.floor(s / 60)
+      return m < 60 ? m + '분' : Math.floor(m / 60) + '시간 ' + (m % 60) + '분'
+    }
+
+    async function loadTadaksyncUsage() {
+      const usersBody = document.getElementById('tsu-users-body')
+      if (!usersBody) return
+      usersBody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#888">로딩 중…</td></tr>'
+      try {
+        const days = document.getElementById('tsu-days')?.value || '30'
+        _tsuData = await API.get('/admin/tadaksync-usage?days=' + encodeURIComponent(days))
+        renderTadaksyncUsage()
+      } catch (e) {
+        usersBody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#c44">${esc(e.message || '불러오기 실패')}</td></tr>`
+      }
+    }
+
+    function renderTadaksyncUsage() {
+      const d = _tsuData
+      if (!d) return
+      const tile = (label, value) => `<div style="min-width:130px;padding:12px 16px;border:1px solid #2a2a2a;border-radius:10px"><div class="td-sub">${label}</div><div style="font-size:20px;font-weight:800;margin-top:4px">${value}</div></div>`
+      const t = d.totals
+      document.getElementById('tsu-range').textContent = `${d.from} ~ 오늘${d.truncated ? ' · 일부만 집계됨(기록이 매우 많음)' : ''}`
+      document.getElementById('tsu-totals').innerHTML =
+        tile('사용자', d.active_users.toLocaleString()) + tile('인식 횟수', t.recognition_count.toLocaleString()) +
+        tile('인식 시간', fmtTsuDuration(t.recognition_sec)) + tile('광고 노출', t.ad_impression.toLocaleString()) +
+        tile('광고 시청 완료', t.ad_complete.toLocaleString()) + tile('광고 클릭', t.ad_click.toLocaleString())
+      const q = (document.getElementById('tsu-search')?.value || '').toLowerCase().trim()
+      const users = q ? d.users.filter((u) => (u.email || '').toLowerCase().includes(q) || (u.user_name || '').toLowerCase().includes(q)) : d.users
+      document.getElementById('tsu-users-body').innerHTML = users.length ? users.map((u) => `
+        <tr>
+          <td>${esc(u.email || '-')}</td>
+          <td>${esc(u.user_name || '-')}</td>
+          <td>${u.recognition_count.toLocaleString()}</td>
+          <td>${esc(fmtTsuDuration(u.recognition_sec))}</td>
+          <td>${u.ad_impression.toLocaleString()}</td>
+          <td>${u.ad_complete.toLocaleString()}</td>
+          <td>${u.ad_click.toLocaleString()}</td>
+          <td>${u.active_days}일</td>
+          <td class="td-sub">${esc(formatLoginLogKst(u.last_used_at))}</td>
+        </tr>`).join('') : '<tr><td colspan="9" style="text-align:center;color:#888">기록이 없습니다.</td></tr>'
+      document.getElementById('tsu-daily-body').innerHTML = d.daily.length ? d.daily.map((r) => `
+        <tr>
+          <td>${esc(r.date)}</td>
+          <td>${r.active_users.toLocaleString()}</td>
+          <td>${r.recognition_count.toLocaleString()}</td>
+          <td>${esc(fmtTsuDuration(r.recognition_sec))}</td>
+          <td>${r.ad_impression.toLocaleString()}</td>
+          <td>${r.ad_complete.toLocaleString()}</td>
+          <td>${r.ad_click.toLocaleString()}</td>
+        </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:#888">기록이 없습니다.</td></tr>'
+    }
+    window.loadTadaksyncUsage = loadTadaksyncUsage
+    window.renderTadaksyncUsage = renderTadaksyncUsage
+
     function getFilteredStudents() {
       const q = (document.getElementById('student-search')?.value || '').toLowerCase()
       const filtered = q
@@ -5929,6 +6042,7 @@
       curriculum: loadCurriculumAdmin,
       students: loadStudents,
       'login-logs': () => { loadLoginLogsSheetsStatus(); return loadLoginLogs() },
+      'tadaksync-usage': loadTadaksyncUsage,
       orders: loadOrders,
       coupons: loadCouponsAdmin,
       refunds: () => AdminOps.loadRefunds(),

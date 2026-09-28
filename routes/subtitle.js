@@ -89,6 +89,19 @@ router.get('/me', subtitleAppAuth, async (req, res) => {
   }
 })
 
+/** POST /api/subtitle/usage — 앱이 인식·광고 이벤트를 알림(내용은 없고 횟수·길이·광고 종류만). 관리자 화면에서만 집계해 본다. */
+router.post('/usage', subtitleAppAuth, async (req, res) => {
+  try {
+    const { event, job_id, ad_type, duration_us } = req.body || {}
+    const result = await db.recordTadaksyncUsage(req.user, { event, job_id, ad_type, duration_us })
+    res.json({ ok: true, ...result })
+  } catch (e) {
+    if (/알 수 없는 이벤트/.test(e.message)) return res.status(400).json({ error: e.message })
+    console.error('subtitle usage:', e)
+    res.status(500).json({ error: '사용 기록을 저장하지 못했습니다.' })
+  }
+})
+
 /** GET /api/subtitle/history — 사용 내역 (앱 전용, 코인 폐지로 항상 빈 목록) */
 router.get('/history', subtitleAppAuth, async (req, res) => {
   try {

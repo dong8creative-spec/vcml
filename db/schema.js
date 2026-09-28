@@ -723,6 +723,8 @@ function nextId() {
   return fs.collection('_').doc().id
 }
 
+const TADAKSYNC_USAGE_EVENTS = ['recognition', 'ad_impression', 'ad_complete', 'ad_click']
+
 function now() {
   return new Date().toISOString()
 }
@@ -6248,6 +6250,80 @@ const db = {
     const payload = { ...data, updated_at: now() }
     await fs.collection('app_releases').doc(key).set(payload, { merge: false })
     return { client: key, ...payload }
+  },
+
+  /** 타닥싱크 앱 사용 기록 1건 저장. 같은 (사용자, 이벤트, job_id)는 한 번만 센다(앱이 재전송해도 중복되지 않게). */
+  async recordTadaksyncUsage(user, { event, job_id = '', ad_type = '', duration_us = 0 } = {}) {
+    const { kstDateKey } = require('../utils/kstDate')
+    const ev = String(event || '')
+    if (!TADAKSYNC_USAGE_EVENTS.includes(ev)) throw new Error('알 수 없는 이벤트입니다.')
+    const created_at = now()
+    const jobId = String(job_id || '').slice(0, 80)
+    const durationSec = ev === 'recognition'
+      ? Math.round(Math.min(6 * 3600, Math.max(0, Number(duration_us) || 0) / 1e6))
+      : 0
+    const data = {
+      user_id: String(user.id),
+      email: user.email ? normalizeEmail(user.email) : null,
+      user_name: user.name ? String(user.name).slice(0, 80) : null,
+      event: ev,
+      ad_type: String(ad_type || '').slice(0, 32),
+      duration_sec: durationSec,
+      kst_date: kstDateKey(new Date(created_at)),
+      created_at,
+    }
+    const col = fs.collection('tadaksync_usage')
+    if (jobId) {
+      const id = crypto.createHash('sha1').update(`${user.id}|${ev}|${jobId}`).digest('hex')
+      try {
+        await col.doc(id).create(data)
+        return { counted: true }
+      } catch (e) {
+        if (e && (e.code === 6 || /ALREADY_EXISTS/.test(String(e.message)))) return { counted: false, duplicate: true }
+        throw e
+      }
+    }
+    await col.add(data)
+    return { counted: true }
+  },
+
+  /** 관리자용: 최근 N일 타닥싱크 사용 현황(사용자별 합계·전체 합계·일별). */
+  async getTadaksyncUsageSummary({ days = 30 } = {}) {
+    const { kstDateKey } = require('../utils/kstDate')
+    const span = Math.min(365, Math.max(1, Number(days) || 30))
+    const from = kstDateKey(new Date(Date.now() - (span - 1) * 86400000))
+    const LIMIT = 50000
+    const snap = await fs.collection('tadaksync_usage').where('kst_date', '>=', from).limit(LIMIT).get()
+    const rows = snapToArr(snap)
+    const blank = () => ({ recognition_count: 0, recognition_sec: 0, ad_impression: 0, ad_complete: 0, ad_click: 0 })
+    const bump = (t, r) => {
+      if (r.event === 'recognition') { t.recognition_count += 1; t.recognition_sec += Number(r.duration_sec) || 0 }
+      else if (t[r.event] !== undefined) t[r.event] += 1
+    }
+    const totals = blank()
+    const byUser = new Map()
+    const byDay = new Map()
+    for (const r of rows) {
+      bump(totals, r)
+      const u = byUser.get(r.user_id) || { user_id: r.user_id, email: r.email, user_name: r.user_name, last_used_at: '', days: new Set(), ...blank() }
+      bump(u, r)
+      if (r.email) u.email = r.email
+      if (r.user_name) u.user_name = r.user_name
+      if (String(r.created_at || '') > u.last_used_at) u.last_used_at = String(r.created_at || '')
+      u.days.add(r.kst_date)
+      byUser.set(r.user_id, u)
+      const dd = byDay.get(r.kst_date) || { date: r.kst_date, users: new Set(), ...blank() }
+      bump(dd, r)
+      dd.users.add(r.user_id)
+      byDay.set(r.kst_date, dd)
+    }
+    const users = [...byUser.values()]
+      .map(({ days: d, ...u }) => ({ ...u, active_days: d.size }))
+      .sort((a, b) => (b.recognition_count - a.recognition_count) || (b.ad_impression - a.ad_impression))
+    const daily = [...byDay.values()]
+      .map(({ users: uu, ...d }) => ({ ...d, active_users: uu.size }))
+      .sort((a, b) => b.date.localeCompare(a.date))
+    return { days: span, from, truncated: rows.length >= LIMIT, totals, active_users: users.length, users, daily }
   },
 
   parseLiveStart,

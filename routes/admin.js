@@ -1417,6 +1417,16 @@ router.get('/login-logs', async (req, res) => {
   }
 })
 
+/** 타닥싱크 앱 사용 현황 — 누가 얼마나 썼는지, 광고를 얼마나 봤는지(관리자 전용) */
+router.get('/tadaksync-usage', async (req, res) => {
+  try {
+    res.json(await db.getTadaksyncUsageSummary({ days: Number(req.query.days) || 30 }))
+  } catch (e) {
+    console.error('admin tadaksync-usage:', e)
+    res.status(500).json({ error: e.message || '사용 현황을 불러오지 못했습니다.' })
+  }
+})
+
 router.get('/login-logs/sheets-status', async (req, res) => {
   try {
     const { isSheetsConfigured, sheetsConfig } = require('../utils/googleSheetsLoginSync')
