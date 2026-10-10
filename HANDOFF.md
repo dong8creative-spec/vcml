@@ -4,7 +4,9 @@
 
 ## 이 저장소가 진짜다
 
-`/Users/donghnc/Desktop/tadakclass`라는 또 다른 클론이 있는데, **그건 2026-06-20 이후 갱신이 없는 죽은 클론**이다. 이 폴더(`/Volumes/DONGHNC/VCML/vcml`)가 실제 `vcml.kr` 배포 소스이며(같은 git remote `github.com/dong8creative-spec/vcml.git`, 같은 Vercel 프로젝트 `tadakclass`), 어제(작업일 기준)까지 실제로 갱신됐다. 앞으로의 모든 작업은 여기서 한다.
+실제 작업 경로는 `/Volumes/DONGHNC/웹·상세페이지/VCML/vcml`이다. Git remote는 `https://github.com/dong8creative-spec/vcml.git`, 기본 브랜치는 `main`, Vercel 프로젝트는 팀 `vcml`의 `tadakclass`이며 운영 도메인은 `vcml.kr`이다.
+
+2026-10-11 사용자 요청으로 로컬을 GitHub main 기준으로 초기화했다. 초기화 전 미커밋 작업은 로컬 복구 백업으로 보관했으며 저장소에는 포함하지 않았다. 과거 `/Users/donghnc/Desktop/tadakclass`는 현재 그 위치에 없고 `/Users/donghnc/Documents/edit_vcml`은 별도 이미지 변환 앱이다.
 
 ## 사업 실체 (절대 다시 지어내지 말 것)
 
@@ -38,9 +40,13 @@
 - [x] `public/admin.html`의 홈 레이아웃 편집기에 "타닥싱크 히어로" 토글 추가, 기존 "히어로" 라벨을 "강의 히어로"로 명확화
 - [x] 로컬 서버(포트 3400) + Playwright로 검증: 콘솔 에러 없음, 두 히어로 다 렌더, nav 링크가 `/tadaksync-auto`로 정확히 연결, `GET /api/homepage-layout`이 새 키를 기본값(true)으로 정상 병합해서 내려줌
 
-## 지금 하고 있던 것 / 중단 시점
+## 현재 상태 — 2026-10-11
 
-위 작업 완료 후 정지. **어드민 UI에서 실제로 토글 체크박스를 껐다 켜보는 것까지는 검증 안 함**(관리자 로그인 필요, 이번 세션에선 API 응답 병합 로직으로만 간접 확인) — 다음 사람이 실제 관리자 계정으로 로그인해서 `홈페이지 레이아웃` 탭에서 "타닥싱크 히어로" 체크박스 껐다 켜보고 저장 후 홈페이지에 실제 반영되는지 눈으로 한 번 확인할 것.
+- 로컬 서버는 `http://localhost:3300`에서 실행 중이다. 홈페이지 HTTP 200을 확인했다.
+- 사용자가 ‘프리미어 프로 입문 : 감잡기’ 완전 삭제를 요청했다. 공개본과 비공개 구버전 2개, 관련 Firestore 문서 총 46건(강의 2건 포함), 전용 Storage 이미지 12개를 삭제했다. 삭제 전 데이터와 이미지는 로컬 복구 백업으로 보관했다.
+- 나머지 강의 4개의 ID 유지와 삭제 대상 문서·이미지의 부재를 확인했다. 로컬과 운영 사이트에서 강의 목록·홈페이지·사이트맵에 감잡기가 없고 두 상세 URL이 HTTP 404임을 확인했다.
+- 이 삭제는 Firestore/Storage 데이터 작업이다. Git 커밋은 삭제 이력과 인수인계 기록을 담으며, DB 삭제를 배포로 다시 수행하지 않는다. 코드·시드 카탈로그에 감잡기 항목이 없어 코드 수정은 없었다.
+- 기존 무료 다운로드 테스트 3개 통과. 관리자 레이아웃 토글의 실제 저장 검증은 여전히 미완료다.
 
 ## 다음에 할 일 (우선순위 순)
 
@@ -58,9 +64,12 @@
 
 ## 알려진 블로커
 
-- 이 셸에서 `git`이 Xcode 라이선스 미동의로 막혀 있음(`git status` 등 실패) — 사용자가 `sudo xcodebuild -license` 직접 실행해야 풀림. 최근 커밋들은 다른 도구(VS Code 등)로 이뤄진 것으로 보임. 이 셸에서 커밋 시도하지 말 것.
+- 과거 Xcode 라이선스로 git이 막혔다는 안내는 2026-10-11 현재 셸에서 재현되지 않았다. git 조회와 원격 fetch는 정상 동작한다.
+- main 브랜치 보호와 Rulesets가 없고 GitHub Pages가 별도 활성화되어 있다. 과거 TadakSync2 릴리스 워크플로는 현재 없는 소스와 npm 명령을 참조한다. 관련 설정은 아직 변경하지 않았다.
 - `test/`에 홈페이지 레이아웃 관련 자동 테스트 없음 — 검증은 로컬 서버 + Playwright 스크린샷/DOM 체크로 함.
 
 ## 이력
+
+- `docs/changelog/2026-10-11-01-repository-sync-and-gamjapgi-removal.md` — 로컬 동기화 및 감잡기 삭제·검증
 
 - `docs/changelog/2026-09-26-01-tadaksync-homepage-hero.md` — 이번 작업 전체
