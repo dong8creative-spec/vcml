@@ -12,6 +12,19 @@
   ],
   "routes": [
     {
+      "src": "/reports/cheonggwa1-design-20261018",
+      "status": 308,
+      "headers": { "Location": "/reports/cheonggwa1-design-20261018/index.html" }
+    },
+    {
+      "src": "/reports/cheonggwa1-design-20261018/(.*)",
+      "dest": "/public/reports/cheonggwa1-design-20261018/$1",
+      "headers": {
+        "X-Robots-Tag": "noindex, nofollow, noarchive",
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      }
+    },
+    {
       "src": "/faq\\.html",
       "status": 301,
       "headers": {
